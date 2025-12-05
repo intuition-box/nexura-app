@@ -1,154 +1,85 @@
-import { useEffect, useState } from "react";
-import { apiRequest } from "@/lib/queryClient";
-import { useRoute, Link, useLocation } from "wouter";
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Clock, Trophy, Target } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
+const tasks = [
+  { text: "Like and Comment on this tweet", link: "https://x.com/NexuraXYZ" },
+  { text: "Support or oppose the #Tribe Claim on Intuition Portal", link: "https://portal.intuition.systems/explore/triple/0xdce8ebb5bdb2668732d43cce5eca85d6a5119fd1bc92f36dd85998ab48ce7a63?tab=positions" },
+  { text: "Support or Oppose TNS Claim on Intuition Portal", link: "https://portal.intuition.systems/explore/triple/0xd9c06c57fced2eafcc71a6b46ad9acd58e6b035e7ccc2dc6eebc00f8ba71172f?tab=positions" },
+  { text: "Support or Oppose Sofia Claim on Intuition Portal", link: "https://portal.intuition.systems/explore/triple/0x98ba47f4d18ceb7550c6c593ef92835864f0c0e09d6e56108feac8a8a6012038?tab=positions" },
+];
+
 export default function QuestEnvironment() {
-  const [match, params] = useRoute("/quest/:questId");
-  const [questData, setQuestData] = useState<any>(null);
   const [, setLocation] = useLocation();
+  const [taskIndex, setTaskIndex] = useState(0);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
 
-  // Determine back navigation based on referrer or query param
-  const getBackLocation = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const fromParam = urlParams.get('from');
-    if (fromParam === 'explore') {
-      return '/';
-    }
-    if (fromParam === 'ecosystem-dapps') {
-      return '/ecosystem-dapps';
-    }
-    return '/quests';
-  };
-
-  const getBackButtonText = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const fromParam = urlParams.get('from');
-    if (fromParam === 'explore') {
-      return 'Back to Explore';
-    }
-    if (fromParam === 'ecosystem-dapps') {
-      return 'Back to Ecosystem Dapps';
-    }
-    return 'Back to Quests';
-  };
-
-  useEffect(() => {
-    if (params?.questId) {
-      // Try fetching quests from the backend and pick the one matching the id.
-      (async () => {
-        try {
-          const res = await apiRequest("GET", "/quests");
-          const json = await res.json();
-          // backend returns { oneTimeQuests, dailyQuests }
-          const candidates: any[] = [
-            ...(json.oneTimeQuests ?? []),
-            ...(json.dailyQuests ?? []),
-          ];
-
-          const found = candidates.find((q: any) => q.id === params.questId || q.questId === params.questId);
-          setQuestData(found ?? null);
-        } catch (e) {
-          console.warn("Could not fetch quest data", e);
-          setQuestData(null);
-        }
-      })();
-    }
-  }, [params?.questId]);
-
-  if (!match) {
-    return null;
-  }
+  const currentTask = tasks[taskIndex];
+  const progressPercentage = ((taskIndex + 1) / tasks.length) * 100;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 relative" data-testid="quest-environment">
+    <div className="min-h-screen bg-black text-white p-4 relative">
       <AnimatedBackground />
-      <div className="max-w-4xl mx-auto space-y-6 relative z-10">
-        {/* Back Button */}
+      <div className="max-w-xl mx-auto space-y-6 relative z-10">
         <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setLocation(getBackLocation())}
-            data-testid="button-back-to-quests"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            {getBackButtonText()}
-          </Button>
+          <Button variant="outline" size="sm" onClick={() => setLocation("/quests")}>← Back</Button>
+          <h1 className="text-2xl font-bold">Tasks</h1>
         </div>
 
-        {questData ? (
-          <>
-            {/* Quest Header */}
-            <Card className="glass glass-hover rounded-3xl">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <div className="text-sm text-white/60">{questData.type}</div>
-                    <CardTitle className="text-2xl text-white">{questData.title}</CardTitle>
-                    <p className="text-white/60">{questData.description}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center space-x-2 text-sm text-white/60 mb-2">
-                      <Clock className="w-4 h-4" />
-                      <span>{questData.timeLeft} left</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Trophy className="w-5 h-5 text-yellow-500" />
-                      <span className="font-bold text-lg text-white">{questData.reward}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+        {/* Progress Bar */}
+        <div className="w-full bg-white/20 rounded-full h-2">
+          <div
+            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
 
-            {/* Quest Content Area */}
-            <Card className="glass glass-hover rounded-3xl min-h-[400px]">
-              <CardContent className="p-8">
-                <div className="text-center space-y-6">
-                  <Target className="w-16 h-16 mx-auto text-white/60" />
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-bold text-white">NOTHING HERE YET</h2>
-                    <p className="text-white/60 max-w-md mx-auto">
-                      Quest content and interactions will be implemented here. 
-                      This is where users will complete their quest objectives.
-                    </p>
-                  </div>
-                  
-                  {/* Placeholder Action Button */}
-                  <Button size="lg" disabled data-testid="button-quest-action">
-                    Quest Content Coming Soon
+        <Card className="rounded-xl overflow-hidden shadow-lg">
+          {/* Image at the top */}
+          <div className="relative h-44 bg-black">
+            <img
+              src="/quest-1.png"
+              alt="Quest Image"
+              className="w-full h-full object-cover rounded-t-xl"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          </div>
+
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm text-gray-200">{currentTask.text}</p>
+
+            {currentTask.link && (
+              <a
+                href={currentTask.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-block text-center px-3 py-2 bg-[#1f6feb] hover:bg-[#388bfd] rounded-lg font-medium"
+              >
+                <ExternalLink className="w-4 h-4 inline mr-2" /> Open Task
+              </a>
+            )}
+
+            {taskIndex < tasks.length - 1 ? (
+              <Button className="w-full mt-2" onClick={() => setTaskIndex(taskIndex + 1)}>Continue</Button>
+            ) : (
+              <div className="text-center mt-2 space-y-2">
+                {!rewardClaimed ? (
+                  <Button
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg"
+                    onClick={() => setRewardClaimed(true)}
+                  >
+                    Claim Reward: 500 XP
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        ) : (
-          <Card className="glass glass-hover rounded-3xl min-h-[400px]">
-            <CardContent className="p-8">
-              <div className="text-center space-y-6">
-                <Target className="w-16 h-16 mx-auto text-white/60" />
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-bold text-white">QUEST NOT FOUND</h2>
-                  <p className="text-white/60 max-w-md mx-auto">
-                    The quest you're looking for doesn't exist or has been removed.
-                  </p>
-                </div>
-                
-                <Button 
-                  size="lg" 
-                  onClick={() => setLocation(getBackLocation())}
-                  data-testid="button-back-to-quests-from-error"
-                >
-                  Return to {getBackLocation() === '/' ? 'Explore' : 'Quests'}
-                </Button>
+                ) : (
+                  <p className="text-green-400 font-semibold">Reward claimed! 🎉</p>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

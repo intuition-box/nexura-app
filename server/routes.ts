@@ -7,6 +7,7 @@ import { verifyMessage } from "ethers";
 import fs from "fs";
 import path from "path";
 import campaignsRouter from "../api/campaigns";
+import questsRouter from "../api/quests";
 
 // Optional S3-compatible upload support for production (recommended for serverless)
 let s3Client: any = null;
@@ -59,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // campaign
   app.use("/api/campaigns", campaignsRouter);
-  
+  app.use("/api/quests", questsRouter)
   // Referral system routes
   app.get("/api/referrals/stats/:userId", async (req, res) => {
     try {

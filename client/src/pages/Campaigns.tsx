@@ -6,6 +6,7 @@ import { Calendar, Clock, Users, ExternalLink } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import CampaignEnvironment from "./CampaignEnvironment";
 
 interface Campaign {
   id: string;
@@ -30,6 +31,7 @@ export default function Campaigns() {
     return res.json();
   },
 });
+
 console.log("CAMPAIGNS FROM SERVER:", campaigns);
 
   // Separate active and upcoming campaigns

@@ -81,13 +81,15 @@ export default function NexuraSidebar() {
   return (
     <Sidebar className="border-r border-border/40">
       <SidebarContent className="bg-background">
-        {/* Logo */}
-        <div className="p-6 border-b border-border/40">
-          <div className="flex items-center space-x-3">
-            <img src={siteLogo} alt="Nexura" className="w-8 h-8" />
-            <div className="font-extrabold text-lg text-foreground whitespace-nowrap">NEXURA</div>
-          </div>
-        </div>
+{/* Logo */}
+{/* Logo */}
+<div className="p-6 border-b border-border/40">
+  <div className="flex items-center">
+    <img src="/nexura-logo.png" alt="Nexura" className="w-40 h-auto" />
+  </div>
+</div>
+
+
 
         {/* Main Navigation */}
         <SidebarGroup>

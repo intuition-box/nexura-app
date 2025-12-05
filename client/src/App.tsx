@@ -47,6 +47,7 @@ function Router() {
       <Route path="/referrals" component={Referrals} />
       <Route path="/quest/:questId" component={QuestEnvironment} />
       <Route path="/campaign/:campaignId" component={CampaignEnvironment} />
+      <Route path="/quests/tasks-card" component={QuestEnvironment} />
       {/* Profile pages */}
       <Route path="/profile" component={Profile} />
       <Route path="/profile/edit" component={EditProfile} />
