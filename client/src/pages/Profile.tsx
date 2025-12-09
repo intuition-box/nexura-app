@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { emitSessionChange } from "@/lib/session";
 import { apiRequest } from "@/lib/queryClient";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { FaTwitter, FaDiscord } from "react-icons/fa";
 
 const LEVELS = [
   { name: "Trail Initiate", xp: 0 },
@@ -80,7 +81,7 @@ export default function Profile() {
   }, [user?.id]);
 
   const userData = useMemo(() => {
-    if (!user) return { id: "", username: "Guest", displayName: "Guest User", avatar: "", xp: 0, questsCompleted: 0, tasksCompleted: 0, dateJoined: "Recently" };
+    if (!user) return { id: "", username: "Guest", displayName: "Guest User", avatar: "", xp: 0, questsCompleted: 0, tasksCompleted: 0, dateJoined: "Recently", rewards: { xp: 0, trust: 0 }, badges: [], socialProfiles: { twitter: "", discord: "" } };
     return {
       ...user,
       level: user.level ?? 1,
@@ -90,6 +91,12 @@ export default function Profile() {
       displayName: user.displayName ?? user.display_name ?? user.username ?? "User",
       username: user.username ?? "user",
       dateJoined: user.dateJoined ?? user.created_at ?? "Recently",
+      rewards: user.rewards ?? { xp: 0, trust: 0 },
+      badges: user.badges ?? [],
+      socialProfiles: {
+        twitter: user.socialProfiles?.twitter ?? "",
+        discord: user.socialProfiles?.discord ?? "",
+      }
     };
   }, [user]);
 
@@ -115,7 +122,7 @@ export default function Profile() {
   const { levelName, levelValue, xpValue, nextLevelXp, neededXp, progressPercentage } = levelInfo;
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-auto p-6 relative">
+    <div className=" bg-black text-white relative">
       <AnimatedBackground />
       {loading && (
         <div className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border rounded-lg p-3 shadow-lg">
@@ -154,7 +161,7 @@ export default function Profile() {
             </Avatar>
             <div className="flex-1 space-y-4">
               <h2 className="text-2xl font-bold">{userData?.displayName}</h2>
-              <Badge className="mt-1 text-white border-0 bg-gradient-to-r from-purple-700 via-blue-600 to-cyan-500 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">{levelName} (Level {levelValue})</Badge>
+              <Badge className="mt-1 text-white border-0 bg-gradient-to-r from-purple-700 via-blue-600 to-cyan-500 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">{levelName}</Badge>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">XP Progress</span>
@@ -164,57 +171,47 @@ export default function Profile() {
                 <div className="text-xs text-muted-foreground">{neededXp} XP to next level</div>
               </div>
               <div className="flex items-center text-sm text-muted-foreground gap-2"><Calendar className="w-4 h-4"/>Joined {userData?.dateJoined}</div>
+
+              {/* Socials */}
+<div className="flex items-center gap-4 mt-2">
+  {/* Twitter/X */}
+  <div className="flex items-center gap-2 text-sm">
+    <FaTwitter className="w-5 h-5 text-[#1DA1F2]" />
+    {userData.socialProfiles?.twitter?.connected
+      ? `@${userData.socialProfiles.twitter.username}`
+      : "Not connected"}
+  </div>
+
+  {/* Discord */}
+  <div className="flex items-center gap-2 text-sm">
+    <FaDiscord className="w-5 h-5 text-[#5865F2]" />
+    {userData.socialProfiles?.discord?.connected
+      ? `@${userData.socialProfiles.discord.username}`
+      : "Not connected"}
+  </div>
+</div>
             </div>
           </CardContent>
         </Card>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6 mt-6">
           {[
-            { title: "Quests", value: userData?.questsCompleted ?? 0, label: "Completed" },
-            { title: "Tasks", value: userData?.tasksCompleted ?? 0, label: "Completed" },
             { title: "Total XP", value: xpValue, label: "XP earned" },
-            { title: "Referrals", value: loadingReferrals ? '...' : referralCount, label: "Friends referred" },
+            { title: "Current Level", value: `${levelName}`, label: "" },
+            { title: "Total Quests Completed", value: userData?.questsCompleted ?? 0, label: "Completed" },
+            { title: "Total Rewards", value: `${userData?.rewards?.xp ?? 0} XP, ${userData?.rewards?.trust ?? 0} $TRUST`, label: "Earned" },
+            { title: "Badges", value: userData?.badges?.length ?? 0, label: "Nexons" },
           ].map((stat) => (
             <Card key={stat.title} className="glass glass-hover rounded-3xl flex flex-col h-full">
               <CardHeader className="pb-3"><CardTitle className="text-sm font-bold text-white">{stat.title}</CardTitle></CardHeader>
               <CardContent className="flex flex-col justify-between">
                 <div className="text-2xl font-bold text-white">{stat.value}</div>
-                <p className="text-xs text-white/60 mt-1">{stat.label}</p>
+                {stat.label && <p className="text-xs text-white/60 mt-1">{stat.label}</p>}
               </CardContent>
             </Card>
           ))}
         </div>
-
-        {/* Achievements / Levels Stack */}
-        <section className="mt-6">
-          <h2 className="text-2xl font-bold mb-4">Achievements</h2>
-          <div className="flex flex-col gap-6">
-            {LEVELS.map((lvl, idx) => {
-              const unlocked = xpValue >= lvl.xp;
-              const nextLevel = !unlocked && (!LEVELS[idx - 1] || xpValue >= LEVELS[idx - 1].xp);
-              const progress = unlocked ? 100 : Math.min((xpValue / lvl.xp) * 100, 100);
-
-              return (
-                <Card key={lvl.name} className={`${unlocked ? "border-primary/50 bg-primary/5" : ""}`}>
-                  <CardContent className="p-6 flex flex-col gap-4 relative">
-                    {nextLevel && <button className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-green-600">Mint</button>}
-                    <div className="flex items-center justify-between">
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white" style={{backgroundColor: unlocked ? "#6b7280" : "#4b5563"}}>{idx + 1}</div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">{Math.floor(progress)}%</p>
-                        {unlocked && <Badge className="bg-green-500 mt-1">Unlocked</Badge>}
-                      </div>
-                    </div>
-                    <h3 className="font-bold text-lg">{lvl.name}</h3>
-                    <p className="text-sm text-muted-foreground">Reach {lvl.name} by earning {lvl.xp} XP</p>
-                    <Progress value={progress} className="h-2"/>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
 
       </div>
     </div>

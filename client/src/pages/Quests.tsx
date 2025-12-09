@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Clock, ExternalLink, CheckCircle } from "lucide-react";
+import { Play, CheckCircle2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import AnimatedBackground from "@/components/AnimatedBackground";
@@ -207,47 +208,55 @@ export default function Quests() {
           )}
         </div>
 
-        {/* One-Time Quests Horizontal Scroll */}
-        <div className="mt-10">
-          <h2 className="text-xl font-bold text-foreground mb-4">One-Time Quests</h2>
-          <div className="flex space-x-4 overflow-x-auto pb-4">
-            {ONE_TIME_QUESTS.map((quest) => {
-              const visited = visitedTasks.includes(quest.id);
-              const claimed = claimedTasks.includes(quest.id);
+{/* ONE TIME QUESTS - Updated Design */}
+<div className="mt-10">
+  <h2 className="text-white text-lg font-semibold">One-Time Quests</h2>
+  <p className="text-neutral-400 text-sm mt-1">
+    Complete these essential quests to unlock the full NEXURA experience
+  </p>
 
-              return (
-                <Card key={quest.id} className="flex-shrink-0 w-64 p-4">
-                  <h3 className="font-semibold text-foreground">{quest.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">{quest.description}</p>
-                  {quest.reward && <p className="text-sm text-green-400 mb-2">{quest.reward}</p>}
+  <div className="mt-6 space-y-4">
+    {ONE_TIME_QUESTS.map((quest, index) => {
+      const visited = visitedTasks.includes(quest.id);
+      const claimed = claimedTasks.includes(quest.id);
 
-                  {!visited && !claimed ? (
-                    <Button
-                      size="sm"
-                      className="w-full bg-[#1f6feb] hover:bg-[#388bfd]"
-                      onClick={() => visitTask(quest)}
-                    >
-                      {quest.actionLabel || "Do Task"}
-                    </Button>
-                  ) : visited && !claimed ? (
-                    <Button
-                      size="sm"
-                      className="w-full bg-green-500 hover:bg-green-600"
-                      onClick={() => claimAndAwardXp(quest)}
-                    >
-                      Claim Reward
-                    </Button>
-                  ) : (
-                    <Button size="sm" disabled className="w-full bg-gray-500">
-                      <CheckCircle className="w-4 h-4 mr-2 inline" />
-                      Claimed
-                    </Button>
-                  )}
-                </Card>
-              );
-            })}
+      let buttonText = quest.actionLabel || "Start Task";
+      if (visited && !claimed) buttonText = `Claim Reward: ${quest.reward}`;
+      if (claimed) buttonText = "Completed";
+
+      return (
+        <div
+          key={quest.id}
+          className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/10 text-white">
+              {claimed ? (
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+            </div>
+            <span className="font-medium">{quest.title}</span>
           </div>
+
+          <button
+            onClick={() => {
+              if (!visited) visitTask(quest);
+              else if (visited && !claimed) claimAndAwardXp(quest);
+            }}
+            className={`px-4 py-2 rounded-full text-sm font-semibold ${
+              claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+            }`}
+          >
+            {buttonText}
+          </button>
         </div>
+      );
+    })}
+  </div>
+</div>
+
       </div>
     </div>
   );

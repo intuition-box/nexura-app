@@ -1,86 +1,124 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
-const tasks = [
-  { text: "Like and Comment on this tweet", link: "https://x.com/NexuraXYZ" },
-  { text: "Support or oppose the #Tribe Claim on Intuition Portal", link: "https://portal.intuition.systems/explore/triple/0xdce8ebb5bdb2668732d43cce5eca85d6a5119fd1bc92f36dd85998ab48ce7a63?tab=positions" },
-  { text: "Support or Oppose TNS Claim on Intuition Portal", link: "https://portal.intuition.systems/explore/triple/0xd9c06c57fced2eafcc71a6b46ad9acd58e6b035e7ccc2dc6eebc00f8ba71172f?tab=positions" },
-  { text: "Support or Oppose Sofia Claim on Intuition Portal", link: "https://portal.intuition.systems/explore/triple/0x98ba47f4d18ceb7550c6c593ef92835864f0c0e09d6e56108feac8a8a6012038?tab=positions" },
+type Task = {
+  text: string;
+  reward: string;
+  link: string;
+  status: "notStarted" | "inProgress" | "completed";
+};
+
+const tasks200Initial: Task[] = [
+  { text: "Like and Comment on this Nexura tweet", reward: "100 XP", link: "#", status: "notStarted" },
+  { text: "Support or Oppose the #Tribe Claim on Intuition Portal", reward: "100 XP", link: "#", status: "notStarted" },
+  { text: "Support or Oppose the TNS Claim on Intuition Portal", reward: "100 XP", link: "#", status: "notStarted" },
+  { text: "Support or Oppose the Sofia on Intuition Portal", reward: "100 XP", link: "#", status: "notStarted" },
 ];
 
-export default function QuestEnvironment() {
-  const [, setLocation] = useLocation();
-  const [taskIndex, setTaskIndex] = useState(0);
-  const [rewardClaimed, setRewardClaimed] = useState(false);
+export default function CampaignEnvironment() {
+  const [tasks200, setTasks200] = useState<Task[]>(tasks200Initial);
+  const [totalXP, setTotalXP] = useState(0);
 
-  const currentTask = tasks[taskIndex];
-  const progressPercentage = ((taskIndex + 1) / tasks.length) * 100;
+  const handleTaskClick = (tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>, index: number) => {
+    const task = tasks[index];
+
+    if (task.status === "notStarted") {
+      // Open task link
+      window.open(task.link, "_blank");
+      setTasks(prev => prev.map((t, i) => i === index ? { ...t, status: "inProgress" } : t));
+    } else if (task.status === "inProgress") {
+      // Claim reward
+      setTasks(prev => prev.map((t, i) => i === index ? { ...t, status: "completed" } : t));
+      setTotalXP(prev => prev + parseInt(task.reward));
+    }
+  };
+
+  const renderTaskRow = (task: Task, tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>, index: number) => {
+    let buttonText = "Start Task";
+    if (task.status === "inProgress") buttonText = `Claim Reward: ${task.reward}`;
+    if (task.status === "completed") buttonText = "Completed";
+
+    return (
+      <div
+        key={index}
+        className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition"
+      >
+        <p className="font-medium">{task.text}</p>
+
+        <button
+          onClick={() => handleTaskClick(tasks, setTasks, index)}
+          className={`px-5 py-2 rounded-full text-sm font-semibold ${
+            task.status === "completed" ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+          }`}
+        >
+          {buttonText}
+        </button>
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 relative">
+    <div className="min-h-screen bg-[#0a0615] text-white relative p-6">
       <AnimatedBackground />
-      <div className="max-w-xl mx-auto space-y-6 relative z-10">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" onClick={() => setLocation("/quests")}>← Back</Button>
-          <h1 className="text-2xl font-bold">Tasks</h1>
-        </div>
 
-        {/* Progress Bar */}
-        <div className="w-full bg-white/20 rounded-full h-2">
-          <div
-            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
+      <div className="max-w-4xl mx-auto relative z-10 space-y-10">
 
-        <Card className="rounded-xl overflow-hidden shadow-lg">
-          {/* Image at the top */}
-          <div className="relative h-44 bg-black">
-            <img
-              src="/quest-1.png"
-              alt="Quest Image"
-              className="w-full h-full object-cover rounded-t-xl"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        {/* Banner */}
+        <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-6 flex justify-between items-center">
+          <div>
+            <p className="uppercase text-xs opacity-60">Get Started</p>
+            <p className="text-xl font-semibold">Join the Guild</p>
           </div>
 
-          <CardContent className="p-4 space-y-3">
-            <p className="text-sm text-gray-200">{currentTask.text}</p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm opacity-70 uppercase">Total XP</p>
+            <div className="bg-purple-600/30 border border-purple-500/40 px-4 py-2 rounded-full flex items-center gap-2">
+              <span className="font-bold">{totalXP} XP</span>
+            </div>
+          </div>
+        </div>
 
-            {currentTask.link && (
-              <a
-                href={currentTask.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-block text-center px-3 py-2 bg-[#1f6feb] hover:bg-[#388bfd] rounded-lg font-medium"
-              >
-                <ExternalLink className="w-4 h-4 inline mr-2" /> Open Task
-              </a>
-            )}
+        {/* Main Quest Card */}
+        <Card className="rounded-2xl bg-white/5 border-white/10 overflow-hidden shadow-xl">
+          <div className="grid grid-cols-2">
+            <div className="h-full">
+              <img
+                src="/campaign.png"
+                alt="Quest"
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-            {taskIndex < tasks.length - 1 ? (
-              <Button className="w-full mt-2" onClick={() => setTaskIndex(taskIndex + 1)}>Continue</Button>
-            ) : (
-              <div className="text-center mt-2 space-y-2">
-                {!rewardClaimed ? (
-                  <Button
-                    className="w-full bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg"
-                    onClick={() => setRewardClaimed(true)}
-                  >
-                    Claim Reward: 500 XP
-                  </Button>
-                ) : (
-                  <p className="text-green-400 font-semibold">Reward claimed! 🎉</p>
-                )}
+            <div className="p-6 flex flex-col justify-between">
+              <div>
+                <p className="text-xs opacity-50 uppercase mb-1">Nexura</p>
+                <p className="text-xl font-bold leading-tight">Quest 001:<br />Join the Guild</p>
+
+                <div className="mt-4">
+                  <p className="uppercase text-xs opacity-50">Start Task</p>
+                  <p className="text-sm opacity-80 leading-relaxed mt-1">
+                    Complete simple tasks in the Nexura ecosystem and earn rewards.
+                  </p>
+                </div>
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs opacity-50 uppercase">Rewards</p>
+                  <p className="text-sm">500 XP</p>
+                </div>
               </div>
-            )}
-          </CardContent>
+
+              <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl py-3 mt-6">
+                Complete Tasks
+              </Button>
+            </div>
+          </div>
         </Card>
+
+        {/* 200 XP Section */}
+        <h2 className="text-lg font-semibold opacity-90">Get 200 XP</h2>
+        {tasks200.map((task, i) => renderTaskRow(task, tasks200, setTasks200, i))}
       </div>
     </div>
   );
-}
+};

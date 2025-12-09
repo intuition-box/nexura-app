@@ -4,7 +4,7 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 // Do not default to localhost in production — if no backend is configured the app
 // will make requests relative to the current origin.
 const RUNTIME_BACKEND = (typeof window !== 'undefined' && (window as any).__BACKEND_URL__) || undefined;
-const BACKEND_BASE = RUNTIME_BACKEND || ((import.meta as any).env?.VITE_BACKEND_URL as string) || "";
+const BACKEND_BASE = "http://localhost:5051"; // Hardcoded backend URL for testing
 
 function buildUrl(path: string) {
   if (/^https?:\/\//i.test(path)) return path;

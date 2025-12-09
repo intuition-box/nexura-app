@@ -48,7 +48,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // CORS for bearer-token auth
-app.use((req, res, next) => { res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS'); res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization'); if (req.method === 'OPTIONS') return res.status(204).end(); next(); });
+app.use((req, res, next) => { 
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173'); // frontend URL
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS'); 
+  res.setHeader(
+    'Access-Control-Allow-Headers', 
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-wallet-address'
+  ); 
+  if (req.method === 'OPTIONS') return res.status(204).end(); 
+  next(); 
+});
+
 
 app.use((req, res, next) => {
   const start = Date.now();

@@ -6,7 +6,9 @@ import crypto from "crypto";
 import { verifyMessage } from "ethers";
 import fs from "fs";
 import path from "path";
-import campaignsRouter from "../api/campaigns";
+// import campaignsRouter from "../api/campaigns";
+import campaignRoutes from "../api/campaign.routes";
+
 import questsRouter from "../api/quests";
 
 // Optional S3-compatible upload support for production (recommended for serverless)
@@ -57,9 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: 'failed', details: String(e) });
     }
   });
-
+  
   // campaign
-  app.use("/api/campaigns", campaignsRouter);
+  app.use("/api/campaigns", campaignRoutes);
   app.use("/api/quests", questsRouter)
   // Referral system routes
   app.get("/api/referrals/stats/:userId", async (req, res) => {
@@ -989,29 +991,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/users/profile", async (req, res) => {
     try {
-      const sess = await getSessionFromReq(req);
-      if (!sess) return res.status(401).json({ error: "not authenticated" });
+      // TEMPORARY: skip session check for testing
+let user = await storage.getUserByAddress("0x1234abcd..."); // <-- replace with a real address from your DB
 
-      let user = null;
-      if (sess.session.userId) {
-        user = await storage.getUser(sess.session.userId);
-      } else {
-        user = await storage.getUserByAddress(sess.session.address);
-      }
-      if (!user) return res.status(404).json({ error: "user not found" });
+if (!user) return res.status(404).json({ error: "user not found" });
 
-      const { displayName, avatar, socialProfiles } = req.body || {};
-      
-      const currentProfile = await storage.getUserProfile(user.id);
-      
-      await storage.updateUserProfile(user.id, {
-        displayName: displayName || user.username,
-        avatar: avatar || currentProfile?.avatar || null,
-        socialProfiles: socialProfiles || {}
-      });
+const { displayName, avatar, socialProfiles } = req.body || {};
 
-      const updatedUser = await storage.getUser(user.id);
-      return res.json({ success: true, user: updatedUser });
+const currentProfile = await storage.getUserProfile(user.id);
+
+await storage.updateUserProfile(user.id, {
+  displayName: displayName || user.username,
+  avatar: avatar || currentProfile?.avatar || null,
+  socialProfiles: socialProfiles || {},
+});
+
+const updatedUser = await storage.getUser(user.id);
+return res.json({ success: true, user: updatedUser });
     } catch (e) {
       console.error("/api/users/profile PUT error", e);
       return res.status(500).json({ error: "failed to update profile" });

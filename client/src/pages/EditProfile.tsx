@@ -62,37 +62,44 @@ export default function EditProfile() {
     }
   }, [user]);
 
-  const handleSave = () => {
-    (async () => {
-      try {
-        let avatarUrl = user?.avatar || '';
-        
-        // If an avatar was selected, upload it
-        if ((profileData as any).avatarFile) {
-          const file: File = (profileData as any).avatarFile;
-          avatarUrl = await uploadFile(file, `avatars/${user?.id ?? 'guest'}`);
-        }
+  const handleSave = async () => {
+  try {
+    let avatarUrl = user?.avatar || '';
 
-        // Save profile to backend
-        const updatePayload = {
-          displayName: profileData.displayName,
-          avatar: avatarUrl,
-          socialProfiles: profileData.socialProfiles
-        };
+    // Upload new avatar if selected
+    if ((profileData as any).avatarFile) {
+      const file: File = (profileData as any).avatarFile;
+      avatarUrl = await uploadFile(file, `avatars/${user?.id ?? 'guest'}`);
+    }
 
-        const res = await apiRequest('PUT', '/api/users/profile', updatePayload);
+    const updatePayload = {
+      displayName: profileData.displayName,
+      avatar: avatarUrl,
+      socialProfiles: profileData.socialProfiles,
+    };
 
-        // Refresh the user session to update profile data
-        emitSessionChange();
+    // Send update to backend
+    await apiRequest('PUT', '/api/users/profile', updatePayload);
 
-        toast({ title: "Profile updated", description: "Your profile has been successfully updated." });
-        setLocation("/profile");
-      } catch (e) {
-        console.error('Profile update error:', e);
-        toast({ title: "Update failed", description: String(e), variant: "destructive" });
-      }
-    })();
-  };
+    // Optimistically update local user context immediately
+    updateUserContext({
+  ...user,
+  displayName: profileData.displayName,
+  avatar: avatarUrl,
+  socialProfiles: profileData.socialProfiles,
+});
+
+    // Emit session change to backend if needed
+    await emitSessionChange();
+
+    // Show toast and navigate
+    toast({ title: "Profile updated", description: "Your profile has been successfully updated." });
+    setLocation("/profile");
+  } catch (e) {
+    console.error('Profile update error:', e);
+    toast({ title: "Update failed", description: String(e), variant: "destructive" });
+  }
+};
 
   const handleFileSelect = (file: File | null) => {
     if (!file) return;

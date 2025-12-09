@@ -1,156 +1,139 @@
 import { useState } from "react";
-import { useLocation, useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from "lucide-react";
+import { CheckCircle2, Play } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
-interface Campaign {
-  id: string;
-  name: string;
-  description: string;
-  project_name?: string;
-  project_image?: string;
-  starts_at?: string;
-  ends_at?: string;
-  metadata?: string;
-  rewards?: { amount: number; currency: string };
-}
+type Task = {
+  text: string;
+  reward: number;
+  link: string;
+  status: "notStarted" | "inProgress" | "completed";
+};
 
-const tasks = [
-  { text: "Follow Nexura on X", link: "https://x.com/NexuraXYZ" },
-  { text: "Join Nexura Discord Server and verify yourself", link: "https://discord.gg/caK9kATBya" },
-  { text: "Drop a message on Nexura Discord Server (any channel)", link: "https://discord.gg/caK9kATBya" },
-  { text: "Support or Oppose the #Intuitionbilly Claim on Intuition Portal", link: "https://portal.intuition.systems/explore/triple/0x713f27d70772462e67805c6f76352384e01399681398f757725b9cbc7f495dcf?tab=positions" },
-  { text: "Support or Oppose the Nexura claim on the Intuition Portal", link: "#" },
-  { text: "Like and comment on Nexura's pinned post", link: "#" },
+const campaignTasksInitial: Task[] = [
+  { text: "Follow Nexura on X", reward: 100, link: "https://x.com/NexuraXYZ", status: "notStarted" },
+  { text: "Join Nexura Discord", reward: 100, link: "https://discord.gg/caK9kATBya", status: "notStarted" },
+  { text: "Drop a message on Discord", reward: 100, link: "https://discord.gg/caK9kATBya", status: "notStarted" },
+  { text: "Support or Oppose the #Intuitionbilly Claim on Intuition Portal", reward: 100, link: "#", status: "notStarted" },
+  { text: "Support or oppose the Nexura claim on Intuition Portal", reward: 100, link: "#", status: "notStarted" },
+  { text: "Like and Comment on Nexura Pinned post", reward: 100, link: "#", status: "notStarted" },
 ];
 
 export default function CampaignEnvironment() {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const [, setLocation] = useLocation();
-  const { campaignId } = useParams<{ campaignId: string }>();
-  const [taskIndex, setTaskIndex] = useState(0);
-  const [rewardClaimed, setRewardClaimed] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>(campaignTasksInitial);
 
-  const { data: campaign, isLoading, isError } = useQuery<Campaign>({
-    queryKey: ["/api/campaigns", campaignId],
-    queryFn: async () => {
-      if (!campaignId) throw new Error("No campaign ID provided");
-      const res = await fetch(`${backendUrl}/api/campaigns/${campaignId}`);
-      if (!res.ok) throw new Error("Failed to fetch campaign");
-      return res.json();
-    },
-    enabled: !!campaignId,
-  });
+  const handleTaskClick = (index: number) => {
+    setTasks(prev => {
+      const task = prev[index];
+      let newStatus: Task["status"] = task.status;
 
-  if (!campaignId)
-    return (
-      <div className="text-white text-center py-12">
-        <Button onClick={() => setLocation("/campaigns")} variant="outline" size="sm">
-          ← Back
-        </Button>
-        <p>Invalid campaign. No ID provided.</p>
-      </div>
-    );
+      if (task.status === "notStarted") {
+        window.open(task.link, "_blank");
+        newStatus = "inProgress";
+      } else if (task.status === "inProgress") {
+        newStatus = "completed";
+      }
 
-  if (isLoading) return <div className="text-white text-center py-12">Loading campaign...</div>;
-  if (isError || !campaign) return <div className="text-white text-center py-12">Campaign not found.</div>;
+      return prev.map((t, i) => i === index ? { ...t, status: newStatus } : t);
+    });
+  };
 
-  const now = new Date();
-  const isActive =
-    campaign.starts_at && campaign.ends_at
-      ? new Date(campaign.starts_at) <= now && now <= new Date(campaign.ends_at)
-      : false;
-
-  const progressPercentage = ((taskIndex + 1) / tasks.length) * 100;
-  const currentTask = tasks[taskIndex];
+  const completedTasks = tasks.filter(t => t.status === "completed").length;
+  const progressPercentage = Math.round((completedTasks / tasks.length) * 100);
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-auto p-4 relative">
+    <div className="min-h-screen bg-[#0a0615] text-white relative p-6">
       <AnimatedBackground />
-      <div className="max-w-xl mx-auto space-y-6 relative z-10">
-        {/* Header */}
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" onClick={() => setLocation("/campaigns")}>
-            ← Back
-          </Button>
-          <h1 className="text-2xl font-bold">{campaign.name}</h1>
-        </div>
 
-        {/* Progress Bar */}
-        <div className="w-full bg-white/20 rounded-full h-2">
-          <div
-            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
+      <div className="max-w-5xl mx-auto relative z-10 space-y-10">
 
-        {/* Campaign Card */}
-        <Card className="rounded-xl overflow-hidden shadow-lg">
-          {campaign.project_image && (
-            <div className="relative h-36 bg-black">
-              <img
-                src={campaign.project_image}
-                alt={campaign.name}
-                className="w-full h-full object-cover rounded-t-xl"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute top-2 right-2">
-                <Badge className={isActive ? "bg-green-500/20 text-green-400" : "bg-blue-500/20 text-blue-400"}>
-                  {isActive ? "Active" : "Coming Soon"}
-                </Badge>
+        {/* Banner with Progress */}
+        <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="uppercase text-xs opacity-60">Get Started</p>
+              <p className="text-xl font-semibold">Join the Guild</p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <p className="text-sm opacity-70 uppercase">Total XP</p>
+              <div className="bg-purple-600/30 border border-purple-500/40 px-4 py-2 rounded-full flex items-center gap-2">
+                <span className="font-bold">
+                  {tasks.reduce((a, t) => a + (t.status === "completed" ? t.reward : 0), 0)} XP
+                </span>
               </div>
             </div>
-          )}
+          </div>
 
-          <CardContent className="p-3 space-y-3">
-            <p className="text-sm text-gray-300">{campaign.description}</p>
-            {campaign.project_name && <p className="text-xs text-gray-400">Project: {campaign.project_name}</p>}
+          {/* Progress Bar */}
+          <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden mt-3">
+            <div
+              className="h-3 bg-purple-600 transition-all duration-500"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+          <p className="text-sm opacity-60 mt-1">{progressPercentage}% completed</p>
+        </div>
 
-            {/* Task Slide */}
-            <div className="mt-4 space-y-3">
-              <p className="font-medium text-white">
-                Task {taskIndex + 1} of {tasks.length}:
-              </p>
-              <p className="text-sm text-gray-200">{currentTask.text}</p>
-              {currentTask.link && (
-                <a
-                  href={currentTask.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block w-full text-center px-3 py-2 bg-[#1f6feb] hover:bg-[#388bfd] rounded-lg font-medium"
-                >
-                  <ExternalLink className="w-4 h-4 inline mr-2" /> Open Task
-                </a>
-              )}
+        {/* Main Quest Card */}
+        <Card className="rounded-2xl bg-white/5 border-white/10 overflow-hidden shadow-xl">
+          <div className="grid grid-cols-2">
+            <div className="h-full">
+              <img src="/campaign.png" alt="Quest" className="w-full h-full object-cover" />
+            </div>
 
-              {taskIndex < tasks.length - 1 ? (
-                <Button className="w-full mt-2" onClick={() => setTaskIndex(taskIndex + 1)}>
-                  Continue
-                </Button>
-              ) : (
-                <div className="text-center mt-2 space-y-2">
-                  {!rewardClaimed ? (
-                    <Button
-                      className="w-full bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg"
-                      onClick={() => setRewardClaimed(true)}
-                    >
-                      Claim Reward: 200 XP + 16 TRUST
-                    </Button>
-                  ) : (
-                    <p className="text-green-400 font-semibold">Reward claimed! 🎉</p>
-                  )}
-                  <p className="text-xs text-yellow-400">
-                    Total Campaign Reward Pool: 4,000 TRUST (FCFS for 250 users)
+            <div className="p-6 flex flex-col justify-between">
+              <div>
+                <p className="text-xs opacity-50 uppercase mb-1">Nexura</p>
+                <p className="text-xl font-bold leading-tight">Quest 001:<br />Join the Guild</p>
+                <div className="mt-4">
+                  <p className="uppercase text-xs opacity-50">Start Task</p>
+                  <p className="text-sm opacity-80 leading-relaxed mt-1">
+                    Complete simple tasks in the Nexura ecosystem and earn rewards.
                   </p>
                 </div>
-              )}
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs opacity-50 uppercase">Rewards</p>
+                  <p className="text-sm">500 XP</p>
+                </div>
+              </div>
             </div>
-          </CardContent>
+          </div>
         </Card>
+
+        {/* Tasks List */}
+        <div className="space-y-6">
+          {tasks.map((task, index) => {
+            let buttonText = "Start Task";
+            if (task.status === "inProgress") buttonText = `Claim Reward: ${task.reward} XP`;
+            if (task.status === "completed") buttonText = "Completed";
+
+            return (
+              <div
+                key={index}
+                className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/10 text-white">
+                    {task.status === "completed" ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Play className="w-4 h-4" />}
+                  </div>
+                  <span className="font-medium">{task.text}</span>
+                </div>
+
+                <button
+                  onClick={() => handleTaskClick(index)}
+                  className={`px-5 py-2 rounded-full text-sm font-semibold ${
+                    task.status === "completed" ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+                  }`}
+                >
+                  {buttonText}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
       </div>
     </div>
   );

@@ -24,12 +24,12 @@ import developerAdoptionImg from "@assets/generated_images/Developer_Adoption_Ca
 // Using Intuition branding for all project logos
 
 // Import user avatar images for trending claims
-import avatar1 from "@assets/stock_images/professional_headsho_07f6e854.jpg";
-import avatar2 from "@assets/stock_images/professional_headsho_fbbd0164.jpg";
-import avatar3 from "@assets/stock_images/professional_headsho_9cd76fc2.jpg";
-import avatar4 from "@assets/stock_images/professional_headsho_daa79957.jpg";
-import avatar5 from "@assets/stock_images/professional_headsho_e503cf0f.jpg";
-import avatar6 from "@assets/stock_images/professional_headsho_c3077801.jpg";
+import avatar1 from "/claim1.jpg";
+import avatar2 from "/claim2.jpg";
+import avatar3 from "/claim3.jpg";
+import avatar4 from "/claim4.jpg";
+import avatar5 from "/claim5.jpg";
+import avatar6 from "/claim6.jpg";
 
 // Import protocol logos for trending dapps
 import intuitionPortalLogo from "@assets/image_1758731619825.png";
@@ -118,59 +118,65 @@ export default function Discover() {
   ];
 
   const trendingClaims = [
+{
+  titleLeft: "The Ticker",
+  titleMiddle: "is",
+  titleRight: "Trust",
+  avatar: avatar1,
+  attestations: 5263,
+  category: "Tech Innovation",
+  // categoryColor: "bg-blue-500",
+  link: "https://portal.intuition.systems/explore/triple/0xa1739235f5a8362b15268eab46484abdd7660a1e2a6a5d7deacbed9d4c055e68"
+},
     {
-      author: "CryptoExplorer",
-      avatar: avatar1,
-      content: "Intuition's reputation system will revolutionize how we build trust in Web3. The attestation mechanism creates verifiable credentials that span across multiple protocols.",
-      timeAgo: "2 hours ago",
-      attestations: 47,
-      category: "Tech Innovation",
-      categoryColor: "bg-blue-500"
-    },
-    {
-      author: "DeFiAnalyst", 
+  titleLeft: "Calebnftgod.eth",
+  titleMiddle: "has tag",
+  titleRight: "Top Community Member",
       avatar: avatar2,
-      content: "The integration between Intuition and major DeFi protocols is creating new opportunities for reputation-based lending and yield farming strategies.",
-      timeAgo: "4 hours ago",
       attestations: 32,
       category: "DeFi Analysis",
-      categoryColor: "bg-green-500"
+      // categoryColor: "bg-green-500",
+      link: "https://portal.intuition.systems/explore/triple/0x5fb9bfc2c7ea6bbde71fd74887f798040e99255ee42f22f4e51a67ff1a101b68"
     },
     {
-      author: "Web3Builder",
+  titleLeft: "Sofia",
+  titleMiddle: "has tag",
+  titleRight: "Built On Intuition",
       avatar: avatar3,
-      content: "Building on Intuition's infrastructure has been game-changing for our dApp. The trust score integration reduced user onboarding friction by 60%.",
-      timeAgo: "6 hours ago",
       attestations: 28,
       category: "Developer Experience",
-      categoryColor: "bg-purple-500"
+      // categoryColor: "bg-purple-500",
+      link: "https://portal.intuition.systems/explore/triple/0x98ba47f4d18ceb7550c6c593ef92835864f0c0e09d6e56108feac8a8a6012038"
     },
     {
-      author: "BlockchainResearcher",
+  titleLeft: "RChris",
+  titleMiddle: "has tag",
+  titleRight: "Top Community Member",
       avatar: avatar4,
-      content: "Intuition's approach to decentralized identity verification addresses critical gaps in current Web3 infrastructure. This could be the missing piece for mainstream adoption.",
-      timeAgo: "8 hours ago",
       attestations: 56,
       category: "Research Insights",
-      categoryColor: "bg-orange-500"
+      // categoryColor: "bg-orange-500",
+      link: "https://portal.intuition.systems/explore/triple/0xdf0b1e0da63786c46594815586673a3cba8d9ab967ac3e433652d5c3865e3f03"
     },
     {
-      author: "CommunityLead",
+  titleLeft: "Intuitionbilly.eth",
+  titleMiddle: "has tag",
+  titleRight: "Good Person Verification",
       avatar: avatar5,
-  content: "The Nexura platform integration with Intuition creates a seamless experience for both quest completion and reputation building. Great UX design!",
-      timeAgo: "10 hours ago",
       attestations: 19,
       category: "User Experience",
-      categoryColor: "bg-pink-500"
+      // categoryColor: "bg-pink-500",
+      link: "https://portal.intuition.systems/explore/triple/0x713f27d70772462e67805c6f76352384e01399681398f757725b9cbc7f495dcf?tab=positions"
     },
     {
-      author: "TrustExpert",
+  titleLeft: "EXPERIENCE001",
+  titleMiddle: "has tag",
+  titleRight: "Top Intuition Community Member",
       avatar: avatar6,
-      content: "Seeing real-world applications of Intuition's trust protocols in various ecosystems. The network effects are starting to compound beautifully.",
-      timeAgo: "12 hours ago",
       attestations: 41,
       category: "Network Effects",
-      categoryColor: "bg-cyan-500"
+      // categoryColor: "bg-cyan-500",
+      link: "https://portal.intuition.systems/explore/triple/0x1d6169e8585c998253b868092d2f04889500a0d5dabd8536600dcbfbb0f45b40?tab=positions"
     }
   ];
 
@@ -274,78 +280,93 @@ export default function Discover() {
               </div>
             </section>
 
-            {/* Trending Claims in Intuition Portal */}
+            {/* Trending Claims */}
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl md:text-4xl font-bold tracking-tight text-white">Trending Claims in Intuition Portal</h2>
+                <h2 className="text-2xl md:text-4xl font-bold tracking-tight text-white">Trending Claims on Intuition Portal</h2>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  data-testid="button-show-all-trending-claims"
+                  onClick={() => setLocation('/ecosystem-dapps')}
+                  data-testid="button-show-all-trending-dapps"
                 >
                   Show all
                 </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {trendingClaims.map((claim, index) => (
-                  <div 
-                    key={`claim-${index}`} 
-                    className="glass glass-hover rounded-3xl p-6 cursor-pointer transition-all duration-300 relative overflow-hidden"
-                    data-testid={`trending-claim-${index}`}
-                  >
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                    
-                    {/* Content */}
-                    <div className="relative z-10">
-                      {/* Category Badge */}
-                      <div className="flex justify-between items-start mb-4">
-                        <div className={`${claim.categoryColor} text-white text-xs font-medium px-3 py-1 rounded-full`}>
-                          {claim.category}
-                        </div>
-                      </div>
-                      
-                      {/* User Avatar Area */}
-                      <div className="flex justify-center mb-4">
-                        <div className="relative">
-                          {/* Hexagonal border */}
-                          <div className="w-20 h-20 bg-gray-700 border-2 border-gray-600 transform rotate-45 rounded-lg flex items-center justify-center overflow-hidden">
-                            <div className="w-14 h-14 transform -rotate-45 rounded-lg overflow-hidden">
-                              <img 
-                                src={claim.avatar} 
-                                alt={`${claim.author} avatar`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Author and Time */}
-                      <div className="text-center mb-3">
-                        <div className="text-sm font-semibold text-white mb-1">{claim.author}</div>
-                        <div className="text-xs text-gray-400">{claim.timeAgo}</div>
-                      </div>
-                      
-                      {/* Claim Content */}
-                      <div className="mb-4">
-                        <p className="text-sm text-white/70 leading-relaxed line-clamp-4">{claim.content}</p>
-                      </div>
-                      
-                      {/* Engagement Metrics */}
-                      <div className="flex justify-between items-center text-xs text-gray-400">
-                        <span>{claim.attestations} attestations</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {trendingClaims.map((claim, index) => (
+    <a
+      key={`claim-${index}`}
+      href={claim.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group glass glass-hover rounded-3xl p-6 transition-all duration-300 relative overflow-hidden block"
+      data-testid={`trending-claim-${index}`}
+    >
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+      {/* Content */}
+      <div className="relative z-10">
+
+        {/* Avatar */}
+        <div className="flex justify-center mb-12">
+          <div className="relative">
+            <div className="w-20 h-20 bg-gray-700 border-2 border-gray-600 transform rotate-45 rounded-lg flex items-center justify-center overflow-hidden">
+              <div className="w-14 h-14 transform -rotate-45 rounded-lg overflow-hidden">
+                <img 
+                  src={claim.avatar} 
+                  alt={`${claim.author} avatar`}
+                  className="w-full h-full object-cover"
+                />
               </div>
-            </section>
+            </div>
+          </div>
+        </div>
 
+{/* Header pills inside card */}
+{index >= 0 ? (
+  <div className=" flex items-center gap-3">
+
+    {/* "The Ticker" pill */}
+    <span className="px-4 py-1.5 rounded-[20px] bg-[#0f1a22] text-white text-sm font-medium">
+      {claim.titleLeft}
+    </span>
+
+    {/* "is" */}
+    <span className="text-white/60 text-sm">is</span>
+
+    {/* "Trust" pill */}
+    <span className="px-4 py-1.5 rounded-[20px] bg-[#192732] text-white text-sm font-semibold">
+      {claim.titleRight}
+    </span>
+
+  </div>
+) : (
+  // default behavior for other cards
+  <div className="flex items-center gap-2 mb-3">
+    <div className="text-sm font-semibold text-white">{claim.author}</div>
+    <div className="text-xs text-gray-400">{claim.timeAgo}</div>
+  </div>
+)}
+
+
+        {/* Content */}
+        <p className="text-sm text-white/70 leading-relaxed line-clamp-4 mb-4">
+          {claim.content}
+        </p>
+
+        {/* Metrics */}
+        <div className="flex justify-between items-center text-xs text-gray-400">
+          <span>{claim.attestations} attestations</span>
+        </div>
+
+      </div>
+    </a>
+  ))}
+</div>
+</section>
           </TabsContent>
-
-
-
         </Tabs>
       </div>
     </div>
