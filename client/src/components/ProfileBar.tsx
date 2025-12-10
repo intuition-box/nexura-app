@@ -74,13 +74,13 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
         method: 'wallet_addEthereumChain',
         params: [{
           chainId: '0x350b',
-          chainName: 'Intuition Testnet',
+          chainName: 'Intuition Mainnet',
           nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
           rpcUrls: ['https://testnet.rpc.intuition.systems'],
           blockExplorerUrls: ['https://testnet.explorer.intuition.systems']
         }]
       });
-      toast({ title: "Network added!", description: "Intuition Testnet has been added to your wallet" });
+      toast({ title: "Network added!", description: "Intuition Mainnet has been added to your wallet" });
     } catch (error: any) {
       console.error('Failed to add network:', error);
       if (error.code === 4001) {
@@ -95,10 +95,10 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
     <button
       onClick={handleAddNetwork}
       className="flex items-center gap-2 glass glass-hover px-4 py-2 rounded-full transition-all cursor-pointer"
-      title="Add Intuition Testnet to wallet"
+      title="Add Intuition Mainnet to wallet"
     >
-      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-      <span className="text-sm font-medium text-white">Intuition Testnet</span>
+        <img src="/claim1.jpg" alt="" className="w-8 h-auto rounded-full" />
+      <span className="text-sm font-medium text-white">Intuition Mainnet</span>
     </button>
   );
 
@@ -106,7 +106,7 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
     <Link href="/profile">
       <div className="flex items-center gap-2 cursor-pointer glass glass-hover p-2 px-4 rounded-full transition-all">
         <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-          <span className="text-white text-sm font-bold">{levelNumber}</span>
+          <span className="text-white text-sm font-bold"></span>
         </div>
         <div className="flex flex-col">
           <span className="text-xs text-white/50 font-medium">Level</span>

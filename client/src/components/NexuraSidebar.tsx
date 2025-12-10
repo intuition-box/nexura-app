@@ -57,8 +57,16 @@ const mainNavItems = [
     icon: Target,
     href: "/ecosystem-dapps",
     activeClass: "nav-ecosystem-dapps-active"
-  }
-  ,
+  },
+
+  // ✅ NEW MENU ITEM: PORTAL CLAIMS
+  {
+    title: "Portal Claims",
+    icon: BookOpen,
+    href: "/portal-claims",
+    activeClass: "nav-portal-claims-active"
+  },
+
   {
     title: "Leaderboard",
     icon: Trophy,
@@ -67,13 +75,11 @@ const mainNavItems = [
   }
 ];
 
-
 export default function NexuraSidebar() {
   const [location] = useLocation();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    // trigger entrance animation on mount
     const t = setTimeout(() => setMounted(true), 30);
     return () => clearTimeout(t);
   }, []);
@@ -81,22 +87,27 @@ export default function NexuraSidebar() {
   return (
     <Sidebar className="border-r border-border/40">
       <SidebarContent className="bg-background">
-{/* Logo */}
-{/* Logo */}
-<div className="p-6 border-b border-border/40">
-  <div className="flex items-center">
-    <img src="/nexura-logo.png" alt="Nexura" className="w-40 h-auto" />
-  </div>
-</div>
 
-
+        {/* Logo */}
+        <div className="p-6 border-b border-border/40">
+          <div className="flex items-center">
+            <img src="/nexura-logo.png" alt="Nexura" className="w-40 h-auto" />
+          </div>
+        </div>
 
         {/* Main Navigation */}
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className={`transform transition-all duration-500 ${mounted ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'}`}>
+            <SidebarMenu 
+              className={`transform transition-all duration-500 ${
+                mounted ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
+              }`}
+            >
               {mainNavItems.map((item) => {
-                const isActive = location === item.href || (item.href === "/" && (location === "/" || location === "/discover"));
+                const isActive =
+                  location === item.href ||
+                  (item.href === "/" && (location === "/" || location === "/discover"));
+
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
@@ -113,7 +124,9 @@ export default function NexuraSidebar() {
                         <div className="flex flex-col items-start">
                           <span className="text-base font-medium">{item.title}</span>
                           {item.subtitle && (
-                            <span className="text-xs text-muted-foreground">{item.subtitle}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {item.subtitle}
+                            </span>
                           )}
                         </div>
                       </Link>
@@ -124,8 +137,6 @@ export default function NexuraSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-
       </SidebarContent>
     </Sidebar>
   );

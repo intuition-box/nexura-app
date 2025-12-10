@@ -24,7 +24,9 @@ import ProjectCreate from "@/pages/ProjectCreate";
 import ProjectDashboard from "@/pages/project/ProjectDashboard";
 import StudioIndex from "@/pages/studio/StudioIndex";
 import ProjectRegistration from "@/pages/studio/ProjectRegistration";
-import NexuraSidebar from "@/components/QuestflowSidebar";
+import NexuraSidebar from "@/components/NexuraSidebar";
+import PortalClaims from "@/pages/PortalClaims"; // <-- added
+
 import { useLocation } from "wouter";
 import ProfileBar from "@/components/ProfileBar";
 import { WalletProvider } from "@/lib/wallet";
@@ -38,82 +40,86 @@ function Router() {
     <Switch>
       <Route path="/" component={Discover} />
       <Route path="/discover" component={Discover} />
-    <Route path="/levels" component={Levels} />
-  {/* NEXURA pages */}
+      <Route path="/portal-claims" component={PortalClaims} /> {/* <-- new route */}
+      <Route path="/levels" component={Levels} />
+
+      {/* NEXURA pages */}
       <Route path="/learn" component={Learn} />
       <Route path="/quests" component={Quests} />
       <Route path="/campaigns" component={Campaigns} />
       <Route path="/ecosystem-dapps" component={EcosystemDapps} />
       <Route path="/referrals" component={Referrals} />
+
       <Route path="/quest/:questId" component={QuestEnvironment} />
       <Route path="/campaign/:campaignId" component={CampaignEnvironment} />
       <Route path="/campaigns/tasks" component={CampaignEnvironment} />
       <Route path="/quests/tasks-card" component={QuestEnvironment} />
+
       {/* Profile pages */}
       <Route path="/profile" component={Profile} />
       <Route path="/profile/edit" component={EditProfile} />
       <Route path="/achievements" component={Achievements} />
-  <Route path="/leaderboard" component={Leaderboard} />
-    {/* Developer pages */}
-  <Route path="/projects" component={Projects} />
-  <Route path="/projects/create" component={ProjectCreate} />
-  <Route path="/studio" component={StudioIndex} />
-  <Route path="/studio/register" component={ProjectRegistration} />
-  <Route path="/project/:projectId/*" component={ProjectDashboard} />
-  <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
-      {/* Fallback to 404 */}
+      <Route path="/leaderboard" component={Leaderboard} />
+
+      {/* Developer pages */}
+      <Route path="/projects" component={Projects} />
+      <Route path="/projects/create" component={ProjectCreate} />
+      <Route path="/studio" component={StudioIndex} />
+      <Route path="/studio/register" component={ProjectRegistration} />
+      <Route path="/project/:projectId/*" component={ProjectDashboard} />
+      <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
+
+      {/* 404 */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
-  // NEXURA-style sidebar configuration
   const sidebarStyle = {
     "--sidebar-width": "18rem",
     "--sidebar-width-icon": "4rem",
   };
 
+  const [location] = useLocation();
+  const isStudio = location?.startsWith?.("/studio");
+  const isProject = location?.startsWith?.("/project/");
+
   return (
     <QueryClientProvider client={queryClient}>
       <WalletProvider>
         <AuthProvider>
-        <TooltipProvider>
-          <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-            {(() => {
-              const [location] = useLocation();
-              const isStudio = location?.startsWith?.("/studio");
-              const isProject = location?.startsWith?.("/project/");
-              return (
-                <div className="flex h-screen w-full bg-black text-white selection:bg-blue-500/30">
-                  {!isStudio && !isProject && <NexuraSidebar />}
-                  <div className={`flex flex-col flex-1 ${isStudio ? '' : ''}`}>
-                    {/* Top Header with Profile Bar (hide on Studio and Project dashboard pages) */}
-                    {!isStudio && !isProject && (
-                      <header className="flex items-center justify-between p-4 app-header">
-                        <SidebarTrigger data-testid="button-sidebar-toggle" />
-                        <ProfileBar />
-                      </header>
-                    )}
-                    {/* Main Content with Better Scrolling */}
-                    <main className="flex-1 overflow-y-auto main-shell">
-                      <div className="container max-w-7xl mx-auto">
-                        <div className="card-glass p-6">
-                          <ErrorBoundary>
-                            <Router />
-                          </ErrorBoundary>
-                        </div>
+          <TooltipProvider>
+            <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+              <div className="flex h-screen w-full bg-black text-white selection:bg-blue-500/30">
+
+                {!isStudio && !isProject && <NexuraSidebar />}
+
+                <div className="flex flex-col flex-1">
+                  {!isStudio && !isProject && (
+                    <header className="flex items-center justify-between p-4 app-header">
+                      <SidebarTrigger data-testid="button-sidebar-toggle" />
+                      <ProfileBar />
+                    </header>
+                  )}
+
+                  <main className="flex-1 overflow-y-auto main-shell">
+                    <div className="container max-w-7xl mx-auto">
+                      <div className="card-glass p-6">
+                        <ErrorBoundary>
+                          <Router />
+                        </ErrorBoundary>
                       </div>
-                    </main>
-                  </div>
-                  {!isStudio && !isProject && <OrgSignInButton />}
-                  {isProject && <ProjectLogoutButton />}
+                    </div>
+                  </main>
                 </div>
-              );
-            })()}
-          </SidebarProvider>
-          <Toaster />
-        </TooltipProvider>
+
+                {!isStudio && !isProject && <OrgSignInButton />}
+                {isProject && <ProjectLogoutButton />}
+              </div>
+            </SidebarProvider>
+            <Toaster />
+          </TooltipProvider>
         </AuthProvider>
       </WalletProvider>
     </QueryClientProvider>
