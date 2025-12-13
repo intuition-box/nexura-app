@@ -6,21 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 import { TIER_UNLOCK_MIN_LEVEL, TIER_COLORS } from "@shared/schema";
 import AnimatedBackground from "@/components/AnimatedBackground";
-
-// Use Vite env var if provided, otherwise fall back to the deployed backend URL.
-// `import.meta.env` may not be typed in this project, so access defensively.
-// Prefer configured Vite env var; fallback to localhost for dev instead of the deployed Render URL
-// Prefer a runtime-injected backend URL (window.__BACKEND_URL__), then build-time Vite env var,
-// otherwise fall back to localhost for developer convenience.
-const RUNTIME_BACKEND = (typeof window !== 'undefined' && (window as any).__BACKEND_URL__) || undefined;
-const BACKEND_BASE = RUNTIME_BACKEND || ((import.meta as any).env?.VITE_BACKEND_URL as string) || "";
-
-function buildUrl(path: string) {
-  if (/^https?:\/\//i.test(path)) return path;
-  const base = (BACKEND_BASE || "").replace(/\/+$/g, "");
-  const p = path.replace(/^\/+/, "");
-  return `${base}/${p}`;
-}
+import { buildUrl } from "@/lib/queryClient";
 
 const TIER_LEVEL_RANGES = {
   enchanter: { min: 0, max: 5 },

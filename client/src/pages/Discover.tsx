@@ -91,18 +91,18 @@ export default function Discover() {
   // Fetch campaigns and quests from the backend. If none are available,
   // do not render hardcoded demo content.
   const { data: campaignsData } = useQuery({
-    queryKey: ["/campaigns"],
+    queryKey: ["/api/campaigns"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/campaigns");
+      const res = await apiRequest("GET", "/api/campaigns");
       return res.json();
     },
     retry: false,
   });
 
   const { data: questsData } = useQuery({
-    queryKey: ["/quests"],
+    queryKey: ["/api/quests"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/quests");
+      const res = await apiRequest("GET", "/api/quests");
       return res.json();
     },
     retry: false,

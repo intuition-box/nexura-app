@@ -4,19 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import AnimatedBackground from "@/components/AnimatedBackground";
-
-// Prefer a runtime-injected backend URL (window.__BACKEND_URL__), then Vite env var.
-// Do not default to localhost here — if no backend is configured the app will
-// make relative requests to the current origin.
-const RUNTIME_BACKEND = (typeof window !== 'undefined' && (window as any).__BACKEND_URL__) || undefined;
-const BACKEND_BASE = RUNTIME_BACKEND || ((import.meta as any).env?.VITE_BACKEND_URL as string) || "";
-
-function buildUrl(path: string) {
-  if (/^https?:\/\//i.test(path)) return path;
-  const base = (BACKEND_BASE || "").replace(/\/+$/g, "");
-  const p = path.replace(/^\/+/, "");
-  return `${base}/${p}`;
-}
+import { buildUrl } from "@/lib/queryClient";
 
 type Entry = {
   id: string;

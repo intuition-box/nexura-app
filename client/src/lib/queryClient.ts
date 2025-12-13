@@ -1,16 +1,10 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Prefer a runtime-injected backend URL (window.__BACKEND_URL__), then build-time Vite env var.
-// Do not default to localhost in production — if no backend is configured the app
-// will make requests relative to the current origin.
-const RUNTIME_BACKEND = (typeof window !== 'undefined' && (window as any).__BACKEND_URL__) || undefined;
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-function buildUrl(path: string) {
-  if (/^https?:\/\//i.test(path)) return path;
+export const buildUrl = (path: string) =>  {
   const base = (BACKEND_URL || "").replace(/\/+$/g, "");
-  const p = path.replace(/^\/+/, "");
-  return `${base}/${p}`;
+  return `${base}${path}`;
 }
 
 
@@ -122,4 +116,3 @@ export const queryClient = new QueryClient({
   },
 });
 
-export { buildUrl };

@@ -15,19 +15,7 @@ import { emitSessionChange } from "@/lib/session";
 import { apiRequest } from "@/lib/queryClient";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AnimatedBackground from "@/components/AnimatedBackground";
-
-// Prefer a runtime-injected backend URL (window.__BACKEND_URL__), then build-time Vite env var.
-// Do not default to localhost — if no backend is configured the app will make requests
-// relative to the current origin.
-const RUNTIME_BACKEND = (typeof window !== 'undefined' && (window as any).__BACKEND_URL__) || undefined;
-const BACKEND_BASE = RUNTIME_BACKEND || ((import.meta as any).env?.VITE_BACKEND_URL as string) || "";
-
-function buildUrl(path: string) {
-  if (/^https?:\/\//i.test(path)) return path;
-  const base = (BACKEND_BASE || "").replace(/\/+$/g, "");
-  const p = path.replace(/^\/+/, "");
-  return `${base}/${p}`;
-}
+import { buildUrl } from "@/lib/queryClient";
 
 export default function EditProfile() {
   const [, setLocation] = useLocation();

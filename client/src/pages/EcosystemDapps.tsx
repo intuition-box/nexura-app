@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { emitSessionChange } from "@/lib/session";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { buildUrl } from "@/lib/queryClient";
 
 // Import protocol logos
 import intudexLogo from "@assets/image_1758731610569.png";
@@ -288,15 +289,6 @@ export default function EcosystemDapps() {
     try { localStorage.setItem('nexura:claimed:dapps', JSON.stringify(claimedDapps)); } catch {}
   }, [claimedDapps]);
 
-  // Build backend URL helper (same pattern used elsewhere)
-  const RUNTIME_BACKEND = (typeof window !== 'undefined' && (window as any).__BACKEND_URL__) || undefined;
-  const BACKEND_BASE = RUNTIME_BACKEND || ((import.meta as any).env?.VITE_BACKEND_URL as string) || "";
-  function buildUrl(path: string) {
-    if (/^https?:\/\//i.test(path)) return path;
-    const base = (BACKEND_BASE || "").replace(/\/+$/g, "");
-    const p = path.replace(/^\/+/, "");
-    return `${base}/${p}`;
-  }
 
   const markVisited = (id: string) => {
     if (!visitedDapps.includes(id)) setVisitedDapps(prev => [...prev, id]);
