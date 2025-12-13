@@ -7,9 +7,10 @@ import { Play, CheckCircle2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { BACKEND_URL, apiRequestV2, getStoredAccessToken } from "@/lib/queryClient";
 
 interface Quest {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   project_name?: string;
@@ -25,7 +26,7 @@ interface Quest {
 
 // Only the special tasks card is here
 const TASKS_CARD: Quest = {
-  id: "tasks-card",
+  _id: "tasks-card",
   title: "Start Tasks",
   description: "Complete unique tasks in the Nexura ecosystem and earn rewards",
   project_name: "Intuition Ecosystem",
@@ -38,24 +39,23 @@ const TASKS_CARD: Quest = {
 
 // One-time quests
 const ONE_TIME_QUESTS: Quest[] = [
-  { id: 'onetime-discord-join', title: 'Connect Discord', description: 'Link your Discord account', reward: '50 XP', kind: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Connect Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
-  { id: 'onetime-join-discord', title: 'Join Discord', description: 'Join our Discord server to chat with the community', reward: '50 XP', kind: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Join Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
+  { _id: 'onetime-discord-join', title: 'Connect Discord', description: 'Link your Discord account', reward: '50 XP', kind: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Connect Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
+  { _id: 'onetime-join-discord', title: 'Join Discord', description: 'Join our Discord server to chat with the community', reward: '50 XP', kind: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Join Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
 ];
 
 export default function Quests() {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [, setLocation] = useLocation();
   const [visitedTasks, setVisitedTasks] = useState<string[]>([]);
   const [claimedTasks, setClaimedTasks] = useState<string[]>([]);
 
   const { data: quests, isLoading } = useQuery<{
     oneTimeQuests: Quest[];
-    dailyQuests: Quest[];
+    weeklyQuests: Quest[];
     featuredQuests: Quest[];
   }>({
     queryKey: ["/api/quests"],
     queryFn: async () => {
-      const res = await fetch(`${backendUrl}/api/quests`);
+      const res = await fetch(`${BACKEND_URL}/api/quests`);
       if (!res.ok) throw new Error("Failed to fetch quests");
       return res.json();
     },
@@ -64,9 +64,9 @@ export default function Quests() {
   const now = new Date();
   const allQuests: Quest[] = [
     TASKS_CARD,
-    ...(quests?.oneTimeQuests?.filter(q => q.id !== "onetime-x-follow" && q.id !== "onetime-discord-join") ?? []),
-    ...(quests?.dailyQuests?.filter(q => q.id !== "daily-comment-post") ?? []),
-    ...(quests?.featuredQuests?.filter(q => q.id !== "feat-support-claim") ?? []),
+    ...(quests?.oneTimeQuests?.filter(q => q._id !== "onetime-x-follow" && q._id !== "onetime-discord-join") ?? []),
+    ...(quests?.weeklyQuests?.filter(q => q._id !== "weekly-comment-post") ?? []),
+    ...(quests?.featuredQuests?.filter(q => q._id !== "feat-support-claim") ?? []),
   ];
 
   const activeQuests = allQuests.filter((q) => {
@@ -76,14 +76,21 @@ export default function Quests() {
     return start <= now && now <= end;
   });
 
-  const claimAndAwardXp = (quest: Quest) => {
-    if (!claimedTasks.includes(quest.id)) {
-      setClaimedTasks([...claimedTasks, quest.id]);
+  const claimAndAwardXp = async (quest: Quest) => {
+    if (!getStoredAccessToken()) {
+      alert("You must be logged in to claim rewards.");
+      return;
     }
+
+    if (!claimedTasks.includes(quest._id)) {
+      setClaimedTasks([...claimedTasks, quest._id]);
+    }
+
+    await apiRequestV2("POST", `/api/quest/claim-quest?id=${quest._id}`);
   };
 
   const visitTask = (quest: Quest) => {
-    if (!visitedTasks.includes(quest.id)) setVisitedTasks([...visitedTasks, quest.id]);
+    if (!visitedTasks.includes(quest._id)) setVisitedTasks([...visitedTasks, quest._id]);
     if (quest.url) window.open(quest.url, "_blank");
   };
 
@@ -95,12 +102,12 @@ export default function Quests() {
       metadata = {};
     }
 
-    const isActive = activeQuests.some((q) => q.id === quest.id);
+    const isActive = activeQuests.some((q) => q._id === quest._id);
     const status = isActive ? "Active" : "Coming Soon";
 
     return (
       <Card
-        key={quest.id}
+        key={quest._id}
         className="bg-[#0d1117] border border-white/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition"
       >
         <div className="relative h-44 bg-black">
@@ -157,11 +164,11 @@ export default function Quests() {
             onClick={() =>
               isActive &&
               setLocation(
-                quest.id === "tasks-card" ? `/quests/${quest.id}` : `/quests/${quest.id}`
+                quest._id === "tasks-card" ? `/quests/${quest._id}` : `/quests/${quest._id}`
               )
             }
           >
-            {quest.id === "tasks-card" ? (
+            {quest._id === "tasks-card" ? (
               <>
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Start Tasks
@@ -208,54 +215,53 @@ export default function Quests() {
           )}
         </div>
 
-{/* ONE TIME QUESTS - Updated Design */}
-<div className="mt-10">
-  <h2 className="text-white text-lg font-semibold">One-Time Quests</h2>
-  <p className="text-neutral-400 text-sm mt-1">
-    Complete these essential quests to unlock the full NEXURA experience
-  </p>
+        {/* ONE TIME QUESTS - Updated Design */}
+        <div className="mt-10">
+          <h2 className="text-white text-lg font-semibold">One-Time Quests</h2>
+          <p className="text-neutral-400 text-sm mt-1">
+            Complete these essential quests to unlock the full NEXURA experience
+          </p>
 
-  <div className="mt-6 space-y-4">
-    {ONE_TIME_QUESTS.map((quest, index) => {
-      const visited = visitedTasks.includes(quest.id);
-      const claimed = claimedTasks.includes(quest.id);
+          <div className="mt-6 space-y-4">
+            {ONE_TIME_QUESTS.map((quest, index) => {
+              const visited = visitedTasks.includes(quest._id);
+              const claimed = claimedTasks.includes(quest._id);
 
-      let buttonText = quest.actionLabel || "Start Task";
-      if (visited && !claimed) buttonText = `Claim Reward: ${quest.reward}`;
-      if (claimed) buttonText = "Completed";
+              let buttonText = quest.actionLabel || "Start Task";
+              if (visited && !claimed) buttonText = `Claim Reward: ${quest.reward}`;
+              if (claimed) buttonText = "Completed";
 
-      return (
-        <div
-          key={quest.id}
-          className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/10 text-white">
-              {claimed ? (
-                <CheckCircle2 className="w-4 h-4 text-green-400" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-            </div>
-            <span className="font-medium">{quest.title}</span>
+              return (
+                <div
+                  key={quest._id}
+                  className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/10 text-white">
+                      {claimed ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
+                    </div>
+                    <span className="font-medium">{quest.title}</span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (!visited) visitTask(quest);
+                      else if (visited && !claimed) claimAndAwardXp(quest);
+                    }}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold ${claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+                      }`}
+                  >
+                    {buttonText}
+                  </button>
+                </div>
+              );
+            })}
           </div>
-
-          <button
-            onClick={() => {
-              if (!visited) visitTask(quest);
-              else if (visited && !claimed) claimAndAwardXp(quest);
-            }}
-            className={`px-4 py-2 rounded-full text-sm font-semibold ${
-              claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
-            }`}
-          >
-            {buttonText}
-          </button>
         </div>
-      );
-    })}
-  </div>
-</div>
 
       </div>
     </div>

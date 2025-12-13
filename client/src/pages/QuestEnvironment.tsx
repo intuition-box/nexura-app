@@ -2,55 +2,77 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { getStoredAccessToken, apiRequestV2 } from "../lib/queryClient";
 
-type Task = {
+type Quest = {
   text: string;
+  _id: string;
+  done: boolean;
   reward: string;
   link: string;
-  status: "notStarted" | "inProgress" | "completed";
 };
 
-const tasks200Initial: Task[] = [
-  { text: "Like and Comment on this Nexura tweet", reward: "100 XP", link: "#", status: "notStarted" },
-  { text: "Support or Oppose the #Tribe Claim on Intuition Portal", reward: "100 XP", link: "#", status: "notStarted" },
-  { text: "Support or Oppose the TNS Claim on Intuition Portal", reward: "100 XP", link: "#", status: "notStarted" },
-  { text: "Support or Oppose the Sofia on Intuition Portal", reward: "100 XP", link: "#", status: "notStarted" },
+const quests200Initial: Quest[] = [
+  { done: false, _id: "id-id", text: "Like and Comment on this Nexura tweet", reward: "100 XP", link: "#" },
+  { done: false, _id: "id-id", text: "Support or Oppose the #Tribe Claim on Intuition Portal", reward: "100 XP", link: "#" },
+  { done: false, _id: "id-id", text: "Support or Oppose the TNS Claim on Intuition Portal", reward: "100 XP", link: "#" },
+  { done: false, _id: "id-id", text: "Support or Oppose the Sofia on Intuition Portal", reward: "100 XP", link: "#" },
 ];
 
 export default function CampaignEnvironment() {
-  const [tasks200, setTasks200] = useState<Task[]>(tasks200Initial);
+  const [quests200, setQuests200] = useState<Quest[]>(quests200Initial);
   const [totalXP, setTotalXP] = useState(0);
+  const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
+  const [visitedQuests, setVisitedQuests] = useState<string[]>([]);
 
-  const handleTaskClick = (tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>, index: number) => {
-    const task = tasks[index];
+  const claimReward = async (questId: string) => {
+    // const quest = quests[index];
 
-    if (task.status === "notStarted") {
-      // Open task link
-      window.open(task.link, "_blank");
-      setTasks(prev => prev.map((t, i) => i === index ? { ...t, status: "inProgress" } : t));
-    } else if (task.status === "inProgress") {
-      // Claim reward
-      setTasks(prev => prev.map((t, i) => i === index ? { ...t, status: "completed" } : t));
-      setTotalXP(prev => prev + parseInt(task.reward));
+    // if (quest.status === "notStarted") {
+    //   // Open quest link
+    //   window.open(quest.link, "_blank");
+    //   setQuests(prev => prev.map((t, i) => i === index ? { ...t, status: "inProgress" } : t));
+    // } else if (quest.status === "inProgress") {
+    //   // Claim reward
+    //   setQuests(prev => prev.map((t, i) => i === index ? { ...t, status: "completed" } : t));
+    //   setTotalXP(prev => prev + parseInt(quest.reward));
+    // }
+
+    if (!getStoredAccessToken()) {
+      alert("You must be logged in to claim rewards.");
+      return;
     }
+
+    if (!claimedQuests.includes(questId)) {
+      setClaimedQuests([...claimedQuests, questId]);
+    }
+
+    await apiRequestV2("POST", `/api/quest/claim-quest?id=${questId}`);
   };
 
-  const renderTaskRow = (task: Task, tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>, index: number) => {
-    let buttonText = "Start Task";
-    if (task.status === "inProgress") buttonText = `Claim Reward: ${task.reward}`;
-    if (task.status === "completed") buttonText = "Completed";
+  const visitQuest = (quest: Quest) => {
+    if (!visitedQuests.includes(quest._id)) setVisitedQuests([...visitedQuests, quest._id]);
+    if (quest.link) window.open(quest.link, "_blank");
+  };
+
+  const renderQuestRow = (quest: Quest, index: number) => {
+    const visited = !visitedQuests.includes(quest._id);
+
+    let buttonText = "Start Quest";
+    if (visited) buttonText = `Claim Reward: ${quest.reward} XP`;
+    if (quest.done) buttonText = "Completed";
 
     return (
       <div
         key={index}
         className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition"
       >
-        <p className="font-medium">{task.text}</p>
+        <p className="font-medium">{quest.text}</p>
 
         <button
-          onClick={() => handleTaskClick(tasks, setTasks, index)}
+          onClick={() => !visited ? visitQuest(quest) : claimReward(quest._id)}
           className={`px-5 py-2 rounded-full text-sm font-semibold ${
-            task.status === "completed" ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+            quest.done ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
           }`}
         >
           {buttonText}
@@ -97,9 +119,9 @@ export default function CampaignEnvironment() {
                 <p className="text-xl font-bold leading-tight">Quest 001:<br />Join the Guild</p>
 
                 <div className="mt-4">
-                  <p className="uppercase text-xs opacity-50">Start Task</p>
+                  <p className="uppercase text-xs opacity-50">Start Quest</p>
                   <p className="text-sm opacity-80 leading-relaxed mt-1">
-                    Complete simple tasks in the Nexura ecosystem and earn rewards.
+                    Complete simple quests in the Nexura ecosystem and earn rewards.
                   </p>
                 </div>
                 <div className="mt-3 space-y-1">
@@ -109,7 +131,7 @@ export default function CampaignEnvironment() {
               </div>
 
               <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl py-3 mt-6">
-                Complete Tasks
+                Complete Quests
               </Button>
             </div>
           </div>
@@ -117,7 +139,7 @@ export default function CampaignEnvironment() {
 
         {/* 200 XP Section */}
         <h2 className="text-lg font-semibold opacity-90">Get 200 XP</h2>
-        {tasks200.map((task, i) => renderTaskRow(task, tasks200, setTasks200, i))}
+        {quests200.map((quest, i) => renderQuestRow(quest, i))}
       </div>
     </div>
   );

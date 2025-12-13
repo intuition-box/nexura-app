@@ -4,14 +4,15 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 // Do not default to localhost in production — if no backend is configured the app
 // will make requests relative to the current origin.
 const RUNTIME_BACKEND = (typeof window !== 'undefined' && (window as any).__BACKEND_URL__) || undefined;
-const BACKEND_BASE = "http://localhost:5051"; // Hardcoded backend URL for testing
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 function buildUrl(path: string) {
   if (/^https?:\/\//i.test(path)) return path;
-  const base = (BACKEND_BASE || "").replace(/\/+$/g, "");
+  const base = (BACKEND_URL || "").replace(/\/+$/g, "");
   const p = path.replace(/^\/+/, "");
   return `${base}/${p}`;
 }
+
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -20,7 +21,7 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-function getStoredAccessToken() {
+export function getStoredAccessToken() {
   try {
     return localStorage.getItem("accessToken");
   } catch (e) {
@@ -68,6 +69,24 @@ export async function apiRequest(
 
   await throwIfResNotOk(res);
   return res;
+}
+
+export async function apiRequestV2(
+  method: string,
+  endpoint: string,
+  data?: unknown | undefined,
+): Promise<any> {
+  console.log({ BACKEND_URL });
+  const headers = { "Content-Type": "application/json" , "Authorization": `Bearer ${getStoredAccessToken()}`};
+
+  const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+    method,
+    headers,
+    body: data ? JSON.stringify(data) : undefined,
+  });
+
+  await throwIfResNotOk(res);
+  return res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
