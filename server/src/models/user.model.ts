@@ -15,7 +15,7 @@ const userSchema = new Schema({
 		},
 		level: {
 			type: String,
-			default: "Lv1",
+			default: "1",
 		},
 		tier: {
 			name: {
