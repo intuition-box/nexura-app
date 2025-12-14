@@ -1,34 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Target, Star } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { emitSessionChange } from "@/lib/session";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { buildUrl } from "@/lib/queryClient";
-
-// Import protocol logos
-import intudexLogo from "@assets/image_1758731610569.png";
-import intuitionPortalLogo from "@assets/image_1758731619825.png";
-import trustSwapLogo from "@assets/image_1758731629668.png";
-import memkopadLogo from "@assets/image_1758731643646.png";
-import diceGameLogo from "@assets/image_1758731655425.png";
-import gazeBreakerLogo from "@assets/image_1758731666896.png";
-import intuitParkLogo from "@assets/image_1758731677908.png";
-import twentyFortyEightLogo from "@assets/image_1758731690209.png";
-import tetrisLogo from "@assets/Copilot_20250924_173907_1758731966019.png";
-import tnsLogo from "@assets/image_1758732361346.png";
-// New protocol logos
-import intuitionMemeLogo from "@assets/image_1758733760040.png";
-import oracleLendLogo from "@assets/image_1758734045558.png";
-import intuitionBetsLogo from "@assets/image_1758734662331.png";
-import trustEscrowLogo from "@assets/image_1758734736451.png";
-import intuitionOracleLogo from "@assets/image_1758735356814.png";
-import intuitionTempleLogo from "@assets/image_1758735571330.png";
+import { motion } from "framer-motion";
 
 interface Dapp {
   id: string;
@@ -47,231 +28,141 @@ export default function EcosystemDapps() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   const dapps: Dapp[] = [
-    // Priority order: intuition portal, oracle lend, intudex, 3,3 dice game, trust name service
+    {
+      id: "trustswap",
+      name: "TrustSwap",
+      description: "Decentralized exchange for seamless token swaps within the ecosystem.",
+      category: "DeFi",
+      logo: "/ecosystem/TrustSwap.jpg",
+      questReward: "50 XP",
+      websiteUrl: "https://trustswap.intuition.box/swap"
+    },
+    {
+      id: "trust-quests",
+      name: "Trust Quests",
+      description: "Complete quests to earn rewards and build your on-chain reputation.",
+      category: "Quests",
+      logo: "/ecosystem/Trust Quests.jpg",
+      questReward: "50 XP",
+      websiteUrl: "https://www.trustquests.com"
+    },
     {
       id: "intuition-portal",
-      name: "INTUITION PORTAL",
-      description: "Stake and make claims. Buy into claims bonding curves to support or negate a claim",
+      name: "Intuition Portal",
+      description: "Your gateway to the Intuition ecosystem and identity management.",
       category: "Portal",
-      logo: intuitionPortalLogo,
+      logo: "/ecosystem/Intuition Portal.jpg",
       questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
       websiteUrl: "https://portal.intuition.systems"
     },
     {
-      id: "oracle-lend",
-      name: "ORACLELEND",
-      description: "A decentralized lending protocol and DEX for borrowing and swapping tokens on Intuition Testnet",
-      category: "Lending Protocols",
-      logo: oracleLendLogo,
+      id: "trust-name-service",
+      name: "Trust Name Service",
+      description: "Secure your unique identity with decentralized naming.",
+      category: "Domain Name",
+      logo: "/ecosystem/Trust Name Service.jpg",
       questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://oraclelend.intuition.box"
+      websiteUrl: "https://tns.intuition.box"
     },
     {
-      id: "intudex",
-      name: "INTUDEX",
-      description: "Swap and stake $INTUIT token seamlessly",
-      category: "DeFi",
-      logo: intudexLogo,
+      id: "inturank",
+      name: "Inturank",
+      description: "Reputation and ranking system for ecosystem participants.",
+      category: "Reputation",
+      logo: "/ecosystem/Inturank.jpg",
       questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://dex.intuition.box"
+      websiteUrl: "https://inturank.intuition.box"
     },
     {
-      id: "oracle-lend-defi",
-      name: "ORACLE LEND",
-      description: "A decentralized lending protocol and DEX for borrowing and swaping tokens on Intuition Testnet",
-      category: "DeFi",
-      logo: oracleLendLogo,
+      id: "tribememe",
+      name: "Tribememe",
+      description: "Community-driven meme culture and social engagement platform.",
+      category: "Social",
+      logo: "/ecosystem/Tribememe.jpg",
       questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://oraclelend.xyz"
-    },
-    {
-      id: "dice-game",
-      name: "DICE GAME",
-      description: "Fair dice game on blockchain",
-      category: "Gaming",
-      logo: diceGameLogo,
-      questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://dice.intuition.box"
-    },
-    // Trust Name Service removed per request (replaced by Gaze Breaker)
-    // Additional protocols
-    {
-      id: "trustswap",
-      name: "TRUSTSWAP",
-      description: "Swap and stake different tokens seamlessly",
-      category: "DeFi",
-      logo: trustSwapLogo,
-      questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://trustswap.intuition.box"
-    },
-    {
-      id: "trust-escrow",
-      name: "TrustEscrow",
-      description: "A secure, decentralized escrow platform built on TRUST",
-      category: "DeFi",
-      logo: trustEscrowLogo,
-      questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://trustescrow.app"
-    },
-    {
-      id: "memkopad",
-      name: "Memkopad",
-      description: "Discover, create and mint NFTs",
-      category: "NFT",
-      logo: memkopadLogo,
-      questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://memkopad.app"
-    },
-    {
-      id: "gaze-breaker",
-      name: "GAZE BREAKER",
-      description: "Defeat the eyes of the institution. An eerie, sci-fi shmup",
-      category: "Gaming",
-      logo: gazeBreakerLogo,
-      questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://gaze-breaker.vercel.app"
-    },
-    {
-      id: "intuitpark",
-      name: "IntuitPark",
-      description: "Play prediction games and minigames to earn INTUIT tokens on the Intuition Network",
-      category: "Gaming",
-      logo: intuitParkLogo,
-      questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://intuitpark.game"
-    },
-    {
-      id: "2048",
-      name: "2048",
-      description: "Join tiles to reach 2048!",
-      category: "Gaming",
-      logo: twentyFortyEightLogo,
-      questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://2048.intuition.game"
-    },
-    {
-      id: "tetris",
-      name: "Tetris",
-      description: "Play Tetris, earn TRUST!",
-      category: "Gaming",
-      logo: tetrisLogo,
-      questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://tetris.intuition.game"
-    },
-    {
-      id: "intuition-meme",
-      name: "INTUITION MEME",
-      description: "Launch Your Meme Token: Fair launch meme tokens with bonding curves on Intuition Testnet",
-      category: "Launchpads",
-      logo: intuitionMemeLogo,
-      questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://intuition-meme.vercel.app"
+      websiteUrl: "https://tribememe.app"
     },
     {
       id: "intuition-bets",
-      name: "Intuition BETs",
-      description: "Place your bets and test your intuition",
+      name: "IntuitionBets",
+      description: "Decentralized prediction markets and betting platform.",
       category: "Prediction Markets",
-      logo: intuitionBetsLogo,
+      logo: "/ecosystem/IntuitionBets.jpg",
       questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://bets.intuition.systems"
+      websiteUrl: "https://intuitionbets.com"
     },
     {
-      id: "intuition-oracle",
-      name: "The Intuition Oracle",
-      description: "Discover Your On-Chain Prophecy",
-      category: "Social",
-      logo: intuitionOracleLogo,
+      id: "trust-card",
+      name: "TrustCard",
+      description: "Digital identity card showcasing your ecosystem achievements.",
+      category: "Identity",
+      logo: "/ecosystem/Trust Card.jpg",
       questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://oracle.intuition.systems"
+      websiteUrl: "https://trustcard.box"
     },
     {
-      id: "intuition-temple",
-      name: "INTUITION TEMPLE",
-      description: "pray",
-      category: "Social",
-      logo: intuitionTempleLogo,
+      id: "sofia",
+      name: "Sofia",
+      description: "AI-powered assistant for navigating the ecosystem.",
+      category: "AI",
+      logo: "/ecosystem/Sofia.jpg",
       questReward: "50 XP",
-      isCompleted: false,
-      isClaimed: false,
-      websiteUrl: "https://temple.intuition.systems"
+      websiteUrl: "https://sofia.intuition.box"
+    },
+    {
+      id: "revel-8",
+      name: "Revel 8",
+      description: "Immersive gaming and entertainment experiences.",
+      category: "Gaming",
+      logo: "/ecosystem/Revel8.jpg",
+      questReward: "50 XP",
+      websiteUrl: "https://revel8.io"
+    },
+    {
+      id: "intuition-mcp",
+      name: "IntuitionMCP",
+      description: "Master Control Protocol for advanced ecosystem interactions.",
+      category: "Infrastructure",
+      logo: "/ecosystem/Intuition MCP.jpg",
+      questReward: "50 XP",
+      websiteUrl: "https://www.intuitionmcp.xyz"
+    },
+    {
+      id: "urban-mayhem",
+      name: "Urban Mayhem",
+      description: "Strategy game set in a chaotic urban environment.",
+      category: "Gaming",
+      logo: "/ecosystem/Urban Mayhem.jpg",
+      questReward: "50 XP",
+      websiteUrl: "https://urban-mayhem-store.vercel.app"
+    },
+    {
+      id: "go-form",
+      name: "Go Form",
+      description: "Decentralized form builder and data collection tool.",
+      category: "Tools",
+      logo: "/ecosystem/GoForm.jpg",
+      questReward: "50 XP",
+      websiteUrl: "https://goform.biz"
+    },
+    {
+      id: "agent-player-map",
+      name: "Agent Player Map",
+      description: "Interactive map tracking agents and players across the network.",
+      category: "Tools",
+      logo: "/ecosystem/Agent Player Map.jpg",
+      questReward: "50 XP",
+      websiteUrl: "https://playermap.box"
     }
   ];
 
-  const handleExploreClick = (dapp: Dapp, event?: React.MouseEvent) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    try { markVisited(dapp.id); } catch(e){}
-    // Open the dapp's website in a new tab
-    window.open(dapp.websiteUrl, '_blank', 'noopener,noreferrer');
-  };
+  const categories = ["All", ...Array.from(new Set(dapps.map(d => d.category)))];
 
-  // Claim functionality removed from UI — claims are handled elsewhere or not offered
-
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "Portal":
-        return "bg-purple-500/10 text-purple-600";
-      case "DeFi":
-        return "bg-blue-500/10 text-blue-600";
-      case "NFT":
-        return "bg-pink-500/10 text-pink-600";
-      case "Gaming":
-        return "bg-green-500/10 text-green-600";
-      case "Domain Name":
-        return "bg-cyan-500/10 text-cyan-600";
-      case "Social":
-        return "bg-indigo-500/10 text-indigo-600";
-      case "Launchpads":
-        return "bg-orange-500/10 text-orange-600";
-      case "Lending Protocols":
-        return "bg-emerald-500/10 text-emerald-600";
-      case "Prediction Markets":
-        return "bg-red-500/10 text-red-600";
-      default:
-        return "bg-gray-500/10 text-gray-600";
-    }
-  };
-
-  const categories = ["All", "Portal", "DeFi", "NFT", "Gaming", "Domain Name", "Social", "Launchpads", "Lending Protocols", "Prediction Markets"];
-  const [selectedCategory, setSelectedCategory] = useState("All");
-
-  const filteredDapps = selectedCategory === "All" 
-    ? dapps 
+  const filteredDapps = selectedCategory === "All"
+    ? dapps
     : dapps.filter(dapp => dapp.category === selectedCategory);
 
   // Track visited and claimed state locally for UI. Authoritative state is server-side.
@@ -289,7 +180,6 @@ export default function EcosystemDapps() {
     try { localStorage.setItem('nexura:claimed:dapps', JSON.stringify(claimedDapps)); } catch {}
   }, [claimedDapps]);
 
-
   const markVisited = (id: string) => {
     if (!visitedDapps.includes(id)) setVisitedDapps(prev => [...prev, id]);
   };
@@ -298,7 +188,6 @@ export default function EcosystemDapps() {
     if (!claimedDapps.includes(id)) setClaimedDapps(prev => [...prev, id]);
   };
 
-  // Helper to extract xp number from questReward like "50 XP"
   const getXpFromReward = (reward: string) => {
     if (!reward) return 0;
     const m = String(reward).match(/(\d+)/);
@@ -326,7 +215,6 @@ export default function EcosystemDapps() {
       try { const token = localStorage.getItem('accessToken'); if (token) headers['Authorization'] = `Bearer ${token}`; } catch(e){}
       const resp = await fetch(buildUrl('/api/xp/add'), { method: 'POST', headers, body: JSON.stringify({ userId: user.id, xp, questId: dapp.id, questsCompletedDelta: 0, tasksCompletedDelta: 0 }) });
       if (resp.status === 409) {
-        // already claimed
         markClaimed(dapp.id);
         toast({ title: 'Already claimed', description: 'You have already claimed this reward.' });
         return;
@@ -335,9 +223,7 @@ export default function EcosystemDapps() {
         const t = await resp.text().catch(() => String(resp.status));
         throw new Error(`Claim failed: ${t}`);
       }
-      const j = await resp.json().catch(() => ({}));
       markClaimed(dapp.id);
-      // trigger profile refresh
       try { emitSessionChange(); } catch(e){}
       toast({ title: 'XP awarded', description: `+${xp} XP` });
     } catch (e) {
@@ -346,20 +232,40 @@ export default function EcosystemDapps() {
     }
   };
 
+  const getCategoryColor = (category: string) => {
+    // Simple hash or mapping for colors
+    const colors = [
+      "bg-purple-500/10 text-purple-600",
+      "bg-blue-500/10 text-blue-600",
+      "bg-pink-500/10 text-pink-600",
+      "bg-green-500/10 text-green-600",
+      "bg-cyan-500/10 text-cyan-600",
+      "bg-indigo-500/10 text-indigo-600",
+      "bg-orange-500/10 text-orange-600",
+      "bg-emerald-500/10 text-emerald-600",
+      "bg-red-500/10 text-red-600",
+    ];
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) {
+      hash = category.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   return (
     <div className="min-h-screen bg-black text-white overflow-auto p-6 relative" data-testid="ecosystem-dapps-page">
       <AnimatedBackground />
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Ecosystem Dapps</h1>
-          <p className="text-muted-foreground">
-            Explore popular dapps in the ecosystem and complete one-time quests to earn rewards
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+            Ecosystem Dapps
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Explore the diverse range of applications built on our ecosystem.
           </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 justify-center">
           {categories.map((category) => (
             <Button
               key={category}
@@ -373,103 +279,71 @@ export default function EcosystemDapps() {
           ))}
         </div>
 
-        {/* Dapps Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-          {filteredDapps.map((dapp) => (
-            <Card 
-              key={dapp.id} 
-              className="hover-elevate active-elevate-2 transition-all duration-200 relative flex flex-col min-h-[300px]"
-              data-testid={`dapp-card-${dapp.id}`}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredDapps.map((dapp, index) => (
+            <motion.div
+              key={dapp.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              {dapp.isCompleted && (
-                <div className="absolute top-3 right-3 z-10">
-                  <div className="bg-green-500 text-white rounded-full p-1">
-                    <Star className="w-4 h-4 fill-current" />
+              <Card className="h-full flex flex-col overflow-hidden hover:border-primary/50 transition-colors group bg-card/50 backdrop-blur-sm border-white/10">
+                <div className="h-48 overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10" />
+                  <img 
+                    src={dapp.logo} 
+                    alt={dapp.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  {dapp.isCompleted && (
+                    <div className="absolute top-3 right-3 z-20">
+                      <div className="bg-green-500 text-white rounded-full p-1">
+                        <Star className="w-4 h-4 fill-current" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-xl mb-2">{dapp.name}</CardTitle>
+                      <Badge className={getCategoryColor(dapp.category)} variant="secondary">
+                        {dapp.category}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              <CardHeader className="pb-3">
-                <div className="flex items-center space-x-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <div className="w-12 h-12 flex items-center justify-center">
-                          {typeof dapp.logo === 'string' && dapp.logo.startsWith('/') ? (
-                            <img src={dapp.logo} alt={dapp.name} className="w-8 h-8 object-contain transition-transform transform hover:scale-105" />
-                          ) : (
-                            <img src={dapp.logo} alt={dapp.name} className="w-8 h-8 object-contain transition-transform transform hover:scale-105" />
-                          )}
-                        </div>
-                      </PopoverTrigger>
-                        <PopoverContent side="bottom" align="center" className="w-56">
-                        <div className="text-sm text-muted-foreground mb-2">Visit</div>
-                        <div className="break-words text-sm mb-3 text-foreground font-medium">{dapp.websiteUrl}</div>
-                        <div className="flex gap-2">
-                          <a
-                            href={dapp.websiteUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => { e.stopPropagation(); markVisited(dapp.id); }}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-md bg-primary text-white hover:opacity-90"
-                          >
-                            Open
-                            <ExternalLink className="w-4 h-4 ml-2" />
-                          </a>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg font-bold">{dapp.name}</CardTitle>
-                    <Badge className={getCategoryColor(dapp.category)} variant="secondary">
-                      {dapp.category}
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="flex flex-col h-full">
-                <div className="flex-1 mb-4">
-                  <p className="text-sm text-muted-foreground">{dapp.description}</p>
-                </div>
-                
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Est. Time:</span>
-                    <span className="text-xs font-medium">{dapp.estimatedTime}</span>
+                  <CardDescription className="mt-2">{dapp.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="mt-auto space-y-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Reward:</span>
+                    <span className="font-bold text-primary">{dapp.questReward}</span>
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Reward:</span>
-                    <span className="text-xs font-bold text-primary">{dapp.questReward}</span>
+                  <div className="flex gap-2">
+                    <Button 
+                      asChild 
+                      className="flex-1" 
+                      variant="outline"
+                      onClick={() => markVisited(dapp.id)}
+                    >
+                      <a href={dapp.websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
+                        Launch App <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </Button>
+                    
+                    <Button
+                      className="flex-1"
+                      variant={claimedDapps.includes(dapp.id) ? 'secondary' : 'default'}
+                      disabled={!visitedDapps.includes(dapp.id) || claimedDapps.includes(dapp.id)}
+                      onClick={(e) => { e.stopPropagation(); handleClaim(dapp); }}
+                    >
+                      {claimedDapps.includes(dapp.id) ? 'Claimed' : 'Claim XP'}
+                    </Button>
                   </div>
-                </div>
-                
-                <div className="flex gap-2 mt-auto">
-                  <a
-                    href={dapp.websiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => { e.stopPropagation(); markVisited(dapp.id); }}
-                    className="flex-1 inline-flex items-center justify-center rounded-md border border-white/10 px-3 py-2 text-sm text-white hover:opacity-90"
-                    data-testid={`explore-${dapp.id}`}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Explore
-                  </a>
-
-                  <Button
-                    size="sm"
-                    className="w-40"
-                    variant={claimedDapps.includes(dapp.id) ? 'outline' : 'quest'}
-                    disabled={!visitedDapps.includes(dapp.id) || claimedDapps.includes(dapp.id)}
-                    onClick={(e) => { e.stopPropagation(); handleClaim(dapp); }}
-                    data-testid={`claim-dapp-${dapp.id}`}
-                  >
-                    {claimedDapps.includes(dapp.id) ? 'Claimed' : `Claim ${dapp.questReward}`}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
         </div>
 
