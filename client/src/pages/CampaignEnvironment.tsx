@@ -1,65 +1,46 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Play } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import { apiRequestV2 } from "../lib/queryClient";
 
-type Quest = {
-  quest: string;
+type Task = {
+  text: string;
   reward: number;
-  _id: string;
   link: string;
-  done: boolean;
+  status: "notStarted" | "inProgress" | "completed";
 };
 
-const campaignQuestsInitial: Quest[] = [
-  { _id: "quest-id", done: false, quest: "Follow Nexura on X", reward: 100, link: "https://x.com/NexuraXYZ" },
-  { _id: "quest-id", done: false, quest: "Join Nexura Discord", reward: 100, link: "https://discord.gg/caK9kATBya" },
-  { _id: "quest-id", done: false, quest: "Drop a message on Discord", reward: 100, link: "https://discord.gg/caK9kATBya" },
-  { _id: "quest-id", done: false, quest: "Support or Oppose the #Intuitionbilly Claim on Intuition Portal", reward: 100, link: "#" },
-  { _id: "quest-id", done: false, quest: "Support or oppose the Nexura claim on Intuition Portal", reward: 100, link: "#" },
-  { _id: "quest-id", done: false, quest: "Like and Comment on Nexura Pinned post", reward: 100, link: "#" },
+const campaignTasksInitial: Task[] = [
+  { text: "Follow Nexura on X", reward: 100, link: "https://x.com/NexuraXYZ", status: "notStarted" },
+  { text: "Join Nexura Discord", reward: 100, link: "https://discord.gg/caK9kATBya", status: "notStarted" },
+  { text: "Drop a message on Discord", reward: 100, link: "https://discord.gg/caK9kATBya", status: "notStarted" },
+  { text: "Support or Oppose the #Intuitionbilly Claim on Intuition Portal", reward: 100, link: "#", status: "notStarted" },
+  { text: "Support or oppose the Nexura claim on Intuition Portal", reward: 100, link: "#", status: "notStarted" },
+  { text: "Like and Comment on Nexura Pinned post", reward: 100, link: "#", status: "notStarted" },
 ];
 
 export default function CampaignEnvironment() {
-  const [quests, setQuests] = useState<Quest[]>(campaignQuestsInitial);
-  const [visitedQuests, setVisitedQuests] = useState<String[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(campaignTasksInitial);
 
-  useEffect(() => {
+  const handleTaskClick = (index: number) => {
+    setTasks(prev => {
+      const task = prev[index];
+      let newStatus: Task["status"] = task.status;
 
-    (async () => {
-      const campaignId = "";
-      const campaignQuests = await apiRequestV2("GET", `/api/campaign/quests?id=${campaignId}`);
-      setQuests(campaignQuests);
-    })();
-  }, []);
+      if (task.status === "notStarted") {
+        window.open(task.link, "_blank");
+        newStatus = "inProgress";
+      } else if (task.status === "inProgress") {
+        newStatus = "completed";
+      }
 
-  const claimQuest = async (questId: string) => {
-    // setQuests(prev => {
-    //   const quest = prev[index];
-    //   let newStatus: Quest["status"] = quest.status;
-
-    //   if (quest.status === "notStarted") {
-    //     window.open(quest.link, "_blank");
-    //     newStatus = "inProgress";
-    //   } else if (quest.status === "inProgress") {
-    //     newStatus = "completed";
-    //   }
-
-    //   return prev.map((t, i) => i === index ? { ...t, status: newStatus } : t);
-    // });
-
-    await apiRequestV2("POST", `/api/quest/perform-campaign-quest?id=${questId}`);
+      return prev.map((t, i) => i === index ? { ...t, status: newStatus } : t);
+    });
   };
 
-  const markQuestAsVisted = (quest: Quest) => {
-    window.open(quest.link, "_blank");
-    setVisitedQuests([...visitedQuests, quest._id]);
-  }
-
-  const completedQuests = quests.filter(q => q.done === true).length;
-  const progressPercentage = Math.round((completedQuests / quests.length) * 100);
+  const completedTasks = tasks.filter(t => t.status === "completed").length;
+  const progressPercentage = Math.round((completedTasks / tasks.length) * 100);
 
   return (
     <div className="min-h-screen bg-[#0a0615] text-white relative p-6">
@@ -79,7 +60,7 @@ export default function CampaignEnvironment() {
               <p className="text-sm opacity-70 uppercase">Total XP</p>
               <div className="bg-purple-600/30 border border-purple-500/40 px-4 py-2 rounded-full flex items-center gap-2">
                 <span className="font-bold">
-                  {quests.reduce((a, q) => a + (q.done ? q.reward : 0), 0)} XP
+                  {tasks.reduce((a, t) => a + (t.status === "completed" ? t.reward : 0), 0)} XP
                 </span>
               </div>
             </div>
@@ -107,9 +88,9 @@ export default function CampaignEnvironment() {
                 <p className="text-xs opacity-50 uppercase mb-1">Nexura</p>
                 <p className="text-xl font-bold leading-tight">Quest 001:<br />Join the Guild</p>
                 <div className="mt-4">
-                  <p className="uppercase text-xs opacity-50">Start Quest</p>
+                  <p className="uppercase text-xs opacity-50">Start Task</p>
                   <p className="text-sm opacity-80 leading-relaxed mt-1">
-                    Complete simple quests in the Nexura ecosystem and earn rewards.
+                    Complete simple tasks in the Nexura ecosystem and earn rewards.
                   </p>
                 </div>
                 <div className="mt-3 space-y-1">
@@ -121,14 +102,12 @@ export default function CampaignEnvironment() {
           </div>
         </Card>
 
-        {/* Quests List */}
+        {/* Tasks List */}
         <div className="space-y-6">
-          {quests.map((quest, index) => {
-            const visited = !visitedQuests.includes(quest._id);
-
-            let buttonText = "Start Quest";
-            if (visited) buttonText = `Claim Reward: ${quest.reward} XP`;
-            if (quest.done) buttonText = "Completed";
+          {tasks.map((task, index) => {
+            let buttonText = "Start Task";
+            if (task.status === "inProgress") buttonText = `Claim Reward: ${task.reward} XP`;
+            if (task.status === "completed") buttonText = "Completed";
 
             return (
               <div
@@ -137,16 +116,15 @@ export default function CampaignEnvironment() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/10 text-white">
-                    {quest.done ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Play className="w-4 h-4" />}
+                    {task.status === "completed" ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Play className="w-4 h-4" />}
                   </div>
-                  <span className="font-medium">{quest.quest}</span>
+                  <span className="font-medium">{task.text}</span>
                 </div>
 
                 <button
-                  disabled={quest.done}
-                  onClick={() => !visited ? markQuestAsVisted(quest) : claimQuest(quest._id)}
+                  onClick={() => handleTaskClick(index)}
                   className={`px-5 py-2 rounded-full text-sm font-semibold ${
-                    quest.done ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+                    task.status === "completed" ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
                   }`}
                 >
                   {buttonText}
