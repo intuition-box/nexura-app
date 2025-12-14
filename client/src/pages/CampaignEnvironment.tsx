@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Play } from "lucide-react";
@@ -29,7 +30,7 @@ export default function CampaignEnvironment() {
   useEffect(() => {
 
     (async () => {
-      const campaignId = "";
+      const { campaignId } = useParams();
       const campaignQuests = await apiRequestV2("GET", `/api/campaign/quests?id=${campaignId}`);
       setQuests(campaignQuests);
     })();
