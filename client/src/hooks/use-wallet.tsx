@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { createWallet, requestChallenge } from "@/lib/remoteDb";
 import { setSessionToken, emitSessionChange } from "@/lib/session";
 import { buildUrl } from "@/lib/queryClient";
+import { apiRequestV2 } from "../lib/queryClient";
 
 type WalletState = {
   isConnected: boolean;
@@ -29,7 +29,7 @@ export function useWallet() {
     }
   }, []);
 
-  const connectWallet = useCallback(async (opts?: { noReload?: boolean }): Promise<string | null> => {
+  const connectWallet = useCallback(async (opts?: { noReload?: boolean, purpose?: string }): Promise<string | null> => {
     try {
       console.log("🔌 Starting wallet connection...");
       
@@ -54,13 +54,7 @@ export function useWallet() {
       console.log("🔗 Chain ID:", chainId);
 
       let message: string | null = null;
-      try {
-        const challengeRes: any = await requestChallenge(address);
-        if (challengeRes?.message) message = challengeRes.message as string;
-      } catch (e) {
-        // Backend not available - use client-side challenge
-        console.log("Using client-side challenge (backend not available)");
-      }
+      
       if (!message) message = `Nexura Wallet Login\nAddress: ${address}\nNonce: ${Date.now()}`;
 
       let signature: string | null = null;
@@ -83,13 +77,6 @@ export function useWallet() {
       // persist local state
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ address, chainId, signedAt: Date.now(), signedMessage: message, signature })); } catch (e) { /* ignore */ }
 
-      try {
-        await createWallet({ address, chainId: chainId ?? 0, provider: "injected", label: "injected", metadata: { signature, signedMessage: message } });
-      } catch (e) {
-        // Backend not available - this is OK for Netlify deployments
-        console.log("Wallet registered locally (backend not available)");
-      }
-
       // Update state immediately for better UX
       setState({ isConnected: true, isConnecting: false, address, chainId });
       console.log("✅ Wallet connected successfully!");
@@ -97,22 +84,35 @@ export function useWallet() {
       // Try backend auth but don't fail if it's not available
       let shouldReload = !opts?.noReload;
       try {
-        console.log("🔒 Attempting backend authentication (simple)...");
-        const verifyRes = await fetch(buildUrl('/auth/simple'), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ address, signature, message }),
-        });
-        if (verifyRes.ok) {
-          const json = await verifyRes.json().catch(() => ({}));
-          try { if (json?.user) localStorage.setItem('nexura:user', JSON.stringify(json.user)); } catch (e) { /* ignore */ }
-          try { emitSessionChange(); } catch (e) { /* ignore */ }
-          console.log("✔ Backend authentication (simple) successful");
+        console.log("🔐 Attempting backend authentication...");
+        if (opts?.purpose === "org-signin") {
+          const checkedData = await apiRequestV2("POST", "/api/project/check", { ownerAddress: address });
+          // console.log("project-hehe", checkedData);
+          if (checkedData.user) {
+            localStorage.setItem("project_profile", JSON.stringify(checkedData.user));
+            localStorage.setItem("nexura:proj-token", checkedData.accessToken);
+            try { emitSessionChange(); } catch (e) { /* ignore */ }
+            console.log("✅ Backend authentication successful");
+          } else {
+            // Backend auth failed but wallet is still connected locally
+            console.warn("⚠️ Backend auth failed, wallet connected locally only");
+          }
         } else {
-          console.warn("⚠ Backend simple auth failed, wallet connected locally only");
+          const checkedData = await apiRequestV2("POST", "/api/user/sign-in", { username: address });
+          console.log("hehe", checkedData);
+          if (checkedData.user) {
+            localStorage.setItem("user_profile", JSON.stringify(checkedData.user));
+            localStorage.setItem("nexura:token", checkedData.accessToken);
+            try { emitSessionChange(); } catch (e) { /* ignore */ }
+            console.log("✅ Backend authentication successful");
+          } else {
+            // Backend auth failed but wallet is still connected locally
+            console.warn("⚠️ Backend auth failed, wallet connected locally only");
+          }
         }
       } catch (e) {
-        console.warn("⚠ Backend verification not available (frontend-only mode)");
+        // Backend not available - this is OK on Netlify frontend-only deployment
+        console.warn("⚠️ Backend verification not available (frontend-only mode)");
       }
 
       // Reload page to update UI with connected wallet state

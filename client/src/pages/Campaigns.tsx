@@ -6,7 +6,7 @@ import { ExternalLink, Clock, Users } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import { BACKEND_URL } from "@/lib/queryClient";
+import { apiRequestV2 } from "@/lib/queryClient";
 
 interface Campaign {
   _id: string;
@@ -18,7 +18,7 @@ interface Campaign {
   starts_at?: string;
   ends_at?: string;
   metadata?: string;
-  reward?: string | { amount: number; currency: string; pool?: number };
+  reward?: { amount: number; xp: number; pool?: number };
   url?: string;
   status?: string;
 }
@@ -30,7 +30,7 @@ const TASKS_CARD: Campaign = {
   description: "Complete unique tasks in the Nexura ecosystem and earn rewards",
   project_name: "NEXURA",
   participants: 250,
-  reward: { amount: 16, currency: "TRUST", pool: 4000 },
+  reward: { amount: 16, xp: 5, pool: 4000 },
   project_image: "/campaign.png",
   // reward_pool : ;
   starts_at: new Date("2025-12-05T00:00:00").toISOString(), // 5th December
@@ -43,16 +43,11 @@ export default function Campaigns() {
   const [visitedTasks, setVisitedTasks] = useState<string[]>([]);
   const [claimedTasks, setClaimedTasks] = useState<string[]>([]);
 
-  const { data: campaigns, isLoading } = useQuery<{
-    oneTimeCampaigns: Campaign[];
-    featuredCampaigns: Campaign[];
-    upcomingCampaigns: Campaign[];
-  }>({
+  const { data: campaigns, isLoading } = useQuery({
     queryKey: ["campaigns"],
     queryFn: async () => {
-      const res = await fetch(`${BACKEND_URL}/api/campaigns`);
-      if (!res.ok) throw new Error("Failed to fetch campaigns");
-      return res.json();
+      const res = await apiRequestV2("GET", "/api/campaigns");
+      return res;
     },
   });
 
@@ -60,9 +55,7 @@ export default function Campaigns() {
 
   const allCampaigns: Campaign[] = [
     TASKS_CARD,
-    ...(campaigns?.oneTimeCampaigns ?? []),
-    ...(campaigns?.featuredCampaigns ?? []),
-    ...(campaigns?.upcomingCampaigns ?? []),
+    ...campaigns,
   ];
 
   const activeCampaigns = allCampaigns.filter((c) => {
@@ -166,24 +159,17 @@ export default function Campaigns() {
             <div className="flex justify-between text-sm items-center">
               <span className="text-gray-500">Reward:</span>
               <span className="text-white flex items-center gap-1">
-                {typeof campaign.reward === "string"
-                  ? campaign.reward
-                  : `${campaign.reward.amount} ${campaign.reward.currency}`}
+                {`${campaign.reward.amount} TRUST + ${campaign.reward.xp}`}
               </span>
             </div>
           )}
 
-          {/* Reward Pool */}
-          {campaign.reward && typeof campaign.reward !== "string" && campaign.reward.pool && (
-            <div className="flex justify-between text-sm items-center">
-              <span className="text-gray-500">Reward Pool:</span>
-              <span className="text-white flex items-center gap-1">
-                {campaign.reward.pool} {campaign.reward.currency} (FCFS)
-              </span>
-            </div>
-          )}
-
-
+          <div className="flex justify-between text-sm items-center">
+            <span className="text-gray-500">Reward Pool:</span>
+            <span className="text-white flex items-center gap-1">
+              {campaign.reward?.pool} TRUST (FCFS)
+            </span>
+          </div>
 
           {/* Dates */}
           {campaign.starts_at && (
@@ -204,15 +190,14 @@ export default function Campaigns() {
               }`}
             onClick={() => {
               if (!isActive) return;
-              if (campaign._id === "tasks-card") setLocation("/campaigns/tasks");
-              else if (campaign.url) window.open(campaign.url, "_blank");
+             setLocation(`/campaign/${campaign._id}`);
             }}
             disabled={!isActive}
           >
             {isActive ? (
               <>
                 <ExternalLink className="w-4 h-4 mr-2" />
-                {campaign._id === "tasks-card" ? "Start Tasks" : "Do Task"}
+                {"Start Tasks"}
               </>
             ) : (
               <>
@@ -241,13 +226,13 @@ export default function Campaigns() {
           <h2 className="text-2xl font-semibold text-white">Active Campaigns</h2>
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">Loading campaigns...</div>
-          ) : activeCampaigns.length === 0 ? (
+          ) : campaigns.length === 0 ? (
             <Card className="glass glass-hover rounded-3xl p-8 text-center">
               <p className="text-white/60">No active campaigns at the moment. Check back soon!</p>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeCampaigns.map((campaign) => renderCampaignCard(campaign, true))}
+              {campaigns.map((campaign: Campaign) => renderCampaignCard(campaign, true))}
             </div>
           )}
         </div>

@@ -39,6 +39,18 @@ export const validateQuestData = (reqData: any) => {
 	return parseData;
 };
 
+export const validateMiniQuestData = (reqData: any) => {
+	const miniQuestSchema = z.object({
+		text: z.string().trim(),
+		quest: z.string().trim(),
+		link: z.string().trim().optional(),
+	});
+
+	const parseData = miniQuestSchema.safeParse(reqData);
+
+	return parseData;
+};
+
 export const validateCampaignQuestData = (reqData: any) => {
 	const questSchema = z.object({
 		title: z.string().trim(),

@@ -12,16 +12,17 @@ import { BACKEND_URL, apiRequestV2, getStoredAccessToken } from "@/lib/queryClie
 interface Quest {
   _id: string;
   title: string;
-  description: string;
+  description?: string;
   project_name?: string;
   project_image?: string;
   starts_at?: string;
   ends_at?: string;
-  metadata?: string;
-  reward?: string | { amount: number; currency: string };
+  link?: string;
+  category?: string;
+  reward?: string;
   url?: string;
   actionLabel?: string;
-  kind?: string;
+  status: string;
 }
 
 // Only the special tasks card is here
@@ -34,14 +35,17 @@ const TASKS_CARD: Quest = {
   project_image: "/quest-1.png",
   starts_at: new Date().toISOString(),
   ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString(),
-  metadata: JSON.stringify({ category: "Tasks" }),
+  category: "weekly",
+  status: "open"
 };
 
 // One-time quests
 const ONE_TIME_QUESTS: Quest[] = [
-  { _id: 'onetime-discord-join', title: 'Connect Discord', description: 'Link your Discord account', reward: '50 XP', kind: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Connect Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
-  { _id: 'onetime-join-discord', title: 'Join Discord', description: 'Join our Discord server to chat with the community', reward: '50 XP', kind: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Join Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
+  { _id: 'onetime-discord-join', title: 'Connect Discord', description: 'Link your Discord account', reward: '50 XP', status: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Connect Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
+  { _id: 'onetime-join-discord', title: 'Join Discord', description: 'Join our Discord server to chat with the community', reward: '50 XP', status: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Join Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
 ];
+
+// 693de4b916cf5512ad6f2dbd
 
 export default function Quests() {
   const [, setLocation] = useLocation();
@@ -55,18 +59,17 @@ export default function Quests() {
   }>({
     queryKey: ["/api/quests"],
     queryFn: async () => {
-      const res = await fetch(`${BACKEND_URL}/api/quests`);
-      if (!res.ok) throw new Error("Failed to fetch quests");
-      return res.json();
+      const res = await apiRequestV2("GET", "/api/quests");
+      return res;
     },
   });
 
   const now = new Date();
   const allQuests: Quest[] = [
     TASKS_CARD,
-    ...(quests?.oneTimeQuests?.filter(q => q._id !== "onetime-x-follow" && q._id !== "onetime-discord-join") ?? []),
-    ...(quests?.weeklyQuests?.filter(q => q._id !== "weekly-comment-post") ?? []),
-    ...(quests?.featuredQuests?.filter(q => q._id !== "feat-support-claim") ?? []),
+    ...(quests?.oneTimeQuests ?? []),
+    ...(quests?.weeklyQuests ?? []),
+    ...(quests?.featuredQuests ?? []),
   ];
 
   const activeQuests = allQuests.filter((q) => {
@@ -91,18 +94,18 @@ export default function Quests() {
 
   const visitTask = (quest: Quest) => {
     if (!visitedTasks.includes(quest._id)) setVisitedTasks([...visitedTasks, quest._id]);
-    if (quest.url) window.open(quest.url, "_blank");
+    if (quest.url || quest.link) window.open(quest.url ?? quest.link, "_blank");
   };
 
   const renderQuestCard = (quest: Quest) => {
     let metadata: any = {};
     try {
-      metadata = quest.metadata ? JSON.parse(quest.metadata) : {};
+      metadata = quest.category ? { category: quest.category } : {};
     } catch {
       metadata = {};
     }
 
-    const isActive = activeQuests.some((q) => q._id === quest._id);
+    const isActive = true;
     const status = isActive ? "Active" : "Coming Soon";
 
     return (
@@ -111,13 +114,11 @@ export default function Quests() {
         className="bg-[#0d1117] border border-white/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition"
       >
         <div className="relative h-44 bg-black">
-          {quest.project_image && (
             <img
-              src={quest.project_image}
+              src="/quest-1.png"
               alt={quest.title}
               className="w-full h-full object-cover rounded-t-2xl"
             />
-          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
           <div className="absolute top-3 right-3">
@@ -132,11 +133,9 @@ export default function Quests() {
             </Badge>
           </div>
 
-          {metadata.category && (
-            <div className="absolute top-3 left-3 text-xs text-white/80 font-medium">
-              {metadata.category}
-            </div>
-          )}
+          <div className="absolute top-3 left-3 text-xs text-white/80 font-medium">
+            {metadata.category}
+          </div>
         </div>
 
         <div className="p-5 space-y-3">
@@ -146,37 +145,28 @@ export default function Quests() {
           {quest.project_name && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Project:</span>
-              <span className="text-white">{quest.project_name}</span>
+              <span className="text-white">Nexura</span>
             </div>
           )}
 
-          {quest.reward && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Rewards:</span>
-              <span className="text-white flex items-center space-x-1">
-                {typeof quest.reward === "string" ? quest.reward : `${quest.reward.amount} ${quest.reward.currency}`}
-              </span>
-            </div>
-          )}
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Rewards:</span>
+            <span className="text-white flex items-center space-x-1">
+              {quest.reward} XP
+            </span>
+          </div>
 
           <Button
             className="w-full bg-[#1f6feb] hover:bg-[#388bfd] text-white font-medium rounded-xl mt-3"
             onClick={() =>
               isActive &&
-              setLocation(
-                quest._id === "tasks-card" ? `/quests/${quest._id}` : `/quests/${quest._id}`
-              )
+              setLocation(`/quest/${quest._id}`)
             }
           >
-            {quest._id === "tasks-card" ? (
+            {isActive ? (
               <>
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Start Tasks
-              </>
-            ) : isActive ? (
-              <>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Do Task
               </>
             ) : (
               <>
@@ -204,13 +194,13 @@ export default function Quests() {
         <div className="space-y-6">
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">Loading quests...</div>
-          ) : activeQuests.length === 0 ? (
+          ) : quests?.weeklyQuests.length === 0 ? (
             <Card className="glass glass-hover rounded-3xl p-8 text-center">
               <p className="text-white/60">No active quests at the moment. Check back soon!</p>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeQuests.map((quest) => renderQuestCard(quest))}
+              {quests?.weeklyQuests.map((quest) => renderQuestCard(quest))}
             </div>
           )}
         </div>
@@ -223,7 +213,7 @@ export default function Quests() {
           </p>
 
           <div className="mt-6 space-y-4">
-            {ONE_TIME_QUESTS.map((quest, index) => {
+            {quests?.oneTimeQuests.map((quest, index) => {
               const visited = visitedTasks.includes(quest._id);
               const claimed = claimedTasks.includes(quest._id);
 

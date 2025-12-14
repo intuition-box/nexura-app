@@ -10,6 +10,7 @@ import {
 	fetchEcosystemDapps,
 	fetchQuests,
 } from "@/controllers/quest.controller.ts";
+import { authenticateUser2 } from "@/middlewares/auth.middleware";
 
 const router = Router();
 
@@ -17,8 +18,8 @@ router
 	.get("/", home)
 	.use("/admin", adminRoutes)
 	.get("/ecosystem-quests", fetchEcosystemDapps)
-	.get("/quests", fetchQuests)
-	.get("/campaigns", fetchCampaigns)
+	.get("/quests", authenticateUser2, fetchQuests)
+	.get("/campaigns", authenticateUser2, fetchCampaigns)
 	.use("/campaign", campaignRoutes)
 	.get("/leaderboard", getLeaderboard)
 	.use("/project", projectRoutes)

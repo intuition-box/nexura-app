@@ -17,7 +17,7 @@ async function throwIfResNotOk(res: Response) {
 
 export function getStoredAccessToken() {
   try {
-    return localStorage.getItem("accessToken");
+    return localStorage.getItem("nexura:token");
   } catch (e) {
     return null;
   }

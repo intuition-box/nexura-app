@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import AnimatedBackground from "@/components/AnimatedBackground";
@@ -12,20 +13,33 @@ type Quest = {
   link: string;
 };
 
-const quests200Initial: Quest[] = [
+const questsInitial: Quest[] = [
   { done: false, _id: "id-id", text: "Like and Comment on this Nexura tweet", reward: "100 XP", link: "#" },
   { done: false, _id: "id-id", text: "Support or Oppose the #Tribe Claim on Intuition Portal", reward: "100 XP", link: "#" },
   { done: false, _id: "id-id", text: "Support or Oppose the TNS Claim on Intuition Portal", reward: "100 XP", link: "#" },
   { done: false, _id: "id-id", text: "Support or Oppose the Sofia on Intuition Portal", reward: "100 XP", link: "#" },
 ];
 
-export default function CampaignEnvironment() {
-  const [quests200, setQuests200] = useState<Quest[]>(quests200Initial);
+export default function QuestEnvironment() {
+  const [miniQuests, setMiniQuests] = useState<Quest[]>(questsInitial);
   const [totalXP, setTotalXP] = useState(0);
   const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
   const [visitedQuests, setVisitedQuests] = useState<string[]>([]);
+  
+  const { questId } = useParams();
 
-  const claimReward = async (questId: string) => {
+  useEffect(() => {
+    (async () => {
+      console.log({ questId });
+
+      const quests = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
+
+      setMiniQuests(quests.miniQuests);
+      setTotalXP(quests.totalXp);
+    })();
+  }, []);
+
+  const claimReward = async (miniQuestId: string) => {
     // const quest = quests[index];
 
     // if (quest.status === "notStarted") {
@@ -43,11 +57,11 @@ export default function CampaignEnvironment() {
       return;
     }
 
-    if (!claimedQuests.includes(questId)) {
-      setClaimedQuests([...claimedQuests, questId]);
+    if (!claimedQuests.includes(miniQuestId)) {
+      setClaimedQuests([...claimedQuests, miniQuestId]);
     }
 
-    await apiRequestV2("POST", `/api/quest/claim-quest?id=${questId}`);
+    await apiRequestV2("POST", `/api/quest/claim-mini-quest`, { id: miniQuestId, questId });
   };
 
   const visitQuest = (quest: Quest) => {
@@ -56,10 +70,10 @@ export default function CampaignEnvironment() {
   };
 
   const renderQuestRow = (quest: Quest, index: number) => {
-    const visited = !visitedQuests.includes(quest._id);
+    const visited = visitedQuests.includes(quest._id);
 
     let buttonText = "Start Quest";
-    if (visited) buttonText = `Claim Reward: ${quest.reward} XP`;
+    if (visited) buttonText = `Claim`;
     if (quest.done) buttonText = "Completed";
 
     return (
@@ -126,7 +140,7 @@ export default function CampaignEnvironment() {
                 </div>
                 <div className="mt-3 space-y-1">
                   <p className="text-xs opacity-50 uppercase">Rewards</p>
-                  <p className="text-sm">500 XP</p>
+                  <p className="text-sm">`${totalXP} XP`</p>
                 </div>
               </div>
 
@@ -137,9 +151,8 @@ export default function CampaignEnvironment() {
           </div>
         </Card>
 
-        {/* 200 XP Section */}
-        <h2 className="text-lg font-semibold opacity-90">Get 200 XP</h2>
-        {quests200.map((quest, i) => renderQuestRow(quest, i))}
+        <h2 className="text-lg font-semibold opacity-90">Get {totalXP} XP</h2>
+        {miniQuests.map((quest, i) => renderQuestRow(quest, i))}
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 import logger from "@/config/logger";
 import { campaign, campaignCompleted } from "@/models/campaign.model";
-import { campaignQuest, ecosystemQuest, quest } from "@/models/quests.model";
+import { campaignQuest, ecosystemQuest, miniQuest, quest } from "@/models/quests.model";
 import {
 	campaignQuestCompleted,
 	ecosystemQuestCompleted,
+	miniQuestCompleted,
 	questCompleted,
 } from "@/models/questsCompleted.models";
 import { user } from "@/models/user.model";
@@ -14,8 +15,10 @@ import {
 	BAD_REQUEST,
 	FORBIDDEN,
 	NOT_FOUND,
+	CREATED,
 } from "@/utils/status.utils";
-import { validateCampaignQuestData, validateEcosystemQuestData } from "@/utils/utils";
+import { validateCampaignQuestData, validateEcosystemQuestData, validateMiniQuestData } from "@/utils/utils";
+import mongoose from "mongoose";
 
 // todo: add ecosystem completed to eco quests
 export const fetchEcosystemDapps = async (
@@ -35,21 +38,22 @@ export const fetchEcosystemDapps = async (
 export const fetchQuests = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const allQuests = await quest.find();
+		const completedQuests = await questCompleted.find({
+			user: new mongoose.Types.ObjectId(req.id),
+		});
 
 		const oneTimeQuestsInDB = allQuests.filter(
 			(quest) => quest.category === "one-time"
 		);
 
-		const oneTimeQuestsCompleted = await questCompleted.find({ user: req.id });
-
 		const oneTimeQuests: any[] = [];
 
 		for (const oneTimeQuest of oneTimeQuestsInDB) {
-			const oneTimeQuestCompleted = oneTimeQuestsCompleted.find(
-				(completedQuest) => completedQuest.user === oneTimeQuest._id
+			const oneTimeQuestCompleted = completedQuests.find(
+				(completedQuest) => completedQuest.quest?.toString() === oneTimeQuest._id.toString()
 			);
 
-			const mergedQuest: Record<string, unknown> = { ...oneTimeQuest };
+			const mergedQuest: Record<any, unknown> = oneTimeQuest.toJSON();
 
 			if (oneTimeQuestCompleted) {
 				mergedQuest.done = oneTimeQuestCompleted.done;
@@ -63,16 +67,15 @@ export const fetchQuests = async (req: GlobalRequest, res: GlobalResponse) => {
 		const weeklyQuestsInDB = allQuests.filter(
 			(quest) => quest.category === "weekly"
 		);
-		const weeklyQuestsCompleted = await questCompleted.find({ user: req.id });
 
 		const weeklyQuests: any[] = [];
 
 		for (const weeklyQuest of weeklyQuestsInDB) {
-			const weeklyQuestCompleted = weeklyQuestsCompleted.find(
-				(completedQuest) => completedQuest.user === weeklyQuest._id
+			const weeklyQuestCompleted = completedQuests.find(
+				(completedQuest) => completedQuest.quest?.toString() === weeklyQuest._id.toString()
 			);
 
-			const mergedQuest: Record<string, unknown> = { ...weeklyQuest };
+			const mergedQuest: Record<any, unknown> = weeklyQuest.toJSON();
 
 			if (weeklyQuestCompleted) {
 				mergedQuest.done = weeklyQuestCompleted.done;
@@ -89,6 +92,49 @@ export const fetchQuests = async (req: GlobalRequest, res: GlobalResponse) => {
 	} catch (error) {
 		logger.error(error);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching quests" });
+	}
+};
+
+export const fetchMiniQuests = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const { id } = req.query;
+		
+		const mainQuest = await quest.findById(id);
+		if (!mainQuest) {
+			res.status(BAD_REQUEST).json({ error: "quest doesn't exist or in invalid" });
+			return;
+		}
+
+		const miniQuestsInDB = await miniQuest.find({ quest: id });
+
+		const miniQuestsCompleted = await miniQuestCompleted.find({
+			// quest: new mongoose.Types.ObjectId(id as string),
+			user: new mongoose.Types.ObjectId(req.id),
+		});
+		console.log({ miniQuestsCompleted });
+		console.log({ ii: req.id });
+
+		const miniQuests: any[] = [];
+
+		for (const miniquest of miniQuestsInDB) {
+			const miniQuestCompleted = miniQuestsCompleted.find(
+				(completedQuest) => completedQuest.miniQuest?.toString() === miniquest._id.toString()
+			);
+
+			const mergedQuest: Record<any, unknown> = miniquest.toJSON();
+
+			if (miniQuestCompleted) {
+				mergedQuest.done = miniQuestCompleted.done;
+			} else {
+				mergedQuest.done = false;
+			}
+
+			miniQuests.push(mergedQuest);
+		}
+		res.status(OK).json({ message: "mini quests fetched", miniQuests, totalXp: mainQuest.reward  });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching mini quests" });
 	}
 };
 
@@ -128,7 +174,7 @@ export const fetchCampaignQuests = async (
 					completedCampaignQuest.campaignQuest === quest._id
 			);
 
-			const mergedCampaignQuest: Record<string, unknown> = { ...quest };
+			const mergedCampaignQuest: Record<any, unknown> = quest.toJSON();
 			if (questCompleted) {
 				mergedCampaignQuest.done = questCompleted.done;
 			} else {
@@ -188,12 +234,29 @@ export const createCampaignQuests = async (
 		campaignToUpdate.noOfQuests += 1;
 		await campaignToUpdate.save();
 
-		res.status(OK).json({ message: "campaign quest created!" });
+		res.status(CREATED).json({ message: "campaign quest created!" });
 	} catch (error) {
 		logger.error(error);
 		res
 			.status(INTERNAL_SERVER_ERROR)
 			.json({ error: "error creating campaign quest" });
+	}
+};
+
+export const createMiniQuest = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const { success } = validateMiniQuestData(req.body);
+		if (!success) {
+			res.status(BAD_REQUEST).json({ error: "send the data required to create a mini quest" });
+			return;
+		}
+
+		await miniQuest.create(req.body);
+
+		res.status(CREATED).json({ message: "mini quest created" });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error creating mini quest" });
 	}
 };
 
@@ -213,7 +276,7 @@ export const createEcosystemQuests = async (
 
 		await ecosystemQuest.create(req.body);
 
-		res.status(OK).json({ message: "campaign quest created!" });
+		res.status(CREATED).json({ message: "campaign quest created!" });
 	} catch (error) {
 		logger.error(error);
 		res
@@ -264,6 +327,43 @@ export const performCampaignQuest = async (
 	}
 };
 
+export const claimMiniQuest = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const { questId, id } = req.body;
+
+		const mini_quest = await miniQuest.findById(id);
+		if (!mini_quest) {
+			res.status(NOT_FOUND).json({ error: "mini quest id is invalid" });
+			return;
+		}
+
+		const mainQuest = await quest.findById(questId);
+		if (!mainQuest) {
+			res.status(NOT_FOUND).json({ error: "quest is invalid/doesn't exist" });
+			return;
+		}
+
+		const claimer = await user.findById(req.id);
+		if (!claimer) {
+			res.status(NOT_FOUND).json({ error: "invalid user or user dos not exist" });
+			return;
+		}
+
+		const miniQuestExists = await miniQuestCompleted.findOne({ miniQuest: id });
+		if (!miniQuestExists) {
+			await miniQuestCompleted.create({ done: true, miniQuest: id, quest: questId, user: req.id });
+
+			res.status(OK).json({ message: "mini quest claimed" });
+			return
+		}
+
+		res.status(FORBIDDEN).json({ error: "quest already claimed" });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error claiming mini quest" });
+	}
+};
+
 export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const id = req.query.id as string;
@@ -289,9 +389,7 @@ export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		questUser.questsCompleted += 1;
 
-		questUser.xp += questFound.reward?.xp as number;
-
-		questUser.trustEarned += questFound.reward?.trust ?? 0;
+		questUser.xp += questFound.reward;
 
 		const category = questFound.category;
 		if (category != "one-time") {

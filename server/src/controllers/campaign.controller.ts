@@ -17,17 +17,18 @@ import { validateCampaignData } from "@/utils/utils";
 
 interface IReward {
 	xp: number;
-	trust: number;
+	trustTokens: number;
+	pool: number;
 }
 
 interface ICreateCampaign {
-	nameOfProject: string;
+	project_name: string;
 	reward: IReward;
-	startDate: string;
-	logo: string;
+	starts_at: Date;
+	project_image: string;
 	projectCoverImage: string;
 	creator: string;
-	endDate: Date;
+	ends_at: Date;
 	title: string;
 	description: string;
 }
@@ -96,15 +97,15 @@ export const createCampaign = async (
 			maxSize: 2 * 1024 ** 2, // 2 MB
 		});
 
-		const endDate = new Date(requestData.endDate);
+		const endDate = new Date(requestData.ends_at);
 
-		requestData.endDate = endDate;
+		requestData.ends_at = endDate;
 
 		requestData.creator = projectUserId as string;
 
 		requestData.projectCoverImage = projectCoverImageUrl;
 
-		requestData.logo = campaignCreator.logo;
+		requestData.project_image = campaignCreator.logo;
 
 		const newCampaign = new campaign(requestData);
 
@@ -298,17 +299,17 @@ export const claimCampaignRewards = async (
 			user: req.id
 		});
 
+		if (!completedCampaign?.questsCompleted) {
+			res.status(FORBIDDEN).json({
+				error: "all quests must be completed before rewards can be claimed",
+			});
+			return;
+		}
+
 		if (!completedCampaign) {
 			res
 				.status(FORBIDDEN)
 				.json({ error: "kindly complete the campaign to claim rewards" });
-			return;
-		}
-
-		if (!completedCampaign.questsCompleted) {
-			res.status(FORBIDDEN).json({
-				error: "all quests must be completed before rewards can be claimed",
-			});
 			return;
 		}
 
@@ -318,7 +319,7 @@ export const claimCampaignRewards = async (
 		}
 
 		const xp = campaignToClaimRewards.reward?.xp as number;
-		const trustTokens = campaignToClaimRewards.reward?.tokenPerUser ?? 0;
+		const trustTokens = campaignToClaimRewards.reward?.trustTokens ?? 0;
 
 		userToReward.xp += xp;
 		userToReward.trustEarned += trustTokens;

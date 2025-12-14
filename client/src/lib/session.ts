@@ -1,6 +1,6 @@
 type SessionChangeCb = (token: string | null) => void | Promise<any>;
 
-const KEY = "accessToken";
+const KEY = "token";
 const listeners = new Set<SessionChangeCb>();
 
 export function getSessionToken(): string | null {
