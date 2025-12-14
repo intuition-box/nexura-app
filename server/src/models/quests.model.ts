@@ -80,10 +80,16 @@ export const campaignQuest = mongoose.model(
 const questSchema = new Schema({
 	title: {
 		type: String,
-		// required: true
+		required: true
+	},
+	sub_title: {
+		type: String
 	},
 	description: {
 		type: String,
+	},
+	questNumber: {
+		type: Number
 	},
 	reward: {
 		type: Number,
@@ -98,7 +104,7 @@ const questSchema = new Schema({
 	},
 	expires: {
 		type: Date,
-		expires: "7d",
+		expires: "14d",
 		required: false,
 	},
 }, { timestamps: true });
