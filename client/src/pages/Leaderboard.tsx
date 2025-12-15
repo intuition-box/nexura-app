@@ -19,19 +19,19 @@ function buildUrl(path: string) {
 }
 
 type Entry = {
-  id: string;
+  _id: string;
   username: string;
   avatar?: string;
   display_name?: string;
   address?: string;
   xp: number;
   level: number;
-  quests_completed?: number;
-  tasks_completed?: number;
+  questsCompleted?: number;
+  campaignsCompleted?: number;
 };
 
 export default function Leaderboard() {
-  const [list, setList] = useState<Entry[] | null>(null);
+  const [list, setList] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,10 +43,10 @@ export default function Leaderboard() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then((data: Entry[]) => {
+      .then((data: any) => {
         if (!mounted) return;
         // Data is already sorted by XP from backend
-        setList(data);
+        setList(data.leaderboardInfo.leaderboardByXp);
       })
       .catch((err) => {
         if (!mounted) return;
@@ -114,7 +114,7 @@ export default function Leaderboard() {
               const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32']; // Gold, Silver, Bronze
               
               return (
-                <Card key={entry.id} className={`p-4 glass glass-hover rounded-3xl transition-all ${
+                <Card key={entry._id} className={`p-4 glass glass-hover rounded-3xl transition-all ${
                   isTopThree ? 'border-2' : ''
                 }`} style={isTopThree ? { borderColor: rankColors[idx] } : {}}>
                   <div className="flex items-center justify-between">
@@ -148,7 +148,7 @@ export default function Leaderboard() {
                           </Badge>
                         </div>
                         <div className="text-sm text-white/50">
-                          {entry.quests_completed || 0} quests · {entry.tasks_completed || 0} tasks
+                          {entry.questsCompleted || 0} quests · {entry.campaignsCompleted || 0} campaigns
                         </div>
                       </div>
                     </div>

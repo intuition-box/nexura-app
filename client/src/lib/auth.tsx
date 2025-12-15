@@ -40,15 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         console.log("passed first fetch");
         
-        if (!res || !res.ok) {
-          console.warn("Could not restore session: API returned", res?.status || "no response");
-          try { clearSession(); } catch { /* ignore */ }
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-        
-        const json = await res.json().catch(() => null);
+        const json = await res?.json().catch(() => null);
         if (!json) {
           console.warn("Could not parse profile response");
           setUser(null);

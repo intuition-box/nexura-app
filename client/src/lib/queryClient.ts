@@ -70,7 +70,6 @@ export async function apiRequestV2(
   endpoint: string,
   data?: unknown | undefined,
 ): Promise<any> {
-  console.log({ BACKEND_URL });
   const headers = { "Content-Type": "application/json" , "Authorization": `Bearer ${getStoredAccessToken()}`};
 
   const res = await fetch(`${BACKEND_URL}${endpoint}`, {
