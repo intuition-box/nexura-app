@@ -108,8 +108,8 @@ export const fetchMiniQuests = async (req: GlobalRequest, res: GlobalResponse) =
 		const miniQuestsInDB = await miniQuest.find({ quest: id });
 
 		const miniQuestsCompleted = await miniQuestCompleted.find({
-			quest: new mongoose.Types.ObjectId(id),
-			user: new mongoose.Types.ObjectId(req.id),
+			quest: id,
+			user: req.id,
 		});
 
 		const miniQuests: any[] = [];
@@ -159,7 +159,7 @@ export const fetchCampaignQuests = async (
 
 		const campaignQuestsCompleted = await campaignQuestCompleted.find({
 			user: userId,
-			campaign: id,
+			campaign: id
 		});
 
 		const completedCampaign = await campaignCompleted.findOne({
@@ -172,7 +172,7 @@ export const fetchCampaignQuests = async (
 		for (const quest of quests) {
 			const questCompleted = campaignQuestsCompleted.find(
 				(completedCampaignQuest) =>
-					completedCampaignQuest.campaignQuest === quest._id
+					completedCampaignQuest.campaignQuest?.toString() === quest._id.toString()
 			);
 
 			const mergedCampaignQuest: Record<any, unknown> = quest.toJSON();
@@ -299,7 +299,7 @@ export const performCampaignQuest = async (
 	res: GlobalResponse
 ) => {
 	try {
-		const id = req.query.id;
+		const { id, campaignId } = req.body;
 
 		const campaignQuestk = await campaignQuest.findById(id);
 		if (!campaignQuestk) {
@@ -318,10 +318,11 @@ export const performCampaignQuest = async (
 			await campaignQuestCompleted.create({
 				done: true,
 				user: req.id,
-				CampaignQuest: id,
+				campaignQuest: id,
+				campaign: campaignId
 			});
 
-			res.status(OK).json({ error: "campaign quest done!" });
+			res.status(OK).json({ message: "campaign quest done!" });
 			return;
 		}
 
@@ -358,7 +359,7 @@ export const claimMiniQuest = async (req: GlobalRequest, res: GlobalResponse) =>
 			return;
 		}
 
-		const miniQuestExists = await miniQuestCompleted.findOne({ miniQuest: id });
+		const miniQuestExists = await miniQuestCompleted.findOne({ miniQuest: id, user: req.id });
 		if (!miniQuestExists) {
 			await miniQuestCompleted.create({ done: true, miniQuest: id, quest: questId, user: req.id });
 
