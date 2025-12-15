@@ -12,14 +12,15 @@ import { BACKEND_URL, apiRequestV2, getStoredAccessToken } from "@/lib/queryClie
 interface Quest {
   _id: string;
   title: string;
-  description?: string;
+  sub_title: string;
   project_name?: string;
+  done: boolean;
   project_image?: string;
   starts_at?: string;
   ends_at?: string;
   link?: string;
-  category?: string;
-  reward?: string;
+  category: string;
+  reward: string;
   url?: string;
   actionLabel?: string;
   status: string;
@@ -140,12 +141,12 @@ export default function Quests() {
 
         <div className="p-5 space-y-3">
           <h2 className="text-lg font-semibold text-white">{quest.title}</h2>
-          <p className="text-sm text-gray-400">{quest.description}</p>
+          <p className="text-sm text-gray-400">{quest.sub_title}</p>
 
           {quest.project_name && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Project:</span>
-              <span className="text-white">Nexura</span>
+              <span className="text-white">{quest.project_name ?? "Nexura"}</span>
             </div>
           )}
 
@@ -218,8 +219,8 @@ export default function Quests() {
               const claimed = claimedTasks.includes(quest._id);
 
               let buttonText = quest.actionLabel || "Start Task";
-              if (visited && !claimed) buttonText = `Claim Reward: ${quest.reward}`;
-              if (claimed) buttonText = "Completed";
+              if (visited && !claimed) buttonText = `Claim Reward: ${quest.reward} XP`;
+              if (claimed ?? quest.done) buttonText = "Completed";
 
               return (
                 <div

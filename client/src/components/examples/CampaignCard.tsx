@@ -8,31 +8,31 @@ export default function CampaignCardExample() {
       <CampaignCard
         title="Theo x Nexura"
         projectName="Theo"
-  projectLogo={siteLogo}
+        projectLogo={siteLogo}
         heroImage={questHero}
         participantCount={1466}
-        startDate="2024-09-19T09:00:00Z"
-        endDate="2024-10-19T09:00:00Z"
+        starts_at="2024-09-19T09:00:00Z"
+        ends_at="2024-10-19T09:00:00Z"
         isLive={true}
       />
       <CampaignCard
         title="The Road to UpTEAber"
         projectName="Tea-Fi"
-  projectLogo={siteLogo}
+        projectLogo={siteLogo}
         heroImage={questHero}
         participantCount={6594}
-        startDate="2024-09-12T10:00:00Z"
-        endDate="2024-10-16T10:00:00Z"
+        starts_at="2024-09-12T10:00:00Z"
+        ends_at="2024-10-16T10:00:00Z"
         isLive={true}
       />
       <CampaignCard
         title="CoinW Campaign"
         projectName="CoinW"
-  projectLogo={siteLogo}
+        projectLogo={siteLogo}
         heroImage={questHero}
         participantCount={3034}
-        startDate="2024-09-08T11:00:00Z"
-        endDate="2024-09-22T11:00:00Z"
+        starts_at="2024-09-08T11:00:00Z"
+        ends_at="2024-09-22T11:00:00Z"
         isLive={false}
       />
     </div>

@@ -97,9 +97,9 @@ export const createCampaign = async (
 			maxSize: 2 * 1024 ** 2, // 2 MB
 		});
 
-		const endDate = new Date(requestData.ends_at);
+		const ends_at = new Date(requestData.ends_at);
 
-		requestData.ends_at = endDate;
+		requestData.ends_at = ends_at;
 
 		requestData.creator = projectUserId as string;
 
@@ -213,13 +213,13 @@ export const updateCampaign = async (
 		const { id } = req.body;
 		const campaignUpdateData: Record<string, unknown> = {};
 
-		for (const field of ["description", "title", "endDate", "reward"]) {
+		for (const field of ["description", "title", "ends_at", "reward"]) {
 			const value = req.body[field];
-			if (field !== "endDate") {
+			if (field !== "ends_at") {
 				campaignUpdateData[field] = value;
 			} else {
-				const endDate = new Date(value);
-				campaignUpdateData[field] = endDate;
+				const ends_at = new Date(value);
+				campaignUpdateData[field] = ends_at;
 			}
 		}
 

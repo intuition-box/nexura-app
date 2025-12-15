@@ -1,6 +1,6 @@
 type SessionChangeCb = (token: string | null) => void | Promise<any>;
 
-const KEY = "token";
+const KEY = "nexura:token";
 const listeners = new Set<SessionChangeCb>();
 
 export function getSessionToken(): string | null {

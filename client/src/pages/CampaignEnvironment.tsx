@@ -26,13 +26,35 @@ const campaignQuestsInitial: Quest[] = [
 export default function CampaignEnvironment() {
   const [quests, setQuests] = useState<Quest[]>(campaignQuestsInitial);
   const [visitedQuests, setVisitedQuests] = useState<String[]>([]);
+  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState("");
+  const [sub_title, setSubTitle] = useState("");
+  const [project_name, setProjectName] = useState("");
+  const [campaignNumber, setCampaignNumber] = useState("000");
+  const [reward, setReward] = useState<{trustTokens: number, xp: number}>({ trustTokens: 0, xp: 0 });
+
+  const { campaignId } = useParams();
 
   useEffect(() => {
-
     (async () => {
-      const { campaignId } = useParams();
-      const campaignQuests = await apiRequestV2("GET", `/api/campaign/quests?id=${campaignId}`);
+      const {
+        campaignQuests,
+        campaignCompleted,
+        description: desc,
+        title: t,
+        sub_title: st,
+        reward: rwd,
+        project_name: p_name,
+        campaignNumber: campaignNo
+      } = await apiRequestV2("GET", `/api/campaign/quests?id=${campaignId}`);
+
       setQuests(campaignQuests);
+      setDescription(desc);
+      setTitle(t);
+      setReward(rwd);
+      setSubTitle(st);
+      setProjectName(p_name);
+      setCampaignNumber(campaignNo);
     })();
   }, []);
 
@@ -72,8 +94,8 @@ export default function CampaignEnvironment() {
         <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-6 space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <p className="uppercase text-xs opacity-60">Get Started</p>
-              <p className="text-xl font-semibold">Join the Guild</p>
+              <p className="uppercase text-xs opacity-60">{title}</p>
+              <p className="text-xl font-semibold">{sub_title}</p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -105,17 +127,17 @@ export default function CampaignEnvironment() {
 
             <div className="p-6 flex flex-col justify-between">
               <div>
-                <p className="text-xs opacity-50 uppercase mb-1">Nexura</p>
-                <p className="text-xl font-bold leading-tight">Quest 001:<br />Join the Guild</p>
+                <p className="text-xs opacity-50 uppercase mb-1">{project_name}</p>
+                <p className="text-xl font-bold leading-tight">Campaign {campaignNumber}:<br />{sub_title}</p>
                 <div className="mt-4">
-                  <p className="uppercase text-xs opacity-50">Start Quest</p>
+                  <p className="uppercase text-xs opacity-50">Start Campaign Quest</p>
                   <p className="text-sm opacity-80 leading-relaxed mt-1">
-                    Complete simple quests in the Nexura ecosystem and earn rewards.
+                    {description}.
                   </p>
                 </div>
                 <div className="mt-3 space-y-1">
                   <p className="text-xs opacity-50 uppercase">Rewards</p>
-                  <p className="text-sm">500 XP</p>
+                  <p className="text-sm">{reward.trustTokens} TRUST + {reward.xp} XP</p>
                 </div>
               </div>
             </div>
@@ -125,10 +147,10 @@ export default function CampaignEnvironment() {
         {/* Quests List */}
         <div className="space-y-6">
           {quests.map((quest, index) => {
-            const visited = !visitedQuests.includes(quest._id);
+            const visited = visitedQuests.includes(quest._id);
 
             let buttonText = "Start Quest";
-            if (visited) buttonText = `Claim Reward: ${quest.reward} XP`;
+            if (visited) buttonText = `Claim`;
             if (quest.done) buttonText = "Completed";
 
             return (

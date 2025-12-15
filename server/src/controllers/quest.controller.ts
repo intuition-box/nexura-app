@@ -17,7 +17,7 @@ import {
 	NOT_FOUND,
 	CREATED,
 } from "@/utils/status.utils";
-import { validateCampaignQuestData, validateEcosystemQuestData, validateMiniQuestData } from "@/utils/utils";
+import { validateCampaignQuestData, padNumber, validateEcosystemQuestData, validateMiniQuestData } from "@/utils/utils";
 import mongoose from "mongoose";
 
 // todo: add ecosystem completed to eco quests
@@ -97,7 +97,7 @@ export const fetchQuests = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const fetchMiniQuests = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const { id } = req.query;
+		const id = req.query.id as string;
 		
 		const mainQuest = await quest.findById(id);
 		if (!mainQuest) {
@@ -108,11 +108,9 @@ export const fetchMiniQuests = async (req: GlobalRequest, res: GlobalResponse) =
 		const miniQuestsInDB = await miniQuest.find({ quest: id });
 
 		const miniQuestsCompleted = await miniQuestCompleted.find({
-			// quest: new mongoose.Types.ObjectId(id as string),
+			quest: new mongoose.Types.ObjectId(id),
 			user: new mongoose.Types.ObjectId(req.id),
 		});
-		console.log({ miniQuestsCompleted });
-		console.log({ ii: req.id });
 
 		const miniQuests: any[] = [];
 
@@ -131,7 +129,10 @@ export const fetchMiniQuests = async (req: GlobalRequest, res: GlobalResponse) =
 
 			miniQuests.push(mergedQuest);
 		}
-		res.status(OK).json({ message: "mini quests fetched", miniQuests, totalXp: mainQuest.reward  });
+
+		const questNumber = padNumber(mainQuest.questNumber!);
+
+		res.status(OK).json({ message: "mini quests fetched", miniQuests, totalXp: mainQuest.reward, questNumber, sub_title: mainQuest?.sub_title, title: mainQuest.title });
 	} catch (error) {
 		logger.error(error);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching mini quests" });
@@ -195,10 +196,18 @@ export const fetchCampaignQuests = async (
 			await campaignCompleted.create({ questsCompleted: true, campaign: id, user: userId });
 		}
 
+		const campaignNumber = padNumber(currentCampaign.campaignNumber);
+
 		res.status(OK).json({
 			message: "quests fetched!",
 			campaignQuests,
 			campaignCompleted: completedCampaign,
+			description: currentCampaign.description,
+			title: currentCampaign.title,
+			reward: currentCampaign.reward,
+			sub_title: currentCampaign.sub_title,
+			project_name: currentCampaign.project_name,
+			campaignNumber,
 		});
 	} catch (error) {
 		logger.error(error);

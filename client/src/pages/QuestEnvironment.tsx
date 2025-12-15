@@ -23,19 +23,25 @@ const questsInitial: Quest[] = [
 export default function QuestEnvironment() {
   const [miniQuests, setMiniQuests] = useState<Quest[]>(questsInitial);
   const [totalXP, setTotalXP] = useState(0);
+  const [questNumber, setQuestNumber] = useState<string>("000");
+  const [sub_title, setSubTitle] = useState<string>("");
+  const [title, setTitle] = useState<string>("");
   const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
   const [visitedQuests, setVisitedQuests] = useState<string[]>([]);
-  
+
   const { questId } = useParams();
 
   useEffect(() => {
     (async () => {
       console.log({ questId });
 
-      const quests = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
+      const { miniQuests: quests, totalXp, title: t, questNumber: quest_no, sub_title: st } = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
 
-      setMiniQuests(quests.miniQuests);
-      setTotalXP(quests.totalXp);
+      setMiniQuests(quests);
+      setTotalXP(totalXp);
+      setQuestNumber(quest_no);
+      setTitle(t);
+      setSubTitle(st);
     })();
   }, []);
 
@@ -104,8 +110,8 @@ export default function QuestEnvironment() {
         {/* Banner */}
         <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-6 flex justify-between items-center">
           <div>
-            <p className="uppercase text-xs opacity-60">Get Started</p>
-            <p className="text-xl font-semibold">Join the Guild</p>
+            <p className="uppercase text-xs opacity-60">{title}</p>
+            <p className="text-xl font-semibold">{sub_title}</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -130,7 +136,7 @@ export default function QuestEnvironment() {
             <div className="p-6 flex flex-col justify-between">
               <div>
                 <p className="text-xs opacity-50 uppercase mb-1">Nexura</p>
-                <p className="text-xl font-bold leading-tight">Quest 001:<br />Join the Guild</p>
+                <p className="text-xl font-bold leading-tight">Quest {questNumber}:<br />{sub_title}</p>
 
                 <div className="mt-4">
                   <p className="uppercase text-xs opacity-50">Start Quest</p>
@@ -140,7 +146,7 @@ export default function QuestEnvironment() {
                 </div>
                 <div className="mt-3 space-y-1">
                   <p className="text-xs opacity-50 uppercase">Rewards</p>
-                  <p className="text-sm">`${totalXP} XP`</p>
+                  <p className="text-sm">{totalXP} XP</p>
                 </div>
               </div>
 

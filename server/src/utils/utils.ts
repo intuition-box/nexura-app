@@ -2,13 +2,17 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { JWT_SECRET, REFRESH_SECRET } from "./env.utils";
 
+export const padNumber = (numberToBePadded: number) => {
+	return numberToBePadded.toString().padStart(3, "0");
+}
+
 export const validateCampaignData = (reqData: any) => {
 	const campaignSchema = z.object({
 		title: z.string().trim(),
 		description: z.string().trim(),
 		nameOfProject: z.string().trim(),
-		startDate: z.string().trim(),
-		endDate: z.string().trim(),
+		starts_at: z.string().trim(),
+		ends_at: z.string().trim(),
 		reward: z.object({
 			xp: z.number(),
 			// trust: z.number()

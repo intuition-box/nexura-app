@@ -3,7 +3,12 @@ import mongoose, { Schema } from "mongoose";
 const projectSchema = new Schema({
   name: {
     type: String,
-    required: true
+    required: true,
+    unique: true
+  },
+  address: {
+    type: String,
+    required: true,
   },
   // email: {
   //   type: String,

@@ -8,8 +8,8 @@ interface CampaignCardProps {
   projectLogo: string;
   heroImage: string;
   participantCount: number;
-  startDate: string;
-  endDate: string;
+  starts_at: string;
+  ends_at: string;
   isLive?: boolean;
   rewardPool?: {
     amount: string;
@@ -25,8 +25,8 @@ export default function CampaignCard({
   projectLogo,
   heroImage,
   participantCount,
-  startDate,
-  endDate,
+  starts_at,
+  ends_at,
   isLive = true,
   rewardPool,
   campaignId,
@@ -44,8 +44,8 @@ export default function CampaignCard({
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit'
@@ -60,30 +60,30 @@ export default function CampaignCard({
   };
 
   return (
-    <Card 
-      className="overflow-hidden glass glass-hover cursor-pointer group relative rounded-3xl hover:-translate-y-1 transition-all duration-300" 
+    <Card
+      className="overflow-hidden glass glass-hover cursor-pointer group relative rounded-3xl hover:-translate-y-1 transition-all duration-300"
       onClick={handleClick}
       data-testid={`campaign-card-${title.toLowerCase().replace(/\s+/g, '-')}`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-      
+
       {/* Hero Image */}
       <div className="relative h-48 overflow-hidden">
-        <img 
-          src={heroImage} 
+        <img
+          src={heroImage}
           alt={title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        
+
         {/* Participant Count Overlay */}
         <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1">
-          <span className="text-white font-bold">{formatParticipants(participantCount)}</span>
+          <span className="text-white font-bold">{formatParticipants(participantCount ?? 0)}</span>
         </div>
 
         {/* Status Badge */}
         <div className="absolute bottom-4 right-4">
-          <Badge 
+          <Badge
             variant={isLive ? "default" : "secondary"}
             className={isLive ? "bg-green-500 text-white" : "bg-gray-500 text-white"}
           >
@@ -96,29 +96,29 @@ export default function CampaignCard({
       <div className="p-6">
         {/* Project Info */}
         <div className="flex items-center space-x-2 mb-3">
-          <img 
-            src={projectLogo} 
+          <img
+            src={projectLogo}
             alt={projectName}
             className="w-6 h-6 rounded-full"
           />
           <span className="text-sm text-muted-foreground">{projectName}</span>
         </div>
-        
+
         <h3 className="text-lg font-bold text-card-foreground mb-4">{title}</h3>
 
         {/* Date Range */}
         <div className="flex items-center space-x-4 mb-4">
           <div className="text-center">
             <div className="text-sm font-bold text-card-foreground">
-              {formatDate(startDate).split(',')[0].split(' ')[0]}
+              {formatDate(starts_at).split(',')[0].split(' ')[0]}
             </div>
             <div className="text-lg font-bold text-card-foreground">
-              {formatDate(startDate).split(' ')[1]}
+              {formatDate(starts_at).split(' ')[1]}
             </div>
           </div>
           <div className="flex-1 text-xs text-muted-foreground">
-            <div>{formatDate(startDate)}</div>
-            <div>to {formatDate(endDate)}</div>
+            <div>{formatDate(starts_at)}</div>
+            <div>to {formatDate(ends_at)}</div>
           </div>
         </div>
 

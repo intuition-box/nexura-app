@@ -17,8 +17,8 @@ export default function ProjectCreateCampaign() {
   // Details
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [starts_at, setstarts_at] = useState("");
+  const [ends_at, setends_at] = useState("");
   const [detailErrors, setDetailErrors] = useState<string[]>([]);
 
   // Tasks
@@ -38,9 +38,9 @@ export default function ProjectCreateCampaign() {
     const errs: string[] = [];
     if (!name.trim()) errs.push("Campaign name is required");
     if (!description.trim()) errs.push("Description is required");
-    if (!startDate) errs.push("Start date is required");
-    // optional: if endDate present it must be after startDate
-    if (startDate && endDate && new Date(endDate) < new Date(startDate)) errs.push("End date must be after start date");
+    if (!starts_at) errs.push("Start date is required");
+    // optional: if ends_at present it must be after starts_at
+    if (starts_at && ends_at && new Date(ends_at) < new Date(starts_at)) errs.push("End date must be after start date");
     setDetailErrors(errs);
     return errs.length === 0;
   }
@@ -101,8 +101,8 @@ export default function ProjectCreateCampaign() {
       projectId,
       name: name.trim(),
       description: description.trim(),
-      startDate: startDate || null,
-      endDate: endDate || null,
+      starts_at: starts_at || null,
+      ends_at: ends_at || null,
       tasks,
       rewards: { points: typeof rewardPoints === 'number' ? rewardPoints : 0, referralEnabled },
     };
@@ -157,11 +157,11 @@ export default function ProjectCreateCampaign() {
                 <div className="grid grid-cols-2 gap-4">
                   <label className="flex flex-col">
                     <span className="text-sm font-medium">Start date *</span>
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1 input" />
+                    <input type="date" value={starts_at} onChange={(e) => setstarts_at(e.target.value)} className="mt-1 input" />
                   </label>
                   <label className="flex flex-col">
                     <span className="text-sm font-medium">End date</span>
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1 input" />
+                    <input type="date" value={ends_at} onChange={(e) => setends_at(e.target.value)} className="mt-1 input" />
                   </label>
                 </div>
 

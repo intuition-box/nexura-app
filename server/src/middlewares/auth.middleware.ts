@@ -77,19 +77,23 @@ export const authenticateUser = async (req: GlobalRequest, res: GlobalResponse, 
 }
 
 export const authenticateUser2 = async (req: GlobalRequest, res: GlobalResponse, next: GlobalNextFunction) => {
-	const authHeader = req.headers.authorization;
-	const token = authHeader?.split(" ")[1];
-	
-	if (!token) {
+	try {
+		const authHeader = req.headers.authorization;
+		const token = authHeader?.split(" ")[1];
+
+		if (!token) {
+			next();
+			return;
+		}
+
+		const { id } = await JWT.verify(token) as decodedDataType;
+
+		req.id = id as string;
+
 		next();
-		return;
+	} catch (error) {
+		next();
 	}
-
-	const { id } = await JWT.verify(token) as decodedDataType;
-
-	req.id = id as string;
-
-	next();
 }
 
 export const authenticateAdmin = async (req: GlobalRequest, res: GlobalResponse, next: GlobalNextFunction) => {

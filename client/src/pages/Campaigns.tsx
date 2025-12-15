@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -12,13 +12,13 @@ interface Campaign {
   _id: string;
   title: string;
   description: string;
-  project_name?: string;
-  project_image?: string;
-  participants?: number;
+  project_name: string;
+  projectCoverImage: string;
+  participants: number;
   starts_at?: string;
   ends_at?: string;
   metadata?: string;
-  reward?: { amount: number; xp: number; pool?: number };
+  reward: { trustTokens: number; xp: number; pool?: number };
   url?: string;
   status?: string;
 }
@@ -30,8 +30,8 @@ const TASKS_CARD: Campaign = {
   description: "Complete unique tasks in the Nexura ecosystem and earn rewards",
   project_name: "NEXURA",
   participants: 250,
-  reward: { amount: 16, xp: 5, pool: 4000 },
-  project_image: "/campaign.png",
+  reward: { trustTokens: 16, xp: 5, pool: 4000 },
+  projectCoverImage: "/campaign.png",
   // reward_pool : ;
   starts_at: new Date("2025-12-05T00:00:00").toISOString(), // 5th December
   ends_at: undefined, // TBA
@@ -42,20 +42,32 @@ export default function Campaigns() {
   const [, setLocation] = useLocation();
   const [visitedTasks, setVisitedTasks] = useState<string[]>([]);
   const [claimedTasks, setClaimedTasks] = useState<string[]>([]);
+  // const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  // const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const { data: campaigns, isLoading } = useQuery({
-    queryKey: ["campaigns"],
+  const { data: campaigns, isLoading, isError, error } = useQuery({
+    queryKey: ["/api/campaigns"],
     queryFn: async () => {
       const res = await apiRequestV2("GET", "/api/campaigns");
-      return res;
+
+      return res.campaigns;
     },
+    enabled: true,
+    networkMode: "always",
   });
+
+  // useEffect(() => {
+  //   (async () => {
+  //     const res = await apiRequestV2("GET", "/api/campaigns");
+  //     setCampaigns(res.campaigns);
+  //   })();
+  // }, []);
 
   const now = new Date();
 
   const allCampaigns: Campaign[] = [
     TASKS_CARD,
-    ...campaigns,
+    // ...campaigns,
   ];
 
   const activeCampaigns = allCampaigns.filter((c) => {
@@ -86,10 +98,10 @@ export default function Campaigns() {
     const status = isActive ? "Active" : "Coming Soon";
 
     // Format start date
-    const startDateFormatted = campaign.starts_at
+    const starts_atFormatted = campaign.starts_at
       ? new Date(campaign.starts_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })
       : "";
-    const endDateFormatted = campaign.ends_at
+    const ends_atFormatted = campaign.ends_at
       ? new Date(campaign.ends_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })
       : "TBA";
 
@@ -101,9 +113,9 @@ export default function Campaigns() {
       >
         {/* Campaign Banner */}
         <div className="relative h-44 bg-black">
-          {campaign.project_image && (
+          {campaign.projectCoverImage && (
             <img
-              src={campaign.project_image}
+              src={campaign.projectCoverImage}
               alt={campaign.title}
               className="w-full h-full object-cover rounded-t-2xl"
             />
@@ -136,33 +148,27 @@ export default function Campaigns() {
           <h2 className="text-lg font-semibold text-white">{campaign.title}</h2>
           <p className="text-sm text-gray-400">{campaign.description}</p>
 
-          {campaign.project_name && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Project:</span>
-              <span className="text-white">{campaign.project_name}</span>
-            </div>
-          )}
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Project:</span>
+            <span className="text-white">{campaign.project_name}</span>
+          </div>
 
           {/* Participants */}
-          {campaign.participants && (
             <div className="flex justify-between text-sm items-center">
               <span className="text-gray-500">Participants:</span>
               <span className="text-white flex items-center gap-1">
                 <Users className="w-4 h-4" />
-                {campaign.participants.toLocaleString()}
+                {campaign?.participants?.toLocaleString()}
               </span>
             </div>
-          )}
 
           {/* Reward */}
-          {campaign.reward && (
-            <div className="flex justify-between text-sm items-center">
-              <span className="text-gray-500">Reward:</span>
-              <span className="text-white flex items-center gap-1">
-                {`${campaign.reward.amount} TRUST + ${campaign.reward.xp}`}
-              </span>
-            </div>
-          )}
+          <div className="flex justify-between text-sm items-center">
+            <span className="text-gray-500">Reward:</span>
+            <span className="text-white flex items-center gap-1">
+              {`${campaign.reward.trustTokens} TRUST + ${campaign.reward.xp}`}
+            </span>
+          </div>
 
           <div className="flex justify-between text-sm items-center">
             <span className="text-gray-500">Reward Pool:</span>
@@ -177,7 +183,7 @@ export default function Campaigns() {
               <span className="text-gray-500">Duration:</span>
               <span className="text-white flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                {startDateFormatted} – {endDateFormatted}
+                {starts_atFormatted} – {ends_atFormatted}
               </span>
             </div>
           )}

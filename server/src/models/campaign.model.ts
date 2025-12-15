@@ -18,7 +18,7 @@ const campaignSchema = new Schema({
 		required: true,
 	},
 	starts_at: {
-		type: Date,
+		type: String,
 		required: true,
 	},
 	totalXpAvailable: {
@@ -38,12 +38,20 @@ const campaignSchema = new Schema({
 		default: 0,
 	},
 	ends_at: {
-		type: Date,
+		type: String,
 		required: true,
 	},
 	participants: {
 		type: Number,
 		default: 0,
+	},
+	sub_title: {
+		type: String,
+		required: true,
+	},
+	campaignNumber: {
+		type: Number,
+		required: true,
 	},
 	status: {
 		type: String,

@@ -31,16 +31,16 @@ export default function CampaignCreate() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Campaign fields
   const [campaignName, setCampaignName] = useState("");
   const [campaignDescription, setCampaignDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  
+  const [starts_at, setstarts_at] = useState("");
+  const [ends_at, setends_at] = useState("");
+
   // Task builder state
   const [tasks, setTasks] = useState<TaskInProgress[]>([]);
-  
+
   // Task form state (dropdown workflow)
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory | "">("");
@@ -69,7 +69,7 @@ export default function CampaignCreate() {
       });
       return;
     }
-    
+
     if (!selectedCategory || !selectedSubtype) {
       toast({
         title: "Error",
@@ -90,7 +90,7 @@ export default function CampaignCreate() {
     };
 
     setTasks([...tasks, newTask]);
-    
+
     toast({
       title: "Success",
       description: "Task added to campaign",
@@ -284,7 +284,7 @@ export default function CampaignCreate() {
       });
       return;
     }
-    
+
     if (tasks.length === 0) {
       toast({
         title: "Error",
@@ -293,36 +293,36 @@ export default function CampaignCreate() {
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // TODO: Get actual project ID from context/auth
       const projectId = "temp-project-id";
-      
+
       // Create campaign
       const campaignData = {
         projectId,
         name: campaignName,
         description: campaignDescription,
-        startsAt: startDate ? new Date(startDate).toISOString() : null,
-        endsAt: endDate ? new Date(endDate).toISOString() : null,
+        startsAt: starts_at ? new Date(starts_at).toISOString() : null,
+        endsAt: ends_at ? new Date(ends_at).toISOString() : null,
       };
-      
+
       // For now, we'll need a campaigns endpoint - let's log for now
       console.log("Campaign data:", campaignData);
       console.log("Tasks:", tasks);
-      
+
       toast({
         title: "Success",
         description: "Campaign created successfully (mock)",
       });
-      
+
       // Navigate back to campaigns list
       setTimeout(() => {
         setLocation("/campaigns");
       }, 1000);
-      
+
     } catch (error: any) {
       console.error("Failed to create campaign:", error);
       toast({
@@ -382,8 +382,8 @@ export default function CampaignCreate() {
                   <label className="text-white font-bold text-sm mb-2 block">Start Date</label>
                   <Input
                     type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    value={starts_at}
+                    onChange={(e) => setstarts_at(e.target.value)}
                     className="glass rounded-full"
                   />
                 </div>
@@ -391,8 +391,8 @@ export default function CampaignCreate() {
                   <label className="text-white font-bold text-sm mb-2 block">End Date</label>
                   <Input
                     type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    value={ends_at}
+                    onChange={(e) => setends_at(e.target.value)}
                     className="glass rounded-full"
                   />
                 </div>
