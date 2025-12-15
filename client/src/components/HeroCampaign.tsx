@@ -10,8 +10,8 @@ interface Campaign {
   projectName: string;
   projectLogo: string;
   participantCount: number;
-  startDate: string;
-  endDate: string;
+  starts_at: string;
+  ends_at: string;
   isLive: boolean;
   rewardPool?: {
     amount: string;
@@ -48,7 +48,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
     const date = new Date(dateStr);
     const month = date.toLocaleDateString('en-US', { month: 'short' });
     const day = date.getDate();
-    const time = date.toLocaleDateString('en-US', { 
+    const time = date.toLocaleDateString('en-US', {
       hour: 'numeric',
       minute: '2-digit'
     });
@@ -65,21 +65,21 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
 
   if (!currentCampaign) return null;
 
-  const startDate = formatDate(currentCampaign.startDate);
-  const endDate = formatDate(currentCampaign.endDate);
+  const starts_at = formatDate(currentCampaign.starts_at);
+  const ends_at = formatDate(currentCampaign.ends_at);
 
   return (
-    <div 
+    <div
       className="relative h-96 glass rounded-3xl overflow-hidden mb-8 cursor-pointer group"
       onClick={handleCampaignClick}
       data-testid="hero-campaign-card"
     >
       {/* Background Image */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
         style={{ backgroundImage: `url(${currentCampaign.heroImage})` }}
       />
-      
+
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -95,7 +95,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
       >
         <ChevronLeft className="w-5 h-5 text-white" />
       </button>
-      
+
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -111,15 +111,15 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
         <div className="flex-1 p-8">
           {/* Participant Count */}
           <div className="text-white/80 text-sm mb-2">
-            {formatParticipants(currentCampaign.participantCount)}
+            {formatParticipants(currentCampaign.participantCount ?? 0)} participants
           </div>
 
           {/* Campaign Label */}
           <div className="text-white/60 text-sm mb-2">Campaign</div>
-          
+
           {/* Title */}
           <h1 className="text-4xl font-bold text-white mb-4">{currentCampaign.title}</h1>
-          
+
           {/* Description */}
           <p className="text-white/80 text-lg mb-6 max-w-md">{currentCampaign.description}</p>
 
@@ -127,15 +127,15 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
           <div className="flex items-center space-x-6 mb-6">
             <div className="flex items-center space-x-2">
               <div className="text-center">
-                <div className="text-white font-bold text-lg">{startDate.month}</div>
-                <div className="text-white font-bold text-2xl">{startDate.day}</div>
+                <div className="text-white font-bold text-lg">{starts_at.month}</div>
+                <div className="text-white font-bold text-2xl">{starts_at.day}</div>
               </div>
               <div className="text-white/60 text-sm">
-                <div>{startDate.time}</div>
-                <div>to {endDate.time}</div>
+                <div>{starts_at.time}</div>
+                <div>to {ends_at.time}</div>
               </div>
             </div>
-            
+
             {currentCampaign.isLive && (
               <Badge className="bg-green-500 text-white">
                 <div className="w-2 h-2 bg-white rounded-full mr-2"></div>
@@ -169,17 +169,17 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
               <div className="absolute inset-0 transform perspective-1000 rotate-x-20">
                 <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 clip-hexagon transform-3d"></div>
               </div>
-              
+
               {/* Top hexagon */}
               <div className="absolute inset-4 transform perspective-1000 rotate-x-20 translate-y-2">
                 <div className="w-full h-full bg-gradient-to-br from-gray-600 to-gray-700 clip-hexagon transform-3d"></div>
               </div>
-              
+
               {/* Project Logo */}
               <div className="absolute inset-8 flex items-center justify-center">
                 <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center border-4 border-white/20">
-                  <img 
-                    src={currentCampaign.projectLogo} 
+                  <img
+                    src={currentCampaign.projectLogo}
                     alt={currentCampaign.projectName}
                     className="w-16 h-16 rounded-full object-cover"
                   />
@@ -199,9 +199,8 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
               e.stopPropagation();
               setCurrentIndex(index);
             }}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              index === currentIndex ? 'bg-white' : 'bg-white/40'
-            }`}
+            className={`w-2 h-2 rounded-full transition-colors ${index === currentIndex ? 'bg-white' : 'bg-white/40'
+              }`}
             data-testid={`pagination-dot-${index}`}
           />
         ))}
