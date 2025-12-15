@@ -59,6 +59,10 @@ const campaignQuestCompletedSchema = new Schema({
 		type: Boolean,
 		required: true,
 	},
+	campaign: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "campaign"
+	},
 	campaignQuest: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "campaignQuest",
