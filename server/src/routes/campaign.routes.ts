@@ -15,6 +15,7 @@ import {
 import {
 	authenticateProject,
 	authenticateUser,
+	authenticateUser2,
 	upload,
 } from "@/middlewares/auth.middleware";
 
@@ -28,7 +29,7 @@ router
 	.post("/create-campaign-quests", authenticateProject, createCampaignQuests)
 	.post("/create-ecosystem-quests", authenticateProject, createEcosystemQuests)
 	.post("/join-campaign", authenticateUser, joinCampaign)
-	.get("/quests", fetchCampaignQuests)
+	.get("/quests", authenticateUser2, fetchCampaignQuests)
 	.patch("/update-campaign", authenticateProject, updateCampaign);
 
 export default router;
