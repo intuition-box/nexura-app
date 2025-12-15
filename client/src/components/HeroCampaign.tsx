@@ -4,18 +4,18 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 
 interface Campaign {
-  id: string;
+  _id: string;
   title: string;
   description: string;
-  projectName: string;
+  project_name: string;
   projectLogo: string;
-  participantCount: number;
+  participants: number;
   starts_at: string;
   ends_at: string;
   isLive: boolean;
-  rewardPool?: {
-    amount: string;
-    token: string;
+  reward?: {
+    xp: string;
+    trustTokens: string;
   };
   heroImage: string;
 }
@@ -31,7 +31,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
 
   const handleCampaignClick = () => {
     if (currentCampaign) {
-      setLocation(`/campaign/${currentCampaign.id}`);
+      setLocation(`/campaign/${currentCampaign._id}`);
     }
   };
 
@@ -111,7 +111,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
         <div className="flex-1 p-8">
           {/* Participant Count */}
           <div className="text-white/80 text-sm mb-2">
-            {formatParticipants(currentCampaign.participantCount ?? 0)} participants
+            {formatParticipants(currentCampaign.participants ?? 0)} participants
           </div>
 
           {/* Campaign Label */}
@@ -145,15 +145,15 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
           </div>
 
           {/* Reward Pool */}
-          {currentCampaign.rewardPool && (
+          {currentCampaign.reward && (
             <div className="flex items-center space-x-2">
               <span className="text-white/60">Total Rewards Pool</span>
               <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                {/* <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">T</span>
-                </div>
+                </div> */}
                 <span className="text-white font-bold text-lg">
-                  {currentCampaign.rewardPool.amount} {currentCampaign.rewardPool.token}
+                  {currentCampaign.reward.xp} XP + {currentCampaign.reward.trustTokens} TRUST
                 </span>
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
                 <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center border-4 border-white/20">
                   <img
                     src={currentCampaign.projectLogo}
-                    alt={currentCampaign.projectName}
+                    alt={currentCampaign.project_name}
                     className="w-16 h-16 rounded-full object-cover"
                   />
                 </div>

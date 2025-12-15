@@ -4,32 +4,32 @@ import { useLocation } from "wouter";
 
 interface CampaignCardProps {
   title: string;
-  projectName: string;
+  project_name: string;
   projectLogo: string;
-  heroImage: string;
-  participantCount: number;
+  projectCoverImage: string;
+  participants: number;
   starts_at: string;
   ends_at: string;
   isLive?: boolean;
-  rewardPool?: {
-    amount: string;
-    token: string;
+  reward?: {
+    xp: string;
+    trustTokens: string;
   };
-  campaignId?: string;
+  _id?: string;
   from?: string;
 }
 
 export default function CampaignCard({
   title,
-  projectName,
+  project_name,
   projectLogo,
-  heroImage,
-  participantCount,
+  projectCoverImage,
+  participants,
   starts_at,
   ends_at,
   isLive = true,
-  rewardPool,
-  campaignId,
+  reward,
+  _id,
   from
 }: CampaignCardProps) {
   const [, setLocation] = useLocation();
@@ -53,8 +53,8 @@ export default function CampaignCard({
   };
 
   const handleClick = () => {
-    if (campaignId && isLive) {
-      const url = from ? `/campaign/${campaignId}?from=${from}` : `/campaign/${campaignId}`;
+    if (_id && isLive) {
+      const url = from ? `/campaign/${_id}?from=${from}` : `/campaign/${_id}`;
       setLocation(url);
     }
   };
@@ -70,7 +70,7 @@ export default function CampaignCard({
       {/* Hero Image */}
       <div className="relative h-48 overflow-hidden">
         <img
-          src={heroImage}
+          src={projectCoverImage}
           alt={title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
@@ -78,7 +78,7 @@ export default function CampaignCard({
 
         {/* Participant Count Overlay */}
         <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1">
-          <span className="text-white font-bold">{formatParticipants(participantCount ?? 0)}</span>
+          <span className="text-white font-bold">{formatParticipants(participants ?? 0)}</span>
         </div>
 
         {/* Status Badge */}
@@ -98,10 +98,10 @@ export default function CampaignCard({
         <div className="flex items-center space-x-2 mb-3">
           <img
             src={projectLogo}
-            alt={projectName}
+            alt={project_name}
             className="w-6 h-6 rounded-full"
           />
-          <span className="text-sm text-muted-foreground">{projectName}</span>
+          <span className="text-sm text-muted-foreground">{project_name}</span>
         </div>
 
         <h3 className="text-lg font-bold text-card-foreground mb-4">{title}</h3>
@@ -123,15 +123,15 @@ export default function CampaignCard({
         </div>
 
         {/* Reward Pool */}
-        {rewardPool && (
+        {reward && (
           <div className="border-t border-card-border pt-4">
             <div className="text-sm text-muted-foreground mb-1">Rewards</div>
             <div className="flex items-center space-x-2">
-              <span className="text-blue-500 font-bold">5XP</span>
+              <span className="text-blue-500 font-bold">{reward.xp} XP</span>
               <span className="text-muted-foreground">+</span>
               <div className="flex items-center space-x-1">
                 <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                <span className="font-bold text-card-foreground">{rewardPool.amount} {rewardPool.token}</span>
+                <span className="font-bold text-card-foreground">{reward.trustTokens} TRUST</span>
               </div>
             </div>
           </div>
