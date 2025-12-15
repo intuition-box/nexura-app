@@ -60,7 +60,6 @@ export const authenticateUser = async (req: GlobalRequest, res: GlobalResponse, 
       res.status(UNAUTHORIZED).json({ error: "only authenticated users can use this route" });
       return;
 		}
-		console.log({ aut: id });
 
 		req.id = id as string;
 
