@@ -29,7 +29,7 @@ export const performIntuitionOnchainAction = async ({
 	action: string;
   userId: string;
 	lvl?: string;
-	contractAddress: string;
+	contractAddress?: string;
 }) => {
 	const walletClient = getWalletClient();
 
