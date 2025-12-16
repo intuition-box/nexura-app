@@ -209,11 +209,11 @@ export const fetchCampaignQuests = async (
 
 		if (currentCampaign.noOfQuests === campaignQuestsCompleted.length) {
 
-			await performIntuitionOnchainAction({
-				action: "allow-claim",
-				userId,
-				contractAddress: currentCampaign.contractAddress!,
-			});
+			// await performIntuitionOnchainAction({
+			// 	action: "allow-claim",
+			// 	userId,
+			// 	contractAddress: currentCampaign.contractAddress!,
+			// });
 
 			await campaignCompleted.create({ questsCompleted: true, campaign: id, user: userId });
 		}
