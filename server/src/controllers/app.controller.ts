@@ -1,7 +1,8 @@
 import logger from "@/config/logger";
 import { referredUsers } from "@/models/referrer.model";
 import { user } from "@/models/user.model";
-import { INTERNAL_SERVER_ERROR, OK, CREATED, BAD_REQUEST } from "@/utils/status.utils";
+import { performIntuitionOnchainAction } from "@/utils/account";
+import { INTERNAL_SERVER_ERROR, OK, CREATED, BAD_REQUEST, FORBIDDEN } from "@/utils/status.utils";
 
 export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 	res.send("hi!");
@@ -81,3 +82,60 @@ export const referralInfo = async (req: GlobalRequest, res: GlobalResponse) => {
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching referral info" });
   }
 }
+
+export const allowRefRewardClaim = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const userId = req.id!;
+
+    const usersReferred = await referredUsers.find({ user: userId });
+
+    const activeUsers = usersReferred.filter((u) => u.status === "Active");
+    if (activeUsers.length < 10) {
+      res.status(FORBIDDEN).json({ error: "active users threshold hasn't been met!" });
+      return;
+    }
+
+    await performIntuitionOnchainAction({
+      action: "claim-ref-reward",
+      userId,
+    });
+
+    res.status(OK).json({ message: "user allowed to claim referrer reward!" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error allowing user to claim referrer reward" })
+  }
+};
+
+export const claimReferreralReward = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const userId = req.id!;
+
+    const referrer = await user.findById(userId);
+    if (!referrer) {
+      res.status(BAD_REQUEST).json({ error: "id associated with user is invalid" });
+      return;
+    }
+
+    if (referrer.refRewardClaimed) {
+      res.status(BAD_REQUEST).json({ error: "referrer reward claimed" });
+      return;
+    }
+
+    const usersReferred = await referredUsers.find({ user: userId });
+
+    const activeUsers = usersReferred.filter((u) => u.status === "Active");
+    if (activeUsers.length < 10) {
+      res.status(FORBIDDEN).json({ error: "active users threshold hasn't been met!" });
+      return;
+    }
+
+    referrer.trustEarned += 10.8;
+    await referrer.save();
+
+    res.status(OK).json({ message: "referral reward claimed!" });
+  } catch(error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error claiming referral reward" });
+  }
+};
