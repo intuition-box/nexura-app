@@ -3,7 +3,8 @@ import mongoose, { Schema } from "mongoose";
 const userSchema = new Schema({
 		username: {
 			type: String,
-			// required: true
+			required: true,
+			unique: true
 		},
 		// password: {
 		//   type: String,
@@ -63,6 +64,14 @@ const userSchema = new Schema({
 		dateJoined: {
 			type: String,
 			required: true,
+		},
+		refRewardClaimed: {
+			type: Boolean,
+			defult: false
+		},
+		status: {
+			type: String,
+			default: "Inactive"
 		},
 		campaigns: [
 			{

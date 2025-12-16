@@ -8,6 +8,7 @@ const referredUsersSchema = new Schema({
   status: {
     type: String,
     default: "Inactive",
+    enum: ["Inactive", "Active"]
   },
   signedUp: {
     type: String,
@@ -16,6 +17,7 @@ const referredUsersSchema = new Schema({
   username: {
     type: String,
     required: true,
+    unique: true
   },
 }, {timestamps: true});
 
