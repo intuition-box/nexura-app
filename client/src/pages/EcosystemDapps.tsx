@@ -55,15 +55,15 @@ export default function EcosystemDapps() {
   });
 
   useEffect(() => {
-    try { localStorage.setItem('nexura:visited:dapps', JSON.stringify(visitedDapps)); } catch {}
+    try { localStorage.setItem('nexura:visited:dapps', JSON.stringify(visitedDapps)); } catch { }
   }, [visitedDapps]);
   useEffect(() => {
-    try { localStorage.setItem('nexura:claimed:dapps', JSON.stringify(claimedDapps)); } catch {}
+    try { localStorage.setItem('nexura:claimed:dapps', JSON.stringify(claimedDapps)); } catch { }
   }, [claimedDapps]);
 
   const markVisited = async (dapp: Dapp) => {
     if (!visitedDapps.includes(dapp._id)) setVisitedDapps(prev => [...prev, dapp._id]);
-    
+
     window.open(dapp.websiteUrl, "_blank");
 
     await apiRequestV2("POST", `/api/quest/set-timer?id=${dapp._id}`);
@@ -104,9 +104,9 @@ export default function EcosystemDapps() {
       toast({ title: 'XP awarded', description: `+${dapp.reward} XP` });
 
       window.location.reload();
-    } catch (error) {
-      console.error('claim error:', error);
-      toast({ title: 'Claim failed', description: error, variant: 'destructive' });
+    } catch (error: any) {
+      console.error('claim error:', error.message);
+      toast({ title: 'Claim failed', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -168,8 +168,8 @@ export default function EcosystemDapps() {
               <Card className="h-full flex flex-col overflow-hidden hover:border-primary/50 transition-colors group bg-card/50 backdrop-blur-sm border-white/10">
                 <div className="h-48 overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10" />
-                  <img 
-                    src={dapp.logo} 
+                  <img
+                    src={dapp.logo}
                     alt={dapp.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -201,9 +201,9 @@ export default function EcosystemDapps() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button 
-                      asChild 
-                      className="flex-1" 
+                    <Button
+                      asChild
+                      className="flex-1"
                       variant="outline"
                       onClick={() => markVisited(dapp)}
                     >
@@ -211,12 +211,12 @@ export default function EcosystemDapps() {
                         Launch App <ExternalLink className="w-4 h-4" />
                       </a>
                     </Button>
-                    
+
                     <Button
                       className="flex-1"
                       variant={dapp.done ? 'secondary' : 'default'}
                       disabled={!visitedDapps.includes(dapp._id) || dapp.done}
-                      onClick={(e) => { 
+                      onClick={(e) => {
                         e.stopPropagation();
                         handleClaim(dapp);
                       }}
