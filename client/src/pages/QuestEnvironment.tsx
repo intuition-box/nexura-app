@@ -27,9 +27,17 @@ export default function QuestEnvironment() {
   const [questNumber, setQuestNumber] = useState<string>("000");
   const [sub_title, setSubTitle] = useState<string>("");
   const [completed, setCompleted] = useState<boolean>(false);
+  // const [miniQuestsCompleted, setMiniQuestsCompleted] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
-  const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
-  const [visitedQuests, setVisitedQuests] = useState<string[]>([]);
+  const [visitedQuests, setVisitedQuests] = useState<String[]>(() => {
+    return JSON.parse(localStorage.getItem('nexura:quest:visited') || '[]');
+  });
+  const [claimedQuests, setClaimedQuests] = useState<String[]>(() => {
+    return JSON.parse(localStorage.getItem('nexura:quest:claimed') || '[]');
+  });
+  const [questCompleted, setQuestCompleted] = useState<boolean>(() => {
+    return Boolean(JSON.parse(localStorage.getItem('nexura:quest:completed') || ""));
+  });
 
   const { questId } = useParams();
   const { toast } = useToast();
@@ -46,22 +54,42 @@ export default function QuestEnvironment() {
       } = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
 
       setCompleted(questCompleted);
+      // setMiniQuestsCompleted();
       setMiniQuests(quests);
       setTotalXP(totalXp);
       setQuestNumber(quest_no);
       setTitle(t);
       setSubTitle(st);
+
+      if (questCompleted) {
+        for (const key of ['nexura:quest:visited', 'nexura:quest:claimed', 'nexura:quest:completed']) {
+          localStorage.removeItem(key);
+        }
+      }
     })();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('nexura:quest:visited', JSON.stringify(visitedQuests))
+  }, [visitedQuests]);
+  useEffect(() => {
+    localStorage.setItem('nexura:quest:claimed', JSON.stringify(claimedQuests))
+  }, [claimedQuests]);
+  useEffect(() => {
+    localStorage.setItem('nexura:quest:completed', JSON.stringify(questCompleted))
+  }, [questCompleted]);
+
+  const miniQuestsCompleted = miniQuests.filter((m) => m.done === true).length === miniQuests.length;
 
   const claimQuestReward = async () => {
     try {
       await apiRequestV2("POST", `/api/quest/claim-quest?id=${questId}`);
 
-      window.location.reload();
-    } catch (error) {
+      setQuestCompleted(true);
+      // window.location.reload();
+    } catch (error: any) {
       console.error(error);
-      toast.error({ title: "Error", description: "Error claiming quest reward", variant: "destructive" });
+      toast.error({ title: "Error", description: error.message, variant: "destructive" });
     }
   }
 
@@ -86,15 +114,18 @@ export default function QuestEnvironment() {
 
       if (!claimedQuests.includes(miniQuestId)) {
         setClaimedQuests([...claimedQuests, miniQuestId]);
+      } else {
+        toast({ title: "Already Claimed", description: "Task already completed", variant: "destructive" });
+        return;
       }
 
       const res = await apiRequest("POST", `/api/quest/claim-mini-quest`, { id: miniQuestId, questId });
       if (!res.ok) return;
 
-      window.location.reload();
-    } catch (error) {
+      // window.location.reload();
+    } catch (error: any) {
       console.error(error);
-      toast.error({ title: "Error", description: "Failed to claim reward. Please try again.", variant: "destructive" });
+      toast.error({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -108,7 +139,7 @@ export default function QuestEnvironment() {
 
     let buttonText = "Start Quest";
     if (visited) buttonText = `Claim`;
-    if (quest.done) buttonText = "Completed";
+    if (quest.done || claimedQuests.includes(quest._id)) buttonText = "Completed";
 
     return (
       <div
@@ -120,7 +151,7 @@ export default function QuestEnvironment() {
         <button
           onClick={() => !visited ? visitQuest(quest) : claimReward(quest._id)}
           className={`px-5 py-2 rounded-full text-sm font-semibold ${
-            quest.done ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+            quest.done || claimedQuests.includes(quest._id) ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
           }`}
         >
           {buttonText}
@@ -180,15 +211,15 @@ export default function QuestEnvironment() {
 
               <Button 
                 onClick={() => claimQuestReward()} 
-                disabled={completed} 
+                disabled={!miniQuestsCompleted || !(claimedQuests.length === miniQuests.length) || completed || questCompleted} 
                 className={`w-full font-semibold rounded-xl py-3 mt-6 
-                  ${!completed 
+                  ${miniQuestsCompleted || !completed || claimedQuests.length === miniQuests.length || !questCompleted
                     ? "bg-purple-600 hover:bg-purple-700 text-white"
                     : "bg-gray-600 cursor-not-allowed text-gray-300"
                   }`
                 }
               >
-                {!completed ? "Claim Rewards" : "Quest Completed"}
+                {!completed || !questCompleted ? "Claim Rewards" : "Completed"}
               </Button>
             </div>
           </div>

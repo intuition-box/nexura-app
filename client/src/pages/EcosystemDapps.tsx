@@ -81,7 +81,7 @@ export default function EcosystemDapps() {
 
   const handleClaim = async (dapp: Dapp) => {
     if (!getStoredAccessToken()) {
-      toast({ title: 'Sign in required', description: 'Please sign in to claim XP', variant: 'destructive' });
+      toast.error({ title: 'Sign in required', description: 'Please sign in to claim XP', variant: 'destructive' });
       return;
     }
 
@@ -103,7 +103,7 @@ export default function EcosystemDapps() {
       // try { emitSessionChange(); } catch(e){}
       toast({ title: 'XP awarded', description: `+${dapp.reward} XP` });
 
-      window.location.reload();
+      // window.location.reload();
     } catch (error: any) {
       console.error('claim error:', error.message);
       toast({ title: 'Claim failed', description: error.message, variant: 'destructive' });
@@ -214,14 +214,14 @@ export default function EcosystemDapps() {
 
                     <Button
                       className="flex-1"
-                      variant={dapp.done ? 'secondary' : 'default'}
-                      disabled={!visitedDapps.includes(dapp._id) || dapp.done}
+                      variant={claimedDapps.includes(dapp._id) || dapp.done ? 'secondary' : 'default'}
+                      disabled={!visitedDapps.includes(dapp._id) || claimedDapps.includes(dapp._id) || dapp.done}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleClaim(dapp);
                       }}
                     >
-                      {dapp.done ? 'Claimed' : 'Claim XP'}
+                      {claimedDapps.includes(dapp._id) || dapp.done ? 'Claimed' : 'Claim XP'}
                     </Button>
                   </div>
                 </CardContent>

@@ -36,8 +36,9 @@ const LEVELS = [
 ];
 
 function getLevelByXp(currentXp: number) {
-  for (let i = LEVELS.length - 1; i >= 0; i--) {
-    if (currentXp >= LEVELS[i].xp) return { ...LEVELS[i], index: i + 1 };
+  for (let i = 0; i < LEVELS.length; i++) {
+    const nextLevel = LEVELS[i + 1];
+    if (currentXp <= LEVELS[i].xp && (!nextLevel || currentXp < nextLevel.xp)) return { ...LEVELS[i], index: i + 1 };
   }
   return { ...LEVELS[0], index: 1 };
 }
@@ -114,7 +115,7 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
       title="Add Intuition Testnet to wallet"
     >
       <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-      <span className="text-sm font-medium text-white">Intuition {isMainnet ? "Testnet" : "Mainnet"}</span>
+      <span className="text-sm font-medium text-white">Intuition {isMainnet ? "Mainnet" : "Testnet"}</span>
     </button>
   );
 

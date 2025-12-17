@@ -81,6 +81,10 @@ const questSchema = new Schema({
 	sub_title: {
 		type: String
 	},
+	noOfQuests: {
+		type: Number,
+		default: 0
+	},	
 	description: {
 		type: String,
 	},

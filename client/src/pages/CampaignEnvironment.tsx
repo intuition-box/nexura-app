@@ -26,7 +26,15 @@ const campaignQuestsInitial: Quest[] = [
 
 export default function CampaignEnvironment() {
   const [quests, setQuests] = useState<Quest[]>(campaignQuestsInitial);
-  const [visitedQuests, setVisitedQuests] = useState<String[]>([]);
+  const [visitedQuests, setVisitedQuests] = useState<String[]>(() => {
+    return JSON.parse(localStorage.getItem('nexura:campaign:visited') || '[]');
+  });
+  const [claimedQuests, setClaimedQuests] = useState<String[]>(() => {
+    return JSON.parse(localStorage.getItem('nexura:campaign:claimed') || '[]');
+  });
+  const [campaignCompleted, setCampaignCompleted] = useState<boolean>(() => {
+    return Boolean(JSON.parse(localStorage.getItem('nexura:campaign:completed') || ""));
+  });
   const [description, setDescription] = useState("");
   const [title, setTitle] = useState("");
   const [sub_title, setSubTitle] = useState("");
@@ -59,8 +67,24 @@ export default function CampaignEnvironment() {
       setSubTitle(st);
       setProjectName(p_name);
       setCampaignNumber(campaignNo);
+
+      if (campaignCompleted) {
+        for (const key of ['nexura:campaign:visited', 'nexura:campaign:claimed', 'nexura:campaign:completed']) {
+          localStorage.removeItem(key);
+        }
+      }
     })();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('nexura:campaign:visited', JSON.stringify(visitedQuests))
+  }, [visitedQuests]);
+  useEffect(() => {
+    localStorage.setItem('nexura:campaign:claimed', JSON.stringify(claimedQuests))
+  }, [claimedQuests]);
+  useEffect(() => {
+    localStorage.setItem('nexura:campaign:completed', JSON.stringify(campaignCompleted))
+  }, [campaignCompleted]);
 
   const claimQuest = async (questId: string) => {
     try {
@@ -81,9 +105,11 @@ export default function CampaignEnvironment() {
       const res = await apiRequest("POST", `/api/quest/perform-campaign-quest`, { id: questId, campaignId });
       if (!res.ok) return;
 
-      window.location.reload();
-    } catch (error) {
-      toast.error({ title: "Error", description: "failed to claim campaign quest", variant: "destructive" })
+      setClaimedQuests([...claimedQuests, questId]);
+
+      // window.location.reload();
+    } catch (error: any) {
+      toast.error({ title: "Error", description: error.message, variant: "destructive" })
     }
   };
 
@@ -91,10 +117,12 @@ export default function CampaignEnvironment() {
     try {
       await apiRequestV2("POST", `/api/campaign/complete-campaign?id=${campaignId}`);
 
-      window.location.reload();
-    } catch (error) {
+      setCampaignCompleted(true);
+
+      // window.location.reload();
+    } catch (error: any) {
       console.error(error);
-      toast.error({ title: "Error", description: "Error claiming campaign reward", variant: "destructive" });
+      toast.error({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -165,19 +193,20 @@ export default function CampaignEnvironment() {
 
               <Button
                 onClick={() => claimCampaignReward()}
-                disabled={!completed?.questsCompleted || completed?.campaignCompleted}
+                disabled={!completed?.questsCompleted || !(claimedQuests.length === quests.length) || completed?.campaignCompleted || campaignCompleted}
                 className={`w-full font-semibold rounded-xl py-3 mt-6 
-                  ${completed?.questsCompleted || !completed?.campaignCompleted
+                  ${completed?.questsCompleted || claimedQuests.length === quests.length || !completed?.campaignCompleted || !campaignCompleted
                     ? "bg-purple-600 hover:bg-purple-700 text-white"
                     : "bg-gray-600 cursor-not-allowed text-gray-300"
                   }`
                 }
               >
-                {completed?.questsCompleted
-                  ? completed?.campaignCompleted
+                {completed?.questsCompleted || claimedQuests.length === quests.length
+                  ? completed?.campaignCompleted || campaignCompleted
                     ? "Completed"
                     : "Claim Rewards"
-                  : "Complete Quests"}
+                  : "Complete Quests"
+                }
               </Button>
             </div>
           </div>
@@ -190,7 +219,7 @@ export default function CampaignEnvironment() {
 
             let buttonText = "Start Quest";
             if (visited) buttonText = `Claim`;
-            if (quest.done) buttonText = "Completed";
+            if (quest.done || claimedQuests.includes(quest._id)) buttonText = "Completed";
 
             return (
               <div
@@ -205,10 +234,10 @@ export default function CampaignEnvironment() {
                 </div>
 
                 <button
-                  disabled={quest.done}
+                  disabled={quest.done || claimedQuests.includes(quest._id)}
                   onClick={() => !visited ? markQuestAsVisted(quest) : claimQuest(quest._id)}
                   className={`px-5 py-2 rounded-full text-sm font-semibold ${
-                    quest.done ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+                    quest.done || claimedQuests.includes(quest._id) ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
                   }`}
                 >
                   {buttonText}
