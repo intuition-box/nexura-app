@@ -32,6 +32,7 @@ export default function CampaignEnvironment() {
   const [sub_title, setSubTitle] = useState("");
   const [project_name, setProjectName] = useState("");
   const [campaignNumber, setCampaignNumber] = useState("000");
+  const [completed, setCompleted] = useState<{questsCompleted: boolean, campaignCompleted: boolean}>({ questsCompleted: false, campaignCompleted: false });
   const [reward, setReward] = useState<{trustTokens: number, xp: number}>({ trustTokens: 0, xp: 0 });
 
   const { campaignId } = useParams();
@@ -51,6 +52,7 @@ export default function CampaignEnvironment() {
       } = await apiRequestV2("GET", `/api/campaign/quests?id=${campaignId}`);
 
       setQuests(campaignQuests);
+      setCompleted(campaignCompleted);
       setDescription(desc);
       setTitle(t);
       setReward(rwd);
@@ -82,6 +84,17 @@ export default function CampaignEnvironment() {
       window.location.reload();
     } catch (error) {
       toast.error({ title: "Error", description: "failed to claim campaign quest", variant: "destructive" })
+    }
+  };
+
+  const claimCampaignReward = async () => {
+    try {
+      await apiRequestV2("POST", `/api/campaign/complete-campaign?id=${campaignId}`);
+
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast.error({ title: "Error", description: "Error claiming campaign reward", variant: "destructive" });
     }
   };
 
@@ -149,6 +162,19 @@ export default function CampaignEnvironment() {
                   <p className="text-sm">{reward.trustTokens} TRUST + {reward.xp} XP</p>
                 </div>
               </div>
+
+              <Button
+                onClick={() => claimCampaignReward()}
+                disabled={!completed.questsCompleted || completed.campaignCompleted}
+                className={`w-full font-semibold rounded-xl py-3 mt-6 
+                  ${completed
+                    ? "bg-purple-600 hover:bg-purple-700 text-white"
+                    : "bg-gray-600 cursor-not-allowed text-gray-300"
+                  }`
+                }
+              >
+                {!completed.questsCompleted ? "Claim Rewards" : "Campaign Completed"}
+              </Button>
             </div>
           </div>
         </Card>

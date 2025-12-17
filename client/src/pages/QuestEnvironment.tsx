@@ -26,6 +26,7 @@ export default function QuestEnvironment() {
   const [totalXP, setTotalXP] = useState(0);
   const [questNumber, setQuestNumber] = useState<string>("000");
   const [sub_title, setSubTitle] = useState<string>("");
+  const [completed, setCompleted] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
   const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
   const [visitedQuests, setVisitedQuests] = useState<string[]>([]);
@@ -35,9 +36,16 @@ export default function QuestEnvironment() {
 
   useEffect(() => {
     (async () => {
-      const { miniQuests: quests, totalXp, title: t, questNumber: quest_no, sub_title: st } = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
+      const {
+        miniQuests: quests,
+        totalXp,
+        title: t, 
+        questNumber: quest_no,
+        sub_title: st,
+        questCompleted
+      } = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
 
-      console.log("ggg")
+      setCompleted(questCompleted);
       setMiniQuests(quests);
       setTotalXP(totalXp);
       setQuestNumber(quest_no);
@@ -45,6 +53,17 @@ export default function QuestEnvironment() {
       setSubTitle(st);
     })();
   }, []);
+
+  const claimQuestReward = async () => {
+    try {
+      await apiRequestV2("POST", `/api/quest/claim-quest?id=${questId}`);
+
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast.error({ title: "Error", description: "Error claiming quest reward", variant: "destructive" });
+    }
+  }
 
   const claimReward = async (miniQuestId: string) => {
     try {
@@ -159,8 +178,17 @@ export default function QuestEnvironment() {
                 </div>
               </div>
 
-              <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl py-3 mt-6">
-                Complete Quests
+              <Button 
+                onClick={() => claimQuestReward()} 
+                disabled={completed} 
+                className={`w-full font-semibold rounded-xl py-3 mt-6 
+                  ${completed 
+                    ? "bg-purple-600 hover:bg-purple-700 text-white"
+                    : "bg-gray-600 cursor-not-allowed text-gray-300"
+                  }`
+                }
+              >
+                {!completed ? "Claim Rewards" : "Quest Completed"}
               </Button>
             </div>
           </div>
