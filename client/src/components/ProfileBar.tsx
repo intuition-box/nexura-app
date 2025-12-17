@@ -114,7 +114,7 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
       title="Add Intuition Testnet to wallet"
     >
       <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-      <span className="text-sm font-medium text-white">Intuition {isMainnet ? "Testnet" : "Mainnet"}</span>
+      <span className="text-sm font-medium text-white">Intuition {isMainnet ? "Mainnet" : "Testnet"}</span>
     </button>
   );
 
