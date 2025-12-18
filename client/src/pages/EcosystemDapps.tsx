@@ -28,7 +28,7 @@ interface Dapp {
 export default function EcosystemDapps() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
-  const userId = user._id;
+  const userId = user._id ?? "";
   const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [dapps, setDapps] = useState<Dapp[]>([]);

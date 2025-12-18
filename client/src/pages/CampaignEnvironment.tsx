@@ -27,7 +27,7 @@ const campaignQuestsInitial: Quest[] = [
 
 export default function CampaignEnvironment() {
   const { user } = useAuth();
-  const userId = user._id;
+  const userId = user._id ?? "";
 
   const [quests, setQuests] = useState<Quest[]>(campaignQuestsInitial);
   const [visitedQuests, setVisitedQuests] = useState<string[]>(() => {

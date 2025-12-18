@@ -27,7 +27,7 @@ export default function QuestEnvironment() {
   const [totalXP, setTotalXP] = useState(0);
   const { user } = useAuth();
 
-  const userId = user._id;
+  const userId = user._id || "";
 
   const [questNumber, setQuestNumber] = useState<string>("000");
   const [sub_title, setSubTitle] = useState<string>("");
