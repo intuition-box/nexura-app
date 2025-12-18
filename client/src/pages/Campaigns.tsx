@@ -203,7 +203,7 @@ export default function Campaigns() {
                 : "bg-gray-600 cursor-not-allowed text-gray-300"
               }`}
             onClick={
-              goToCampaign(campaign, isActive)
+              (e) => { e.stopPropagation(); goToCampaign(campaign, isActive) }
             }
             disabled={!isActive}
           >
