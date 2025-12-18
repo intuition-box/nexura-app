@@ -435,8 +435,8 @@ export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 				expires: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000),
 			});
 		} else {
-			const completedQuests = await questCompleted.find({ user: req.id, quest: id });
-			if (questFound.noOfQuests !== completedQuests.length) {
+			const completedMiniQuests = await miniQuestCompleted.find({ user: req.id, quest: id });
+			if (questFound.noOfQuests !== completedMiniQuests.length) {
 				res.status(FORBIDDEN).json({ error: "complete all the tasks to complete the quest" });
 				return;
 			}
