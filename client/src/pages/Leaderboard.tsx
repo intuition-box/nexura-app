@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react'
 import AnimatedBackground from '@/components/AnimatedBackground'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { apiRequestV2 } from '@/lib/queryClient'
 
 type Entry = {
   _id: string
@@ -19,10 +20,10 @@ export default function Leaderboard(): JSX.Element {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await fetch('/api/leaderboard')
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = await res.json()
-        const entries = data?.leaderboardInfo?.leaderboardByXp || data?.leaderboard || []
+        const { leaderboardInfo: { leaderboardByXp } } = await apiRequestV2("GET", "/api/leaderboard")
+
+        const entries = leaderboardByXp || [];
+
         setList(entries)
       } catch (err) {
         console.warn('Using mock data for leaderboard')

@@ -35,3 +35,27 @@ export const claimCampaignOnchainReward = async ({ campaignAddress, userId }: { 
     throw new Error(error.message);
   }
 }
+
+export const claimReferralReward = async (userId: string) => {
+  try {
+    const walletClient = getWalletClient();
+
+    const mainnet = network === "mainnet";
+
+    await walletClient.switchChain({ id: mainnet ? 1155 : 13579 });
+
+    const account = await walletClient.getAddresses();
+
+    await walletClient.writeContract({
+      address: (mainnet ? "0xReferralsMainnetAddr" : "0xReferralsTestnetAddr") as Address,
+      abi: parseAbi(["function claimReferralReward(string memory userId)"]),
+      functionName: "claimReferralReward",
+      args: [userId],
+      account: account[0],
+      chain
+    });
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error.message);
+  }
+}

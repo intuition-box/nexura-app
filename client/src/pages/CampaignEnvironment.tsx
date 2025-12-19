@@ -76,7 +76,7 @@ export default function CampaignEnvironment() {
       setProjectName(p_name);
       setCampaignNumber(campaignNo);
     })();
-  }, []);
+  }, [claimedQuests]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};

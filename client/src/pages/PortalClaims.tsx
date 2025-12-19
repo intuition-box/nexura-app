@@ -82,8 +82,8 @@ export default function PortalClaims() {
     }
   };
 
-  if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
-  if (claims.length === 0 && loading) return <p>Loading claims...</p>;
+  // if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
+  // if (claims.length === 0 && loading) return <p>Loading claims...</p>;
 
   return (
     <div
@@ -242,7 +242,7 @@ export default function PortalClaims() {
       ))}
 
       {loading && <p style={{ gridColumn: "1/-1", textAlign: "center" }}>Loading more...</p>}
-      {!hasMore && <p style={{ gridColumn: "1/-1", textAlign: "center" }}>No more claims</p>}
+      {!hasMore && <p style={{ gridColumn: "1/-1", textAlign: "center" }}>Coming Soon</p>}
     </div>
   );
 }
