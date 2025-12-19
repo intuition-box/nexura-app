@@ -62,9 +62,9 @@ type Referral = {
   status: "Active" | "Inactive";
 };
 
-const refReward = 10.8;
+const refReward = 16.2;
 
-const rewardPerActiveUser = 1.08;
+const rewardPerActiveUser = 1.62;
 
 const dummyReferralData: Referral[] = [
   { username: "Madmoiselle", dateJoined: "Nov 4, 2025", status: "Inactive" },
@@ -117,7 +117,9 @@ export default function ReferralsPage() {
   };
 
   const handleClaim = async () => {
-    await claimReferralReward(user?._id || "");
+    await apiRequestV2("POST", "/api/user/allow-ref-claim");
+
+    await claimReferralReward(user._id);
 
     await apiRequestV2("POST", "/api/user/claim-referral-reward");
 
@@ -140,7 +142,7 @@ export default function ReferralsPage() {
         {[
           { icon: InviteIcon, title: "Send an invitation", desc: "Send your referral links to friends and tell them how cool Nexura is!" },
           { icon: RegisterIcon, title: "Registration", desc: "Let them register to our platform using your referral links" },
-          { icon: EarnIcon, title: "Earn", desc: "You can earn up to 10.8 TRUST referring your friends after they complete a Quest or Campaign" }
+          { icon: EarnIcon, title: "Earn", desc: `You can earn up to ${refReward} TRUST referring your friends after they complete a Quest or Campaign` }
         ].map(({ icon: Icon, title, desc }) => (
           <div key={title} className="flex flex-col items-center text-center space-y-4">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-purple-600/25 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.35)]">
