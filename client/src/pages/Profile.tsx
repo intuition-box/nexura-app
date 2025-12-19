@@ -18,7 +18,7 @@ import { Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { Progress } from "@/components/ui/progress";
 import { emitSessionChange } from "@/lib/session";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequestV2 } from "@/lib/queryClient";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { FaTwitter, FaDiscord } from "react-icons/fa";
 
@@ -94,7 +94,7 @@ function WalletDropdown() {
 }
 
 export default function Profile() {
-  const { user, loading } = useAuth();
+  const { user, loading, setUser } = useAuth();
   const { address } = useWallet();
 
   // Store list of minted levels, NOT a counter
@@ -104,15 +104,13 @@ export default function Profile() {
   const [loadingReferrals, setLoadingReferrals] = useState(false);
 
   useEffect(() => {
-    if (user?._id) {
-      setLoadingReferrals(true);
-      apiRequest("GET", `/api/referrals/stats/${user._id}`)
-        .then(r => r.json())
-        .then(data => { if (data?.totalReferrals !== undefined) setReferralCount(data.totalReferrals); })
-        .catch(err => console.warn("Failed to fetch referral stats:", err))
-        .finally(() => setLoadingReferrals(false));
-    }
-  }, [user?._id]);
+    (async () => {
+      const { user: profile } = await apiRequestV2("GET", "/api/user/profile");
+      if (!profile) return;
+
+      setUser(profile);
+    })();
+  }, []);
 
   // Wallet → default display name
   const userData = useMemo(() => {
