@@ -1,6 +1,6 @@
 import { createWalletClient, parseAbi, http, type WalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { PRIVATE_KEY } from "./env.utils";
+import { PRIVATE_KEY, network } from "./env.utils";
 import { NexonsAddress } from "./constants";
 import chain from "./chain.utils";
 
@@ -65,6 +65,18 @@ export const performIntuitionOnchainAction = async ({
 				account,
 				chain
       });
-      return
+			return
+		case "claim-ref-reward":
+			await walletClient.writeContract({
+				address: network === "mainnet" ? "0x" : "0x1b18236aa21212ae375ab72F4c4226987c7d8D59",
+				abi: parseAbi([
+					"function AllowReferralRewardClaim(string memory userId)",
+				]),
+				functionName: "AllowReferralRewardClaim",
+				args: [userId],
+				account,
+				chain
+			});
+			return;
 	}
 };
