@@ -155,7 +155,7 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 
 			const userReferrer = await user.findOne({ referral: { code: referrer } });
 
-			const newUser = new user({ address: slicedAddress, referral, dateJoined });
+			const newUser = new user({ address, username: slicedAddress, referral, dateJoined });
 
 			if (userReferrer) {
 				await userReferrer.updateOne({ $inc: { xp: 10, "referral.xp": 10 } });
