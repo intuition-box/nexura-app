@@ -29,6 +29,7 @@ export function setSessionToken(token: string) {
 export function clearSession() {
   try {
     localStorage.removeItem(KEY);
+    localStorage.removeItem("user_profile");
     listeners.forEach((cb) => {
       try {
         const res = cb(null);

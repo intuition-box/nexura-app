@@ -30,11 +30,11 @@ export default function SignUpPopup({ mode = "user" as "user" | "project", actio
         // prefer server-driven session and profile check
         try {
           // ping /api/me to let server create a minimal user via /auth/wallet if needed
-          const meRes = await apiRequest('GET', '/api/me').catch(() => null);
+          const meRes = await apiRequest('GET', '/api/user/profile').catch(() => null);
           if (meRes) {
             const json = await meRes.json().catch(() => ({}));
             setOpen(false);
-            if (json?.hasProfile) {
+            if (json?.user) {
               window.location.reload();
             } else {
               alert("Account created — please complete your profile");

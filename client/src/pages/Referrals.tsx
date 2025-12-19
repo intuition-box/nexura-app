@@ -1,344 +1,205 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { Copy, Users, Star, Gift } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { emitSessionChange } from "@/lib/session";
-import { useAuth } from "@/lib/auth";
-import AuthGuard from "@/components/AuthGuard";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import type { ReferralStats } from "@shared/schema";
+"use client";
 
-export default function Referrals() {
-  const { toast } = useToast();
+import { useState } from "react";
+
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+
+/* =======================
+   SVG ICONS (BOLD / FILLED)
+======================= */
+
+const InviteIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M12 12a4.2 4.2 0 1 0-4.2-4.2A4.2 4.2 0 0 0 12 12Z" />
+    <path d="M12 14.5c-4.2 0-7.5 2.2-7.5 5v1h15v-1c0-2.8-3.3-5-7.5-5Z" />
+    <path d="M19 7V5.5a.8.8 0 0 0-1.6 0V7h-1.5a.8.8 0 0 0 0 1.6h1.5v1.5a.8.8 0 0 0 1.6 0V8.6h1.5a.8.8 0 0 0 0-1.6Z" />
+  </svg>
+);
+
+const RegisterIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM7 12h10v2H7v-2Zm0 4h10v2H7v-2Z" />
+  </svg>
+);
+
+const EarnIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M12 2a1 1 0 0 1 1 1v1.1c2.6.3 4.5 2 4.5 4.4h-2.2c0-1.3-1-2.2-2.8-2.2s-2.7.8-2.7 2c0 1.3 1.3 1.8 3.2 2.2 2.5.6 4.8 1.6 4.8 4.4 0 2.4-1.9 4-4.8 4.4V21a1 1 0 0 1-2 0v-1.1c-2.9-.4-5-2.2-5-4.9h2.3c0 1.6 1.3 2.7 3.5 2.7 2 0 3-1 3-2.2 0-1.4-1.2-1.9-3.5-2.5-2.4-.6-4.5-1.5-4.5-4.2 0-2.3 1.8-3.9 4.2-4.3V3a1 1 0 0 1 1-1Z" />
+  </svg>
+);
+
+const UsersIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-3.3 0-6 1.7-6 4v1h8v-1c0-1.5.8-2.8 2-3.6A8.2 8.2 0 0 0 8 13Zm8 0c-3.3 0-6 1.7-6 4v1h12v-1c0-2.3-2.7-4-6-4Z" />
+  </svg>
+);
+
+const ActiveIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M9 16.2 4.8 12 3.4 13.4 9 19l12-12-1.4-1.4Z" />
+  </svg>
+);
+
+const TrustIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="m12 2 2.9 6.3 6.8.6-5.1 4.4 1.6 6.7L12 16.8 5.8 20l1.6-6.7L2.3 8.9l6.8-.6Z" />
+  </svg>
+);
+
+/* =======================
+   PAGE
+======================= */
+
+export default function ReferralsPage() {
+  const [rewardClaimed, setRewardClaimed] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const { user } = useAuth();
-  const userId = user ? (user.id ?? user._id ?? user.userId ?? null) : null;
+  const referralLink = "nexura.com/referral-noobmaster";
 
-  const { data: referralStats, isLoading, error } = useQuery<ReferralStats>({
-    queryKey: userId ? ['/api/referrals/stats', userId] : ['referrals', 'none'],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      if (!userId) return null as unknown as ReferralStats;
-      const res = await apiRequest("GET", `/api/referrals/stats/${userId}`);
-      return res.json();
-    },
-    retry: 1,
-  });
-
-  // fetch list of referral events (enriched with referred-user info when available)
-  const { data: referralListData, isLoading: listLoading } = useQuery<any>({
-    queryKey: userId ? ['/api/referrals/list', userId] : ['referrals-list', 'none'],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      if (!userId) return { events: [] };
-      const res = await apiRequest('GET', `/api/referrals/list/${userId}`);
-      return res.json();
-    },
-    retry: 1,
-  });
-
-  // Note: Reward claiming functionality will be added later
-
-  const handleCopyLink = () => {
-    const link = referralStats?.referralLink ? (() => {
-      try {
-        const rl = referralStats.referralLink;
-        if (typeof rl === 'string' && rl.startsWith('/')) {
-          // Prefer an injected canonical app URL, fall back to current origin
-          const appUrl = (typeof window !== 'undefined' && (window as any).__APP_URL__) || (typeof window !== 'undefined' ? window.location.origin : '');
-          return `${appUrl}${rl}`;
-        }
-        return rl;
-      } catch (e) { return referralStats.referralLink; }
-    })() : null;
-    if (link) {
-      navigator.clipboard.writeText(link);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(referralLink);
       setCopied(true);
-      toast({
-        title: "Link copied!",
-        description: "Share this link with friends",
-      });
       setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Copy failed", err);
     }
   };
 
-  // Claim functionality will be added later
-
-  // Calculate progress to next milestone
-  const nextMilestone = !referralStats ? 3 : 
-    referralStats.totalReferrals >= 10 ? Math.ceil((referralStats.totalReferrals + 1) / 10) * 10 : 
-    (referralStats.totalReferrals >= 3 ? 10 : 3);
-  const progress = !referralStats ? 0 : (referralStats.totalReferrals / nextMilestone) * 100;
-
-  if (!userId) {
-    return (
-      <AuthGuard>
-        <div className="min-h-screen bg-black text-white overflow-auto p-6 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-white/60">Please log in to view your referrals</p>
-          </div>
-        </div>
-      </AuthGuard>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <AuthGuard>
-        <div className="min-h-screen bg-black text-white overflow-auto p-6 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-white/60">Loading referral data...</p>
-          </div>
-        </div>
-      </AuthGuard>
-    );
-  }
-
-  if (error || !referralStats) {
-    return (
-      <AuthGuard>
-        <div className="min-h-screen bg-black text-white overflow-auto p-6 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-500">Unable to load referral data. {error?.message || 'Please try again.'}</p>
-          </div>
-        </div>
-      </AuthGuard>
-    );
-  }
-
-  // Normalize referral link for display (server may return relative paths)
-  const displayReferralLink = (() => {
-    try {
-      const rl = referralStats?.referralLink;
-      if (!rl) return "";
-      if (typeof rl === 'string' && rl.startsWith('/')) {
-        return ((typeof window !== 'undefined' && (window as any).__APP_URL__) || window.location.origin) + rl;
-      }
-      return rl;
-    } catch (e) { return referralStats?.referralLink ?? ""; }
-  })();
+  const handleClaim = () => {
+    setRewardClaimed(true);
+  };
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-black text-white overflow-auto p-6 relative" data-testid="referrals-page">
-      <AnimatedBackground />
-      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-2">Referral Program</h1>
-          <p className="text-white/60">
-            Invite friends to Nexura and grow together
+    <div className="min-h-screen bg-black text-white px-4 sm:px-6 lg:px-8 py-8 space-y-12 max-w-[1200px] mx-auto">
+
+      {/* HEADER */}
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold">Referrals</h1>
+        <p className="text-sm opacity-60 mt-1">
+          Invite your friends to Nexura and earn rewards
+        </p>
+      </div>
+
+      {/* STEPS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
+        {[
+          { icon: InviteIcon, title: "Send an invitation", desc: "Send your referral links to friends and tell them how cool Nexura is!" },
+          { icon: RegisterIcon, title: "Registration", desc: "Let them register to our platform using your referral links" },
+          { icon: EarnIcon, title: "Earn", desc: "You can earn up to 16.2 TRUST referring your friends after they complete a Quest or Campaign" }
+        ].map(({ icon: Icon, title, desc }) => (
+          <div key={title} className="flex flex-col items-center text-center space-y-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-purple-600/25 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.35)]">
+              <Icon className="w-8 h-8 sm:w-9 sm:h-9 text-purple-300" />
+            </div>
+            <p className="text-sm sm:text-base font-medium">{title}</p>
+            <p className="text-xs sm:text-sm opacity-60 max-w-[240px]">{desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* SHARE LINK */}
+      <div className="space-y-6">
+        <div>
+          <p className="text-base sm:text-lg font-medium">Share your referral link</p>
+          <p className="text-sm opacity-60 mt-1 max-w-[560px]">
+            Copy and share your referral link to start earning rewards.
           </p>
         </div>
 
-        {/* Referral Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="glass glass-hover rounded-3xl" data-testid="total-referrals">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-white/60">Total Referrals</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-blue-400" />
-                <div className="text-2xl font-bold text-white">{referralStats.totalReferrals}</div>
-              </div>
-              <p className="text-xs text-white/50 mt-1">Friends joined</p>
-            </CardContent>
-          </Card>
+        <div className="flex items-center bg-white/5 rounded-full px-4 sm:px-5 py-2 max-w-full sm:max-w-[520px]">
+          <span className="text-sm opacity-70 truncate">
+            {referralLink}
+          </span>
+          <Button
+            onClick={handleCopy}
+            className="ml-auto h-8 px-4 rounded-full bg-purple-600 text-sm"
+          >
+            {copied ? "Copied" : "Copy Link"}
+          </Button>
+        </div>
 
-            {/* Referral List */}
-            <Card className="glass glass-hover rounded-3xl" data-testid="referral-list">
-              <CardHeader>
-                <CardTitle className="text-white">Your Referrals</CardTitle>
-                <p className="text-sm text-white/60">People who joined using your referral link</p>
-              </CardHeader>
-              <CardContent>
-                {listLoading ? (
-                  <div className="text-white/60">Loading referred users...</div>
-                ) : (
-                  <div className="space-y-3">
-                    {Array.isArray(referralListData?.events) && referralListData.events.length > 0 ? (
-                      referralListData.events.map((ev: any) => (
-                        <div key={ev.id} className="flex items-center gap-3 p-2 bg-white/2 rounded-lg">
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex items-center justify-center text-sm font-semibold text-white">
-                            {ev.referredUser?.avatar ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={ev.referredUser.avatar} alt={ev.referredUser.displayName || ev.referredUser.username || 'User'} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="uppercase">{(ev.referredUser?.displayName || ev.referredUser?.username || String(ev.referredUserId || '').slice(0,6) || 'U').charAt(0)}</div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-semibold text-white">{ev.referredUser?.displayName || ev.referredUser?.username || ev.referredUserId}</div>
-                            <div className="text-xs text-white/60">Joined: {new Date(ev.createdAt || ev.created_at || Date.now()).toLocaleString()}</div>
-                          </div>
-                          <div className="text-sm text-white/50">{ev.referredUser?.xp ? `${ev.referredUser.xp} XP` : ''}</div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-white/60">No referred users yet. Share your link above to invite friends.</div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-          <Card className="glass glass-hover rounded-3xl" data-testid="active-referrals">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-white/60">Active Referrals</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                <Star className="w-5 h-5 text-yellow-400" />
-                <div className="text-2xl font-bold text-white">{referralStats.totalReferrals}</div>
+        {/* STATS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[
+            { icon: UsersIcon, label: "Total Referrals", value: "7" },
+            { icon: ActiveIcon, label: "Active", value: "5" },
+            { icon: TrustIcon, label: "Trust Earned", value: "5.4" }
+          ].map(({ icon: Icon, label, value }) => (
+            <div
+              key={label}
+              className="flex items-center justify-between bg-white/5 rounded-2xl px-5 sm:px-6 py-5"
+            >
+              <div>
+                <p className="text-sm opacity-60">{label}</p>
+                <p className="text-xl sm:text-2xl font-semibold mt-1">{value}</p>
               </div>
-              <p className="text-xs text-white/50 mt-1">Friends joined</p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass glass-hover rounded-3xl" data-testid="coming-soon">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-white/60">Rewards</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                <Gift className="w-5 h-5 text-green-400" />
-                <div className="text-2xl font-bold text-white">Coming Soon</div>
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-purple-600/25 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.35)]">
+                <Icon className="w-8 h-8 sm:w-9 sm:h-9 text-purple-300" />
               </div>
-              <p className="text-xs text-white/50 mt-1">Referral rewards</p>
-            </CardContent>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* BOTTOM */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* HISTORY */}
+        <Card className="lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl px-6 py-6">
+          <div className="flex justify-between mb-4">
+            <p className="text-sm font-medium">Referral History</p>
+            <span className="text-sm text-purple-400 cursor-pointer">
+              View all
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              ["Madmoiselle", "Nov 4, 2025", "Inactive"],
+              ["Shallipopi", "Nov 9, 2025", "Active"],
+              ["Blacko", "Nov 15, 2025", "Active"],
+              ["TFK", "Nov 25, 2025", "Active"],
+              ["Mardocee", "Nov 29, 2025", "Active"],
+              ["Ownyde", "Nov 29, 2025", "Active"],
+              ["Emperor", "Nov 29, 2025", "Inactive"]
+            ].map(([name, date, status]) => (
+              <div key={name} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-7 h-7">
+                    <AvatarFallback>{name[0]}</AvatarFallback>
+                  </Avatar>
+                  <span>{name}</span>
+                </div>
+                <span className="opacity-60">{date}</span>
+                <span className={status === "Active" ? "text-green-400" : "opacity-40"}>
+                  {status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* SIDE */}
+        <div className="space-y-6">
+          <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-4">
+            <p className="text-sm font-medium">Milestone Progress</p>
+            <p className="text-sm text-purple-400">Next Reward: +10.8 Trust</p>
+            <Progress value={50} />
+            <Button
+              onClick={handleClaim}
+              disabled={rewardClaimed}
+              className="w-full rounded-full bg-purple-600 text-sm disabled:opacity-60"
+            >
+              {rewardClaimed ? "Claimed" : "Claim Reward"}
+            </Button>
           </Card>
         </div>
 
-        {/* Referral Link */}
-        <Card className="glass glass-hover rounded-3xl" data-testid="referral-link-card">
-          <CardHeader>
-            <CardTitle className="text-white">Your Referral Link</CardTitle>
-            <p className="text-sm text-white/60">
-              Share this link with friends to start earning rewards
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex space-x-2">
-              <Input 
-                value={displayReferralLink} 
-                readOnly 
-                className="flex-1 glass border-white/10 text-white"
-                data-testid="input-referral-link"
-              />
-              <Button 
-                onClick={handleCopyLink}
-                variant="outline"
-                data-testid="button-copy-link"
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                {copied ? "Copied!" : "Copy"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Referral Progress */}
-        <Card className="glass glass-hover rounded-3xl" data-testid="referral-progress">
-          <CardHeader>
-            <CardTitle className="text-white">Referral Progress</CardTitle>
-            <p className="text-sm text-white/60">
-              Track your referral milestones
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Current Progress */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-white">
-                <span className="text-white/60">Progress to {nextMilestone} referrals</span>
-                <span>{referralStats.totalReferrals} / {nextMilestone}</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-
-            {/* Milestone List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-white">3 Referrals</span>
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm font-medium text-white">Milestone 1</span>
-                  </div>
-                </div>
-                <p className="text-sm text-white/60">
-                  {referralStats.totalReferrals >= 3 ? "✅ Completed" : "First milestone"}
-                </p>
-              </div>
-
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-white">10 Referrals</span>
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm font-medium text-white">Milestone 2</span>
-                  </div>
-                </div>
-                <p className="text-sm text-white/60">
-                  {referralStats.totalReferrals >= 10 ? "✅ Completed" : "Bonus tier"}
-                </p>
-              </div>
-            </div>
-
-            <div className="text-center p-4 bg-white/5 rounded-lg">
-              <p className="text-sm text-white/60">Rewards system coming soon</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* How it Works */}
-        <Card className="glass glass-hover rounded-3xl" data-testid="how-it-works">
-          <CardHeader>
-            <CardTitle className="text-white">How It Works</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-xl font-bold text-blue-400">1</span>
-                </div>
-                <h4 className="font-semibold text-white">Share Your Link</h4>
-                <p className="text-sm text-white/60">
-                  Send your unique referral link to friends and family
-                </p>
-              </div>
-
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-green-600/20 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-xl font-bold text-green-400">2</span>
-                </div>
-                <h4 className="font-semibold text-white">They Join</h4>
-                <p className="text-sm text-white/60">
-                  Your friends sign up and start their Nexura journey
-                </p>
-              </div>
-
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-xl font-bold text-purple-400">3</span>
-                </div>
-                <h4 className="font-semibold text-white">Grow Together</h4>
-                <p className="text-sm text-white/60">
-                  Build your network and reach milestones together
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
-      </div>
-    </AuthGuard>
+    </div>
   );
 }

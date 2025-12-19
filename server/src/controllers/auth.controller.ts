@@ -126,20 +126,20 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		// res.status(OK).json({ message: "user signed in!", accessToken });
 
-		const { username, referrer }: { username: string; referrer?: string } =
+		const { username, address, referrer }: { username?: string; address: string; referrer?: string } =
 			req.body;
 
-		if (!username || username.length < 4) {
-			res
-				.status(BAD_REQUEST)
-				.json({ error: "username cannot be empty or less than 4 characters" });
-			return;
-		}
+		// if (!username || username.length < 4) {
+		// 	res
+		// 		.status(BAD_REQUEST)
+		// 		.json({ error: "username cannot be empty or less than 4 characters" });
+		// 	return;
+		// }
 
-		const slicedUsername = username.slice(0, 4) + "..." + username.slice(-4);
-		console.log({ slicedUsername });
+		const slicedAddress = address.slice(0, 4) + "..." + address.slice(-4);
+		console.log({ slicedAddress });
 
-		const userExists = await user.findOne({ username: slicedUsername });
+		const userExists = await user.findOne({ address });
 		if (!userExists) {
 
 			const referrerCode = cryptoRandomString({
@@ -155,7 +155,7 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 
 			const userReferrer = await user.findOne({ referral: { code: referrer } });
 
-			const newUser = new user({ username: slicedUsername, referral, dateJoined });
+			const newUser = new user({ address, username: slicedAddress, referral, dateJoined });
 
 			if (userReferrer) {
 				await userReferrer.updateOne({ $inc: { xp: 10, "referral.xp": 10 } });

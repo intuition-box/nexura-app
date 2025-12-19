@@ -1,19 +1,22 @@
+"use client";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Clock, ExternalLink, CheckCircle } from "lucide-react";
+import { Clock, ExternalLink } from "lucide-react";
 import { Play, CheckCircle2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import { BACKEND_URL, apiRequestV2, getStoredAccessToken } from "@/lib/queryClient";
+import { apiRequestV2, getStoredAccessToken } from "@/lib/queryClient";
 
 interface Quest {
   _id: string;
   title: string;
   sub_title: string;
   project_name?: string;
+  description?: string;
   done: boolean;
   project_image?: string;
   starts_at?: string;
@@ -26,7 +29,6 @@ interface Quest {
   status: string;
 }
 
-// Only the special tasks card is here
 const TASKS_CARD: Quest = {
   _id: "tasks-card",
   title: "Start Tasks",
@@ -40,7 +42,6 @@ const TASKS_CARD: Quest = {
   status: "open"
 };
 
-// One-time quests
 const ONE_TIME_QUESTS: Quest[] = [
   { _id: 'onetime-discord-join', title: 'Connect Discord', description: 'Link your Discord account', reward: '50 XP', status: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Connect Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
   { _id: 'onetime-join-discord', title: 'Join Discord', description: 'Join our Discord server to chat with the community', reward: '50 XP', status: 'one-time', url: 'https://discord.gg/caK9kATBya', actionLabel: 'Join Discord', starts_at: new Date().toISOString(), ends_at: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toISOString() },
@@ -63,11 +64,12 @@ export default function Quests() {
       const res = await apiRequestV2("GET", "/api/quests");
       return res;
     },
-    refetchInterval: 5000,     // send request every 5s
+    refetchInterval: 60000,     // send request every 1m
     refetchIntervalInBackground: true,
   });
 
   const now = new Date();
+
   const allQuests: Quest[] = [
     TASKS_CARD,
     ...(quests?.oneTimeQuests ?? []),
@@ -101,38 +103,27 @@ export default function Quests() {
   };
 
   const renderQuestCard = (quest: Quest) => {
-    let metadata: any = {};
-    try {
-      metadata = quest.category ? { category: quest.category } : {};
-    } catch {
-      metadata = {};
-    }
-
+    const metadata = quest.category ? { category: quest.category } : {};
     const isActive = true;
-    const status = isActive ? "Active" : "Coming Soon";
 
     return (
       <Card
         key={quest._id}
-        className="bg-[#0d1117] border border-white/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition"
+        className="bg-[#0d1117] border border-white/5 rounded-xl overflow-hidden transition hover:shadow-lg"
       >
-        <div className="relative h-44 bg-black">
-            <img
-              src="/quest-1.png"
-              alt={quest.title}
-              className="w-full h-full object-cover rounded-t-2xl"
-            />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="relative h-52 sm:h-44 bg-black">
+          {/* {quest.project_image && ( */}
+          <img
+            src="/quest-1.png"
+            alt={quest.title}
+            className="w-full h-full object-cover"
+          />
+          {/* )} */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
 
-          <div className="absolute top-3 right-3">
-            <Badge
-              className={
-                isActive
-                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                  : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-              }
-            >
-              {status}
+          <div className="absolute top-2 right-2">
+            <Badge className="text-xs">
+              {isActive ? "Active" : "Soon"}
             </Badge>
           </div>
 
@@ -141,9 +132,13 @@ export default function Quests() {
           </div>
         </div>
 
-        <div className="p-5 space-y-3">
-          <h2 className="text-lg font-semibold text-white">{quest.title}</h2>
-          <p className="text-sm text-gray-400">{quest.sub_title}</p>
+        <div className="p-6 sm:p-5 space-y-4 sm:space-y-3">
+          <h2 className="text-xl sm:text-lg font-semibold text-white">
+            {quest.title}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-400 line-clamp-2">
+            {quest.sub_title}
+          </p>
 
           {quest.project_name && (
             <div className="flex justify-between text-sm">
@@ -160,7 +155,7 @@ export default function Quests() {
           </div>
 
           <Button
-            className="w-full bg-[#1f6feb] hover:bg-[#388bfd] text-white font-medium rounded-xl mt-3"
+            className="w-full bg-[#1f6feb] hover:bg-[#388bfd] text-white font-medium rounded-lg mt-2"
             onClick={() =>
               isActive &&
               setLocation(`/quest/${quest._id}`)
@@ -184,17 +179,11 @@ export default function Quests() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-auto p-6 relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#0b0718] via-[#0a0615] to-black text-white p-4 sm:p-6 relative">
       <AnimatedBackground />
-      <div className="max-w-6xl mx-auto space-y-8 relative z-10">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Quests</h1>
-          <p className="text-muted-foreground">
-            Complete unique tasks and earn rewards in the Nexura ecosystem.
-          </p>
-        </div>
 
-        <div className="space-y-6">
+      <div className="mx-auto space-y-8 relative z-10 max-w-full sm:max-w-6xl px-1 sm:px-0">
+        <div>
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">Loading quests...</div>
           ) : quests?.weeklyQuests.length === 0 ? (
@@ -215,37 +204,44 @@ export default function Quests() {
             Complete these essential quests to unlock the full NEXURA experience
           </p>
 
-          <div className="mt-6 space-y-4">
-            {quests?.oneTimeQuests.map((quest, index) => {
+          <div className="mt-4 space-y-3">
+            {quests?.oneTimeQuests.map((quest) => {
               const visited = visitedTasks.includes(quest._id);
-              const claimed = claimedTasks.includes(quest._id);
+              const claimed = claimedTasks.includes(quest._id) || quest.done;
 
               let buttonText = quest.actionLabel || "Start Task";
-              if (visited && !claimed) buttonText = `Claim Reward: ${quest.reward} XP`;
-              if (claimed ?? quest.done) buttonText = "Completed";
+              if (visited && !claimed) buttonText = `Claim ${quest.reward} XP`;
+              if (claimed) buttonText = "Completed";
 
               return (
                 <div
                   key={quest._id}
-                  className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition"
+                  className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/10 text-white">
+                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
                       {claimed ? (
                         <CheckCircle2 className="w-4 h-4 text-green-400" />
                       ) : (
                         <Play className="w-4 h-4" />
                       )}
                     </div>
-                    <span className="font-medium">{quest.title}</span>
+
+                    <div>
+                      <div className="text-sm font-medium">{quest.title}</div>
+                      <div className="text-xs text-white/50">
+                        {quest.reward} XP
+                      </div>
+                    </div>
                   </div>
 
                   <button
+                    disabled={claimed}
                     onClick={() => {
                       if (!visited) visitTask(quest);
                       else if (visited && !claimed) claimAndAwardXp(quest);
                     }}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+                    className={`px-5 py-2.5 rounded-full text-sm font-semibold ${claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
                       }`}
                   >
                     {buttonText}

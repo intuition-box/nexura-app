@@ -1,6 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import { BACKEND_URL } from "./constants";
 
 export const buildUrl = (path: string) =>  {
   const base = (BACKEND_URL || "").replace(/\/+$/g, "");

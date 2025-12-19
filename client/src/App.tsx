@@ -32,6 +32,7 @@ import { AuthProvider } from "@/lib/auth";
 import OrgSignInButton from "@/components/OrgSignInButton";
 import ProjectLogoutButton from "@/components/ProjectLogoutButton";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import PortalClaims from "./pages/PortalClaims";
 
 function Router() {
   return (
@@ -49,18 +50,19 @@ function Router() {
       <Route path="/campaign/:campaignId" component={CampaignEnvironment} />
       <Route path="/campaigns/tasks" component={CampaignEnvironment} />
       <Route path="/quests/tasks-card" component={QuestEnvironment} />
+      <Route path="/portal-claims" component={PortalClaims} />
       {/* Profile pages */}
       <Route path="/profile" component={Profile} />
       <Route path="/profile/edit" component={EditProfile} />
       <Route path="/achievements" component={Achievements} />
-  <Route path="/leaderboard" component={Leaderboard} />
+      <Route path="/leaderboard" component={Leaderboard} />
     {/* Developer pages */}
-  <Route path="/projects" component={Projects} />
-  <Route path="/projects/create" component={ProjectCreate} />
-  <Route path="/studio" component={StudioIndex} />
-  <Route path="/studio/register" component={ProjectRegistration} />
-  <Route path="/project/:projectId/*" component={ProjectDashboard} />
-  <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
+      <Route path="/projects" component={Projects} />
+      <Route path="/projects/create" component={ProjectCreate} />
+      <Route path="/studio" component={StudioIndex} />
+      <Route path="/studio/register" component={ProjectRegistration} />
+      <Route path="/project/:projectId/*" component={ProjectDashboard} />
+      <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

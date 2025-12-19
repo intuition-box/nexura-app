@@ -40,7 +40,7 @@ export const performIntuitionOnchainAction = async ({
 				abi: parseAbi(["function joinCampaign(string memory userId)"]),
 				functionName: "joinCampaign",
 				args: [userId],
-				account: account.address,
+				account,
 				chain
 			});
 			return;
@@ -52,7 +52,7 @@ export const performIntuitionOnchainAction = async ({
 				]),
 				functionName: "AllowCampaignRewardClaim",
 				args: [userId],
-				account: account.address,
+				account,
 				chain
 			});
 			return;
@@ -62,7 +62,7 @@ export const performIntuitionOnchainAction = async ({
 				abi: parseAbi(["function allowUserToMint(string memory userId)"]),
 				functionName: "allowUserToMint",
 				args: [userId],
-				account: account.address,
+				account,
 				chain
       });
       return

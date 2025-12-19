@@ -15,81 +15,49 @@ import {
   Zap, 
   Calendar, 
   Target, 
+  Orbit,
 } from "lucide-react";
 import React from "react";
 import { Link, useLocation } from "wouter";
-import siteLogo from "@assets/logo.png";
 
 const mainNavItems = [
-  {
-    title: "Learn",
-    subtitle: "",
-    icon: BookOpen,
-    href: "/learn",
-    activeClass: "nav-learn-active"
-  },
-  {
-    title: "Explore",
-    icon: Compass,
-    href: "/",
-    activeClass: "nav-explore-active"
-  },
-  {
-    title: "Referrals",
-    icon: Users,
-    href: "/referrals",
-    activeClass: "nav-referrals-active"
-  },
-  {
-    title: "Quests",
-    icon: Zap,
-    href: "/quests",
-    activeClass: "nav-quests-active"
-  },
-  {
-    title: "Campaigns",
-    icon: Calendar,
-    href: "/campaigns",
-    activeClass: "nav-campaigns-active"
-  },
-  {
-    title: "Ecosystem Dapps",
-    icon: Target,
-    href: "/ecosystem-dapps",
-    activeClass: "nav-ecosystem-dapps-active"
-  }
-  ,
-  {
-    title: "Leaderboard",
-    icon: Trophy,
-    href: "/leaderboard",
-    activeClass: "nav-leaderboard-active"
-  }
+  { title: "Learn", subtitle: "", icon: BookOpen, href: "/learn", activeClass: "nav-learn-active" },
+  { title: "Explore", icon: Compass, href: "/", activeClass: "nav-explore-active" },
+  { title: "Referrals", icon: Users, href: "/referrals", activeClass: "nav-referrals-active" },
+  { title: "Quests", icon: Zap, href: "/quests", activeClass: "nav-quests-active" },
+  { title: "Campaigns", icon: Calendar, href: "/campaigns", activeClass: "nav-campaigns-active" },
+  { title: "Ecosystem Dapps", icon: Target, href: "/ecosystem-dapps", activeClass: "nav-ecosystem-dapps-active" },
+  { title: "Leaderboard", icon: Trophy, href: "/leaderboard", activeClass: "nav-leaderboard-active" },
+  { title: "Portal Claims", icon: Orbit, href: "/portal-claims", activeClass: "nav-portal-claims-active" }
 ];
-
 
 export default function NexuraSidebar() {
   const [location] = useLocation();
   const [mounted, setMounted] = React.useState(false);
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    // trigger entrance animation on mount
     const t = setTimeout(() => setMounted(true), 30);
     return () => clearTimeout(t);
   }, []);
 
+  const handleLinkClick = () => {
+    // Only close sidebar on mobile (screen width < 768px)
+    if (window.innerWidth < 768 && sidebarRef.current) {
+      const closeEvent = new CustomEvent("closeSidebar");
+      sidebarRef.current.dispatchEvent(closeEvent);
+    }
+  };
+
   return (
-    <Sidebar className="border-r border-border/40">
+    <Sidebar ref={sidebarRef} className="border-r border-border/40">
       <SidebarContent className="bg-background">
-{/* Logo */}
-{/* Logo */}
-<div className="p-6 border-b border-border/40">
-  <div className="flex items-center">
-    <img src="/nexura-logo.png" alt="Nexura" className="w-40 h-auto" />
-  </div>
-</div>
-
-
+        {/* Logo */}
+        <div className="p-6 border-b border-border/40">
+          <div className="flex items-center">
+            <img src="/nexura-logo.png" alt="Nexura" className="w-40 h-auto" />
+          </div>
+        </div>
 
         {/* Main Navigation */}
         <SidebarGroup>
@@ -106,7 +74,8 @@ export default function NexuraSidebar() {
                     >
                       <Link
                         href={item.href}
-                        className="w-full"
+                        onClick={handleLinkClick} // closes sidebar on mobile
+                        className="w-full flex items-center gap-2"
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                       >
                         <item.icon className="w-4 h-4" />
@@ -124,8 +93,6 @@ export default function NexuraSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-
       </SidebarContent>
     </Sidebar>
   );

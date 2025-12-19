@@ -98,8 +98,8 @@ export function useWallet() {
             console.warn("⚠️ Backend auth failed, wallet connected locally only");
           }
         } else {
-          const checkedData = await apiRequestV2("POST", "/api/user/sign-in", { username: address });
-          console.log("hehe", checkedData);
+          const checkedData = await apiRequestV2("POST", "/api/user/sign-in", { address });
+          // console.log("hehe", checkedData);
           if (checkedData.user) {
             localStorage.setItem("user_profile", JSON.stringify(checkedData.user));
             localStorage.setItem("nexura:token", checkedData.accessToken);

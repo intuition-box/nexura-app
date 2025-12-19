@@ -23,7 +23,7 @@ const router = Router();
 
 router
 	.patch("/add-campaign-address", authenticateProject, addCampaignAddress)
-	.post("/complete-campaign", authenticateProject, claimCampaignRewards)
+	.post("/complete-campaign", authenticateUser, claimCampaignRewards)
 	.patch("/close-campaign", authenticateProject, closeCampaign)
 	.post("/create-campaign", authenticateProject, upload.single("coverImage"), createCampaign)
 	.post("/create-campaign-quests", authenticateProject, createCampaignQuests)

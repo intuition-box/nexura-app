@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { getStoredAccessToken, apiRequestV2, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "../lib/auth";
 
 type Quest = {
   text: string;
@@ -24,20 +25,41 @@ const questsInitial: Quest[] = [
 export default function QuestEnvironment() {
   const [miniQuests, setMiniQuests] = useState<Quest[]>(questsInitial);
   const [totalXP, setTotalXP] = useState(0);
+  const { user } = useAuth();
+
+  const userId = user?._id || "";
+
   const [questNumber, setQuestNumber] = useState<string>("000");
   const [sub_title, setSubTitle] = useState<string>("");
+  const [completed, setCompleted] = useState<boolean>(false);
+  // const [miniQuestsCompleted, setMiniQuestsCompleted] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
-  const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
-  const [visitedQuests, setVisitedQuests] = useState<string[]>([]);
+  const [visitedQuests, setVisitedQuests] = useState<string[]>(() => {
+    return JSON.parse(localStorage.getItem('nexura:quest:visited') || '[]')[userId] || [];
+  });
+  const [claimedQuests, setClaimedQuests] = useState<string[]>(() => {
+    return JSON.parse(localStorage.getItem('nexura:quest:claimed') || '[]')[userId] || [];
+  });
+  const [questCompleted, setQuestCompleted] = useState<boolean>(() => {
+    try { return Boolean(JSON.parse(localStorage.getItem('nexura:quest:completed') || "")[userId]); } catch (error) { return false }
+  });
 
   const { questId } = useParams();
   const { toast } = useToast();
 
   useEffect(() => {
     (async () => {
-      const { miniQuests: quests, totalXp, title: t, questNumber: quest_no, sub_title: st } = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
+      const {
+        miniQuests: quests,
+        totalXp,
+        title: t, 
+        questNumber: quest_no,
+        sub_title: st,
+        questCompleted
+      } = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
 
-      console.log("ggg")
+      setCompleted(questCompleted);
+      // setMiniQuestsCompleted();
       setMiniQuests(quests);
       setTotalXP(totalXp);
       setQuestNumber(quest_no);
@@ -45,6 +67,39 @@ export default function QuestEnvironment() {
       setSubTitle(st);
     })();
   }, []);
+
+  useEffect(() => {
+    const value: Record<string, string[]> = {};
+    value[userId] = visitedQuests;
+
+    localStorage.setItem('nexura:quest:visited', JSON.stringify(value))
+  }, [visitedQuests]);
+  useEffect(() => {
+    const value: Record<string, string[]> = {};
+    value[userId] = claimedQuests;
+
+    localStorage.setItem('nexura:quest:claimed', JSON.stringify(value))
+  }, [claimedQuests]);
+  useEffect(() => {
+    const value: Record<string, boolean> = {};
+    value[userId] = questCompleted;
+
+    localStorage.setItem('nexura:quest:completed', JSON.stringify(value))
+  }, [questCompleted]);
+
+  const miniQuestsCompleted = miniQuests.filter((m) => m.done === true).length === miniQuests.length;
+
+  const claimQuestReward = async () => {
+    try {
+      await apiRequestV2("POST", `/api/quest/claim-quest?id=${questId}`);
+
+      setQuestCompleted(true);
+      // window.location.reload();
+    } catch (error: any) {
+      console.error(error);
+      toast.error({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  }
 
   const claimReward = async (miniQuestId: string) => {
     try {
@@ -67,15 +122,18 @@ export default function QuestEnvironment() {
 
       if (!claimedQuests.includes(miniQuestId)) {
         setClaimedQuests([...claimedQuests, miniQuestId]);
+      } else {
+        toast({ title: "Already Claimed", description: "Task already completed", variant: "destructive" });
+        return;
       }
 
       const res = await apiRequest("POST", `/api/quest/claim-mini-quest`, { id: miniQuestId, questId });
       if (!res.ok) return;
 
-      window.location.reload();
-    } catch (error) {
+      // window.location.reload();
+    } catch (error: any) {
       console.error(error);
-      toast.error({ title: "Error", description: "Failed to claim reward. Please try again.", variant: "destructive" });
+      toast.error({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -89,19 +147,22 @@ export default function QuestEnvironment() {
 
     let buttonText = "Start Quest";
     if (visited) buttonText = `Claim`;
-    if (quest.done) buttonText = "Completed";
+    if (quest.done || claimedQuests.includes(quest._id)) buttonText = "Completed";
 
     return (
       <div
         key={index}
-        className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition"
-      >
-        <p className="font-medium">{quest.text}</p>
+        className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white/5 border border-white/10 rounded-xl p-4 md:p-5 hover:bg-white/10 transition">
+        <p className="font-medium text-sm md:text-base leading-snug">
+          {quest.text}
+        </p>
 
         <button
           onClick={() => !visited ? visitQuest(quest) : claimReward(quest._id)}
-          className={`px-5 py-2 rounded-full text-sm font-semibold ${
-            quest.done ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+          className={`w-full md:w-auto px-5 py-2.5 rounded-full text-sm font-semibold ${
+            quest.done || claimedQuests.includes(quest._id)
+              ? "bg-gray-600 cursor-not-allowed"
+              : "bg-purple-700 hover:bg-purple-800"
           }`}
         >
           {buttonText}
@@ -117,10 +178,10 @@ export default function QuestEnvironment() {
       <div className="max-w-4xl mx-auto relative z-10 space-y-10">
 
         {/* Banner */}
-        <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-6 flex justify-between items-center">
+        <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-5 md:p-6 flex flex-col md:flex-row gap-4 md:gap-0 md:justify-between md:items-center">
           <div>
             <p className="uppercase text-xs opacity-60">{title}</p>
-            <p className="text-xl font-semibold">{sub_title}</p>
+            <p className="text-lg md:text-xl font-semibold">{sub_title}</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -133,8 +194,8 @@ export default function QuestEnvironment() {
 
         {/* Main Quest Card */}
         <Card className="rounded-2xl bg-white/5 border-white/10 overflow-hidden shadow-xl">
-          <div className="grid grid-cols-2">
-            <div className="h-full">
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <div className="h-48 md:h-full">
               <img
                 src="/campaign.png"
                 alt="Quest"
@@ -142,10 +203,10 @@ export default function QuestEnvironment() {
               />
             </div>
 
-            <div className="p-6 flex flex-col justify-between">
+            <div className="p-5 md:p-6 flex flex-col justify-between">
               <div>
                 <p className="text-xs opacity-50 uppercase mb-1">Nexura</p>
-                <p className="text-xl font-bold leading-tight">Quest {questNumber}:<br />{sub_title}</p>
+                <p className="text-lg md:text-xl font-bold leading-tight">Quest {questNumber}:<br />{sub_title}</p>
 
                 <div className="mt-4">
                   <p className="uppercase text-xs opacity-50">Start Quest</p>
@@ -159,8 +220,17 @@ export default function QuestEnvironment() {
                 </div>
               </div>
 
-              <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl py-3 mt-6">
-                Complete Quests
+              <Button 
+                onClick={() => claimQuestReward()} 
+                disabled={!miniQuestsCompleted || completed || !(claimedQuests.length === miniQuests.length) || questCompleted} 
+                className={`w-full font-semibold rounded-xl py-3 mt-6 
+                  ${miniQuestsCompleted || !completed || claimedQuests.length === miniQuests.length || !questCompleted
+                    ? "bg-purple-600 hover:bg-purple-700 text-white"
+                    : "bg-gray-600 cursor-not-allowed text-gray-300"
+                  }`
+                }
+              >
+                {!completed || !questCompleted ? "Claim Rewards" : "Completed"}
               </Button>
             </div>
           </div>

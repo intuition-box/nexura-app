@@ -9,25 +9,27 @@ export default function OrgSignInButton() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSignIn = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Direct API call to get user/profile info
-      const meRes = await apiRequest("GET", "/api/me");
-      const json = await meRes.json().catch(() => ({}));
+    // setLoading(true);
+    // setError(null);
+    // try {
+    //   // Direct API call to get user/profile info
+    //   const meRes = await apiRequest("GET", "/api/project/profile");
+    //   const json = await meRes.json().catch(() => ({}));
 
-      if (json?.hasProject && json?.projectId) {
-        setLocation(`/project/${json.projectId}/dashboard`);
-      } else if (json?.hasProfile) {
-        setLocation("/studio");
-      } else {
-        setLocation("/studio/register");
-      }
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
-    } finally {
-      setLoading(false);
-    }
+    //   if (json?.hasProject && json?.projectId) {
+    //     setLocation(`/project/${json.projectId}/dashboard`);
+    //   } else if (json?.hasProfile) {
+    //     setLocation("/studio");
+    //   } else {
+    //     setLocation("/studio/register");
+    //   }
+    // } catch (e: any) {
+    //   setError(e?.message ?? String(e));
+    // } finally {
+    //   setLoading(false);
+    // }
+
+    alert("Creating an organisation is on its way, in the mean time contact the nexura team with your campaign information. Thank you!")
   };
 
   return (

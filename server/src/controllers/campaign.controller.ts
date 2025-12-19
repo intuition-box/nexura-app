@@ -40,7 +40,21 @@ export const fetchCampaigns = async (
 	try {
 		const campaigns = await campaign.find();
 
-		res.status(OK).json({ message: "campaigns fetched!", campaigns });
+		const joinedCampaigns = await campaignCompleted.find({ user: req.id });
+
+		const mergedCampaigns: any[] = [];
+
+		for (const c of campaigns) {
+			const joined = joinedCampaigns.find((j) => j.campaign?.toString() === c._id.toString());
+
+			const mergedJoinedCampaign: Record<any, unknown> = c.toJSON();
+
+			mergedJoinedCampaign.joined = joined ? true : false;
+
+			mergedCampaigns.push(mergedJoinedCampaign);
+		}
+
+		res.status(OK).json({ message: "campaigns fetched!", campaigns: mergedCampaigns });
 	} catch (error) {
 		logger.error(error);
 		res
@@ -178,17 +192,18 @@ export const joinCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 			campaign: id,
 		});
 		if (!completedCampaign) {
-			await campaignCompleted.create({ user: userId, campaign: id });
+			const joined = new campaignCompleted({ user: userId, campaign: id });
 
 			campaignToJoin.participants += 1;
-
-			await campaignToJoin.save();
 
 			await performIntuitionOnchainAction({
 				action: "join",
 				userId,
 				contractAddress: campaignToJoin.contractAddress!,
 			});
+
+			await campaignToJoin.save();
+			await joined.save();
 
 			res.status(OK).json({ message: "campaign joined" });
 			return;
@@ -303,13 +318,6 @@ export const claimCampaignRewards = async (
 			res.status(FORBIDDEN).json({
 				error: "all quests must be completed before rewards can be claimed",
 			});
-			return;
-		}
-
-		if (!completedCampaign) {
-			res
-				.status(FORBIDDEN)
-				.json({ error: "kindly complete the campaign to claim rewards" });
 			return;
 		}
 
