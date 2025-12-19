@@ -9,6 +9,7 @@ type User = any;
 type AuthContextType = {
   user: User | null;
   loading: boolean;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   signUp: (username: string, referrer?: string) => Promise<void>;
   signOut: () => void;
 };
@@ -84,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsub = onSessionChange(async () => {
       try {
-        const res = await apiRequest("GET", "/api/me");
+        const res = await apiRequest("GET", "/api/user/profile");
         if (res.ok) {
           const json = await res.json();
           const userData = json?.user ? { ...json.user, ...(json.profile || {}) } : null;
@@ -166,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signOut, setUser }}>
       {children}
     </AuthContext.Provider>
   );
