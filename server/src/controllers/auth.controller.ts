@@ -139,7 +139,7 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 		const slicedAddress = address.slice(0, 4) + "..." + address.slice(-4);
 		console.log({ slicedAddress });
 
-		const userExists = await user.findOne({ address: slicedAddress });
+		const userExists = await user.findOne({ address });
 		if (!userExists) {
 
 			const referrerCode = cryptoRandomString({

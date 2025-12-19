@@ -16,6 +16,7 @@ interface Quest {
   title: string;
   sub_title: string;
   project_name?: string;
+  description?: string;
   done: boolean;
   project_image?: string;
   starts_at?: string;
@@ -63,7 +64,7 @@ export default function Quests() {
       const res = await apiRequestV2("GET", "/api/quests");
       return res;
     },
-    refetchInterval: 5000,     // send request every 5s
+    refetchInterval: 60000,     // send request every 1m
     refetchIntervalInBackground: true,
   });
 
@@ -111,13 +112,13 @@ export default function Quests() {
         className="bg-[#0d1117] border border-white/5 rounded-xl overflow-hidden transition hover:shadow-lg"
       >
         <div className="relative h-52 sm:h-44 bg-black">
-          {quest.project_image && (
-            <img
-              src="/quest-1.png"
-              alt={quest.title}
-              className="w-full h-full object-cover"
-            />
-          )}
+          {/* {quest.project_image && ( */}
+          <img
+            src="/quest-1.png"
+            alt={quest.title}
+            className="w-full h-full object-cover"
+          />
+          {/* )} */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
 
           <div className="absolute top-2 right-2">
@@ -203,39 +204,39 @@ export default function Quests() {
             Complete these essential quests to unlock the full NEXURA experience
           </p>
 
-                  <div className="mt-4 space-y-3">
-                    {quests?.oneTimeQuests.map((quest) => {
-                      const visited = visitedTasks.includes(quest._id);
-                      const claimed = claimedTasks.includes(quest._id) || quest.done;
+          <div className="mt-4 space-y-3">
+            {quests?.oneTimeQuests.map((quest) => {
+              const visited = visitedTasks.includes(quest._id);
+              const claimed = claimedTasks.includes(quest._id) || quest.done;
 
-                      let buttonText = quest.actionLabel || "Start Task";
-                      if (visited && !claimed) buttonText = `Claim ${quest.reward} XP`;
-                      if (claimed) buttonText = "Completed";
+              let buttonText = quest.actionLabel || "Start Task";
+              if (visited && !claimed) buttonText = `Claim ${quest.reward} XP`;
+              if (claimed) buttonText = "Completed";
 
-                      return (
-                        <div
-                          key={quest._id}
-                          className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
-                              {claimed ? (
-                                <CheckCircle2 className="w-4 h-4 text-green-400" />
-                              ) : (
-                                <Play className="w-4 h-4" />
-                              )}
-                            </div>
-        
+              return (
+                <div
+                  key={quest._id}
+                  className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+                      {claimed ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
+                    </div>
+
                     <div>
                       <div className="text-sm font-medium">{quest.title}</div>
                       <div className="text-xs text-white/50">
                         {quest.reward} XP
                       </div>
                     </div>
-                          </div>
+                  </div>
 
-                          <button
-                            disabled={claimed}
+                  <button
+                    disabled={claimed}
                     onClick={() => {
                       if (!visited) visitTask(quest);
                       else if (visited && !claimed) claimAndAwardXp(quest);

@@ -29,7 +29,7 @@ export default function EcosystemDapps() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
 
-  const userId = user?._id ?? "";
+  const userId = user?._id ?? "user-123";
 
   const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -51,10 +51,10 @@ export default function EcosystemDapps() {
 
   // Track visited and claimed state locally for UI. Authoritative state is server-side.
   const [visitedDapps, setVisitedDapps] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('nexura:visited:dapps') || '[]')[userId]; } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('nexura:visited:dapps') || '[]')[userId] || []; } catch { return []; }
   });
   const [claimedDapps, setClaimedDapps] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('nexura:claimed:dapps') || '[]')[userId]; } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('nexura:claimed:dapps') || '[]')[userId] || []; } catch { return []; }
   });
 
   useEffect(() => {

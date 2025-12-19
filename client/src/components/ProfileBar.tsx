@@ -63,8 +63,8 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
 
   const handleLogout = () => {
     signOut();
-    try { localStorage.removeItem("nexura:wallet"); } catch {}
-    try { disconnect?.(); } catch {}
+    try { localStorage.removeItem("nexura:wallet"); } catch { }
+    try { disconnect?.(); } catch { }
     setLocation("/");
     toast({ title: "Signed out", description: "Your session was cleared." });
   };
@@ -87,8 +87,7 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
 
       toast({ title: "Network switched!", description: "Network switched!" });
     } catch (error: any) {
-      // console.error('Failed to add network:', error);
-      console.error('failed to switch', error.code);
+      console.error('Failed to switch:', error);
       if (error.code === 4001) {
         toast({ title: "Request cancelled", description: "You cancelled the request", variant: "destructive" });
       } else if (error.code === 4902) {
@@ -116,6 +115,7 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
       title={`Add Intuition ${isMainnet ? "Mainnet" : "Testnet"} to wallet`}
     >
       {/* <img src="/claim1.jpg" alt="" className="w-8 h-auto rounded-full" /> */}
+      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
       <span className="text-xs sm:text-sm font-medium text-white hidden sm:inline">
         Intuition {isMainnet ? "Mainnet" : "Testnet"}
       </span>
@@ -125,15 +125,14 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
   const LevelBadge = () => (
     <Link href="/profile">
       <div className="flex items-center gap-2 cursor-pointer glass glass-hover p-2 sm:px-4 rounded-full transition-all">
-<div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.6)]">
-          <span className="text-white text-sm font-bold"></span>
+        <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.6)]">
+          <span className="text-white text-sm font-bold">{levelNumber}</span>
         </div>
         <div className="flex flex-col">
           <span className="text-xs text-white/50 font-medium">Level</span>
           <span className="text-xs sm:text-sm font-bold text-white hidden sm:block">
-  {levelName}
-</span>
-
+            {levelName}
+          </span>
         </div>
       </div>
     </Link>
@@ -150,11 +149,11 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="relative">
-<Button
-  variant="ghost"
-  className="relative h-12 w-12 sm:h-16 sm:w-16 rounded-full p-0 transition-transform duration-200 hover:scale-[1.05] active:scale-95" 
- data-testid="profile-dropdown"
->
+              <Button
+                variant="ghost"
+                className="relative h-12 w-12 sm:h-16 sm:w-16 rounded-full p-0 transition-transform duration-200 hover:scale-[1.05] active:scale-95"
+                data-testid="profile-dropdown"
+              >
                 <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border-2 border-border">
                   <AvatarImage src={user.avatar ?? ""} />
                   <AvatarFallback className="bg-primary text-primary-foreground">
@@ -169,9 +168,9 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56 sm:w-64 p-2 glass rounded-2xl sm:rounded-3xl border-white/10 animate-in fade-in zoom-in-95 duration-150"
- align="end" data-testid="profile-dropdown-menu">
+            align="end" data-testid="profile-dropdown-menu">
             <DropdownMenuItem className="cursor-default p-3 text-base text-white">
-              <span>{address ? `${address.slice(0,6)}...${address.slice(-4)}` : 'No wallet connected'}</span>
+              <span>{address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'No wallet connected'}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
@@ -202,7 +201,7 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 p-2 glass rounded-3xl border-white/10">
             <DropdownMenuItem className="cursor-default p-2 text-base text-white">
-              <span>{address ? `${address.slice(0,6)}...${address.slice(-4)}` : 'No wallet connected'}</span>
+              <span>{address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'No wallet connected'}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
