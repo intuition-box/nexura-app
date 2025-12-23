@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { apiRequestV2 } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/lib/auth";
-import { url } from "@/lib/constants";
-import { claimReferralReward } from "@/lib/performOnchainAction";
 
 /* =======================
    SVG ICONS (BOLD / FILLED)
@@ -56,55 +53,41 @@ const TrustIcon = ({ className = "" }) => (
    PAGE
 ======================= */
 
-type Referral = {
-  username: string;
-  dateJoined: string;
-  status: "Active" | "Inactive";
-};
-
-const refReward = 16.2;
-
-const rewardPerActiveUser = 1.62;
-
-const dummyReferralData: Referral[] = [
-  { username: "Madmoiselle", dateJoined: "Nov 4, 2025", status: "Inactive" },
-  { username: "Shallipopi", dateJoined: "Nov 9, 2025", status: "Active" },
-  { username: "Blacko", dateJoined: "Nov 15, 2025", status: "Active" },
-  { username: "TFK", dateJoined: "Nov 25, 2025", status: "Active" },
-  { username: "Mardocee", dateJoined: "Nov 29, 2025", status: "Active" },
-  { username: "Ownyde", dateJoined: "Nov 29, 2025", status: "Active" },
-  { username: "Emperor", dateJoined: "Nov 29, 2025", status: "Inactive" }
-];
-
 export default function ReferralsPage() {
   const [rewardClaimed, setRewardClaimed] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [totalReferrerls, setTotalReferrals] = useState(0);
-  const [activeUsers, setActiveUsers] = useState(0);
-  const [trustEarned, setTrustEarned] = useState<string | number>("0");
+  const [referralData, setReferralData] = useState([]);
+const [stats, setStats] = useState({ total: 0, active: 0, trust: 0 });
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
 
-  const { user } = useAuth();
+useEffect(() => {
+  const fetchReferrals = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/referrals"); // replace with your backend endpoint
+      if (!res.ok) throw new Error("Failed to fetch referrals");
+      const data = await res.json();
+      setReferralData(data.referrals);
 
-  const [referralData, setReferralData] = useState<Referral[]>(dummyReferralData);
+      // compute stats
+      const total = data.referrals.length;
+      const active = data.referrals.filter(r => r.status === "Active").length;
+      const trust = data.referrals.reduce((sum, r) => sum + (r.trustEarned || 0), 0);
+      setStats({ total, active, trust });
 
-  useEffect(() => {
-    (async () => {
-      const { usersReferred, refRewardClaimed } = await apiRequestV2("GET", "/api/user/referral-info");
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+  fetchReferrals();
+}, []);
 
-      const ActiveUsers = usersReferred.filter((u: { status: string; }) => u.status === "Active").length;
 
-      setReferralData(usersReferred);
-      setRewardClaimed(refRewardClaimed);
-
-      setTrustEarned(ActiveUsers < 10 ? (rewardPerActiveUser * ActiveUsers).toFixed(2) : refReward);
-      setTotalReferrals(usersReferred.length);
-      setActiveUsers(ActiveUsers);
-    })()
-  }, []);
-
-  const referralLink = `${url}/ref/${user ? user.referral.code : "referral-noobmaster"}`;
-
-  const progressBar = Math.round((parseFloat(trustEarned.toString()) / refReward) * 100);
+  const referralLink = "nexura.com/referral-noobmaster";
 
   const handleCopy = async () => {
     try {
@@ -116,15 +99,17 @@ export default function ReferralsPage() {
     }
   };
 
-  const handleClaim = async () => {
-    await apiRequestV2("POST", "/api/user/allow-ref-claim");
-
-    await claimReferralReward(user._id);
-
-    await apiRequestV2("POST", "/api/user/claim-referral-reward");
-
+const handleClaim = async () => {
+  try {
+    const res = await fetch("/api/claim-reward", { method: "POST" }); // replace with backend endpoint
+    if (!res.ok) throw new Error("Failed to claim reward");
     setRewardClaimed(true);
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Could not claim reward. Try again.");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-black text-white px-4 sm:px-6 lg:px-8 py-8 space-y-12 max-w-[1200px] mx-auto">
@@ -142,7 +127,7 @@ export default function ReferralsPage() {
         {[
           { icon: InviteIcon, title: "Send an invitation", desc: "Send your referral links to friends and tell them how cool Nexura is!" },
           { icon: RegisterIcon, title: "Registration", desc: "Let them register to our platform using your referral links" },
-          { icon: EarnIcon, title: "Earn", desc: `You can earn up to ${refReward} TRUST referring your friends after they complete a Quest or Campaign` }
+          { icon: EarnIcon, title: "Earn", desc: "You can earn up to 16.2 TRUST referring your friends after they complete a Quest or Campaign" }
         ].map(({ icon: Icon, title, desc }) => (
           <div key={title} className="flex flex-col items-center text-center space-y-4">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-purple-600/25 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.35)]">
@@ -178,10 +163,10 @@ export default function ReferralsPage() {
         {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { icon: UsersIcon, label: "Total Referrals", value: totalReferrerls },
-            { icon: ActiveIcon, label: "Active", value: activeUsers },
-            { icon: TrustIcon, label: "Trust Earned", value: trustEarned }
-          ].map(({ icon: Icon, label, value }) => (
+  { icon: UsersIcon, label: "Total Referrals", value: stats.total },
+  { icon: ActiveIcon, label: "Active", value: stats.active },
+  { icon: TrustIcon, label: "Trust Earned", value: stats.trust.toFixed(1) }
+].map(({ icon: Icon, label, value }) => (
             <div
               key={label}
               className="flex items-center justify-between bg-white/5 rounded-2xl px-5 sm:px-6 py-5"
@@ -211,7 +196,6 @@ export default function ReferralsPage() {
           </div>
 
           <div className="space-y-4">
-<<<<<<< HEAD
             {[
               ["Madmoiselle", "Nov 4, 2025", "Inactive"],
               ["Shallipopi", "Nov 9, 2025", "Active"],
@@ -225,17 +209,12 @@ export default function ReferralsPage() {
                 key={name}
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm"
               >
-=======
-            {referralData.length > 0 ? referralData.map(({ username, dateJoined, status }) => (
-              <div key={username} className="flex items-center justify-between text-sm">
->>>>>>> origin/backend-dev
                 <div className="flex items-center gap-3">
                   <Avatar className="w-7 h-7">
-                    <AvatarFallback>{username[0]}</AvatarFallback>
+                    <AvatarFallback>{name[0]}</AvatarFallback>
                   </Avatar>
-                  <span>{username}</span>
+                  <span>{name}</span>
                 </div>
-<<<<<<< HEAD
                 <span className="opacity-60">{date}</span>
                 {status === "Active" ? (
   <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-500/15 text-green-400 border border-green-500/30">
@@ -247,14 +226,8 @@ export default function ReferralsPage() {
   </span>
 )}
 
-=======
-                <span className="opacity-60">{dateJoined}</span>
-                <span className={status === "Active" ? "text-green-400" : "opacity-40"}>
-                  {status}
-                </span>
->>>>>>> origin/backend-dev
               </div>
-            )) : "No referrals yet"}
+            ))}
           </div>
         </Card>
 
@@ -262,11 +235,11 @@ export default function ReferralsPage() {
         <div className="space-y-6">
           <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-4">
             <p className="text-sm font-medium">Milestone Progress</p>
-            <p className="text-sm text-purple-400">Reward: +{refReward} Trust</p>
-            <Progress value={progressBar} />
+            <p className="text-sm text-purple-400">Next Reward: +10.8 Trust</p>
+            <Progress value={50} />
             <Button
               onClick={handleClaim}
-              disabled={activeUsers < 10 || rewardClaimed}
+              disabled={rewardClaimed}
               className="w-full rounded-full bg-purple-600 text-sm disabled:opacity-60"
             >
               {rewardClaimed ? "Claimed" : "Claim Reward"}
