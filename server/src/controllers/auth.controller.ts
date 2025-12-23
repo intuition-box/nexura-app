@@ -137,7 +137,7 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 		// }
 
 		const slicedAddress = address.slice(0, 4) + "..." + address.slice(-4);
-		console.log({ slicedAddress });
+		console.log({ slicedAddress, referrer });
 
 		const userExists = await user.findOne({ address });
 		if (!userExists) {
@@ -153,7 +153,7 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 				code: referrerCode,
 			};
 
-			const userReferrer = await user.findOne({ referral: { code: referrer } });
+			const userReferrer = await user.findOne({ "referral.code": referrer });
 
 			const newUser = new user({ address, username: slicedAddress, referral, dateJoined });
 
