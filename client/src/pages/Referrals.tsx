@@ -163,13 +163,13 @@ export default function ReferralsPage() {
           </p>
         </div>
 
-        <div className="flex items-center bg-white/5 rounded-full px-4 sm:px-5 py-2 max-w-full sm:max-w-[520px]">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-white/5 rounded-full px-4 sm:px-5 py-2 max-w-full sm:max-w-[520px]">
           <span className="text-sm opacity-70 truncate">
             {referralLink}
           </span>
           <Button
             onClick={handleCopy}
-            className="ml-auto h-8 px-4 rounded-full bg-purple-600 text-sm"
+            className="sm:ml-auto h-8 px-4 rounded-full bg-purple-600 text-sm"
           >
             {copied ? "Copied" : "Copy Link"}
           </Button>
@@ -211,18 +211,48 @@ export default function ReferralsPage() {
           </div>
 
           <div className="space-y-4">
+<<<<<<< HEAD
+            {[
+              ["Madmoiselle", "Nov 4, 2025", "Inactive"],
+              ["Shallipopi", "Nov 9, 2025", "Active"],
+              ["Blacko", "Nov 15, 2025", "Active"],
+              ["TFK", "Nov 25, 2025", "Active"],
+              ["Mardocee", "Nov 29, 2025", "Active"],
+              ["Ownyde", "Nov 29, 2025", "Active"],
+              ["Emperor", "Nov 29, 2025", "Inactive"]
+            ].map(([name, date, status]) => (
+              <div
+                key={name}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm"
+              >
+=======
             {referralData.length > 0 ? referralData.map(({ username, dateJoined, status }) => (
               <div key={username} className="flex items-center justify-between text-sm">
+>>>>>>> origin/backend-dev
                 <div className="flex items-center gap-3">
                   <Avatar className="w-7 h-7">
                     <AvatarFallback>{username[0]}</AvatarFallback>
                   </Avatar>
                   <span>{username}</span>
                 </div>
+<<<<<<< HEAD
+                <span className="opacity-60">{date}</span>
+                {status === "Active" ? (
+  <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-500/15 text-green-400 border border-green-500/30">
+    Active
+  </span>
+) : (
+  <span className="px-3 py-1 text-xs rounded-full opacity-40 border border-white/10">
+    Inactive
+  </span>
+)}
+
+=======
                 <span className="opacity-60">{dateJoined}</span>
                 <span className={status === "Active" ? "text-green-400" : "opacity-40"}>
                   {status}
                 </span>
+>>>>>>> origin/backend-dev
               </div>
             )) : "No referrals yet"}
           </div>
