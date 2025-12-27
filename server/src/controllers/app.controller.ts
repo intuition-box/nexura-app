@@ -1,8 +1,11 @@
 import logger from "@/config/logger";
+import { firstMessage } from "@/models/msg.model";
 import { referredUsers } from "@/models/referrer.model";
 import { user } from "@/models/user.model";
 import { performIntuitionOnchainAction } from "@/utils/account";
+import { BOT_TOKEN } from "@/utils/env.utils";
 import { INTERNAL_SERVER_ERROR, OK, CREATED, BAD_REQUEST, FORBIDDEN } from "@/utils/status.utils";
+import axios from "axios";
 
 export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 	res.send("hi!");
@@ -145,3 +148,64 @@ export const claimReferreralReward = async (req: GlobalRequest, res: GlobalRespo
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error claiming referral reward" });
   }
 };
+
+export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { tag, id, userId } = req.body;
+
+    res.status(OK).json({ message: "user has sent message", success: true });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error checking twitter task" });
+  }
+}
+//  - g_id
+export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { guildId, tag, userId } = req.body;
+
+    switch (tag) {
+      case "join":
+        const {
+          status, 
+          data: { roles }
+          // remove hardcoded guild id
+        } = await axios.get(`https://discord.com/api/guilds/1419336727302111367/members/${userId}`,
+          {
+            headers: {
+              Authorization: `Bot ${BOT_TOKEN}`,
+            },
+          }
+        );
+
+        if (status !== OK) {
+          res.status(BAD_REQUEST).json({ error: "join the discord server and get verified" });
+          return;
+        }
+
+        logger.info(roles);
+
+        if (!roles.includes("VERIFIED_ROLE_ID")) {
+          res.status(BAD_REQUEST).json({ error: "you need to be verified to continue" });
+          return;
+        }
+
+        res.status(OK).json({ message: "validated", success: true });
+
+        return;
+      case "message":
+        const sentMessage = await firstMessage.findOne({ user_id: userId });
+        if (!sentMessage) {
+          res.status(BAD_REQUEST).json({ error: "send a message to the server to continue" });
+          return;
+        }
+
+        res.status(OK).json({ message: "user has sent message", success: true });
+
+        return;
+    }
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error checking discord task" })
+  }
+}
