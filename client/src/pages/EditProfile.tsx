@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { uploadFile } from "@/lib/upload";
-import { getSessionToken } from "@/lib/session";
+import { getSessionToken, emitSessionChange } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,10 +11,10 @@ import { ArrowLeft, Save, Upload, X, Camera } from "lucide-react";
 import { FaDiscord, FaTwitter } from "react-icons/fa";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { emitSessionChange } from "@/lib/session";
 import { apiRequestV2 } from "@/lib/queryClient";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { twitterAuthUrl, discordAuthUrl } from "@/lib/constants";
 
 export default function EditProfile() {
   const [, setLocation] = useLocation();
@@ -37,7 +37,7 @@ export default function EditProfile() {
     if (user) {
       setProfileData({
         displayName: user.displayName || user.username || "User",
-        socialProfiles: {
+        socialProfiles: user.socialProfiles ?? {
           twitter: { connected: false, username: "" },
           discord: { connected: false, username: "" }
         }
@@ -145,17 +145,17 @@ export default function EditProfile() {
   const handleConnect = (service: "twitter" | "discord") => {
     // Redirect to actual social media connection sites
     const urls = {
-      twitter: "https://twitter.com/i/oauth/authorize", // This would be configured with proper OAuth params
-      discord: "https://discord.com/api/oauth2/authorize" // This would be configured with proper OAuth params
+      twitter: twitterAuthUrl,
+      discord: discordAuthUrl
     };
-    
+
     toast({
       title: `Connecting to ${service}`,
       description: `Opening ${service} authentication...`,
     });
-    
+
     // Open in new tab for OAuth flow
-    window.open(urls[service], '_blank', 'noopener,noreferrer');
+    window.open(urls[service]);
   };
 
   const handleDisconnect = (service: "twitter" | "discord") => {

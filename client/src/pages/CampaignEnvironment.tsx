@@ -15,17 +15,18 @@ type Quest = {
   _id: string;
   quest: string;
   reward: number;
+  tag: "like" | "follow" | "join" | "retweet";
   link: string;
   done: boolean;
 };
 
 const campaignQuestsInitial: Quest[] = [
-  { _id: "quest-1", quest: "Follow Nexura on X", reward: 100, link: "https://x.com/NexuraXYZ", done: false },
-  { _id: "quest-2", quest: "Join Nexura Discord", reward: 100, link: "https://discord.gg/caK9kATBya", done: false },
-  { _id: "quest-3", quest: "Drop a message on Discord", reward: 100, link: "https://discord.gg/caK9kATBya", done: false },
-  { _id: "quest-4", quest: "Support or Oppose the #Intuitionbilly Claim on Intuition Portal", reward: 100, link: "#", done: false },
-  { _id: "quest-5", quest: "Support or oppose the Nexura claim on Intuition Portal", reward: 100, link: "#", done: false },
-  { _id: "quest-6", quest: "Like and Comment on Nexura Pinned post", reward: 100, link: "#", done: false },
+  { _id: "quest-id", tag: "like", done: false, quest: "Follow Nexura on X", reward: 100, link: "https://x.com/NexuraXYZ" },
+  { _id: "quest-id", tag: "like", done: false, quest: "Join Nexura Discord", reward: 100, link: "https://discord.gg/caK9kATBya" },
+  { _id: "quest-id", tag: "like", done: false, quest: "Drop a message on Discord", reward: 100, link: "https://discord.gg/caK9kATBya" },
+  { _id: "quest-id", tag: "like", done: false, quest: "Support or Oppose the #Intuitionbilly Claim on Intuition Portal", reward: 100, link: "#" },
+  { _id: "quest-id", tag: "like", done: false, quest: "Support or oppose the Nexura claim on Intuition Portal", reward: 100, link: "#" },
+  { _id: "quest-id", tag: "like", done: false, quest: "Like and Comment on Nexura Pinned post", reward: 100, link: "#" },
 ];
 
 export default function CampaignEnvironment() {
@@ -65,21 +66,18 @@ export default function CampaignEnvironment() {
   // Fetch campaign quests
   useEffect(() => {
     (async () => {
-      try {
-        const res = await apiRequestV2("GET", `/api/campaign/quests?id=${campaignId}`);
-        setQuests(res.campaignQuests || []);
-        setCampaignAddress(res.address || "");
-        setDescription(res.description || "");
-        setTitle(res.title || "");
-        setSubTitle(res.sub_title || "");
-        setProjectName(res.project_name || "");
-        setCampaignNumber(res.campaignNumber || "000");
-        setReward(res.reward || { trustTokens: 0, xp: 0 });
-        setQuestsCompleted(res.campaignCompleted?.questsCompleted || false);
-      } catch (error: any) {
-        console.error(error);
-        toast.error({ title: "Error", description: error.message });
-      }
+      const res = await apiRequestV2("GET", `/api/campaign/quests?id=${campaignId}`);
+
+      setQuests(res.campaignQuests || []);
+      setCampaignAddress(res.address || "");
+      setDescription(res.description || "");
+      setTitle(res.title || "");
+      setSubTitle(res.sub_title || "");
+      setProjectName(res.project_name || "");
+      setCampaignNumber(res.campaignNumber || "000");
+      setReward(res.reward || { trustTokens: 0, xp: 0 });
+      setQuestsCompleted(res.campaignCompleted?.questsCompleted || false);
+
     })();
   }, [campaignId]);
 
@@ -110,44 +108,67 @@ export default function CampaignEnvironment() {
 
   // Open quest links
   const markQuestAsVisited = (quest: Quest) => {
-    if (quest.quest.toLowerCase().includes("join nexura discord")) {
-      window.location.href =
-        "https://discord.com/oauth2/authorize?client_id=1453410817570766950&response_type=code&redirect_uri=https%3A%2F%2Fnexura-app.vercel.app%2Fcampaign-callback&scope=identify+guilds.join";
-      return;
-    }
-
     window.open(quest.link, "_blank");
+
     if (!visitedQuests.includes(quest._id)) setVisitedQuests([...visitedQuests, quest._id]);
   };
 
   // Claim quest
-  const claimQuest = async (questId: string) => {
+  const getId = (url: string) => {
+    return url.split("/").pop(); // return the last item in the array
+  }
+
+  const claimQuest = async (quest: Quest) => {
     try {
-      if (claimedQuests.includes(questId)) return;
-      const res = await apiRequest("POST", `/api/quest/perform-campaign-quest`, { id: questId, campaignId });
+      const id = getId(quest.link);
+
+      try {
+        if (["like", "follow", "comment", "repost"].includes(quest.tag)) {
+          const { success } = await apiRequestV2("POST", "/api/check-x", { id, tag: quest.tag });
+          if (!success) {
+            alert(`Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`);
+            return;
+          }
+        } else if (["join", "message"].includes(quest.tag)) {
+          if (!user?.socialProfiles.discord.connected) {
+            toast({ title: "Error", description: "discord not connected yet, go to profile to connect", variant: "destructive" });
+            return;
+          }
+
+          const { success } = await apiRequestV2("POST", "/api/check-discord", { channelId: id, tag: quest.tag });
+          if (!success) {
+            toast({ title: "Error", description: `Kindly ${quest.tag} the discord channel`, variant: "destructive"});
+            return;
+          }
+        }
+      } catch (error: any) {
+        console.error(error);
+        toast({title: "Error", description: error.message, variant: "destructive" });
+      }
+
+      const res = await apiRequest("POST", `/api/quest/perform-campaign-quest`, { id: quest._id, campaignId });
       if (!res.ok) return;
-      setClaimedQuests([...claimedQuests, questId]);
-      setQuests((prev) => prev.map((q) => (q._id === questId ? { ...q, done: true } : q)));
+
+      setClaimedQuests([...claimedQuests, quest._id]);
+      setQuests((prev) => prev.map((q) => (q._id === quest._id ? { ...q, done: true } : q)));
     } catch (error: any) {
       console.error(error);
-      toast.error({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
   // Claim campaign reward
   const claimCampaignReward = async () => {
-    if (!discordJoined) {
-      toast.error({ title: "Join Discord", description: "You must join the Discord server first." });
-      return;
-    }
 
     try {
       await claimCampaignOnchainReward({ campaignAddress, userId });
+
       await apiRequestV2("POST", `/api/campaign/complete-campaign?id=${campaignId}`);
+
       setCampaignCompleted(true);
     } catch (error: any) {
       console.error(error);
-      toast.error({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -202,13 +223,11 @@ export default function CampaignEnvironment() {
 
               <Button
                 onClick={claimCampaignReward}
-                disabled={!allQuestsDone || !discordJoined || campaignCompleted}
-                className={`w-full font-semibold rounded-xl py-3 mt-6 ${allQuestsDone && discordJoined && !campaignCompleted ? "bg-purple-600 hover:bg-purple-700 text-white" : "bg-gray-600 cursor-not-allowed text-gray-300"}`}
+                disabled={!allQuestsDone || campaignCompleted}
+                className={`w-full font-semibold rounded-xl py-3 mt-6 ${allQuestsDone && !campaignCompleted ? "bg-purple-600 hover:bg-purple-700 text-white" : "bg-gray-600 cursor-not-allowed text-gray-300"}`}
               >
                 {campaignCompleted
                   ? "Completed"
-                  : !discordJoined
-                    ? "Join Discord First"
                     : allQuestsDone
                       ? "Claim Rewards"
                       : "Complete Quests"
@@ -223,7 +242,9 @@ export default function CampaignEnvironment() {
           {quests.map((quest) => {
             const visited = visitedQuests.includes(quest._id);
             const claimed = quest.done || claimedQuests.includes(quest._id);
+
             let buttonText = "Start Quest";
+
             if (visited) buttonText = "Claim";
             if (claimed) buttonText = "Completed";
 
@@ -240,7 +261,7 @@ export default function CampaignEnvironment() {
                 </div>
                 <button
                   disabled={claimed}
-                  onClick={() => (!visited ? markQuestAsVisited(quest) : claimQuest(quest._id))}
+                  onClick={() => (!visited ? markQuestAsVisited(quest) : claimQuest(quest))}
                   className={`w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold ${claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"}`}
                 >
                   {buttonText}

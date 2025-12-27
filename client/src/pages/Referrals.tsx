@@ -88,7 +88,7 @@ export default function ReferralsPage() {
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold">Referrals</h1>
         <p className="text-sm opacity-60 mt-1">
-          Invite your friends to Nexura and earn up to 10.8 $TRUST
+          {`Invite your friends to Nexura and earn up to ${refReward} $TRUST`}
         </p>
       </div>
 
@@ -191,63 +191,46 @@ export default function ReferralsPage() {
         </Card>
 
         {/* SIDE */}
-<<<<<<< Updated upstream
         <div className="space-y-6">
           <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-4">
             <p className="text-sm font-medium">Milestone Progress</p>
-            <p className="text-sm text-purple-400">Reward: +{refReward} Trust</p>
-            <Progress value={progressBar} />
+
+            <p className="text-sm text-purple-400">
+              Next Reward: +10.8 Trust
+            </p>
+
+            <Progress value={50} />
+
+            <p className="text-xs text-white/60">
+              Refer 5 more friends who complete a quest or campaign to unlock remaining bonus.
+            </p>
+
             <Button
               onClick={handleClaim}
-              disabled={activeUsers < 10 || rewardClaimed}
+              disabled={rewardClaimed}
               className="w-full rounded-full bg-purple-600 text-sm disabled:opacity-60"
             >
               {rewardClaimed ? "Claimed" : "Claim Reward"}
             </Button>
           </Card>
+
+          {/* IMPORTANT RULE */}
+          <div className="space-y-6">
+            <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-3">
+              <p className="text-sm font-medium">Important Rule</p>
+
+              <p className="text-xs text-white/70">
+                Referrals only count as <span className="text-white font-medium">“Active”</span> after they
+                complete their <span className="text-white font-medium">first quest or campaign</span> on the platform.
+              </p>
+
+              <p className="text-xs text-white/70">
+                You can refer up to <span className="text-white font-medium">10 people max</span>, and only
+                <span className="text-white font-medium"> active referrals</span> qualify for rewards.
+              </p>
+            </Card>
+          </div>
         </div>
-=======
-<div className="space-y-6">
-  <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-4">
-    <p className="text-sm font-medium">Milestone Progress</p>
-
-    <p className="text-sm text-purple-400">
-      Next Reward: +10.8 Trust
-    </p>
-
-    <Progress value={50} />
-
-    <p className="text-xs text-white/60">
-      Refer 5 more friends who complete a quest or campaign to unlock remaining bonus.
-    </p>
-
-    <Button
-      onClick={handleClaim}
-      disabled={rewardClaimed}
-      className="w-full rounded-full bg-purple-600 text-sm disabled:opacity-60"
-    >
-      {rewardClaimed ? "Claimed" : "Claim Reward"}
-    </Button>
-  </Card>
-
-  {/* IMPORTANT RULE */}
-<div className="space-y-6">
-  <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-3">
-    <p className="text-sm font-medium">Important Rule</p>
-
-    <p className="text-xs text-white/70">
-      Referrals only count as <span className="text-white font-medium">“Active”</span> after they
-      complete their <span className="text-white font-medium">first quest or campaign</span> on the platform.
-    </p>
-
-    <p className="text-xs text-white/70">
-      You can refer up to <span className="text-white font-medium">10 people max</span>, and only
-      <span className="text-white font-medium"> active referrals</span> qualify for rewards.
-    </p>
-  </Card>
-</div>
-</div>
->>>>>>> Stashed changes
 
       </div>
     </div>
