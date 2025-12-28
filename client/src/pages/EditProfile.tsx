@@ -146,9 +146,15 @@ export default function EditProfile() {
   const handleConnect = async (service: "x" | "discord") => {
     // Redirect to actual social media connection sites
     const urls = {
-      x: await getAuthUrl(),
+      x: "",
       discord: discordAuthUrl
     };
+
+    if (service === "x") {
+      const authUrl = await getAuthUrl();
+      console.log(authUrl)
+      urls.x = authUrl;
+    }
 
     toast({
       title: `Connecting to ${service}`,

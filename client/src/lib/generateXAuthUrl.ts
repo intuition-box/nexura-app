@@ -26,7 +26,7 @@ export const getAuthUrl = async () => {
 	const state: string = cryptoRandomString({ length: 22 });
 
 	const codeVerifier = generateCodeVerifier();
-  const CODE_CHALLENGE = generateCodeChallenge(codeVerifier);
+  const CODE_CHALLENGE = await generateCodeChallenge(codeVerifier);
 
   await apiRequestV2("GET", `/api/save-cv?codeVerifier=${codeVerifier}&state=${state}`);
 
