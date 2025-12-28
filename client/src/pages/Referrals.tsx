@@ -191,7 +191,6 @@ export default function ReferralsPage() {
         </Card>
 
         {/* SIDE */}
-<<<<<<< Updated upstream
         <div className="space-y-6">
           <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-4">
             <p className="text-sm font-medium">Milestone Progress</p>
@@ -206,7 +205,6 @@ export default function ReferralsPage() {
             </Button>
           </Card>
         </div>
-=======
 <div className="space-y-6">
   <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-4">
     <p className="text-sm font-medium">Milestone Progress</p>
@@ -247,9 +245,7 @@ export default function ReferralsPage() {
   </Card>
 </div>
 </div>
->>>>>>> Stashed changes
-
-      </div>
+    </div>
     </div>
   );
 };
