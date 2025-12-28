@@ -13,19 +13,19 @@ export default function XCallback() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    const codeVerifier = localStorage.getItem("codeVerifier");
+    const x_id = params.get("x_id");
+    const username = params.get("username");
 
-    if (!code) {
-      alert("No code returned from X.");
-      setLocation("/profile/edit"); // redirect to edit profile if code is missing
+    if (!x_id || !username) {
+      alert("No id or username returned from server.");
+      setLocation("/profile/edit"); // redirect to edit profile if values is missing
       return;
     }
 
-    // Send the code to backend
+    // update user
     (async () => {
       try {
-        const { user } = await apiRequestV2("GET", `/api/auth/x/callback?code=${code}&codeVerifier=${codeVerifier}`);
+        const { user } = await apiRequestV2("GET", `/api/x/update?x_id=${x_id}&username=${username}`);
 
         setUser(user);
 
@@ -61,7 +61,9 @@ export default function XCallback() {
 
   return (
     <div className="min-h-screen flex items-center justify-center text-white bg-black">
-      <p className="text-lg">Processing X join...</p>
+      <p className="text-lg">Processing X join... </p>
+      <br />
+      <p className="text-lg">Do not refresh</p>
     </div>
   );
 }

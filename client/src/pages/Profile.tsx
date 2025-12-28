@@ -125,7 +125,7 @@ export default function Profile() {
       dateJoined: "Recently",
       trust: 0,
       badges: [],
-      socialProfiles: { twitter: "", discord: "" },
+      socialProfiles: { x: "", discord: "" },
     };
 
     if (!user) return base;
@@ -149,7 +149,7 @@ export default function Profile() {
       trust: user.trustEarned,
       badges: user.badges ?? [],
       socialProfiles: {
-        twitter: user.socialProfiles?.twitter ?? "",
+        x: user.socialProfiles?.x ?? "",
         discord: user.socialProfiles?.discord ?? "",
       },
     };
@@ -269,8 +269,8 @@ export default function Profile() {
               <div className="flex items-center gap-4 mt-2">
                 <div className="flex items-center gap-2 text-sm">
                   <FaTwitter className="w-5 h-5 text-[#1DA1F2]" />
-                  {userData.socialProfiles?.twitter?.connected
-                    ? `@${userData.socialProfiles.twitter.username}`
+                  {userData.socialProfiles?.x?.connected
+                    ? `@${userData.socialProfiles.x.username}`
                     : "Not connected"}
                 </div>
 

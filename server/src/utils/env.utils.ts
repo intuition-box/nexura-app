@@ -18,6 +18,13 @@ export const AWS_S3_BUCKET = process.env.AWS_S3_BUCKET as string;
 export const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID as string;
 export const MAIN_DISCORD_REDIRECT_URI = process.env.MAIN_DISCORD_REDIRECT_URI as string;
 export const DEV_DISCORD_REDIRECT_URI = process.env.DEV_DISCORD_REDIRECT_URI as string;
+
+export const MAIN_DISCORD_CLIENT_REDIRECT_URI = process.env.MAIN_DISCORD_CLIENT_REDIRECT_URI as string;
+export const DEV_DISCORD_CLIENT_REDIRECT_URI = process.env.DEV_DISCORD_CLIENT_REDIRECT_URI as string;
+
+export const MAIN_X_CLIENT_REDIRECT_URI = process.env.MAIN_X_CLIENT_REDIRECT_URI as string;
+export const DEV_X_CLIENT_REDIRECT_URI = process.env.DEV_X_CLIENT_REDIRECT_URI as string;
+
 export const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET as string;
 
 export const X_API_BEARER_TOKEN = process.env.X_API_BEARER_TOKEN as string;
@@ -32,3 +39,6 @@ export const BOT_TOKEN = process.env.BOT_TOKEN as string;
 
 export const DISCORD_REDIRECT_URI = environment === "development" ? DEV_DISCORD_REDIRECT_URI : MAIN_DISCORD_REDIRECT_URI;
 export const X_REDIRECT_URI = process.env.X_REDIRECT_URI as string;
+
+export const X_CLIENT_REDIRECT_URI = environment === "development" ? DEV_X_CLIENT_REDIRECT_URI : MAIN_X_CLIENT_REDIRECT_URI;
+export const DISCORD_CLIENT_REDIRECT_URI = environment === "development" ? DEV_DISCORD_CLIENT_REDIRECT_URI : MAIN_DISCORD_CLIENT_REDIRECT_URI;

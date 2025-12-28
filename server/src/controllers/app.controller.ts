@@ -1,10 +1,11 @@
 import logger from "@/config/logger";
+import { cvModel } from "@/models/cv.models";
 import { firstMessage } from "@/models/msg.model";
 import { referredUsers } from "@/models/referrer.model";
 import { user } from "@/models/user.model";
 import { performIntuitionOnchainAction } from "@/utils/account";
 import { BOT_TOKEN } from "@/utils/env.utils";
-import { INTERNAL_SERVER_ERROR, OK, CREATED, BAD_REQUEST, FORBIDDEN } from "@/utils/status.utils";
+import { INTERNAL_SERVER_ERROR, OK, CREATED, BAD_REQUEST, FORBIDDEN, NOT_FOUND } from "@/utils/status.utils";
 import axios from "axios";
 
 export const home = async (req: GlobalRequest, res: GlobalResponse) => {
@@ -159,7 +160,82 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error checking twitter task" });
   }
 }
-//  - g_id
+
+export const updateX = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { id } = req;
+    const { x_id, username } = req.query as { x_id: string; username: string };
+
+    if (!x_id || !username) {
+      res.status(BAD_REQUEST).json({ error: "authorization was not successful" });
+      return
+    }
+
+    const userToUpdate = await user.findById(id);
+    if (!userToUpdate) {
+      res.status(BAD_REQUEST).json({ error: "invalid user id" });
+      return;
+    }
+
+    userToUpdate.socialProfiles ??= {};
+
+    userToUpdate.socialProfiles.x = { connected: true, id: x_id, username };
+
+    await userToUpdate.save();
+
+    res.status(OK).json({ messages: "connected!", user: userToUpdate });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error saving connected state" });
+  }
+}
+
+export const updateDiscord = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { id } = req;
+    const { discord_id, username } = req.query as { discord_id: string; username: string };
+
+    if (!discord_id || !username) {
+      res.status(BAD_REQUEST).json({ error: "authorization was not successful" });
+      return
+    }
+
+    const userToUpdate = await user.findById(id);
+    if (!userToUpdate) {
+      res.status(BAD_REQUEST).json({ error: "invalid user id" });
+      return;
+    }
+
+    userToUpdate.socialProfiles ??= {};
+
+    userToUpdate.socialProfiles.discord = { connected: true, id: discord_id, username };
+
+    await userToUpdate.save();
+
+    res.status(OK).json({ messages: "connected!", user: userToUpdate });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error saving connected state" });
+  }
+};
+
+export const saveCv = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { codeVerifier, state } = req.query as { codeVerifier: string; state: string };
+    if (!codeVerifier || !state) {
+      res.status(BAD_REQUEST).json({ error: "code verifier and state is required" });
+      return;
+    }
+
+    await cvModel.create({ codeVerifier, state });
+
+    res.status(OK).json({ message: "saved" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error saving code verifier" });
+  }
+}
+
 export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { guildId, tag, userId } = req.body;

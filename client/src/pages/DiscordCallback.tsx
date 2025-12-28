@@ -13,18 +13,19 @@ export default function DiscordCallback() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+    const discord_id = params.get("discord_id");
+    const username = params.get("username");
 
-    if (!code) {
-      alert("No code returned from Discord.");
-      setLocation("/profile/edit"); // redirect to edit profile if code is missing
+    if (!discord_id || !username) {
+      alert("No id or username returned from server.");
+      setLocation("/profile/edit"); // redirect to edit profile if values is missing
       return;
     }
 
-    // Send the code to backend
+    // update user
     (async () => {
       try {
-        const { user } = await apiRequestV2("GET", "/api/auth/discord/callback?code=" + code);
+        const { user } = await apiRequestV2("GET", `/api/discord/update?discord_id=${discord_id}&username=${username}`);
 
         setUser(user);
 
@@ -60,7 +61,9 @@ export default function DiscordCallback() {
 
   return (
     <div className="min-h-screen flex items-center justify-center text-white bg-black">
-      <p className="text-lg">Processing Discord join...</p>
+      <p className="text-lg">Processing Discord join... </p>
+      <br />
+      <p className="text-lg">Do not refresh</p>
     </div>
   );
 }
