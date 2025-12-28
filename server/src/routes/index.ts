@@ -6,6 +6,7 @@ import campaignRoutes from "./campaign.routes.ts";
 import projectRoutes from "./project.routes.ts";
 import questRoutes from "./quest.routes.ts";
 import userRoutes from "./user.routes.ts";
+import appRoutes from "./app.routes.ts";
 import {
 	fetchEcosystemDapps,
 	fetchQuests,
@@ -15,7 +16,7 @@ import { authenticateUser2 } from "@/middlewares/auth.middleware";
 const router = Router();
 
 router
-	.get("/", home)
+	.use("/", appRoutes)
 	.use("/admin", adminRoutes)
 	.get("/ecosystem-quests", authenticateUser2, fetchEcosystemDapps)
 	.get("/quests", authenticateUser2, fetchQuests)

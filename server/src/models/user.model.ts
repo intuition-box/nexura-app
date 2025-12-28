@@ -12,7 +12,7 @@ const userSchema = new Schema({
 		unique: true
 	},
 	socialProfiles: {
-		twitter: {
+		x: {
 			connected: {
 				type: Boolean,
 				default: false
