@@ -19,6 +19,7 @@ import EditProfile from "@/pages/EditProfile";
 import Achievements from "@/pages/Achievements";
 import Leaderboard from "@/pages/Leaderboard";
 import DiscordCallback from "@/pages/DiscordCallback";
+import XCallback from "@/pages/XCallback";
 import Levels from "@/pages/Levels";
 import UserReferred from "@/pages/UserReferred";
 import Projects from "@/pages/Projects";
@@ -51,6 +52,7 @@ function Router() {
       <Route path="/quest/:questId" component={QuestEnvironment} />
       <Route path="/campaign/:campaignId" component={CampaignEnvironment} />
       <Route path="/discord/callback" component={DiscordCallback} />
+      <Route path="/x/callback" component={XCallback} />
       <Route path="/campaigns/tasks" component={CampaignEnvironment} />
       <Route path="/quests/tasks-card" component={QuestEnvironment} />
       <Route path="/portal-claims" component={PortalClaims} />
