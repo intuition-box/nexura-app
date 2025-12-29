@@ -87,7 +87,14 @@ export const xCallback = async (req: GlobalRequest, res: GlobalResponse) => {
 		const { data: { access_token } } = await axios.post(
 			`https://api.x.com/2/oauth2/token?grant_type=authorization_code&client_id=${X_API_CLIENT_ID}&redirect_uri=${X_REDIRECT_URI}&code=${code}&code_verifier=${fetchState.cv}`, 
 			{ headers: 
-				{ "Content-Type": "application/x-www-form-urlencoded" }
+			{
+				"Content-Type": "application/x-www-form-urlencoded",
+				Authorization:
+						"Basic " +
+						Buffer.from(
+							`${X_API_CLIENT_ID}:${X_API_CLIENT_SECRET}`
+						).toString("base64"),
+				}
 			}
 		);
 
