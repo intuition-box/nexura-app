@@ -31,8 +31,7 @@ client.once(Events.ClientReady, (readyClient) => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
-	console.log({ content: message.content, author: message.author.tag });
-	return;
+
 	if (message.author.bot) return;
 	if (!message.guild) return;
 
