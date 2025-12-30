@@ -77,28 +77,23 @@ export default function CampaignEnvironment() {
 
   // Sync localStorage for visited, claimed, completed, discordJoined
   useEffect(() => {
-    const visited: Record<string, string[]> = JSON.parse(localStorage.getItem("nexura:campaign:visited") || "{}");
+    const visited: any = JSON.parse(localStorage.getItem("nexura:campaign:visited") || "{}");
     visited[userId] = visitedQuests;
     localStorage.setItem("nexura:campaign:visited", JSON.stringify(visited));
   }, [visitedQuests, userId]);
 
   useEffect(() => {
-    const claimed: Record<string, string[]> = JSON.parse(localStorage.getItem("nexura:campaign:claimed") || "{}");
+    const claimed: any = JSON.parse(localStorage.getItem("nexura:campaign:claimed") || "{}");
     claimed[userId] = claimedQuests;
     localStorage.setItem("nexura:campaign:claimed", JSON.stringify(claimed));
   }, [claimedQuests, userId]);
 
   useEffect(() => {
-    const completed: Record<string, boolean> = JSON.parse(localStorage.getItem("nexura:campaign:completed") || "{}");
+    const completed: any = JSON.parse(localStorage.getItem("nexura:campaign:completed") || "{}");
     completed[userId] = campaignCompleted;
     localStorage.setItem("nexura:campaign:completed", JSON.stringify(completed));
   }, [campaignCompleted, userId]);
 
-  useEffect(() => {
-    const joined: Record<string, boolean> = JSON.parse(localStorage.getItem("nexura:campaign:discord-joined") || "{}");
-    joined[userId] = discordJoined;
-    localStorage.setItem("nexura:campaign:discord-joined", JSON.stringify(joined));
-  }, [discordJoined, userId]);
 
   // Open quest links
   const markQuestAsVisited = (quest: Quest) => {
