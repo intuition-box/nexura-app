@@ -17,7 +17,9 @@ import {
 	DISCORD_CLIENT_REDIRECT_URI,
 	X_REDIRECT_URI, 
 	X_API_CLIENT_ID,
-	X_API_CLIENT_SECRET
+	X_API_CLIENT_SECRET,
+	X_API_KEY,
+	X_API_KEY_SECRET
 } from "@/utils/env.utils";
 import { formatDate } from "date-fns";
 import { user } from "@/models/user.model";
@@ -64,7 +66,6 @@ export const discordCallback = async (req: GlobalRequest, res: GlobalResponse) =
 		logger.error(error);
 		console.error("DISCORD TOKEN ERROR STATUS:", error.response?.status)
 		console.error("DISCORD TOKEN ERROR DATA:", error.response?.data)
-		console.error("DISCORD TOKEN ERROR HEADERS:", error.response?.headers)
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "Error signing in with discord" });
 	}
 };
@@ -88,17 +89,16 @@ export const xCallback = async (req: GlobalRequest, res: GlobalResponse) => {
 			`https://api.x.com/2/oauth2/token?grant_type=authorization_code&client_id=${X_API_CLIENT_ID}&redirect_uri=${X_REDIRECT_URI}&code=${code}&code_verifier=${fetchState.cv}`, 
 			{ headers: 
 			{
-				"Content-Type": "application/x-www-form-urlencoded",
+				"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
 				Authorization:
 						"Basic " +
-						Buffer.from(
-							`${X_API_CLIENT_ID}:${X_API_CLIENT_SECRET}`
-						).toString("base64"),
-				}
+						Buffer.from(`${X_API_KEY}:${X_API_KEY_SECRET}`)
+						.toString("base64"),
+				},
 			}
 		);
 
-		const { data: { id, username } } = await axios.get("https://api.x.com/2/users/me",
+		const { data: { data: { id, username } } } = await axios.get("https://api.x.com/2/users/me",
 			{ headers: 
 				{ "Authorization": `Bearer ${access_token}` }
 			}
@@ -109,7 +109,6 @@ export const xCallback = async (req: GlobalRequest, res: GlobalResponse) => {
 		logger.error(error);
 		console.error("X TOKEN ERROR STATUS:", error.response?.status)
 		console.error("X TOKEN ERROR DATA:", error.response?.data)
-		console.error("X TOKEN ERROR HEADERS:", error.response?.headers)	
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "Error signing in with x" });
 	}
 }
