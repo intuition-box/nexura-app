@@ -357,7 +357,6 @@ export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) 
         const {
           status, 
           data: { roles }
-          // remove hardcoded guild id
         } = await axios.get(`https://discord.com/api/guilds/1419336727302111367/members/${discordId}`,
           {
             headers: {
@@ -370,8 +369,6 @@ export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) 
           res.status(BAD_REQUEST).json({ error: "join the discord server and get verified" });
           return;
         }
-
-        logger.info(roles);
 
         if (!roles.includes("VERIFIED_ROLE_ID")) {
           res.status(BAD_REQUEST).json({ error: "you need to be verified to continue" });
@@ -395,5 +392,55 @@ export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) 
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error checking discord task" })
+  }
+};
+
+export const checkDiscordServerStatus = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { guildId } = req.query as { guildId: string };
+
+    const userToCheck = await user.findById(req.id);
+    if (!userToCheck) {
+      res.status(BAD_REQUEST).json({ error: "id associated with user is invalid", joined: false });
+      return;
+    }
+
+    const discordId = userToCheck.socialProfiles?.discord?.id;
+
+    if (!discordId) {
+      res.status(OK).json({ error: "discord not connected", joined: false });
+      return;
+    }
+
+    try {
+      const { status, data } = await axios.get(
+        `https://discord.com/api/guilds/${guildId || "1419336727302111367"}/members/${discordId}`,
+        {
+          headers: {
+            Authorization: `Bot ${BOT_TOKEN}`,
+          },
+        }
+      );
+
+      if (status === OK) {
+        res.status(OK).json({ 
+          joined: true, 
+          message: "user has joined the server",
+          roles: data?.roles || []
+        });
+        return;
+      }
+    } catch (axiosError: any) {
+      if (axiosError.response?.status === 404) {
+        res.status(OK).json({ joined: false, message: "user has not joined the server" });
+        return;
+      }
+      throw axiosError;
+    }
+
+    res.status(OK).json({ joined: false, message: "unable to verify membership" });
+  } catch (error) {
+    logger.error(error);
+    res.status(OK).json({ joined: false, error: "error checking discord status" });
   }
 }

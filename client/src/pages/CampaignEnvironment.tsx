@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Play } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { apiRequestV2, apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { RefreshCw } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { claimCampaignOnchainReward } from "@/lib/performOnchainAction";
+import { useDiscordPoll } from "@/hooks/use-discord-poll";
+import { DiscordNotificationModal } from "@/components/DiscordNotificationModal";
 
 type Quest = {
   _id: string;
@@ -55,8 +57,77 @@ export default function CampaignEnvironment() {
   const [campaignAddress, setCampaignAddress] = useState("");
 
   const [questsCompleted, setQuestsCompleted] = useState(false);
+  const [discordJoinedQuest, setDiscordJoinedQuest] = useState<string | null>(null);
+  const [showDiscordModal, setShowDiscordModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState<"success" | "error" | "info">("success");
+  const [checkingQuestId, setCheckingQuestId] = useState<string | null>(null);
 
-  // Fetch campaign quests
+  const handleDiscordStatusChange = (joined: boolean) => {
+    if (joined && discordJoinedQuest) {
+      const joinQuest = quests.find((q) => q._id === discordJoinedQuest);
+      if (joinQuest && !claimedQuests.includes(joinQuest._id)) {
+        setModalTitle("Discord Server Detected");
+        setModalMessage("You've joined the Discord server! You can now claim the quest.");
+        setModalType("success");
+        setShowDiscordModal(true);
+      }
+    }
+  };
+
+  const hasDiscordJoinQuest = quests.some((q) => q.tag === "join" && !claimedQuests.includes(q._id));
+  useDiscordPoll({
+    enabled: hasDiscordJoinQuest && user?.socialProfiles?.discord?.connected,
+    pollInterval: 30000,
+    onStatusChange: handleDiscordStatusChange,
+  });
+
+  const handleCheckAndClaim = async (quest: Quest) => {
+    if (!user?.socialProfiles?.discord?.connected) {
+      setModalTitle("Discord Not Connected");
+      setModalMessage("Please connect your Discord account in your profile before checking.");
+      setModalType("error");
+      setShowDiscordModal(true);
+      return;
+    }
+
+    setCheckingQuestId(quest._id);
+    try {
+      const statusRes = await apiRequestV2("GET", `/api/check-discord-status`);
+      if (statusRes?.joined) {
+        setModalTitle("Discord Server Detected");
+        setModalMessage("You've joined the Discord server! Attempting to complete the quest...");
+        setModalType("success");
+        setShowDiscordModal(true);
+
+        const perform = await apiRequest("POST", `/api/quest/perform-campaign-quest`, { id: quest._id, campaignId });
+        if (perform.ok) {
+          setClaimedQuests((prev) => [...prev, quest._id]);
+          setQuests((prev) => prev.map((q) => (q._id === quest._id ? { ...q, done: true } : q)));
+        } else {
+          setModalTitle("Claim Failed");
+          setModalMessage("Could not complete the quest. Try again later.");
+          setModalType("error");
+          setShowDiscordModal(true);
+        }
+      } else {
+        setModalTitle("Not Joined");
+        setModalMessage("Our check indicates you have not joined the Discord server yet. Please join and try again.");
+        setModalType("error");
+        setShowDiscordModal(true);
+      }
+    } catch (err) {
+      console.error(err);
+      setModalTitle("Error");
+      setModalMessage("Unable to verify Discord membership. Try again later.");
+      setModalType("error");
+      setShowDiscordModal(true);
+    } finally {
+      setCheckingQuestId(null);
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const res = await apiRequestV2("GET", `/api/campaign/quests?id=${campaignId}`);
@@ -72,10 +143,13 @@ export default function CampaignEnvironment() {
       setReward(res.reward || { trustTokens: 0, xp: 0 });
       setQuestsCompleted(res.campaignCompleted?.questsCompleted || false);
 
+      const joinQuest = (res.campaignQuests || []).find((q: Quest) => q.tag === "join");
+      if (joinQuest) {
+        setDiscordJoinedQuest(joinQuest._id);
+      }
     })();
   }, [campaignId]);
 
-  // Sync localStorage for visited, claimed, completed, discordJoined
   useEffect(() => {
     const visited: any = JSON.parse(localStorage.getItem("nexura:campaign:visited") || "{}");
     visited[userId] = visitedQuests;
@@ -94,15 +168,12 @@ export default function CampaignEnvironment() {
     localStorage.setItem("nexura:campaign:completed", JSON.stringify(completed));
   }, [campaignCompleted, userId]);
 
-
-  // Open quest links
   const markQuestAsVisited = (quest: Quest) => {
     window.open(quest.link, "_blank");
 
     if (!visitedQuests.includes(quest._id)) setVisitedQuests([...visitedQuests, quest._id]);
   };
 
-  // Claim quest
   const getId = (url: string) => {
     return url.split("/").pop(); // return the last item in the array
   }
@@ -273,6 +344,14 @@ export default function CampaignEnvironment() {
           }) : "No quests available"}
         </div>
       </div>
+
+      <DiscordNotificationModal
+        isOpen={showDiscordModal}
+        onClose={() => setShowDiscordModal(false)}
+        title="Discord Server Detected"
+        message="You've joined the Discord server! You can now claim the quest."
+        type="success"
+      />
     </div>
   );
 }

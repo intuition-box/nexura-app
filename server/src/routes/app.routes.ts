@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
 	checkXTask,
 	checkDiscordTask,
+	checkDiscordServerStatus,
 	home,
 	saveCv,
 	updateX,
@@ -16,6 +17,7 @@ router
   .get("/", home)
   .post("/check-x", authenticateUser, checkXTask)
   .post("/check-discord", authenticateUser, checkDiscordTask)
+  .get("/check-discord-status", authenticateUser, checkDiscordServerStatus)
   .get("/save-cv", authenticateUser, saveCv)
   .get("/auth/discord/callback", discordCallback)
   .get("/auth/x/callback", xCallback)
