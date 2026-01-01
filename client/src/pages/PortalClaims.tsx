@@ -246,3 +246,95 @@ export default function PortalClaims() {
     </div>
   );
 }
+
+
+
+
+
+///// this is from the explore aka the discover tab. 
+
+// <section>
+//               <div className="flex items-center justify-between mb-6">
+//                 <h2 className="text-2xl md:text-4xl font-bold tracking-tight text-white">Trending Claims on Intuition Portal</h2>
+//                 <Button
+//                   variant="ghost"
+//                   size="sm"
+//                   onClick={() => setLocation('/ecosystem-dapps')}
+//                   data-testid="button-show-all-trending-dapps"
+//                 >
+//                   Show all
+//                 </Button>
+//               </div>
+//               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//                 {trendingClaims.map((claim, index) => (
+//                   <a
+//                     key={`claim-${index}`}
+//                     href={claim.link}
+//                     target="_blank"
+//                     rel="noopener noreferrer"
+//                     className="group glass glass-hover rounded-3xl p-6 transition-all duration-300 relative overflow-hidden block"
+//                     data-testid={`trending-claim-${index}`}
+//                   >
+//                     {/* Background Pattern */}
+//                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+//                     {/* Content */}
+//                     <div className="relative z-10">
+
+//                       {/* Avatar */}
+//                       <div className="flex justify-center mb-12">
+//                         <div className="relative">
+//                           <div className="w-20 h-20 bg-gray-700 border-2 border-gray-600 transform rotate-45 rounded-lg flex items-center justify-center overflow-hidden">
+//                             <div className="w-14 h-14 transform -rotate-45 rounded-lg overflow-hidden">
+//                               <img
+//                                 src={claim.avatar}
+//                                 alt={`${claim.author} avatar`}
+//                                 className="w-full h-full object-cover"
+//                               />
+//                             </div>
+//                           </div>
+//                         </div>
+//                       </div>
+
+//                       {/* Header pills inside card */}
+//                       {index >= 0 ? (
+//                         <div className=" flex items-center gap-3">
+
+//                           {/* "The Ticker" pill */}
+//                           <span className="px-4 py-1.5 rounded-[20px] bg-[#0f1a22] text-white text-sm font-medium">
+//                             {claim.titleLeft}
+//                           </span>
+
+//                           {/* "is" */}
+//                           <span className="text-white/60 text-sm">is</span>
+
+//                           {/* "Trust" pill */}
+//                           <span className="px-4 py-1.5 rounded-[20px] bg-[#192732] text-white text-sm font-semibold">
+//                             {claim.titleRight}
+//                           </span>
+
+//                         </div>
+//                       ) : (
+//                         // default behavior for other cards
+//                         <div className="flex items-center gap-2 mb-3">
+//                           <div className="text-sm font-semibold text-white">{claim.author}</div>
+//                           <div className="text-xs text-gray-400">{claim.timeAgo}</div>
+//                         </div>
+//                       )}
+
+
+//                       {/* Content */}
+//                       <p className="text-sm text-white/70 leading-relaxed line-clamp-4 mb-4">
+//                         {claim.content}
+//                       </p>
+
+//                       {/* Metrics */}
+//                       <div className="flex justify-between items-center text-xs text-gray-400">
+//                         <span>{claim.attestations} attestations</span>
+//                       </div>
+
+//                     </div>
+//                   </a>
+//                 ))}
+//               </div>
+//             </section>

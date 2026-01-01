@@ -55,7 +55,7 @@ export default function Campaigns() {
         setIsLoading(false);
       } catch (err: any) {
         console.error(err);
-        toast.error({ title: "Error", description: err.message });
+        toast({ title: "Error", description: err.message, variant: "destructive" });
         setIsLoading(false);
       }
     };
@@ -81,7 +81,7 @@ export default function Campaigns() {
       setLocation(`/campaign/${campaign._id}`);
     } catch (error: any) {
       console.error(error);
-      toast.error({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
       setLoadingCampaign(null);
     }
   };
@@ -205,13 +205,12 @@ export default function Campaigns() {
           )}
 
           <Button
-            className={`w-full mt-2 sm:mt-3 py-2.5 sm:py-3 text-sm sm:text-base font-medium rounded-xl ${
-              loadingCampaign === campaign._id
+            className={`w-full mt-2 sm:mt-3 py-2.5 sm:py-3 text-sm sm:text-base font-medium rounded-xl ${loadingCampaign === campaign._id
                 ? "bg-gray-600 cursor-not-allowed text-gray-300"
                 : isActive
-                ? "bg-[#1f6feb] hover:bg-[#388bfd] text-white"
-                : "bg-gray-600 cursor-not-allowed text-gray-300"
-            }`}
+                  ? "bg-[#1f6feb] hover:bg-[#388bfd] text-white"
+                  : "bg-gray-600 cursor-not-allowed text-gray-300"
+              }`}
             onClick={(e) => {
               e.stopPropagation();
               goToCampaign(campaign, isActive);

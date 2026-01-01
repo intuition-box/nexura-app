@@ -207,7 +207,7 @@ export default function ReferralsPage() {
 
             <Button
               onClick={handleClaim}
-              disabled={rewardClaimed}
+              disabled={rewardClaimed || activeUsers < 10}
               className="w-full rounded-full bg-purple-600 text-sm disabled:opacity-60"
             >
               {rewardClaimed ? "Claimed" : "Claim Reward"}

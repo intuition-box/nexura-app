@@ -19,12 +19,11 @@ import avatar4 from "/claim4.jpg";
 import avatar5 from "/claim5.jpg";
 import avatar6 from "/claim6.jpg";
 
-import intuitionPortalLogo from "@assets/image_1758731619825.png";
-import oracleLendLogo from "@assets/image_1758734045558.png";
-import intudexLogo from "@assets/image_1758731610569.png";
-import diceGameLogo from "@assets/image_1758731655425.png";
-import tnsLogo from "@assets/image_1758732361346.png";
-import trustSwapLogo from "@assets/image_1758731629668.png";
+import intuitionPortal from "@assets/intuitionPortal.jpg";
+import intuitionBets from "@assets/intuitionBets.jpg";
+import intuRank from "@assets/intuRank.jpg";
+import tribeMeme from "@assets/tribeMeme.jpg";
+import tnsLogo from "@assets/tnsLogo.jpg";
 
 export default function Discover() {
   const [activeTab, setActiveTab] = useState("all");
@@ -96,78 +95,13 @@ export default function Discover() {
   });
 
   const trendingDapps = [
-    { name: "Intuition Portal", logo: intuitionPortalLogo, category: "Portal" },
-    { name: "Oracle Lend", logo: oracleLendLogo, category: "Lending" },
-    { name: "Intudex", logo: intudexLogo, category: "DeFi" },
-    { name: "3,3 Dice Game", logo: diceGameLogo, category: "Gaming" },
+    { name: "Intuition Portal", logo: intuitionPortal, category: "Portal" },
+    { name: "Intuition Bets", logo: intuitionBets, category: "Prediction Market" },
+    { name: "IntuRank", logo: intuRank, category: "DeFi" },
+    { name: "Tribe Meme", logo: tribeMeme, category: "Gaming" },
     { name: "Trust Name Service", logo: tnsLogo, category: "Domain" },
-    { name: "TrustSwap", logo: trustSwapLogo, category: "DeFi" },
+    // { name: "TrustSwap", logo: trustSwapLogo, category: "DeFi" },
   ];
-
-  const trendingClaims = [
-    {
-      titleLeft: "The Ticker",
-      titleMiddle: "is",
-      titleRight: "Trust",
-      avatar: avatar1,
-      attestations: 5263,
-      category: "Tech Innovation",
-      // categoryColor: "bg-blue-500",
-      link: "https://portal.intuition.systems/explore/triple/0xa1739235f5a8362b15268eab46484abdd7660a1e2a6a5d7deacbed9d4c055e68"
-    },
-    {
-      titleLeft: "Calebnftgod.eth",
-      titleMiddle: "has tag",
-      titleRight: "Top Community Member",
-      avatar: avatar2,
-      attestations: 32,
-      category: "DeFi Analysis",
-      // categoryColor: "bg-green-500",
-      link: "https://portal.intuition.systems/explore/triple/0x5fb9bfc2c7ea6bbde71fd74887f798040e99255ee42f22f4e51a67ff1a101b68"
-    },
-    {
-      titleLeft: "Sofia",
-      titleMiddle: "has tag",
-      titleRight: "Built On Intuition",
-      avatar: avatar3,
-      attestations: 28,
-      category: "Developer Experience",
-      // categoryColor: "bg-purple-500",
-      link: "https://portal.intuition.systems/explore/triple/0x98ba47f4d18ceb7550c6c593ef92835864f0c0e09d6e56108feac8a8a6012038"
-    },
-    {
-      titleLeft: "RChris",
-      titleMiddle: "has tag",
-      titleRight: "Top Community Member",
-      avatar: avatar4,
-      attestations: 56,
-      category: "Research Insights",
-      // categoryColor: "bg-orange-500",
-      link: "https://portal.intuition.systems/explore/triple/0xdf0b1e0da63786c46594815586673a3cba8d9ab967ac3e433652d5c3865e3f03"
-    },
-    {
-      titleLeft: "Intuitionbilly.eth",
-      titleMiddle: "has tag",
-      titleRight: "Good Person Verification",
-      avatar: avatar5,
-      attestations: 19,
-      category: "User Experience",
-      // categoryColor: "bg-pink-500",
-      link: "https://portal.intuition.systems/explore/triple/0x713f27d70772462e67805c6f76352384e01399681398f757725b9cbc7f495dcf?tab=positions"
-    },
-    {
-      titleLeft: "EXPERIENCE001",
-      titleMiddle: "has tag",
-      titleRight: "Top Intuition Community Member",
-      avatar: avatar6,
-      attestations: 41,
-      category: "Network Effects",
-      // categoryColor: "bg-cyan-500",
-      link: "https://portal.intuition.systems/explore/triple/0x1d6169e8585c998253b868092d2f04889500a0d5dabd8536600dcbfbb0f45b40?tab=positions"
-    }
-  ];
-
-
   return (
     <div className="min-h-screen bg-black text-white relative" data-testid="discover-page">
       <AnimatedBackground />
@@ -277,93 +211,6 @@ export default function Discover() {
                       {dapp.category}
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Trending Claims */}
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl md:text-4xl font-bold tracking-tight text-white">Trending Claims on Intuition Portal</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setLocation('/ecosystem-dapps')}
-                  data-testid="button-show-all-trending-dapps"
-                >
-                  Show all
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {trendingClaims.map((claim, index) => (
-                  <a
-                    key={`claim-${index}`}
-                    href={claim.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group glass glass-hover rounded-3xl p-6 transition-all duration-300 relative overflow-hidden block"
-                    data-testid={`trending-claim-${index}`}
-                  >
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-                    {/* Content */}
-                    <div className="relative z-10">
-
-                      {/* Avatar */}
-                      <div className="flex justify-center mb-12">
-                        <div className="relative">
-                          <div className="w-20 h-20 bg-gray-700 border-2 border-gray-600 transform rotate-45 rounded-lg flex items-center justify-center overflow-hidden">
-                            <div className="w-14 h-14 transform -rotate-45 rounded-lg overflow-hidden">
-                              <img
-                                src={claim.avatar}
-                                alt={`${claim.author} avatar`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Header pills inside card */}
-                      {index >= 0 ? (
-                        <div className=" flex items-center gap-3">
-
-                          {/* "The Ticker" pill */}
-                          <span className="px-4 py-1.5 rounded-[20px] bg-[#0f1a22] text-white text-sm font-medium">
-                            {claim.titleLeft}
-                          </span>
-
-                          {/* "is" */}
-                          <span className="text-white/60 text-sm">is</span>
-
-                          {/* "Trust" pill */}
-                          <span className="px-4 py-1.5 rounded-[20px] bg-[#192732] text-white text-sm font-semibold">
-                            {claim.titleRight}
-                          </span>
-
-                        </div>
-                      ) : (
-                        // default behavior for other cards
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="text-sm font-semibold text-white">{claim.author}</div>
-                          <div className="text-xs text-gray-400">{claim.timeAgo}</div>
-                        </div>
-                      )}
-
-
-                      {/* Content */}
-                      <p className="text-sm text-white/70 leading-relaxed line-clamp-4 mb-4">
-                        {claim.content}
-                      </p>
-
-                      {/* Metrics */}
-                      <div className="flex justify-between items-center text-xs text-gray-400">
-                        <span>{claim.attestations} attestations</span>
-                      </div>
-
-                    </div>
-                  </a>
                 ))}
               </div>
             </section>

@@ -291,7 +291,7 @@ export default function Profile() {
             { title: "Total XP", value: xpValue, label: "XP earned" },
             { title: "Current Level", value: `${levelName}`, label: "" },
             { title: "Quests Completed", value: userData?.questsCompleted ?? 0, label: "Completed" },
-            { title: "Total Rewards", value: `${userData?.xp ?? 0} XP, ${userData?.trust ?? 0} TRUST`, label: "Earned" },
+            { title: "Total Rewards", value:`${userData?.trust ?? 0} TRUST`, label: "Earned" },
             { title: "Nexons", value: totalMinted, label: "Minted" },
           ].map((stat) => (
             <Card key={stat.title} className="glass glass-hover rounded-3xl flex flex-col h-full">
