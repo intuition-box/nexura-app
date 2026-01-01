@@ -199,7 +199,7 @@ export default function ReferralsPage() {
               Next Reward: +10.8 Trust
             </p>
 
-            <Progress value={50} />
+            <Progress value={progressBar} />
 
             <p className="text-xs text-white/60">
               Refer 5 more friends who complete a quest or campaign to unlock remaining bonus.
