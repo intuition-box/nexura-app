@@ -93,6 +93,9 @@ const questSchema = new Schema({
 	description: {
 		type: String,
 	},
+	tag: {
+		type: String
+	},
 	questNumber: {
 		type: Number
 	},
