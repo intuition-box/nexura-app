@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Clock, ExternalLink } from "lucide-react";
-import { Play, CheckCircle2 } from "lucide-react";
+import { Play, CheckCircle2, Clock, ExternalLink } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { apiRequestV2, getStoredAccessToken } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 
 interface Quest {
   _id: string;
@@ -27,6 +28,7 @@ interface Quest {
   url?: string;
   actionLabel?: string;
   status: string;
+  tag?: string;
 }
 
 const TASKS_CARD: Quest = {
@@ -44,8 +46,18 @@ const TASKS_CARD: Quest = {
 
 export default function Quests() {
   const [, setLocation] = useLocation();
-  const [visitedTasks, setVisitedTasks] = useState<string[]>([]);
-  const [claimedTasks, setClaimedTasks] = useState<string[]>([]);
+  const { user } = useAuth();
+
+  const userId = user?._id || "";
+
+  const [visitedTasks, setVisitedTasks] = useState<string[]>(() => {
+    return JSON.parse(localStorage.getItem('nexura:one-time-quest:visited') || '[]')[userId] || [];
+  });
+  const [claimedTasks, setClaimedTasks] = useState<string[]>(() => {
+    return JSON.parse(localStorage.getItem('nexura:one-time-quest:claimed') || '[]')[userId] || [];
+  });
+
+  const { toast } = useToast();
 
   const { data: quests, isLoading } = useQuery<{
     oneTimeQuests: Quest[];
@@ -60,6 +72,20 @@ export default function Quests() {
     refetchInterval: 60000,     // send request every 1m
     refetchIntervalInBackground: true,
   });
+
+  useEffect(() => {
+    const value: Record<string, string[]> = {};
+    value[userId] = visitedTasks;
+
+    localStorage.setItem('nexura:one-time-quest:visited', JSON.stringify(value))
+  }, [visitedTasks]);
+
+  useEffect(() => {
+    const value: Record<string, string[]> = {};
+    value[userId] = claimedTasks;
+
+    localStorage.setItem('nexura:one-time-quest:claimed', JSON.stringify(value))
+  }, [claimedTasks]);
 
   const now = new Date();
 
@@ -77,10 +103,30 @@ export default function Quests() {
     return start <= now && now <= end;
   });
 
+  // todo: add verifier for other one-time quests
+
+  const visitTask = (quest: Quest) => {
+    if (!visitedTasks.includes(quest._id)) setVisitedTasks([...visitedTasks, quest._id]);
+    // if (quest.url || quest.link) window.open(quest.url ?? quest.link, "_blank");
+    setLocation("/profile/edit");
+  };
+
   const claimAndAwardXp = async (quest: Quest) => {
     if (!getStoredAccessToken()) {
-      alert("You must be logged in to claim rewards.");
+      toast({ title: "Error", description: "You must be logged in to claim rewards.", variant: "destructive"});
       return;
+    }
+
+    if (quest.tag === "connect-x") {
+      if (!user?.socialProfiles?.x?.connected) {
+        toast({ title: "Error", description: "X not connected", variant: "destructive" });
+        return
+      }
+    } else if (quest.tag === "connect-discord") {
+      if (!user?.socialProfiles?.discord?.connected) {
+        toast({ title: "Error", description: "Discord not connected", variant: "destructive" });
+        return
+      }
     }
 
     if (!claimedTasks.includes(quest._id)) {
@@ -88,11 +134,6 @@ export default function Quests() {
     }
 
     await apiRequestV2("POST", `/api/quest/claim-quest?id=${quest._id}`);
-  };
-
-  const visitTask = (quest: Quest) => {
-    if (!visitedTasks.includes(quest._id)) setVisitedTasks([...visitedTasks, quest._id]);
-    if (quest.url || quest.link) window.open(quest.url ?? quest.link, "_blank");
   };
 
   const renderQuestCard = (quest: Quest) => {
