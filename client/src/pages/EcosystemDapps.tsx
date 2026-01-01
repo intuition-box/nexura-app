@@ -92,7 +92,7 @@ export default function EcosystemDapps() {
 
   const handleClaim = async (dapp: Dapp) => {
     if (!getStoredAccessToken()) {
-      toast.error({ title: 'Sign in required', description: 'Please sign in to claim XP', variant: 'destructive' });
+      toast({ title: 'Sign in required', description: 'Please sign in to claim XP', variant: 'destructive' });
       return;
     }
 
@@ -209,12 +209,12 @@ export default function EcosystemDapps() {
                     <span className="text-muted-foreground">Timer:</span>
                     <span className="font-bold text-primary">1 Minute</span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Reward:</span>
                     <span className="text-xs font-bold text-primary">{dapp.reward}</span>
                   </div>
-                
+
                   <div className="flex flex-col sm:flex-row gap-2 mt-auto">
                     <a
                       href={dapp.websiteUrl}

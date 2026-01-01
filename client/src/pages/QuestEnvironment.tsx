@@ -52,7 +52,7 @@ export default function QuestEnvironment() {
       const {
         miniQuests: quests,
         totalXp,
-        title: t, 
+        title: t,
         questNumber: quest_no,
         sub_title: st,
         questCompleted
@@ -97,7 +97,7 @@ export default function QuestEnvironment() {
       // window.location.reload();
     } catch (error: any) {
       console.error(error);
-      toast.error({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   }
 
@@ -116,7 +116,7 @@ export default function QuestEnvironment() {
       // }
 
       if (!getStoredAccessToken()) {
-        toast.error({ title: "Error", description: "You must be logged in to claim rewards.", variant: "destructive" });
+        toast({ title: "Error", description: "You must be logged in to claim rewards.", variant: "destructive" });
         return;
       }
 
@@ -133,7 +133,7 @@ export default function QuestEnvironment() {
       // window.location.reload();
     } catch (error: any) {
       console.error(error);
-      toast.error({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -159,11 +159,10 @@ export default function QuestEnvironment() {
 
         <button
           onClick={() => !visited ? visitQuest(quest) : claimReward(quest._id)}
-          className={`w-full md:w-auto px-5 py-2.5 rounded-full text-sm font-semibold ${
-            quest.done || claimedQuests.includes(quest._id)
+          className={`w-full md:w-auto px-5 py-2.5 rounded-full text-sm font-semibold ${quest.done || claimedQuests.includes(quest._id)
               ? "bg-gray-600 cursor-not-allowed"
               : "bg-purple-700 hover:bg-purple-800"
-          }`}
+            }`}
         >
           {buttonText}
         </button>
@@ -220,9 +219,9 @@ export default function QuestEnvironment() {
                 </div>
               </div>
 
-              <Button 
-                onClick={() => claimQuestReward()} 
-                disabled={!miniQuestsCompleted || completed || !(claimedQuests.length === miniQuests.length) || questCompleted} 
+              <Button
+                onClick={() => claimQuestReward()}
+                disabled={!miniQuestsCompleted || completed || !(claimedQuests.length === miniQuests.length) || questCompleted}
                 className={`w-full font-semibold rounded-xl py-3 mt-6 
                   ${miniQuestsCompleted || !completed || claimedQuests.length === miniQuests.length || !questCompleted
                     ? "bg-purple-600 hover:bg-purple-700 text-white"
