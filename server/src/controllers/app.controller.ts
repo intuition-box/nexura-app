@@ -158,7 +158,11 @@ export const claimReferreralReward = async (req: GlobalRequest, res: GlobalRespo
   }
 };
 
-const getXClient = (token: string) => {
+const getXClient = ({ token, auth }: { token: string; auth?: string }) => {
+  if (auth === "oauth2") {
+    return new Client({ accessToken: token });
+  }
+
   return new Client({ bearerToken: token });
 }
 
@@ -188,7 +192,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
     
     switch (tag) {
       case "follow":
-        xClient = getXClient(X_API_BEARER_TOKEN);
+        xClient = getXClient({ token: userToken.accessToken, auth: "oauth2"});
 
         const followers: UserPaginator = new UserPaginator(
           async (token?: string): Promise<PaginatedResponse<Schemas.User>> => {
@@ -197,8 +201,6 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
               paginationToken: token,
               userFields: ["id"],
             });
-
-            console.log("ded:", res.data);
 
             return {
               data: res.data ?? [],
@@ -235,7 +237,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
           return;
         }
 
-        xClient = getXClient(userToken.accessToken);
+        xClient = getXClient({ token: userToken.accessToken, auth: "oauth2"});
 
         const likedPosts: UserPaginator = new UserPaginator(
           async (token?: string): Promise<PaginatedResponse<Schemas.Tweet>> => {
@@ -276,7 +278,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
         res.status(BAD_REQUEST).json({ error: "tweet not liked" });
       return
       case "repost":
-        xClient = getXClient(X_API_BEARER_TOKEN);
+        xClient = getXClient({ token: X_API_BEARER_TOKEN });
 
         const reposts: UserPaginator = new UserPaginator(
 					async (token?: string): Promise<PaginatedResponse<Schemas.User>> => {
@@ -356,14 +358,11 @@ export const updateX = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
-    userToken.userId = req.id as string;
-
     userToUpdate.socialProfiles ??= {};
 
     userToUpdate.socialProfiles.x = { connected: true, id: x_id, username };
 
     await userToUpdate.save();
-    await userToken.save();
 
     res.status(OK).json({ messages: "connected!", user: userToUpdate });
   } catch (error) {
