@@ -167,8 +167,16 @@ const getXClient = ({ token, auth }: { token: string; auth?: string }) => {
 }
 
 export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
+  const userToCheck = await user.findById(req.id);
+  if (!userToCheck) {
+    res.status(BAD_REQUEST).json({ error: "id associated with user is invalid" });
+    return;
+  }
 
-  const userToken = await token.findOne({ userId: req.id });
+  
+  const xId = userToCheck.socialProfiles?.x?.id;
+
+  const userToken = await token.findOne({ userId: xId });
   if (!userToken) {
     res.status(UNAUTHORIZED).json({ error: "connect X account to proceed" });
     return;
@@ -181,14 +189,6 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
 
     const NEXURA_ID = "1983300499597393920";
 
-    const userToCheck = await user.findById(req.id);
-    if (!userToCheck) {
-      res.status(BAD_REQUEST).json({ error: "id associated with user is invalid" });
-      return;
-    }
-
-    
-    const xId = userToCheck.socialProfiles?.x?.id;
     
     switch (tag) {
       case "follow":
