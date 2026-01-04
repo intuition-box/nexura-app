@@ -31,9 +31,9 @@ export default function XCallback() {
 
         toast({ title: "Success", description: "X login successful!" });
         setLocation("/profile/edit")
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
-        toast({ title: "Error", description: "Failed to process X login.", variant: "destructive" });
+        toast({ title: "Error", description: error.message, variant: "destructive" });
         setLocation("/profile/edit");
       }
     })();
@@ -61,7 +61,7 @@ export default function XCallback() {
 
   return (
     <div className="min-h-screen flex items-center justify-center text-white bg-black">
-      <p className="text-lg">Processing X join... </p>
+      <p className="text-lg">Processing X connection... </p>
       <br />
       <p className="text-lg">Do not refresh</p>
     </div>

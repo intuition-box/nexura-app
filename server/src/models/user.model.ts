@@ -14,7 +14,7 @@ const userSchema = new Schema({
 	profilePic: {
     type: String,
     default: "",
-  	},
+	},
 	socialProfiles: {
 		x: {
 			connected: {
