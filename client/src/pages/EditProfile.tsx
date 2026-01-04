@@ -30,7 +30,8 @@ export default function EditProfile() {
     socialProfiles: {
       x: { connected: false, username: "" },
       discord: { connected: false, username: "" }
-    }
+    },
+    avatar: user?.profilePic
   });
 
   // Load existing profile data
@@ -41,34 +42,35 @@ export default function EditProfile() {
         socialProfiles: user.socialProfiles ?? {
           x: { connected: false, username: "" },
           discord: { connected: false, username: "" }
-        }
+        },
+        avatar: user?.profilePic
       });
-
-      // Set initial avatar preview
-      if (user.avatar) {
-        setAvatarPreview(user.avatar);
-      }
     }
   }, [user]);
 
   const handleSave = async () => {
-  try {
-    let avatarUrl = user?.avatar || '';
+    try {
 
-    // Upload new avatar if selected
-    if ((profileData as any).avatarFile) {
-      const file: File = (profileData as any).avatarFile;
-      avatarUrl = await uploadFile(file, `avatars/${user?.id ?? 'guest'}`);
+    let updateUser: FormData | Record<string, unknown>;
+
+    if (profileData.avatar instanceof File) {
+      const formData = new FormData();
+
+      formData.append("username", profileData.displayName);
+      formData.append("profilePic", profileData.avatar);
+      formData.append("socialProfiles", JSON.stringify(profileData.socialProfiles))
+
+      updateUser = formData;
+    } else {
+      updateUser = {
+        username: profileData.displayName,
+        // avatar: profileData.avatar,
+        socialProfiles: profileData.socialProfiles,
+      };
     }
 
-    const updatePayload = {
-      username: profileData.displayName,
-      avatar: avatarUrl,
-      socialProfiles: profileData.socialProfiles,
-    };
-
     // Send update to backend
-    await apiRequestV2('PATCH', '/api/user/update', updatePayload);
+    await apiRequestV2('PATCH', '/api/user/update', updateUser);
 
     // Optimistically update local user context immediately
     // updateUserContext({
@@ -99,18 +101,14 @@ export default function EditProfile() {
       return;
     }
     
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Please select an image under 2MB", variant: "destructive" });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Please select an image under 5MB", variant: "destructive" });
       return;
     }
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatarPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-    
-    setProfileData(prev => ({ ...prev, avatarFile: file }));
+
+    setAvatarPreview(URL.createObjectURL(file));
+
+    setProfileData(prev => ({ ...prev, avatar: file }));
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,7 +136,7 @@ export default function EditProfile() {
 
   const handleRemoveAvatar = () => {
     setAvatarPreview(null);
-    setProfileData(prev => ({ ...prev, avatarFile: null }));
+    setProfileData(prev => ({ ...prev, avatar: null }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -226,7 +224,7 @@ export default function EditProfile() {
                 {/* Current Avatar Preview */}
                 <div className="relative">
                   <Avatar className="w-24 h-24 border-4 border-border">
-                    <AvatarImage src={avatarPreview || user?.avatar || ""} />
+                    <AvatarImage src={avatarPreview || user?.profilePic || ""} />
                     <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-purple-500 to-blue-500 text-white">
                       {(profileData.displayName || "U").charAt(0).toUpperCase()}
                     </AvatarFallback>
