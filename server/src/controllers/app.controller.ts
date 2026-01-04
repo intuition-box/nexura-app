@@ -1,8 +1,6 @@
 import logger from "@/config/logger";
 import { cvModel } from "@/models/cv.models";
 import { firstMessage } from "@/models/msg.model";
-import { cvModel } from "@/models/cv.models";
-import { firstMessage } from "@/models/msg.model";
 import { referredUsers } from "@/models/referrer.model";
 import { token } from "@/models/tokens.model";
 import { miniQuest } from "@/models/quests.model";
@@ -25,7 +23,7 @@ export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 	res.send("hi!");
 };
 
-export const updateUsername = async (req: GlobalRequest, res: GlobalResponse) => {
+export const updateUser = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const profilePic = req.file ? req.file.path : undefined;
     const { username }: { username: string } = req.body;
@@ -57,10 +55,10 @@ export const updateUsername = async (req: GlobalRequest, res: GlobalResponse) =>
       await userReferred.save();
     }
 
-    res.status(OK).json({ message: "username updated!" });
+    res.status(OK).json({ message: "user updated!" });
   } catch (error) {
     logger.error(error);
-    res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating username" });
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating user" });
   }
 }
 
