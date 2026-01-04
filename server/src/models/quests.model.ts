@@ -64,6 +64,9 @@ const campaignQuestSchema = new Schema({
 		enum: ["like", "follow", "repost", "join", "message", "other"],
 		required: true
 	},
+	followers: {
+		type: Number
+	},
 	link: {
 		type: String,
 	},
@@ -96,6 +99,10 @@ const questSchema = new Schema({
 	tag: {
 		type: String
 	},
+	status: {
+		type: String,
+		enum: ["active", "upcoming"]
+	},
 	questNumber: {
 		type: Number
 	},
@@ -123,6 +130,13 @@ const miniQuestSchema = new Schema({
 	text: {
 		type: String,
 		required: true,
+	},
+	followers: {
+		type: Number
+	},
+	tag: {
+		type: String,
+		enum: ["like", "follow", "message", "other", "comment", "repost"]
 	},
 	link: {
 		type: String
