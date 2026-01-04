@@ -69,7 +69,9 @@ export async function apiRequestV2(
   endpoint: string,
   data?: unknown | undefined,
 ): Promise<any> {
-  const headers = { "Content-Type": "application/json" , "Authorization": `Bearer ${getStoredAccessToken()}`};
+  const token = getStoredAccessToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${BACKEND_URL}${endpoint}`, {
     method,

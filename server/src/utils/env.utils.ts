@@ -42,3 +42,7 @@ export const X_REDIRECT_URI = process.env.X_REDIRECT_URI as string;
 
 export const X_CLIENT_REDIRECT_URI = environment === "development" ? DEV_X_CLIENT_REDIRECT_URI : MAIN_X_CLIENT_REDIRECT_URI;
 export const DISCORD_CLIENT_REDIRECT_URI = environment === "development" ? DEV_DISCORD_CLIENT_REDIRECT_URI : MAIN_DISCORD_CLIENT_REDIRECT_URI;
+
+export const Clodinary_Cloud_Name = process.env.Clodinary_Cloud_Name as string;
+export const Clodinary_API_Key = process.env.Clodinary_API_Key as string;
+export const Clodinary_API_Secret = process.env.Clodinary_API_Secret as string;

@@ -16,5 +16,8 @@
     "url": "https://github.com/cakezero/nexura-app/issues"
   },
   "homepage": "https://github.com/cakezero/nexura-app#readme",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  }
 }

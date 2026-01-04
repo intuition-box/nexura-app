@@ -11,6 +11,10 @@ const userSchema = new Schema({
 		required: true,
 		unique: true
 	},
+	profilePic: {
+    type: String,
+    default: "",
+  	},
 	socialProfiles: {
 		x: {
 			connected: {

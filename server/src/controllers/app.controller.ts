@@ -27,6 +27,7 @@ export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const updateUsername = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
+    const profilePic = req.file ? req.file.path : undefined;
     const { username }: { username: string } = req.body;
 
     const userToUpdate = await user.findById(req.id);
@@ -43,6 +44,11 @@ export const updateUsername = async (req: GlobalRequest, res: GlobalResponse) =>
     }
 
     userToUpdate.username = username;
+
+    if (profilePic) {
+      userToUpdate.profilePic = profilePic;
+    }
+
     await userToUpdate.save();
 
     const userReferred = await referredUsers.findOne({ newUser: userToUpdate._id });
