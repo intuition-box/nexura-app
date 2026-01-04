@@ -10,7 +10,7 @@ import { firstMessage } from "@/models/msg.model";
 
 const server = express();
 
-server.use(cors({ origin: ["http://localhost:5174", "https://nexura-app.vercel.app"] }));
+server.use(cors({ origin: ["http://localhost:5173", "https://nexura-app.vercel.app"] }));
 server.use(helmet());
 server.use(express.json());
 server.use(express.urlencoded({ extended: true }));
