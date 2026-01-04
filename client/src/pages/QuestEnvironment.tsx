@@ -199,52 +199,20 @@ export default function QuestEnvironment() {
     return (
       <div
         key={index}
-        className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition gap-3"
-      >
-        {/* LEFT SIDE */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-2/3">
-          <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/10">
-            {claimed ? (
-              <CheckCircle2 className="w-4 h-4 text-green-400" />
-            ) : (
-              <Play className="w-4 h-4" />
-            )}
-          </div>
+        className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white/5 border border-white/10 rounded-xl p-4 md:p-5 hover:bg-white/10 transition">
+        <p className="font-medium text-sm md:text-base leading-snug">
+          {quest.text}
+        </p>
 
-          <div className="flex flex-col">
-            <a
-              href={quest.link}
-              onClick={(e) => e.preventDefault()}
-              className={`text-sm sm:text-base font-medium ${claimed ? "opacity-60 pointer-events-none" : "underline hover:opacity-90"
-                }`}
-            >
-              {quest.text}
-            </a>
-            <span className="text-xs opacity-70 mt-0.5">{quest.reward}</span>
-          </div>
-        </div>
-
-        {/* ACTIONS */}
-        <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-          {failed && !claimed && (
-            <button
-              onClick={() => visitQuest(quest)}
-              className="px-3 py-2 rounded-full bg-red-600 hover:bg-red-700 flex items-center gap-1 text-sm font-semibold"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Retry
-            </button>
-          )}
-
-          <button
-            disabled={claimed}
-            onClick={() => (!visited ? visitQuest(quest) : claimReward(quest))}
-            className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm font-semibold ${claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
-              }`}
-          >
-            {buttonText}
-          </button>
-        </div>
+        <button
+          onClick={() => !visited ? visitQuest(quest) : claimReward(quest)}
+          className={`w-full md:w-auto px-5 py-2.5 rounded-full text-sm font-semibold ${quest.done || claimedQuests.includes(quest._id)
+              ? "bg-gray-600 cursor-not-allowed"
+              : "bg-purple-700 hover:bg-purple-800"
+            }`}
+        >
+          {buttonText}
+        </button>
       </div>
     );
   };
