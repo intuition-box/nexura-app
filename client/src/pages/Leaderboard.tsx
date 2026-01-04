@@ -14,10 +14,10 @@ import bronze from "/nexura-bronze.png";
 import xpIcon from "/nexura-xp.png";
 
 type Entry = {
-  id: string;
+  _id: string;
   username?: string;
   display_name?: string;
-  avatar?: string;
+  profilePic?: string;
   xp: number;
   level: number;
   questsCompleted?: number;
@@ -74,6 +74,7 @@ export default function Leaderboard() {
 
   /* ------------------- CURRENT USER FLOAT/STICK LOGIC ------------------- */
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);// Logged-in user ID
+  setCurrentUserId(user?._id ?? null);
   const [cardState, setCardState] = useState<"floatingBottom" | "normal" | "stickyTop">("normal");
 
   useEffect(() => {
@@ -196,7 +197,7 @@ export default function Leaderboard() {
 
                 return (
                   <div
-                    key={user.id}
+                    key={user._id}
                     className="flex flex-col items-center text-center relative animate-bounce-slow"
                     style={{ animationDelay: bounceDelay }}
                   >
