@@ -3,7 +3,7 @@ import { cvModel } from "@/models/cv.models";
 import { firstMessage } from "@/models/msg.model";
 import { referredUsers } from "@/models/referrer.model";
 import { token } from "@/models/tokens.model";
-import { miniQuest } from "@/models/quests.model";
+import { campaignQuest, miniQuest } from "@/models/quests.model";
 import { user } from "@/models/user.model";
 import { performIntuitionOnchainAction } from "@/utils/account";
 import { BOT_TOKEN, X_API_BEARER_TOKEN } from "@/utils/env.utils";
@@ -202,18 +202,25 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
   }
 
   let xClient: Client;
+  let quest: any | undefined = undefined;
 
   try {
-    const { tag, id: postId, questId } = req.body; // get task id and store project x id, then remove hardcoded nexura id
+    const { tag, id: postId, questId, page } = req.body; // get task id and store project x id, then remove hardcoded nexura id
 
     const NEXURA_ID = "1983300499597393920";
-    console.log({questId});
-
-    const quest = await miniQuest.findById(questId);
-		if (!quest) {
-			res.status(NOT_FOUND).json({ error: "quest id is invalid" });
-			return;
-		}
+    if (page === "quest") {
+      quest = await miniQuest.findById(questId);
+      if (!quest) {
+        res.status(NOT_FOUND).json({ error: "quest id is invalid" });
+        return;
+      }
+    } else {
+      quest = await campaignQuest.findById(questId);
+      if (!quest) {
+        res.status(NOT_FOUND).json({ error: "quest id is invalid" });
+        return;
+      }
+    }
 
     switch (tag) {
       case "follow":
