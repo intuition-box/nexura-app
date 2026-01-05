@@ -1,4 +1,3 @@
-import multer from "multer";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { AWS_REGION, AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_S3_BUCKET } from "./env.utils";
 import logger from "@/config/logger";
@@ -25,7 +24,7 @@ export const uploadImg = async ({
   file,
   filename,
   folder,
-  maxSize = 1 * (1024 ** 2) // 1 MB
+  maxSize = 5 * (1024 ** 2) // 5 MB
 }: UploadImgParams) => {
   try {
     const image = sharp(file);
