@@ -67,17 +67,22 @@ export async function apiRequest(
 export async function apiRequestV2(
   method: string,
   endpoint: string,
-  data?: unknown | undefined,
+  data?: unknown | null,
 ): Promise<any> {
   const token = getStoredAccessToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const isFormData = data instanceof FormData;
 
   const res = await fetch(`${BACKEND_URL}${endpoint}`, {
     method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    },
+    body: isFormData ? data : data ? JSON.stringify(data) : undefined,
   });
+
+  console.log({res});
 
   await throwIfResNotOk(res);
   return res.json();
