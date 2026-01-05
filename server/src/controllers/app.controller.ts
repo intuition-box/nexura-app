@@ -252,7 +252,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
         // for await (const follower of followers.users) {
         //   console.log({follower})
         //   if (follower.id === xId) {
-        //     res.status(OK).json({ message: "task verified" });
+        //     res.status(OK).json({ message: "task verified", success: true });
         //     return;
         //   }
 
@@ -264,19 +264,21 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
 
         // res.status(BAD_REQUEST).json({ error: "account not followed" });
 
-        const x_user_info = await xClient.users.getById(NEXURA_ID, { userFields: ["id", "publicMetrics", "verified"] });
-        console.log({ x_user_info });
+        const { data: { data } } = await axios.get(`https://api.x.com/2/users/${NEXURA_ID}?user.fields=public_metrics`, {
+          headers: {
+            Authorization: `Bearer ${X_API_BEARER_TOKEN}`,
+          }
+        })
 
-        const followersCount = x_user_info.data?.publicMetrics?.followers_count || 0;
+        const followersCount = data?.public_metrics?.followers_count || 0;
 
         const isFollowing = followersCount > (quest?.followers ?? 0);
-        console.log({ isFollowing });
 
         if (isFollowing) {
           quest.followers = followersCount;
           await quest.save();
 
-          res.status(OK).json({ message: "task verified" });
+          res.status(OK).json({ message: "task verified", success: true });
           return;
         }
 
@@ -312,7 +314,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
         for await (const likedPost of likedPosts.users) {
 
           if (likedPost.id === postId) {
-            res.status(OK).json({ message: "task verified" });
+            res.status(OK).json({ message: "task verified", success: true });
             return;
           }
 
@@ -349,9 +351,9 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
         console.log({ t: 2, reposts: reposts.users });
 
         for await (const repost of reposts.users) {
-          console.log({ repost });
+
           if (repost.id === postId) {
-            res.status(OK).json({ message: "task verified" });
+            res.status(OK).json({ message: "task verified", success: true });
             return;
           }
 
@@ -371,11 +373,11 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
     }
   } catch (error: any) {
     logger.error(error);
-    if (error.code === 429) {
-      res.status(429).json({ error: "rate limited by x api, try again 16 mins later" });
+    if (error?.status === 429) {
+      res.status(429).json({ error: "Oops, not fast enough. Rate limited by X API, try again after 16 mins" });
       return;
     }
-    console.error({ error });
+    // console.error({ error });
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error checking twitter task" });
   }
 }
@@ -414,7 +416,7 @@ export const updateX = async (req: GlobalRequest, res: GlobalResponse) => {
 
     await userToUpdate.save();
 
-    res.status(OK).json({ messages: "connected!", user: userToUpdate });
+    res.status(OK).json({ message: "connected!", user: userToUpdate });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error saving connected state" });
@@ -449,7 +451,7 @@ export const updateDiscord = async (req: GlobalRequest, res: GlobalResponse) => 
 
     await userToUpdate.save();
 
-    res.status(OK).json({ messages: "connected!", user: userToUpdate });
+    res.status(OK).json({ message: "connected!", user: userToUpdate });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error saving connected state" });
