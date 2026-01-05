@@ -16,7 +16,6 @@ import xpIcon from "/nexura-xp.png";
 type Entry = {
   _id: string;
   username?: string;
-  display_name?: string;
   profilePic?: string;
   xp: number;
   level: number;
@@ -169,7 +168,7 @@ export default function Leaderboard() {
             <div className="flex justify-center items-end gap-3 sm:gap-5 relative">
               {list.length > 0 && [1, 0, 2].map((userIndex, idx) => {
                 const user = list[userIndex];
-                const name = user.display_name || user.username || "Anonymous";
+                const name = user.username || "Anonymous";
                 const xp = user.xp;
 
                 // const heights = [130, 200, 110];
@@ -330,7 +329,7 @@ export default function Leaderboard() {
           {list.length > 0 ? list.map((entry, idx) => {
             if (idx < 3) return null; // skip podium
 
-            const name = entry.display_name || entry.username || "Anonymous";
+            const name = entry.username || "Anonymous";
             const isCurrentUser = entry._id === currentUserId;
             const rank = idx + 1;
 

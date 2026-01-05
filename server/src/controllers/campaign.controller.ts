@@ -321,12 +321,7 @@ export const claimCampaignRewards = async (
 	res: GlobalResponse
 ) => {
 	try {
-		const campaignId = req.query.id;
-
-		if (!mongoose.Types.ObjectId.isValid(id)) {
-  return res.status(400).json({ error: "Invalid campaign ID" });
-}
-
+		const campaignId = req.query.id as string;
 
 		const userToReward = await user.findById(req.id);
 		if (!userToReward) {
