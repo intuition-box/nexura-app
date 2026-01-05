@@ -110,7 +110,7 @@ export default function Profile() {
 
       setUser(profile);
     })();
-  }, []);
+  }, [user]);
 
   // Wallet → default display name
   const userData = useMemo(() => {
