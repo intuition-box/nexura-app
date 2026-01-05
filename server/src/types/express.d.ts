@@ -14,7 +14,7 @@ declare global {
 
 	interface UploadImgParams {
 		file: Buffer;
-		filename: string;
+		filename?: string;
 		folder: string;
 		maxSize?: number;
 	}
