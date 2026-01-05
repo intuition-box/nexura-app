@@ -9,7 +9,52 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/lib/auth";
 import { url } from "@/lib/constants";
 import { claimReferralReward } from "@/lib/performOnchainAction";
-import { InviteIcon, RegisterIcon, EarnIcon, UsersIcon, ActiveIcon, TrustIcon } from "@/svgs/icons";
+
+/* =======================
+   SVG ICONS (BOLD / FILLED)
+======================= */
+
+const InviteIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M12 12a4.2 4.2 0 1 0-4.2-4.2A4.2 4.2 0 0 0 12 12Z" />
+    <path d="M12 14.5c-4.2 0-7.5 2.2-7.5 5v1h15v-1c0-2.8-3.3-5-7.5-5Z" />
+    <path d="M19 7V5.5a.8.8 0 0 0-1.6 0V7h-1.5a.8.8 0 0 0 0 1.6h1.5v1.5a.8.8 0 0 0 1.6 0V8.6h1.5a.8.8 0 0 0 0-1.6Z" />
+  </svg>
+);
+
+const RegisterIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM7 12h10v2H7v-2Zm0 4h10v2H7v-2Z" />
+  </svg>
+);
+
+const EarnIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M12 2a1 1 0 0 1 1 1v1.1c2.6.3 4.5 2 4.5 4.4h-2.2c0-1.3-1-2.2-2.8-2.2s-2.7.8-2.7 2c0 1.3 1.3 1.8 3.2 2.2 2.5.6 4.8 1.6 4.8 4.4 0 2.4-1.9 4-4.8 4.4V21a1 1 0 0 1-2 0v-1.1c-2.9-.4-5-2.2-5-4.9h2.3c0 1.6 1.3 2.7 3.5 2.7 2 0 3-1 3-2.2 0-1.4-1.2-1.9-3.5-2.5-2.4-.6-4.5-1.5-4.5-4.2 0-2.3 1.8-3.9 4.2-4.3V3a1 1 0 0 1 1-1Z" />
+  </svg>
+);
+
+const UsersIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-3.3 0-6 1.7-6 4v1h8v-1c0-1.5.8-2.8 2-3.6A8.2 8.2 0 0 0 8 13Zm8 0c-3.3 0-6 1.7-6 4v1h12v-1c0-2.3-2.7-4-6-4Z" />
+  </svg>
+);
+
+const ActiveIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M9 16.2 4.8 12 3.4 13.4 9 19l12-12-1.4-1.4Z" />
+  </svg>
+);
+
+const TrustIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="m12 2 2.9 6.3 6.8.6-5.1 4.4 1.6 6.7L12 16.8 5.8 20l1.6-6.7L2.3 8.9l6.8-.6Z" />
+  </svg>
+);
+
+/* =======================
+   PAGE
+======================= */
 
 type Referral = {
   username: string;
@@ -18,6 +63,7 @@ type Referral = {
 };
 
 const refReward = 16.2;
+
 const rewardPerActiveUser = 1.62;
 
 const dummyReferralData: Referral[] = [
@@ -25,123 +71,58 @@ const dummyReferralData: Referral[] = [
   { username: "Shallipopi", dateJoined: "Nov 9, 2025", status: "Active" },
   { username: "Blacko", dateJoined: "Nov 15, 2025", status: "Active" },
   { username: "TFK", dateJoined: "Nov 25, 2025", status: "Active" },
-  // { username: "Mardocee", dateJoined: "Nov 29, 2025", status: "Active" },
-  // { username: "Ownyde", dateJoined: "Nov 29, 2025", status: "Active" },
-  // { username: "Emperor", dateJoined: "Nov 29, 2025", status: "Inactive" }
+  { username: "Mardocee", dateJoined: "Nov 29, 2025", status: "Active" },
+  { username: "Ownyde", dateJoined: "Nov 29, 2025", status: "Active" },
+  { username: "Emperor", dateJoined: "Nov 29, 2025", status: "Inactive" }
 ];
 
 export default function ReferralsPage() {
-  // const [rewardClaimed, setRewardClaimed] = useState(false);
-  const [stage1Claimed, setStage1Claimed] = useState(false);
-const [stage2Claimed, setStage2Claimed] = useState(false);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [totalReferrerls, setTotalReferrals] = useState(0);
   const [activeUsers, setActiveUsers] = useState(0);
   const [trustEarned, setTrustEarned] = useState<string | number>("0");
 
   const { user } = useAuth();
-  const [referralData, setReferralData] = useState<Referral[]>(dummyReferralData);
+
+  const [referralData, setReferralData] = useState<Referral[]>([]);
 
   useEffect(() => {
     (async () => {
-      const ActiveUsers = usersReferred.filter(
-        (u: { status: string }) => u.status === "Active"
-      ).length;
+      const { usersReferred, refRewardClaimed } = await apiRequestV2("GET", "/api/user/referral-info");
+
+      const ActiveUsers = usersReferred.filter((u: { status: string }) => u.status === "Active").length;
 
       setReferralData(usersReferred);
-     setTrustEarned("0");
+      setRewardClaimed(refRewardClaimed);
+
+      setTrustEarned(ActiveUsers < 10 ? (rewardPerActiveUser * ActiveUsers).toFixed(2) : refReward);
       setTotalReferrals(usersReferred.length);
       setActiveUsers(ActiveUsers);
-    })();
+    })()
   }, []);
 
-  const referralLink = `${url}/ref/${user ? user.referral.code : "referral-noobmaster"}`;
+  const referralLink = `${url}/${user ? user.referral.code : "referral-noobmaster"}`;
 
-  const progressBar = Math.round(
-    (parseFloat(trustEarned.toString()) / refReward) * 100
-  );
-
-  // ---------------- NEW MILESTONE LOGIC (ONLY CHANGE) ----------------
-const STAGE_SIZE = 5;
-
-const currentStage =
-  activeUsers < 5 ? 1 :
-  activeUsers < 10 ? 2 :
-  2;
-
-
-const stageProgress =
-  currentStage === 1
-    ? Math.min(activeUsers, 5)
-    : Math.min(activeUsers - 5, 5);
-
-const progressPercent = (stageProgress / 5) * 100;
-
-
-  const rewardAmount = currentStage === 1 ? 5.4 : 10.8;
-
-const canClaimStage1 =
-  activeUsers >= 5 && !stage1Claimed;
-
-const canClaimStage2 =
-  activeUsers >= 10 && stage1Claimed && !stage2Claimed;
-
-  // ------------------------------------------------------------------
+  const progressBar = Math.round((parseFloat(trustEarned.toString()) / refReward) * 100);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Copy failed", err);
+    }
   };
 
-  const MILESTONE_REWARD = 5.4;
+  const handleClaim = async () => {
+    await claimReferralReward(user?._id || "");
 
-const milestonesReached = Math.floor(activeUsers / 5); // 0, 1, or 2
-const milestonesClaimed =
-  (stage1Claimed ? 1 : 0) + (stage2Claimed ? 1 : 0);
+    await apiRequestV2("POST", "/api/user/claim-referral-reward");
 
-const milestonesClaimable = milestonesReached - milestonesClaimed;
-
-// const claimableReward = milestonesClaimable * MILESTONE_REWARD;
-const claimableReward =
-  (!stage1Claimed && milestonesReached >= 1 ? 5.4 : 0) +
-  (!stage2Claimed && milestonesReached >= 2 ? 10.8 : 0);
-
-
-const canClaim = milestonesClaimable > 0;
-
-
-const handleClaim = async () => {
-  if (!canClaim) return;
-
-  // Claim both milestones at once
-  if (milestonesClaimable === 2) {
-    setStage1Claimed(true);
-    setStage2Claimed(true);
-    setTrustEarned(prev =>
-      (parseFloat(prev.toString()) + 16.2).toFixed(2)
-    );
-    return;
-  }
-
-  // Claim first milestone
-  if (milestonesClaimable === 1 && !stage1Claimed) {
-    setStage1Claimed(true);
-    setTrustEarned(prev =>
-      (parseFloat(prev.toString()) + 5.4).toFixed(2)
-    );
-    return;
-  }
-
-  // Claim second milestone only
-  if (milestonesClaimable === 1 && stage1Claimed && !stage2Claimed) {
-    setStage2Claimed(true);
-    setTrustEarned(prev =>
-      (parseFloat(prev.toString()) + 10.8).toFixed(2)
-    );
-  }
-};
-
+    setRewardClaimed(true);
+  };
 
   return (
     <div className="min-h-screen bg-black text-white px-4 sm:px-6 lg:px-8 py-8 space-y-12 max-w-[1200px] mx-auto">
@@ -150,7 +131,7 @@ const handleClaim = async () => {
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold">Referrals</h1>
         <p className="text-sm opacity-60 mt-1">
-          {`Invite your friends to Nexura and earn up to ${refReward} $TRUST`}
+          Invite your friends to Nexura and earn rewards
         </p>
       </div>
 
@@ -162,32 +143,57 @@ const handleClaim = async () => {
           { icon: EarnIcon, title: "Earn", desc: `You can earn up to ${refReward} TRUST referring your friends after they complete a Quest or Campaign` }
         ].map(({ icon: Icon, title, desc }) => (
           <div key={title} className="flex flex-col items-center text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-purple-600/25 flex items-center justify-center">
-              <Icon className="w-8 h-8 text-purple-300" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-purple-600/25 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.35)]">
+              <Icon className="w-8 h-8 sm:w-9 sm:h-9 text-purple-300" />
             </div>
-            <p className="text-sm font-medium">{title}</p>
-            <p className="text-xs opacity-60 max-w-[240px]">{desc}</p>
+            <p className="text-sm sm:text-base font-medium">{title}</p>
+            <p className="text-xs sm:text-sm opacity-60 max-w-[240px]">{desc}</p>
           </div>
         ))}
       </div>
 
-      {/* STATS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          { icon: UsersIcon, label: "Total Referrals", value: totalReferrerls },
-          { icon: ActiveIcon, label: "Active", value: activeUsers },
-          { icon: TrustIcon, label: "Trust Earned", value: trustEarned }
-        ].map(({ icon: Icon, label, value }) => (
-          <div key={label} className="flex items-center justify-between bg-white/5 rounded-2xl px-6 py-5">
-            <div>
-              <p className="text-sm opacity-60">{label}</p>
-              <p className="text-2xl font-semibold">{value}</p>
+      {/* SHARE LINK */}
+      <div className="space-y-6">
+        <div>
+          <p className="text-base sm:text-lg font-medium">Share your referral link</p>
+          <p className="text-sm opacity-60 mt-1 max-w-[560px]">
+            Copy and share your referral link to start earning rewards.
+          </p>
+        </div>
+
+        <div className="flex items-center bg-white/5 rounded-full px-4 sm:px-5 py-2 max-w-full sm:max-w-[520px]">
+          <span className="text-sm opacity-70 truncate">
+            {referralLink}
+          </span>
+          <Button
+            onClick={handleCopy}
+            className="ml-auto h-8 px-4 rounded-full bg-purple-600 text-sm"
+          >
+            {copied ? "Copied" : "Copy Link"}
+          </Button>
+        </div>
+
+        {/* STATS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[
+            { icon: UsersIcon, label: "Total Referrals", value: totalReferrerls },
+            { icon: ActiveIcon, label: "Active", value: activeUsers },
+            { icon: TrustIcon, label: "Trust Earned", value: trustEarned }
+          ].map(({ icon: Icon, label, value }) => (
+            <div
+              key={label}
+              className="flex items-center justify-between bg-white/5 rounded-2xl px-5 sm:px-6 py-5"
+            >
+              <div>
+                <p className="text-sm opacity-60">{label}</p>
+                <p className="text-xl sm:text-2xl font-semibold mt-1">{value}</p>
+              </div>
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-purple-600/25 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.35)]">
+                <Icon className="w-8 h-8 sm:w-9 sm:h-9 text-purple-300" />
+              </div>
             </div>
-            <div className="w-14 h-14 rounded-full bg-purple-600/25 flex items-center justify-center">
-              <Icon className="w-8 h-8 text-purple-300" />
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* BOTTOM */}
@@ -195,10 +201,16 @@ const handleClaim = async () => {
 
         {/* HISTORY */}
         <Card className="lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl px-6 py-6">
-          <p className="text-sm font-medium mb-4">Referral History</p>
+          <div className="flex justify-between mb-4">
+            <p className="text-sm font-medium">Referral History</p>
+            <span className="text-sm text-purple-400 cursor-pointer">
+              View all
+            </span>
+          </div>
+
           <div className="space-y-4">
-            {referralData.map(({ username, dateJoined, status }) => (
-              <div key={username} className="flex justify-between text-sm">
+            {referralData.length > 0 ? referralData.map(({ username, dateJoined, status }) => (
+              <div key={username} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-7 h-7">
                     <AvatarFallback>{username[0]}</AvatarFallback>
@@ -206,15 +218,11 @@ const handleClaim = async () => {
                   <span>{username}</span>
                 </div>
                 <span className="opacity-60">{dateJoined}</span>
-                <span className={`px-3 py-1 text-xs rounded-full ${
-                  status === "Active"
-                    ? "bg-green-500/15 text-green-400 border border-green-500/30"
-                    : "opacity-40 border border-white/10"
-                }`}>
+                <span className={status === "Active" ? "text-green-400" : "opacity-40"}>
                   {status}
                 </span>
               </div>
-            ))}
+            )) : "No referrals yet"}
           </div>
         </Card>
 
@@ -222,17 +230,8 @@ const handleClaim = async () => {
         <div className="space-y-6">
           <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-4">
             <p className="text-sm font-medium">Milestone Progress</p>
-
-            <p className="text-sm text-purple-400">
-              Next Reward: +10.8 Trust
-            </p>
-
+            <p className="text-sm text-purple-400">Reward: +{refReward} Trust</p>
             <Progress value={progressBar} />
-
-            <p className="text-xs text-white/60">
-              Refer 5 more friends who complete a quest or campaign to unlock remaining bonus.
-            </p>
-
             <Button
               onClick={handleClaim}
               disabled={rewardClaimed || activeUsers < 10}
@@ -241,23 +240,6 @@ const handleClaim = async () => {
               {rewardClaimed ? "Claimed" : "Claim Reward"}
             </Button>
           </Card>
-
-          {/* IMPORTANT RULE */}
-          <div className="space-y-6">
-            <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-3">
-              <p className="text-sm font-medium">Important Rule</p>
-
-              <p className="text-xs text-white/70">
-                Referrals only count as <span className="text-white font-medium">“Active”</span> after they
-                complete their <span className="text-white font-medium">first quest or campaign</span> on the platform.
-              </p>
-
-              <p className="text-xs text-white/70">
-                You can refer up to <span className="text-white font-medium">10 people max</span>, and only
-                <span className="text-white font-medium"> active referrals</span> qualify for rewards.
-              </p>
-            </Card>
-          </div>
         </div>
 
       </div>
