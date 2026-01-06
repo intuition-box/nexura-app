@@ -233,7 +233,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
 
         const { data: { followers } } = await axios.get(`${API_URL}/user/followers?userName=${"nexuraXYZ"}&pageSize=200`, {
           headers: {
-            "X-API-Key": `Bearer ${THIRD_PARTY_API_KEY}`,
+            "X-API-Key": `${THIRD_PARTY_API_KEY}`,
           }
         });
 
@@ -289,7 +289,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
 
         const { data: { users } } = await axios.get(`${API_URL}/tweet/retweeters?tweetId=${postId}`, {
           headers : {
-            "X-API-Key": `Bearer ${THIRD_PARTY_API_KEY}`,
+            "X-API-Key": `${THIRD_PARTY_API_KEY}`,
           }
         });
 
@@ -306,7 +306,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
       case "comment":
         const { data: { replies } } = await axios.get(`${API_URL}/tweet/replies?tweetId=${postId}`, {
           headers: {
-            "X-API-Key": `Bearer ${THIRD_PARTY_API_KEY}`,
+            "X-API-Key": `${THIRD_PARTY_API_KEY}`,
           }
         });
 
@@ -329,7 +329,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
       res.status(429).json({ error: "Oops, not fast enough. Rate limited by X API, try again after 16 mins" });
       return;
     }
-    // console.error({ error });
+    console.error({ error });
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error checking twitter task" });
   }
 }

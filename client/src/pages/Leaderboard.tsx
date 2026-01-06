@@ -168,8 +168,8 @@ export default function Leaderboard() {
             <div className="flex justify-center items-end gap-3 sm:gap-5 relative">
               {list.length > 0 && [1, 0, 2].map((userIndex, idx) => {
                 const user = list[userIndex];
-                const name = user.username || "Anonymous";
-                const xp = user.xp;
+                const name = user?.username || "Anonymous";
+                const xp = user?.xp;
 
                 // const heights = [130, 200, 110];
                 const heights = [90, 140, 80];
@@ -329,8 +329,8 @@ export default function Leaderboard() {
           {list.length > 0 ? list.map((entry, idx) => {
             if (idx < 3) return null; // skip podium
 
-            const name = entry.username || "Anonymous";
-            const isCurrentUser = entry._id === currentUserId;
+            const name = entry?.username || "Anonymous";
+            const isCurrentUser = entry?._id === currentUserId;
             const rank = idx + 1;
 
             const accents = [
@@ -354,7 +354,7 @@ export default function Leaderboard() {
             }
 
             return (
-              <div key={entry._id} className="relative">
+              <div key={entry?._id} className="relative">
                 {isCurrentUser && <div ref={topSentinelRef} className="h-px w-full" />}
                 {/* PLACEHOLDER */}
                 {isCurrentUser && (
@@ -440,7 +440,7 @@ export default function Leaderboard() {
                     <div className="flex items-center gap-1">
                       <img src={xpIcon} alt="XP" className="w-5 h-5" />
                       <span className={`text-xl font-bold ${isCurrentUser ? "text-[#f5c542]" : accent.text}`}>
-                        {entry.xp}
+                        {entry?.xp}
                       </span>
                     </div>
                   </div>
