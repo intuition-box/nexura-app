@@ -124,9 +124,7 @@ export default function QuestEnvironment() {
         return;
       }
 
-      if (!claimedQuests.includes(miniQuest._id)) {
-        setClaimedQuests([...claimedQuests, miniQuest._id]);
-      } else {
+      if (claimedQuests.includes(miniQuest._id)) {
         toast({ title: "Already Claimed", description: "Task already completed", variant: "destructive" });
         return;
       }
