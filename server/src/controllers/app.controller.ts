@@ -304,13 +304,13 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
 
         return
       case "comment":
-        const { data: { replies } } = await axios.get(`${API_URL}/tweet/replies?tweetId=${postId}`, {
+        const { data: { tweets } } = await axios.get(`${API_URL}/tweet/replies?tweetId=${postId}`, {
           headers: {
             "X-API-Key": `${THIRD_PARTY_API_KEY}`,
           }
         });
 
-        const hasReplied = replies.some((reply: { author: { id: string } }) => reply.author.id === xId);
+        const hasReplied = tweets.some((reply: { author: { id: string } }) => reply.author.id === xId);
 
         if (!hasReplied) {
           res.status(BAD_REQUEST).json({ error: "tweet not commented on" });
