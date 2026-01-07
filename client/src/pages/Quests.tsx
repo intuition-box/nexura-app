@@ -46,6 +46,20 @@ export default function Quests() {
   const [, setLocation] = useLocation();
   const [visitedTasks, setVisitedTasks] = useState<string[]>([]);
   const [claimedTasks, setClaimedTasks] = useState<string[]>([]);
+  const [xLinks, setXLinks] = useState<Record<string, string>>({});
+
+  
+const handleSubmitXLink = async (questId: string, link: string) => {
+  if (!link) return;
+  try {
+    await apiRequestV2("POST", "/api/submit-xlink", { questId, link });
+    alert("Link submitted for verification.");
+    setXLinks(prev => ({ ...prev, [questId]: "" }));
+  } catch (err: any) {
+    alert(err.message || "Submission failed");
+  }
+};
+
 
   const { data: quests, isLoading } = useQuery<{
     oneTimeQuests: Quest[];
@@ -98,6 +112,8 @@ export default function Quests() {
   const renderQuestCard = (quest: Quest) => {
     const metadata = quest.category ? { category: quest.category } : {};
     const isActive = true;
+    
+    
 
     return (
       <Card
@@ -199,49 +215,72 @@ export default function Quests() {
 
           <div className="mt-4 space-y-3">
             {quests?.oneTimeQuests.map((quest) => {
-              const visited = visitedTasks.includes(quest._id);
-              const claimed = claimedTasks.includes(quest._id) || quest.done;
+  const visited = visitedTasks.includes(quest._id);
+  const rewardClaimed = claimedTasks.includes(quest._id);
+  const isButtonDisabled = rewardClaimed;
+  let buttonText = quest.actionLabel || "Start Task";
 
-              let buttonText = quest.actionLabel || "Start Task";
-              if (visited && !claimed) buttonText = `Claim ${quest.reward} XP`;
-              if (claimed) buttonText = "Completed";
+  if (visited && !rewardClaimed) buttonText = `Claim ${quest.reward} XP`;
+  if (rewardClaimed) buttonText = "Completed";
 
-              return (
-                <div
-                  key={quest._id}
-                  className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
-                      {claimed ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <Play className="w-4 h-4" />
-                      )}
-                    </div>
+  const showXInput = quest.category.toLowerCase().includes("x") && visited && !rewardClaimed;
 
-                    <div>
-                      <div className="text-sm font-medium">{quest.title}</div>
-                      <div className="text-xs text-white/50">
-                        {quest.reward} XP
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button
-                    disabled={claimed}
-                    onClick={() => {
-                      if (!visited) visitTask(quest);
-                      else if (visited && !claimed) claimAndAwardXp(quest);
-                    }}
-                    className={`px-5 py-2.5 rounded-full text-sm font-semibold ${claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
-                      }`}
-                  >
-                    {buttonText}
-                  </button>
-                </div>
-              );
-            })}
+  return (
+    <div key={quest._id} className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+          {rewardClaimed ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Play className="w-4 h-4" />}
+        </div>
+        <div>
+          <div className="text-sm font-medium">{quest.title}</div>
+          <div className="text-xs text-white/50">{quest.reward} XP</div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 w-full sm:w-auto">
+        <button
+          disabled={isButtonDisabled}
+          onClick={() => {
+            if (!visited) visitTask(quest);
+            else if (visited && !rewardClaimed) claimAndAwardXp(quest);
+          }}
+          className={`px-5 py-2.5 rounded-full text-sm font-semibold ${
+            isButtonDisabled ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+          }`}
+        >
+          {buttonText}
+        </button>
+
+        {showXInput && (
+          <div className="mt-2 space-y-2">
+            <input
+              type="url"
+              placeholder="Paste your X link"
+              value={xLinks[quest._id] || ""}
+              onChange={(e) =>
+                setXLinks(prev => ({ ...prev, [quest._id]: e.target.value }))
+              }
+              className="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/30"
+            />
+            <button
+              onClick={() => handleSubmitXLink(quest._id, xLinks[quest._id])}
+              disabled={!xLinks[quest._id]}
+              className="bg-yellow-600 hover:bg-yellow-700 text-black rounded-xl w-full py-2 text-sm font-semibold"
+            >
+              Submit for Verification
+            </button>
+            <p className="text-xs text-white/50">
+              Verification takes up to 24h. Problems?{" "}
+              <a href="https://discord.gg/YOUR_DISCORD" className="text-yellow-500 underline" target="_blank">
+                Discord
+              </a>
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+})}
           </div>
         </div>
 

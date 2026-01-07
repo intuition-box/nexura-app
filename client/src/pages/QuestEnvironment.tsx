@@ -12,6 +12,7 @@ type Quest = {
   text: string;
   _id: string;
   done: boolean;
+  tag: string;
   reward: string;
   link: string;
 };
@@ -48,13 +49,32 @@ export default function QuestEnvironment() {
     try { return Boolean(JSON.parse(localStorage.getItem('nexura:quest:completed') || "")[userId]); } catch (error) { return false }
   });
   const [failedQuests, setFailedQuests] = useState<string[]>([]);
-  const completedQuestsCount = miniQuests.filter(
-  (q) => q.done || claimedQuests.includes(q._id)
-).length;
+  const completedQuestsCount = miniQuests.filter((q) => q.done || claimedQuests.includes(q._id)).length;
+      const allTasksCompleted = miniQuests.length > 0 &&
+  miniQuests.every(q => q.done || claimedQuests.includes(q._id));
 
-const progressPercentage = miniQuests.length
-  ? Math.round((completedQuestsCount / miniQuests.length) * 100)
-  : 0;
+const rewardAlreadyClaimed = questCompleted; // backend truth
+const canClaimReward = allTasksCompleted && !rewardAlreadyClaimed;
+    const [showSubmission, setShowSubmission] = useState<Record<string, boolean>>({});
+    const [xLinks, setXLinks] = useState<Record<string, string>>({});
+    const handleSubmitXLink = async (questId: string, link: string) => {
+  if (!link) return;
+  try {
+    await apiRequest("POST", "/api/submit-xlink", { questId, link });
+    toast({ title: "Submitted", description: "Your link has been submitted for verification." });
+    setShowSubmission(prev => ({ ...prev, [questId]: false }));
+    setXLinks(prev => ({ ...prev, [questId]: "" }));
+  } catch (error: any) {
+    toast({ title: "Error", description: error.message, variant: "destructive" });
+  }
+};
+
+
+
+
+  const progressPercentage = miniQuests.length
+    ? Math.round((completedQuestsCount / miniQuests.length) * 100)
+    : 0;
 
   const { questId } = useParams();
   const { toast } = useToast();
@@ -72,8 +92,7 @@ const progressPercentage = miniQuests.length
 
       setCompleted(questCompleted);
       // setMiniQuestsCompleted();
-      // setMiniQuests(quests);
-      setMiniQuests(questsInitial);
+      setMiniQuests(quests);
       setTotalXP(totalXp);
       setQuestNumber(quest_no);
       setTitle(t);
@@ -114,33 +133,54 @@ const progressPercentage = miniQuests.length
     }
   }
 
-  const claimReward = async (miniQuestId: string) => {
-    try {
-      // const quest = quests[index];
+  const getId = (url: string) => {
+    return url.split("/").pop(); // return the last item in the array
+  }
 
-      // if (quest.status === "notStarted") {
-      //   // Open quest link
-      //   window.open(quest.link, "_blank");
-      //   setQuests(prev => prev.map((t, i) => i === index ? { ...t, status: "inProgress" } : t));
-      // } else if (quest.status === "inProgress") {
-      //   // Claim reward
-      //   setQuests(prev => prev.map((t, i) => i === index ? { ...t, status: "completed" } : t));
-      //   setTotalXP(prev => prev + parseInt(quest.reward));
-      // }
+  const claimReward = async (miniQuest: Quest) => {
+    try {
 
       if (!getStoredAccessToken()) {
         toast({ title: "Error", description: "You must be logged in to claim rewards.", variant: "destructive" });
         return;
       }
 
-      if (!claimedQuests.includes(miniQuestId)) {
-        setClaimedQuests([...claimedQuests, miniQuestId]);
-      } else {
+      if (claimedQuests.includes(miniQuest._id)) {
         toast({ title: "Already Claimed", description: "Task already completed", variant: "destructive" });
         return;
       }
 
-      const res = await apiRequest("POST", `/api/quest/claim-mini-quest`, { id: miniQuestId, questId });
+      const id = getId(miniQuest.link);
+
+      try {
+        if (["like", "follow", "comment", "repost"].includes(miniQuest.tag)) {
+          if (!user?.socialProfiles.x.connected) {
+            throw new Error("x not connected yet, go to profile to connect.");
+          }
+          const { success } = await apiRequestV2("POST", "/api/check-x", { id, tag: miniQuest.tag, questId: miniQuest._id, page: "quest" });
+          if (!success) {
+            // alert(`Kindly ${miniQuest.tag !== "follow" ? miniQuest.tag + " the post" : "follow the account"}`);
+            throw new Error(`Kindly ${miniQuest.tag !== "follow" ? miniQuest.tag + " the post" : "follow the account"}`);
+          }
+        } else if (["join", "message"].includes(miniQuest.tag)) {
+          if (!user?.socialProfiles.discord.connected) {
+            // toast({ title: "Error", description: "discord not connected yet, go to profile to connect", variant: "destructive" });
+            throw new Error("discord not connected yet, go to profile to connect");
+          }
+
+          const { success } = await apiRequestV2("POST", "/api/check-discord", { channelId: id, tag: miniQuest.tag });
+          if (!success) {
+            // toast({ title: "Error", description: `Kindly ${miniQuest.tag} the discord channel`, variant: "destructive"});
+            throw new Error(`Kindly ${miniQuest.tag} the discord channel`);
+          }
+        }
+      } catch (error: any) {
+        console.error(error);
+        // toast({title: "Error", description: error.message, variant: "destructive" });
+        throw new Error(error.message);
+      }
+
+      const res = await apiRequest("POST", `/api/quest/claim-mini-quest`, { id: miniQuest._id, questId });
       if (!res.ok) return;
 
       // window.location.reload();
@@ -156,150 +196,154 @@ const progressPercentage = miniQuests.length
   };
 
   const renderQuestRow = (quest: Quest, index: number) => {
-  const visited = visitedQuests.includes(quest._id);
-  const claimed = claimedQuests.includes(quest._id);
-  const failed = failedQuests.includes(quest._id);
+    const visited = visitedQuests.includes(quest._id);
+    const claimed = claimedQuests.includes(quest._id);
+    const failed = failedQuests.includes(quest._id);
 
-  let buttonText = "Start Quest";
-  if (visited) buttonText = "Claim";
-  if (claimed) buttonText = "Completed";
+    let buttonText = "Start Quest";
+    if (visited) buttonText = "Claim";
+    if (claimed) buttonText = "Completed";
+    return (
+      <div className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-3 ...">
+  <p className="font-medium text-sm md:text-base leading-snug">{quest.text}</p>
 
-  return (
-    <div
-      key={index}
-      className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition gap-3"
+  <button
+    onClick={() => {
+      if (!visited) visitQuest(quest);
+      else setShowSubmission(prev => ({ ...prev, [quest._id]: !prev[quest._id] }));
+    }}
+    className={`w-full md:w-auto px-5 py-2.5 rounded-full text-sm font-semibold ${
+      quest.done || claimedQuests.includes(quest._id)
+        ? "bg-gray-600 cursor-not-allowed"
+        : "bg-purple-700 hover:bg-purple-800"
+    }`}
+  >
+    {visited ? "Submit" : "Start Quest"}
+  </button>
+
+  {["like", "follow", "comment", "repost"].includes(quest.tag) && showSubmission[quest._id] && (
+  <div className="mt-2 space-y-2">
+    <input
+      type="url"
+      placeholder="Paste your X link"
+      value={xLinks[quest._id] || ""}
+      onChange={(e) =>
+        setXLinks(prev => ({ ...prev, [quest._id]: e.target.value }))
+      }
+      className="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/30"
+    />
+    <button
+      onClick={() => handleSubmitXLink(quest._id, xLinks[quest._id])}
+      disabled={!xLinks[quest._id]}
+      className="bg-yellow-600 hover:bg-yellow-700 text-black rounded-xl w-full py-2 text-sm font-semibold"
     >
-      {/* LEFT SIDE */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-2/3">
-        <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/10">
-          {claimed ? (
-            <CheckCircle2 className="w-4 h-4 text-green-400" />
-          ) : (
-            <Play className="w-4 h-4" />
-          )}
-        </div>
-
-        <div className="flex flex-col">
-          <a
-            href={quest.link}
-            onClick={(e) => e.preventDefault()}
-            className={`text-sm sm:text-base font-medium ${
-              claimed ? "opacity-60 pointer-events-none" : "underline hover:opacity-90"
-            }`}
-          >
-            {quest.text}
-          </a>
-          <span className="text-xs opacity-70 mt-0.5">{quest.reward}</span>
-        </div>
-      </div>
-
-      {/* ACTIONS */}
-      <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-        {failed && !claimed && (
-          <button
-            onClick={() => visitQuest(quest)}
-            className="px-3 py-2 rounded-full bg-red-600 hover:bg-red-700 flex items-center gap-1 text-sm font-semibold"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Retry
-          </button>
-        )}
-
-        <button
-          disabled={claimed}
-          onClick={() => (!visited ? visitQuest(quest) : claimReward(quest._id))}
-          className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm font-semibold ${
-            claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
-          }`}
-        >
-          {buttonText}
-        </button>
-      </div>
-    </div>
-  );
-};
+      Submit for Verification
+    </button>
+    <p className="text-xs text-white/50">
+      Verification takes up to 24h. Problems?{" "}
+      <a
+        href="https://discord.gg/YOUR_DISCORD"
+        className="text-yellow-500 underline"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Discord
+      </a>
+    </p>
+  </div>
+)}
+</div>
+    );
+  };
 
 
   return (
     <div className="min-h-screen bg-[#0a0615] text-white relative p-6">
-      <AnimatedBackground />
+  <AnimatedBackground />
 
-      <div className="max-w-4xl mx-auto relative z-10 space-y-10">
+  <div className="max-w-4xl mx-auto relative z-10 space-y-10">
 
-        {/* Banner with Progress */}
-<div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
-  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-    <div>
-      <p className="uppercase text-[0.6rem] sm:text-xs opacity-60">{title}</p>
-      <p className="text-lg sm:text-xl font-semibold">{sub_title}</p>
-    </div>
+    {/* Banner with Progress */}
+    <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <p className="uppercase text-[0.6rem] sm:text-xs opacity-60">{title}</p>
+          <p className="text-lg sm:text-xl font-semibold">{sub_title}</p>
+        </div>
 
-    <div className="flex items-center gap-2 sm:gap-3">
-      <p className="text-[0.65rem] sm:text-sm opacity-70 uppercase">Total XP</p>
-      <div className="bg-purple-600/30 border border-purple-500/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full flex items-center gap-1 sm:gap-2">
-        <span className="font-bold text-xs sm:text-sm">{totalXP} XP</span>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <p className="text-[0.65rem] sm:text-sm opacity-70 uppercase">Total XP</p>
+          <div className="bg-purple-600/30 border border-purple-500/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full flex items-center gap-1 sm:gap-2">
+            <span className="font-bold text-xs sm:text-sm">{totalXP} XP</span>
+          </div>
+        </div>
       </div>
+
+      <div className="w-full bg-white/10 h-2 sm:h-3 rounded-full overflow-hidden mt-2 sm:mt-3">
+        <div
+          className="h-2 sm:h-3 bg-purple-600 transition-all duration-500"
+          style={{ width: `${progressPercentage}%` }}
+        />
+      </div>
+      <p className="text-[0.65rem] sm:text-sm opacity-60 mt-1">{progressPercentage}% completed</p>
     </div>
-  </div>
 
-  <div className="w-full bg-white/10 h-2 sm:h-3 rounded-full overflow-hidden mt-2 sm:mt-3">
-    <div
-      className="h-2 sm:h-3 bg-purple-600 transition-all duration-500"
-      style={{ width: `${progressPercentage}%` }}
-    />
-  </div>
-  <p className="text-[0.65rem] sm:text-sm opacity-60 mt-1">{progressPercentage}% completed</p>
-</div>
+    {/* Main Quest Card */}
+    <Card className="rounded-2xl bg-white/5 border-white/10 overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300">
+      <div className="grid grid-cols-1 md:grid-cols-2">
+        <div className="h-48 md:h-full">
+          <img
+            src="/campaign.png"
+            alt="Quest"
+            className="w-full h-full object-cover"
+          />
+        </div>
 
+        <div className="p-5 md:p-6 flex flex-col justify-between">
+          <div>
+            <p className="text-xs opacity-50 uppercase mb-1">Nexura</p>
+            <p className="text-lg md:text-xl font-bold leading-tight">Quest {questNumber}:<br />{sub_title}</p>
 
-
-        {/* Main Quest Card */}
-        <Card className="rounded-2xl bg-white/5 border-white/10 overflow-hidden shadow-xl">
-          <div className="grid grid-cols-1 md:grid-cols-2">
-            <div className="h-48 md:h-full">
-              <img
-                src="/campaign.png"
-                alt="Quest"
-                className="w-full h-full object-cover"
-              />
+            <div className="mt-4">
+              <p className="uppercase text-xs opacity-50">Start Quest</p>
+              <p className="text-sm opacity-80 leading-relaxed mt-1">
+                Complete simple quests in the Nexura ecosystem and earn rewards.
+              </p>
             </div>
-
-            <div className="p-5 md:p-6 flex flex-col justify-between">
-              <div>
-                <p className="text-xs opacity-50 uppercase mb-1">Nexura</p>
-                <p className="text-lg md:text-xl font-bold leading-tight">Quest {questNumber}:<br />{sub_title}</p>
-
-                <div className="mt-4">
-                  <p className="uppercase text-xs opacity-50">Start Quest</p>
-                  <p className="text-sm opacity-80 leading-relaxed mt-1">
-                    Complete simple quests in the Nexura ecosystem and earn rewards.
-                  </p>
-                </div>
-                <div className="mt-3 space-y-1">
-                  <p className="text-xs opacity-50 uppercase">Rewards</p>
-                  <p className="text-sm">{totalXP} XP</p>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => claimQuestReward()}
-                disabled={!miniQuestsCompleted || completed || !(claimedQuests.length === miniQuests.length) || questCompleted}
-                className={`w-full font-semibold rounded-xl py-3 mt-6 
-                  ${miniQuestsCompleted || !completed || claimedQuests.length === miniQuests.length || !questCompleted
-                    ? "bg-purple-600 hover:bg-purple-700 text-white"
-                    : "bg-gray-600 cursor-not-allowed text-gray-300"
-                  }`
-                }
-              >
-                {!completed || !questCompleted ? "Claim Rewards" : "Completed"}
-              </Button>
+            <div className="mt-3 space-y-1">
+              <p className="text-xs opacity-50 uppercase">Rewards</p>
+              <p className="text-sm">{totalXP} XP</p>
             </div>
           </div>
-        </Card>
 
-        <h2 className="text-lg font-semibold opacity-90">Get {totalXP} XP</h2>
-        {miniQuests.map((quest, i) => renderQuestRow(quest, i))}
+          <Button
+            onClick={claimQuestReward}
+            disabled={!canClaimReward}
+            className={`w-full font-semibold rounded-xl py-3 mt-6 ${
+              canClaimReward
+                ? "bg-purple-600 hover:bg-purple-700 text-white"
+                : "bg-gray-600 cursor-not-allowed text-gray-300"
+            }`}
+          >
+            {rewardAlreadyClaimed ? "Completed" : "Claim Rewards"}
+          </Button>
+        </div>
       </div>
+    </Card>
+
+    {/* Mini Quest Cards - full width */}
+    <div className="space-y-4">
+      {miniQuests.map((quest, i) => (
+        <Card
+          key={i}
+          className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between shadow-md hover:shadow-xl transition-all duration-300"
+        >
+          {renderQuestRow(quest, i)}
+        </Card>
+      ))}
     </div>
+
+  </div>
+      </div>
   );
 };

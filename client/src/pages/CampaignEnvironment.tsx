@@ -56,6 +56,11 @@ export default function CampaignEnvironment() {
   const [campaignAddress, setCampaignAddress] = useState("");
 
   const [questsCompleted, setQuestsCompleted] = useState(false);
+  // Track the X/Discord link input per quest
+const [submissionLinks, setSubmissionLinks] = useState<Record<string, string>>({});
+// Track whether the submission box is visible per quest
+const [showSubmissionBox, setShowSubmissionBox] = useState<Record<string, boolean>>({});
+
 
   // Fetch campaign quests
   useEffect(() => {
@@ -95,7 +100,6 @@ export default function CampaignEnvironment() {
     localStorage.setItem("nexura:campaign:completed", JSON.stringify(completed));
   }, [campaignCompleted, userId]);
 
-
   // Open quest links
   const markQuestAsVisited = (quest: Quest) => {
     window.open(quest.link, "_blank");
@@ -109,64 +113,57 @@ export default function CampaignEnvironment() {
   }
 
   const claimQuest = async (quest: Quest) => {
-  try {
-    const id = getId(quest.link);
-
     try {
-      if (["like", "follow", "comment", "repost"].includes(quest.tag)) {
-        if (!user?.socialProfiles.x.connected) {
-          throw new Error("x not connected yet, go to profile to connect.");
-        }
-        const { success } = await apiRequestV2("POST", "/api/check-x", { id, tag: quest.tag });
-        if (!success) {
-          // alert(`Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`);
-          throw new Error(
-            `Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`
-          );
-        }
-      } else if (["join", "message"].includes(quest.tag)) {
-        if (!user?.socialProfiles.discord.connected) {
-          // toast({ title: "Error", description: "discord not connected yet, go to profile to connect", variant: "destructive" });
-          throw new Error("discord not connected yet, go to profile to connect");
+      const id = getId(quest.link);
+
+      try {
+        const id = getId(quest.link);
+        if (["like", "follow", "comment", "repost"].includes(quest.tag)) {
+          if (!user?.socialProfiles.x.connected) {
+            throw new Error("x not connected yet, go to profile to connect.");
+          }
+
+          const { success } = await apiRequestV2("POST", "/api/check-x", { id, tag: quest.tag, questId: quest._id, page: "campaign" });
+          if (!success) {
+            throw new Error(`Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`);
+          }
+        } else if (["join", "message"].includes(quest.tag)) {
+          if (!user?.socialProfiles.discord.connected) {
+            throw new Error("discord not connected yet, go to profile to connect");
+          }
+
+          const { success } = await apiRequestV2("POST", "/api/check-discord", { channelId: id, tag: quest.tag });
+          if (!success) {
+            throw new Error(`Kindly ${quest.tag} the discord channel`);
+          }
         }
 
-        const { success } = await apiRequestV2("POST", "/api/check-discord", {
-          channelId: id,
-          tag: quest.tag,
-        });
-        if (!success) {
-          // toast({ title: "Error", description: `Kindly ${quest.tag} the discord channel`, variant: "destructive"});
-          throw new Error(`Kindly ${quest.tag} the discord channel`);
-        }
+      } catch (error: any) {
+        console.error(error);
+        throw new Error(error.message);
       }
+
+      const res = await apiRequest(
+        "POST",
+        `/api/quest/perform-campaign-quest`,
+        { id: quest._id, campaignId }
+      );
+      if (!res.ok) return;
+
+      setClaimedQuests([...claimedQuests, quest._id]);
+      setFailedQuests((prev) => prev.filter((id) => id !== quest._id));
+      setQuests((prev) =>
+        prev.map((q) => (q._id === quest._id ? { ...q, done: true } : q))
+      );
     } catch (error: any) {
       console.error(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
-      throw new Error(error.message);
-    }
 
-    const res = await apiRequest(
-      "POST",
-      `/api/quest/perform-campaign-quest`,
-      { id: quest._id, campaignId }
-    );
-    if (!res.ok) return;
-
-    setClaimedQuests([...claimedQuests, quest._id]);
-    setFailedQuests((prev) => prev.filter((id) => id !== quest._id));
-    setQuests((prev) =>
-      prev.map((q) => (q._id === quest._id ? { ...q, done: true } : q))
-    );
-  } catch (error: any) {
-    console.error(error);
-    toast({ title: "Error", description: error.message, variant: "destructive" });
-
-    if (!failedQuests.includes(quest._id)) {
-      setFailedQuests((prev) => [...prev, quest._id]);
-    }
+      if (!failedQuests.includes(quest._id)) {
+        setFailedQuests((prev) => [...prev, quest._id]);
+      }
+    };
   }
-};
-
 
   // Claim campaign reward
   const claimCampaignReward = async () => {
@@ -185,6 +182,25 @@ export default function CampaignEnvironment() {
 
   const completedQuestsCount = quests.filter((q) => q.done || claimedQuests.includes(q._id)).length;
   const progressPercentage = Math.round((completedQuestsCount / quests.length) * 100);
+  const canClaimReward = questsCompleted && !campaignCompleted;
+
+  const handleSubmitQuestLink = async (quest: Quest) => {
+  const link = submissionLinks[quest._id];
+  if (!link) return;
+
+  try {
+    await apiRequest("POST", "/api/submit-campaign-quest-link", { questId: quest._id, campaignId, link });
+    toast({ title: "Submitted", description: "Your link has been submitted for verification." });
+
+    // Hide input after submission
+    setShowSubmissionBox(prev => ({ ...prev, [quest._id]: false }));
+    setSubmissionLinks(prev => ({ ...prev, [quest._id]: "" }));
+  } catch (error: any) {
+    toast({ title: "Error", description: error.message, variant: "destructive" });
+  }
+};
+
+
 
   return (
     <div className="min-h-screen bg-[#0a0615] text-white relative p-4 sm:p-6">
@@ -207,7 +223,7 @@ export default function CampaignEnvironment() {
           </div>
           <div className="w-full bg-white/10 h-2 sm:h-3 rounded-full overflow-hidden mt-2 sm:mt-3">
             <div className="h-2 sm:h-3 bg-purple-600 transition-all duration-500" style={{ width: `${progressPercentage}%` }} />
-          </div>
+          </div >
           <p className="text-[0.65rem] sm:text-sm opacity-60 mt-1">{progressPercentage}% completed</p>
         </div>
 
@@ -232,15 +248,20 @@ export default function CampaignEnvironment() {
               </div>
 
               <Button
-                onClick={claimCampaignReward}
-                disabled={!questsCompleted || campaignCompleted}
-                className={`w-full font-semibold rounded-xl py-3 mt-6 ${!campaignCompleted ? "bg-purple-600 hover:bg-purple-700 text-white" : "bg-gray-600 cursor-not-allowed text-gray-300"}`}
-              >
+  onClick={claimCampaignReward}
+  disabled={!canClaimReward}
+  className={`w-full font-semibold rounded-xl py-3 mt-6 ${
+    canClaimReward
+      ? "bg-purple-600 hover:bg-purple-700 text-white"
+      : "bg-gray-600 cursor-not-allowed text-gray-300"
+  }`}
+>
+
                 {campaignCompleted
                   ? "Completed"
-                    : questsCompleted
-                      ? "Claim Rewards"
-                      : "Complete Quests"
+                  : questsCompleted
+                    ? "Claim Rewards"
+                    : "Complete Quests"
                 }
               </Button>
             </div>
@@ -249,65 +270,77 @@ export default function CampaignEnvironment() {
 
         {/* Quest List */}
         <div className="space-y-4 sm:space-y-6">
-          {quests.length > 0 ? quests.map((quest) => {
-            const visited = visitedQuests.includes(quest._id);
-            const claimed = quest.done || claimedQuests.includes(quest._id);
-            const failed = failedQuests.includes(quest._id);
+          {quests.map((quest) => {
+  const visited = visitedQuests.includes(quest._id);
+  const claimed = quest.done || claimedQuests.includes(quest._id);
+  const failed = failedQuests.includes(quest._id);
 
-            let buttonText = "Start Quest";
+  let buttonText = "Start Quest";
+  if (visited) buttonText = "Submit";
+  if (claimed) buttonText = "Completed";
 
-            if (visited) buttonText = "Claim";
-            if (claimed) buttonText = "Completed";
-
-            return (
-              <div
-                key={quest._id}
-                className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 hover:bg-white/10 transition gap-3 sm:gap-0"
-              >
-                <div className="flex items-center gap-3 w-full sm:w-2/3">
-                  <div className="w-6 h-6 sm:w-6 sm:h-6 rounded-full flex items-center justify-center bg-white/10 text-white">
-                    {claimed ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Play className="w-4 h-4" />}
-                  </div>
-                  <a
-                    href={quest.link}
-                    onClick={(e) => {
-                      e.preventDefault();
-                    }}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`text-sm sm:text-base font-medium ${claimed ? "opacity-60 pointer-events-none" : "underline hover:opacity-90"}`}
-                  >
-                    {quest.quest}
-                  </a>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-  {failed && (
-    <button
-      onClick={() => {
-  markQuestAsVisited(quest);
-}}
-      className="px-3 py-2 rounded-full bg-red-600 hover:bg-red-700 flex items-center gap-1 text-sm font-semibold"
+  return (
+    <div
+      key={quest._id}
+      className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 hover:bg-white/10 transition gap-3 sm:gap-0"
     >
-      <RotateCcw className="w-4 h-4" />
-      Retry
-    </button>
-  )}
-
-  <button
-    disabled={claimed}
-    onClick={() => (!visited ? markQuestAsVisited(quest) : claimQuest(quest))}
-    className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold ${
-      claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
-    }`}
-  >
-    {buttonText}
-  </button>
-</div>
-              </div>
-            );
-          }) : "No quests available"}
+      <div className="flex items-center gap-3 w-full sm:w-2/3">
+        <div className="w-6 h-6 sm:w-6 sm:h-6 rounded-full flex items-center justify-center bg-white/10 text-white">
+          {claimed ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Play className="w-4 h-4" />}
         </div>
+        <span className="text-sm sm:text-base font-medium">{quest.quest}</span>
       </div>
+
+      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        {failed && (
+          <button
+            onClick={() => markQuestAsVisited(quest)}
+            className="px-3 py-2 rounded-full bg-red-600 hover:bg-red-700 flex items-center gap-1 text-sm font-semibold"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Retry
+          </button>
+        )}
+
+        <button
+          disabled={claimed}
+          onClick={() => {
+  if (!visited) markQuestAsVisited(quest);
+  else if (["like", "follow", "comment", "repost"].includes(quest.tag))
+    setShowSubmissionBox(prev => ({ ...prev, [quest._id]: true }));
+}}
+          className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold ${
+            claimed ? "bg-gray-600 cursor-not-allowed" : "bg-purple-700 hover:bg-purple-800"
+          }`}
+        >
+          {buttonText}
+        </button>
+
+        {/* Submission box */}
+        {visited && ["like", "follow", "comment", "repost"].includes(quest.tag) && showSubmissionBox[quest._id] && (
+  <div className="mt-2 flex flex-col gap-2 sm:mt-0 sm:ml-2 w-full sm:w-auto">
+    <input
+      type="url"
+      placeholder="Paste your reply link"
+      value={submissionLinks[quest._id] || ""}
+      onChange={(e) => setSubmissionLinks(prev => ({ ...prev, [quest._id]: e.target.value }))}
+      className="w-full sm:w-64 bg-black border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/30"
+    />
+    <button
+      disabled={!submissionLinks[quest._id]}
+      onClick={() => handleSubmitQuestLink(quest)}
+      className="bg-yellow-600 hover:bg-yellow-700 text-black rounded-xl w-full sm:w-auto py-2 text-sm font-semibold"
+    >
+      Submit for Verification
+    </button>
+  </div>
+)}
+      </div>
+    </div>
+  );
+})}
+      </div>
+    </div>
     </div>
   );
 }

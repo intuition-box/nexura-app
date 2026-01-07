@@ -6,17 +6,17 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { apiRequestV2 } from "@/lib/queryClient"; 
+import { apiRequestV2 } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth";
 import gold from "/nexura-gold.png";
 import silver from "/nexura-silver.png";
 import bronze from "/nexura-bronze.png";
 import xpIcon from "/nexura-xp.png";
 
 type Entry = {
-  id: string;
+  _id: string;
   username?: string;
-  display_name?: string;
-  avatar?: string;
+  profilePic?: string;
   xp: number;
   level: number;
   questsCompleted?: number;
@@ -24,44 +24,45 @@ type Entry = {
 };
 
 const MOCK_LEADERBOARD: Entry[] = [
-  { id: "1", username: "Rchris", xp: 1500, level: 10, questsCompleted: 12, campaignsCompleted: 30 },
-  { id: "2", username: "Nuel", xp: 1200, level: 8, questsCompleted: 8, campaignsCompleted: 25 },
-  { id: "3", username: "Unknown", xp: 900, level: 7, questsCompleted: 5, campaignsCompleted: 20 },
-  { id: "4", username: "Beardless", xp: 800, level: 6, questsCompleted: 4, campaignsCompleted: 15 },
-  { id: "5", username: "Promise", xp: 700, level: 5, questsCompleted: 3, campaignsCompleted: 10 },
-  { id: "6", username: "Orion", xp: 600, level: 5, questsCompleted: 3, campaignsCompleted: 9 },
-  { id: "7", username: "Shebah", xp: 500, level: 4, questsCompleted: 2, campaignsCompleted: 8 },
-  { id: "8", username: "David", xp: 400, level: 3, questsCompleted: 1, campaignsCompleted: 7 },
-  { id: "9", username: "Omotola", xp: 300, level: 2, questsCompleted: 1, campaignsCompleted: 5 },
-  { id: "10", username: "Fiyin", xp: 200, level: 1, questsCompleted: 0, campaignsCompleted: 3 },
-  { id: "11", username: "Chinedu", xp: 180, level: 1, questsCompleted: 0, campaignsCompleted: 2 },
-  { id: "12", username: "Funke", xp: 170, level: 1, questsCompleted: 0, campaignsCompleted: 2 },
-  { id: "13", username: "Tunde", xp: 160, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
-  { id: "14", username: "Ngozi", xp: 150, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
-  { id: "15", username: "Adeola", xp: 140, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
-  { id: "16", username: "Ifeanyi", xp: 130, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
-  { id: "17", username: "Aisha", xp: 120, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
-  { id: "18", username: "Segun", xp: 110, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
-  { id: "19", username: "Bolaji", xp: 100, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
-  { id: "20", username: "Kemi", xp: 90, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
+  { _id: "1", username: "Rchris", xp: 1500, level: 10, questsCompleted: 12, campaignsCompleted: 30 },
+  { _id: "2", username: "Nuel", xp: 1200, level: 8, questsCompleted: 8, campaignsCompleted: 25 },
+  { _id: "3", username: "Unknown", xp: 900, level: 7, questsCompleted: 5, campaignsCompleted: 20 },
+  { _id: "4", username: "Beardless", xp: 800, level: 6, questsCompleted: 4, campaignsCompleted: 15 },
+  { _id: "5", username: "Promise", xp: 700, level: 5, questsCompleted: 3, campaignsCompleted: 10 },
+  { _id: "6", username: "Orion", xp: 600, level: 5, questsCompleted: 3, campaignsCompleted: 9 },
+  { _id: "7", username: "Shebah", xp: 500, level: 4, questsCompleted: 2, campaignsCompleted: 8 },
+  { _id: "8", username: "David", xp: 400, level: 3, questsCompleted: 1, campaignsCompleted: 7 },
+  { _id: "9", username: "Omotola", xp: 300, level: 2, questsCompleted: 1, campaignsCompleted: 5 },
+  { _id: "10", username: "Fiyin", xp: 200, level: 1, questsCompleted: 0, campaignsCompleted: 3 },
+  { _id: "11", username: "Chinedu", xp: 180, level: 1, questsCompleted: 0, campaignsCompleted: 2 },
+  { _id: "12", username: "Funke", xp: 170, level: 1, questsCompleted: 0, campaignsCompleted: 2 },
+  { _id: "13", username: "Tunde", xp: 160, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
+  { _id: "14", username: "Ngozi", xp: 150, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
+  { _id: "15", username: "Adeola", xp: 140, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
+  { _id: "16", username: "Ifeanyi", xp: 130, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
+  { _id: "17", username: "Aisha", xp: 120, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
+  { _id: "18", username: "Segun", xp: 110, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
+  { _id: "19", username: "Bolaji", xp: 100, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
+  { _id: "20", username: "Kemi", xp: 90, level: 1, questsCompleted: 0, campaignsCompleted: 1 },
 ];
 
 export default function Leaderboard() {
   const [list, setList] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   const [cardHeight, setCardHeight] = useState<number>(0);
   const currentUserRowRef = useRef<HTMLDivElement>(null);
   const placeholderRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
-
   useEffect(() => {
     const timer = setTimeout(async () => {
       try {
         const { leaderboardInfo: { leaderboardByXp } } = await apiRequestV2("GET", "/api/leaderboard");
-        setList(leaderboardByXp ?? MOCK_LEADERBOARD);
+        setList(leaderboardByXp || MOCK_LEADERBOARD);
+        setCurrentUserId(user?._id ?? null);
       } catch (err: any) {
         setError(err.message || "Failed to load leaderboard");
       } finally {
@@ -105,12 +106,12 @@ export default function Leaderboard() {
 
         // PRIORITY FIX:
         if (topVisible && bottomVisible) {
-  setCardState("normal");
-} else if (!topVisible && bottomVisible) {
-  setCardState("stickyTop");
-} else if (!bottomVisible) {
-  setCardState("floatingBottom");
-}
+          setCardState("normal");
+        } else if (!topVisible && bottomVisible) {
+          setCardState("stickyTop");
+        } else if (!bottomVisible) {
+          setCardState("floatingBottom");
+        }
       }, { threshold: 0 }
     );
 
@@ -165,10 +166,10 @@ export default function Leaderboard() {
 
             {/* <div className="flex justify-center items-end gap-6 relative"> */}
             <div className="flex justify-center items-end gap-3 sm:gap-5 relative">
-              {[1, 0, 2].map((userIndex, idx) => {
+              {list.length > 0 && [1, 0, 2].map((userIndex, idx) => {
                 const user = list[userIndex];
-                const name = user.display_name || user.username || "Anonymous";
-                const xp = user.xp;
+                const name = user?.username || "Anonymous";
+                const xp = user?.xp;
 
                 // const heights = [130, 200, 110];
                 const heights = [90, 140, 80];
@@ -195,16 +196,15 @@ export default function Leaderboard() {
 
                 return (
                   <div
-                    key={user.id}
+                    key={user._id}
                     className="flex flex-col items-center text-center relative animate-bounce-slow"
                     style={{ animationDelay: bounceDelay }}
                   >
                     {/* Avatar */}
-                    {/* <Avatar className="w-24 h-24 -translate-y-6 ring-2 ring-white/15"> */}
                     <Avatar className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 -translate-y-4 sm:-translate-y-6 ring-2 ring-white/15">
                       <AvatarImage
                         src={
-                          user.avatar ||
+                          user?.profilePic ||
                           `https://api.dicebear.com/7.x/identicon/png?seed=${encodeURIComponent(
                             name
                           )}`
@@ -281,42 +281,43 @@ export default function Leaderboard() {
                         />
 
                         {/* Rank badge */}
-                        <g transform={`translate(${medalWidth / 2 - 18}, -14)`}>
-                          <circle
-                            cx="18"
-                            cy="18"
-                            r="18"
-                            fill={medal.color}
-                            fillOpacity="0.5"
-                            stroke="white"
-                            strokeOpacity="0.7"
-                            strokeWidth="2"
-                          />
-                          <text
-                            x="18"
-                            y="24"
-                            textAnchor="middle"
-                            fontSize="20"
-                            fontWeight="900"
-                            fill="#111"
-                          >
-                            {podiumNumber}
-                          </text>
-                        </g>
-                      </g>
+                        <g transform={`translate(${medalWidth / 2 - 24}, -20)`}>
+  <circle
+    cx="24"
+    cy="50"
+    r="24"
+    fill={medal.color}
+    fillOpacity="0.85"
+    stroke="white"
+    strokeOpacity="0.9"
+    strokeWidth="2.5"
+  />
+  <text
+    x="24"
+    y="60"
+    textAnchor="middle"
+    fontSize="24"
+    fontWeight="900"
+    fill="#111"
+  >
+    {podiumNumber}
+  </text>
+</g>
+
 
                       {/* XP */}
                       <foreignObject
-                        x={width / 2 - 40}
-                        y={height + topDepth - 28}
+                        x={width / 2 - 10}
+                        y={height + topDepth - 65}
                         width="80"
-                        height="26"
+                        height="30"
                       >
                         <div className="flex items-center justify-center gap-1 text-sm font-semibold text-white/90">
                           <img src={xpIcon} className="w-5 h-5" />
                           {xp}
                         </div>
                       </foreignObject>
+                    </g>
                     </svg>
                   </div>
                 );
@@ -326,11 +327,11 @@ export default function Leaderboard() {
         )}
 
         <div className="space-y-3 relative">
-          {list.map((entry, idx) => {
+          {list.length > 0 ? list.map((entry, idx) => {
             if (idx < 3) return null; // skip podium
 
-            const name = entry.display_name || entry.username || "Anonymous";
-            const isCurrentUser = entry.id === currentUserId;
+            const name = entry?.username || "Anonymous";
+            const isCurrentUser = entry?._id === currentUserId;
             const rank = idx + 1;
 
             const accents = [
@@ -354,7 +355,7 @@ export default function Leaderboard() {
             }
 
             return (
-              <div key={entry.id} className="relative">
+              <div key={entry?._id} className="relative">
                 {isCurrentUser && <div ref={topSentinelRef} className="h-px w-full" />}
                 {/* PLACEHOLDER */}
                 {isCurrentUser && (
@@ -412,8 +413,8 @@ export default function Leaderboard() {
 
                       {/* Avatar */}
                       <Avatar className="w-12 h-12">
-                        {entry.avatar ? (
-                          <AvatarImage src={entry.avatar} />
+                        {entry?.profilePic ? (
+                          <AvatarImage src={entry?.profilePic} />
                         ) : (
                           <AvatarFallback className="bg-white/10 text-white">{name.charAt(0)}</AvatarFallback>
                         )}
@@ -440,14 +441,14 @@ export default function Leaderboard() {
                     <div className="flex items-center gap-1">
                       <img src={xpIcon} alt="XP" className="w-5 h-5" />
                       <span className={`text-xl font-bold ${isCurrentUser ? "text-[#f5c542]" : accent.text}`}>
-                        {entry.xp}
+                        {entry?.xp}
                       </span>
                     </div>
                   </div>
                 </Card>
               </div>
             );
-          })}
+          }) : "No one on the leaderboard"}
         </div>
       </div>
     </div>
