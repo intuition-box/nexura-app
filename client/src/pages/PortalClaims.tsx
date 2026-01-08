@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { buyShares, sellShares } from "@/services/web3"; // your web3 functions
+import { buyShares, sellShares } from "../services/web3"; // your web3 functions
 
 interface Claim {
   id: string;

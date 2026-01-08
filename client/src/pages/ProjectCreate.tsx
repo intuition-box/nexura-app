@@ -4,7 +4,7 @@ import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Button } from "../components/ui/button";
 import { createProject } from "../lib/remoteDb";
-import { ProjectSchema } from "@/schemas/project.schema";
+import { ProjectSchema } from "../schemas/project.schema";
 import { useWallet } from "../hooks/use-wallet";
 import { uploadFile } from "../lib/upload";
 

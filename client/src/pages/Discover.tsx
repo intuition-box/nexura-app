@@ -12,18 +12,18 @@ import CampaignCard from "../components/CampaignCard";
 import AnimatedBackground from "../components/AnimatedBackground";
 
 // Import user avatar images for trending claims
-import avatar1 from "/claim1.jpg";
-import avatar2 from "/claim2.jpg";
-import avatar3 from "/claim3.jpg";
-import avatar4 from "/claim4.jpg";
-import avatar5 from "/claim5.jpg";
-import avatar6 from "/claim6.jpg";
+// import avatar1 from "/claim1.jpg";
+// import avatar2 from "/claim2.jpg";
+// import avatar3 from "/claim3.jpg";
+// import avatar4 from "/claim4.jpg";
+// import avatar5 from "/claim5.jpg";
+// import avatar6 from "/claim6.jpg";
 
-import intuitionPortal from "@assets/intuitionPortal.jpg";
-import intuitionBets from "@assets/intuitionBets.jpg";
-import intuRank from "@assets/intuRank.jpg";
-import tribeMeme from "@assets/tribeMeme.jpg";
-import tnsLogo from "@assets/tnsLogo.jpg";
+const intuitionPortal = require("../../attached_assets/intuitionPortal.jpg");
+const intuitionBets = require("../../attached_assets/intuitionBets.jpg");
+const intuRank = require("../../attached_assets/intuRank.jpg");
+const tribeMeme = require("../../attached_assets/tribeMeme.jpg");
+const tnsLogo = require("../../attached_assets/tnsLogo.jpg");
 
 export default function Discover() {
   const [activeTab, setActiveTab] = useState("all");

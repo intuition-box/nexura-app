@@ -4,6 +4,7 @@ import {
   parseEther,
   pad,
 } from "viem";
+import chain from "../lib/chain";
 
 export const CHAIN_ID = 1155;
 export const RPC_URL = "https://rpc.intuition.systems/http";
@@ -77,6 +78,7 @@ export const buyShares = async (amountETH: string, agentId: string) => {
       1n, // Curve ID
       0n, // Min shares (slippage)
     ],
+    chain,
     value: parseEther(amountETH),
     gas: 400000n,
   });
@@ -100,6 +102,7 @@ export const sellShares = async (sharesAmount: string, agentId: string) => {
       parseEther(sharesAmount),
       0n, // Min assets (slippage)
     ],
+    chain,
     gas: 400000n,
   });
 

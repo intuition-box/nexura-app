@@ -9,7 +9,7 @@ import { Progress } from "../components/ui/progress";
 import { useAuth } from "../lib/auth";
 import { url } from "../lib/constants";
 import { claimReferralReward } from "../lib/performOnchainAction";
-import { InviteIcon, RegisterIcon, EarnIcon, UsersIcon, ActiveIcon, TrustIcon } from "@/svgs/icons";
+import { InviteIcon, RegisterIcon, EarnIcon, UsersIcon, ActiveIcon, TrustIcon } from "../svgs/icons";
 
 type Referral = {
   username: string;

@@ -34,6 +34,8 @@ interface Quest {
 const TASKS_CARD: Quest = {
   _id: "tasks-card",
   title: "Start Tasks",
+  done: false,
+  sub_title: "Complete tasks to earn XP and unlock new features",
   description: "Complete unique tasks in the Nexura ecosystem and earn rewards",
   project_name: "Intuition Ecosystem",
   reward: "500 XP",

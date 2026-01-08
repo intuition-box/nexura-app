@@ -18,12 +18,12 @@ type Quest = {
 };
 
 const questsInitial: Quest[] = [
-  { done: false, _id: "id-like", text: "Like this Nexura tweet", reward: "40 XP", link: "#" },
-  { done: false, _id: "id-comment", text: "Comment on this Nexura tweet", reward: "40 XP", link: "#" },
-  { done: false, _id: "id-repost", text: "Repost this Nexura tweet", reward: "40 XP", link: "#" },
-  { done: false, _id: "id-tribe", text: "Support or Oppose the #Tribe Claim on Intuition Portal", reward: "100 XP", link: "#" },
-  { done: false, _id: "id-tns", text: "Support or Oppose the TNS Claim on Intuition Portal", reward: "140 XP", link: "#" },
-  { done: false, _id: "id-sofia", text: "Support or Oppose the Sofia Claim on Intuition Portal", reward: "140 XP", link: "#" },
+  { done: false, tag: "", _id: "id-like", text: "Like this Nexura tweet", reward: "40 XP", link: "#" },
+  { done: false, tag: "", _id: "id-comment", text: "Comment on this Nexura tweet", reward: "40 XP", link: "#" },
+  { done: false, tag: "", _id: "id-repost", text: "Repost this Nexura tweet", reward: "40 XP", link: "#" },
+  { done: false, tag: "", _id: "id-tribe", text: "Support or Oppose the #Tribe Claim on Intuition Portal", reward: "100 XP", link: "#" },
+  { done: false, tag: "", _id: "id-tns", text: "Support or Oppose the TNS Claim on Intuition Portal", reward: "140 XP", link: "#" },
+  { done: false, tag: "", _id: "id-sofia", text: "Support or Oppose the Sofia Claim on Intuition Portal", reward: "140 XP", link: "#" },
 ];
 
 

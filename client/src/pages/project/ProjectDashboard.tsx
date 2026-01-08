@@ -1,14 +1,14 @@
 import React from "react";
 import { Route, Switch } from "wouter";
-import ProjectOverview from "@/pages/project/ProjectOverview";
-import ProjectTasks from "@/pages/project/ProjectTasks";
-import ProjectAnalytics from "@/pages/project/ProjectAnalytics";
-import ProjectSettings from "@/pages/project/ProjectSettings";
-import ProjectLeaderboard from "@/pages/project/ProjectLeaderboard";
-import ProjectCollabs from "@/pages/project/ProjectCollabs";
+import ProjectOverview from "./ProjectOverview";
+import ProjectTasks from "./ProjectTasks";
+import ProjectAnalytics from "./ProjectAnalytics";
+import ProjectSettings from "./ProjectSettings";
+import ProjectLeaderboard from "./ProjectLeaderboard";
+import ProjectCollabs from "./ProjectCollabs";
 import ProjectNav from "../../components/ProjectNav";
 import { useLocation } from "wouter";
-import ProjectCreateCampaign from "@/pages/project/ProjectCreateCampaign";
+import ProjectCreateCampaign from "./ProjectCreateCampaign";
 
 export default function ProjectDashboard({ params }: any) {
   const base = `/project/${params.projectId}`;

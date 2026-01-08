@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { buildUrl } from "../../queryClient";
+import { buildUrl } from "../../lib/queryClient";
 
 export default function ProjectOverview({ params }: any) {
   const [project, setProject] = useState<any>(null);

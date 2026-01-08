@@ -8,10 +8,6 @@ import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
 import { apiRequestV2 } from "../lib/queryClient";
 import { useAuth } from "../lib/auth";
-import gold from "/nexura-gold.png";
-import silver from "/nexura-silver.png";
-import bronze from "/nexura-bronze.png";
-import xpIcon from "/nexura-xp.png";
 
 type Entry = {
   _id: string;
@@ -136,7 +132,7 @@ export default function Leaderboard() {
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           {/* Left side: icon + title */}
           <div className="flex items-center gap-3">
-            <img src={gold} alt="Leaderboard" className="w-10 h-10" />
+            <img src="/nexura-gold.png" alt="Leaderboard" className="w-10 h-10" />
             <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold">Leaderboard</h1>
           </div>
 
@@ -182,9 +178,9 @@ export default function Leaderboard() {
                 const podiumNumber = podiumNumbers[idx];
 
                 const medals = [
-                  { img: silver, color: "#cfcfcf" },
-                  { img: gold, color: "#f5c542" },
-                  { img: bronze, color: "#cd7f32" },
+                  { img: "/nexura-silver.png", color: "#cfcfcf" },
+                  { img: "/nexura-gold.png", color: "#f5c542" },
+                  { img: "/nexura-bronze.png", color: "#cd7f32" },
                 ];
                 const medal = medals[idx];
 
@@ -313,7 +309,7 @@ export default function Leaderboard() {
                         height="26"
                       >
                         <div className="flex items-center justify-center gap-1 text-sm font-semibold text-white/90">
-                          <img src={xpIcon} className="w-5 h-5" />
+                          <img src="/nexura-xp.png" className="w-5 h-5" />
                           {xp}
                         </div>
                       </foreignObject>
@@ -438,7 +434,7 @@ export default function Leaderboard() {
                     </div>
                     {/* XP */}
                     <div className="flex items-center gap-1">
-                      <img src={xpIcon} alt="XP" className="w-5 h-5" />
+                      <img src="/nexura-xp.png" alt="XP" className="w-5 h-5" />
                       <span className={`text-xl font-bold ${isCurrentUser ? "text-[#f5c542]" : accent.text}`}>
                         {entry?.xp}
                       </span>
