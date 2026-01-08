@@ -1,4 +1,4 @@
-import ProjectCreate from "@/pages/ProjectCreate";
+import ProjectCreate from "../ProjectCreate";
 import StudioLayout from "./StudioLayout";
 
 // Studio registration page: show a large centered hero and then the create form.

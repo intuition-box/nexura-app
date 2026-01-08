@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Card } from "../components/ui/card";
 import { ExternalLink, Clock, Users } from "lucide-react";
 import { useLocation } from "wouter";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import { apiRequestV2 } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import AnimatedBackground from "../components/AnimatedBackground";
+import { apiRequestV2 } from "../lib/queryClient";
+import { useToast } from "../hooks/use-toast";
 
 interface Campaign {
   _id: string;
@@ -203,10 +203,10 @@ export default function Campaigns() {
 
           <Button
             className={`w-full mt-2 sm:mt-3 py-2.5 sm:py-3 text-sm sm:text-base font-medium rounded-xl ${loadingCampaign === campaign._id
-                ? "bg-gray-600 cursor-not-allowed text-gray-300"
-                : isActive
-                  ? "bg-[#1f6feb] hover:bg-[#388bfd] text-white"
-                  : "bg-gray-600 cursor-not-allowed text-gray-300"
+              ? "bg-gray-600 cursor-not-allowed text-gray-300"
+              : isActive
+                ? "bg-[#1f6feb] hover:bg-[#388bfd] text-white"
+                : "bg-gray-600 cursor-not-allowed text-gray-300"
               }`}
             onClick={(e) => {
               e.stopPropagation();

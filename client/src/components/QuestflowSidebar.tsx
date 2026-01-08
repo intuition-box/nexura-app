@@ -1,20 +1,20 @@
-import { 
-  Sidebar, 
+import {
+  Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton
-} from "@/components/ui/sidebar";
-import { 
-  BookOpen, 
-  Compass, 
-  Users, 
+} from "./ui/sidebar";
+import {
+  BookOpen,
+  Compass,
+  Users,
   Trophy,
-  Zap, 
-  Calendar, 
-  Target, 
+  Zap,
+  Calendar,
+  Target,
   Orbit,
 } from "lucide-react";
 import React from "react";
@@ -67,7 +67,7 @@ export default function NexuraSidebar() {
                 const isActive = location === item.href || (item.href === "/" && (location === "/" || location === "/discover"));
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       asChild
                       isActive={isActive}
                       className={isActive ? item.activeClass : ""}

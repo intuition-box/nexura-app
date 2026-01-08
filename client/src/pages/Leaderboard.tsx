@@ -2,12 +2,12 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { apiRequestV2 } from "@/lib/queryClient";
-import { useAuth } from "@/lib/auth";
+import AnimatedBackground from "../components/AnimatedBackground";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { Badge } from "../components/ui/badge";
+import { Card } from "../components/ui/card";
+import { apiRequestV2 } from "../lib/queryClient";
+import { useAuth } from "../lib/auth";
 import gold from "/nexura-gold.png";
 import silver from "/nexura-silver.png";
 import bronze from "/nexura-bronze.png";

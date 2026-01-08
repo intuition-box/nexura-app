@@ -1,25 +1,25 @@
 // FULL UPDATED PROFILE CODE WITH SINGLE-MINT PER LEVEL + ONLY WHEN COMPLETED
 
 import { useMemo, useState, useEffect } from "react";
-import { useWallet } from "@/hooks/use-wallet";
-import { Button } from "@/components/ui/button";
+import { useWallet } from "../hooks/use-wallet";
+import { Button } from "../components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+} from "../components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { Badge } from "../components/ui/badge";
 import { Edit2, Calendar } from "lucide-react";
 import { Link } from "wouter";
-import { useAuth } from "@/lib/auth";
-import { Progress } from "@/components/ui/progress";
-import { emitSessionChange } from "@/lib/session";
-import { apiRequestV2 } from "@/lib/queryClient";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import { useAuth } from "../lib/auth";
+import { Progress } from "../components/ui/progress";
+import { emitSessionChange } from "../lib/session";
+import { apiRequestV2 } from "../lib/queryClient";
+import AnimatedBackground from "../components/AnimatedBackground";
 import { FaTwitter, FaDiscord } from "react-icons/fa";
 
 // Level images (10 levels)

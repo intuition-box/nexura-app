@@ -1,6 +1,6 @@
 import QuestCard from '../QuestCard';
-import questHero from '@assets/generated_images/Web3_quest_hero_image_9eff8349.png';
-import siteLogo from '@assets/logo.png';
+const questHero = require("../../../attached_assets/generated_images/Web3_quest_hero_image_9eff8349.png");
+const siteLogo = require("../../../attached_assets/logo.png");
 
 export default function QuestCardExample() {
   return (
@@ -8,7 +8,7 @@ export default function QuestCardExample() {
       <QuestCard
         title="Introduction to Kinetiq"
         projectName="Kinetiq"
-  projectLogo={siteLogo}
+        projectLogo={siteLogo}
         heroImage={questHero}
         participants={1100}
         tags={["New"]}
@@ -16,7 +16,7 @@ export default function QuestCardExample() {
       <QuestCard
         title="DeFi Staking on Avalanche"
         projectName="LFJ"
-  projectLogo={siteLogo}
+        projectLogo={siteLogo}
         heroImage={questHero}
         participants={5600}
         isLocked={true}
@@ -26,7 +26,7 @@ export default function QuestCardExample() {
         title="Syndicate: Mainnet"
         description="Learn about Syndicate's mainnet deployment and complete onchain actions"
         projectName="Syndicate"
-  projectLogo={siteLogo}
+        projectLogo={siteLogo}
         heroImage={questHero}
         participants={1100}
         rewards="500 SYNDI"

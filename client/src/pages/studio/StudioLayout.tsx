@@ -1,5 +1,6 @@
 import React from "react";
-import siteLogo from "@assets/logo.png";
+// @ts-ignore - asset module types for PNG may not be declared
+const siteLogo = require("../../../attached_assets/logo.png");
 import { Link } from "wouter";
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {

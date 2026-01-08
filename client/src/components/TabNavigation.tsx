@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import { useState } from "react";
 
 interface TabNavigationProps {
@@ -7,7 +7,7 @@ interface TabNavigationProps {
 
 export default function TabNavigation({ onTabChange }: TabNavigationProps) {
   const [activeTab, setActiveTab] = useState("all");
-  
+
   const tabs = [
     { id: "all", label: "All" },
     { id: "new", label: "New" },

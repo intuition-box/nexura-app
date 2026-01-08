@@ -1,11 +1,11 @@
-import { WalletSchema, Wallet } from "@/schemas/wallet.schema";
-import { ProjectSchema, Project } from "@/schemas/project.schema";
-import { UserSchema, type User } from "@/schemas/user.schema";
-import { buildUrl } from "@/lib/queryClient";
+import { WalletSchema, Wallet } from "../schemas/wallet.schema";
+import { ProjectSchema, Project } from "../schemas/project.schema";
+import { UserSchema, type User } from "../schemas/user.schema";
+import { buildUrl } from "./queryClient";
 
 // Prefer configured remote backends, otherwise use the local server endpoints.
-const WALLETS_BASE = import.meta.env.VITE_WALLETS_API_URL || "";
-const PROJECTS_BASE = import.meta.env.VITE_PROJECTS_API_URL || "";
+const WALLETS_BASE = (import.meta as any).env?.VITE_WALLETS_API_URL || "";
+const PROJECTS_BASE = (import.meta as any).env?.VITE_PROJECTS_API_URL || "";
 
 
 async function safeFetch(url: string, opts: any) {
@@ -64,14 +64,14 @@ export async function requestChallenge(address: string) {
   }
 
   // Local server
-    try {
-      return await safeFetch(`/challenge?address=${encodeURIComponent(address)}`, { method: "GET" });
-    } catch (e) {
-      return await safeFetch(`/challenge`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
-      });
+  try {
+    return await safeFetch(`/challenge?address=${encodeURIComponent(address)}`, { method: "GET" });
+  } catch (e) {
+    return await safeFetch(`/challenge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address }),
+    });
   }
 }
 
@@ -110,7 +110,7 @@ export async function createProject(payload: Project) {
   // Prefer configured projects backend (Supabase or separate service). If
   // not configured, fall back to the local server API at /projects.
   if (PROJECTS_BASE) {
-    return safeFetch(`${PROJECTS_BASE.replace(/\/$/,"")}/projects`, {
+    return safeFetch(`${PROJECTS_BASE.replace(/\/$/, "")}/projects`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(parsed),
@@ -149,7 +149,7 @@ export async function createProjectAccount(payload: any) {
 
 export async function createCampaign(projectId: string, campaign: any) {
   if (!PROJECTS_BASE) throw new Error("VITE_PROJECTS_API_URL not configured");
-  return safeFetch(`${PROJECTS_BASE.replace(/\/$/,"")}/projects/${projectId}/campaigns`, {
+  return safeFetch(`${PROJECTS_BASE.replace(/\/$/, "")}/projects/${projectId}/campaigns`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(campaign),
@@ -158,7 +158,7 @@ export async function createCampaign(projectId: string, campaign: any) {
 
 export async function createQuest(projectId: string, quest: any) {
   if (!PROJECTS_BASE) throw new Error("VITE_PROJECTS_API_URL not configured");
-  return safeFetch(`${PROJECTS_BASE.replace(/\/$/,"")}/projects/${projectId}/quests`, {
+  return safeFetch(`${PROJECTS_BASE.replace(/\/$/, "")}/projects/${projectId}/quests`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(quest),

@@ -1,5 +1,6 @@
 import cryptoRandomString from "crypto-random-string";
 import { apiRequestV2 } from "./queryClient";
+import { VITE_X_CLIENT_ID } from "./constants";
 
 function base64url(buffer: Uint8Array) {
   return btoa(String.fromCharCode(...buffer))
@@ -30,5 +31,5 @@ export const getAuthUrl = async () => {
 
   await apiRequestV2("GET", `/api/save-cv?codeVerifier=${codeVerifier}&state=${state}`);
 
-  return `https://x.com/i/oauth2/authorize?response_type=code&client_id=${import.meta.env.VITE_X_CLIENT_ID}&redirect_uri=https%3A%2F%2Fnexura-app.onrender.com%2Fapi%2Fauth%2Fx%2Fcallback&scope=like.read%20users.read%20offline.access%20tweet.read%20follows.read&state=${state}&code_challenge=${CODE_CHALLENGE}&code_challenge_method=S256`;
+  return `https://x.com/i/oauth2/authorize?response_type=code&client_id=${VITE_X_CLIENT_ID}&redirect_uri=https%3A%2F%2Fnexura-app.onrender.com%2Fapi%2Fauth%2Fx%2Fcallback&scope=like.read%20users.read%20offline.access%20tweet.read%20follows.read&state=${state}&code_challenge=${CODE_CHALLENGE}&code_challenge_method=S256`;
 };

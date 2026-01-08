@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Card } from "../components/ui/card";
 import { Play, CheckCircle2, Clock, ExternalLink } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import { apiRequestV2, getStoredAccessToken } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/lib/auth";
+import AnimatedBackground from "../components/AnimatedBackground";
+import { apiRequestV2, getStoredAccessToken } from "../lib/queryClient";
+import { useToast } from "../hooks/use-toast";
+import { useAuth } from "../lib/auth";
 
 interface Quest {
   _id: string;
@@ -110,7 +110,7 @@ export default function Quests() {
 
   const claimAndAwardXp = async (quest: Quest) => {
     if (!getStoredAccessToken()) {
-      toast({ title: "Error", description: "You must be logged in to claim rewards.", variant: "destructive"});
+      toast({ title: "Error", description: "You must be logged in to claim rewards.", variant: "destructive" });
       return;
     }
 

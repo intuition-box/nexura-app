@@ -1,4 +1,4 @@
-import { buildUrl } from "@/lib/queryClient";
+import { buildUrl } from "./queryClient";
 
 export async function uploadFile(file: File, folder = "images") {
   try {

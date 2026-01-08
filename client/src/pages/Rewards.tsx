@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Progress } from "../components/ui/progress";
 import { Gift, TrendingUp, Zap } from "lucide-react";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 export default function Rewards() {
   const [userEarnings] = useState({
     staking: "0",
-    incentives: "0", 
+    incentives: "0",
     campaigns: "0",
     liquid: "0"
   });
@@ -58,7 +58,7 @@ export default function Rewards() {
               <div className="text-2xl font-bold text-white">Coming Soon</div>
             </CardContent>
           </Card>
-          
+
           <Card className="glass glass-hover rounded-3xl" data-testid="card-campaigns">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-bold text-white">Campaigns</CardTitle>
@@ -89,13 +89,12 @@ export default function Rewards() {
           <div className="space-y-3 mb-6">
             <div className="text-sm font-bold text-white mb-3">Quest Earning Rate</div>
             {rewardTiers.map((tier, index) => (
-              <div 
-                key={index} 
-                className={`flex items-center justify-between p-3 rounded-lg border ${
-                  userStats.liquidRewardRate === tier.rate 
-                    ? 'bg-primary/10 border-primary' 
+              <div
+                key={index}
+                className={`flex items-center justify-between p-3 rounded-lg border ${userStats.liquidRewardRate === tier.rate
+                    ? 'bg-primary/10 border-primary'
                     : 'bg-muted/20 border-border'
-                }`}
+                  }`}
                 data-testid={`reward-tier-${tier.rate}`}
               >
                 <div className="flex items-center space-x-3">
@@ -148,8 +147,8 @@ export default function Rewards() {
                   <span className="text-white/60">Next Tier</span>
                   <span className="text-white">47 / 50 quests</span>
                 </div>
-                <Progress 
-                  value={(47 / 50) * 100} 
+                <Progress
+                  value={(47 / 50) * 100}
                   className="h-2"
                 />
               </div>

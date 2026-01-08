@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import userAvatar from "@assets/generated_images/User_avatar_Web3_0f8d9459.png";
-import siteLogo from "@assets/logo.png";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
+const userAvatar = require("../../../attached_assets/generated_images/User_avatar_Web3_0f8d9459.png");
+const siteLogo = require("../../../attached_assets/logo.png");
 
 export default function HeroSection() {
   return (
@@ -9,7 +9,7 @@ export default function HeroSection() {
       <div className="max-w-7xl mx-auto">
         {/* Main Hero */}
         <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 leading-tight" data-testid="hero-title">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 leading-tight" data-testid="hero-title">
             Build. Learn. Earn.
           </h1>
           <p className="text-lg md:text-2xl text-accent-foreground/80 mb-8 max-w-2xl mx-auto" data-testid="hero-subtitle">
@@ -27,7 +27,7 @@ export default function HeroSection() {
               <Button size="lg" variant="ghost" className="btn-float" data-testid="button-levels-hero">Levels</Button>
             </a>
           </div>
-          
+
           <div className="max-w-4xl mx-auto mt-6">
             <div className="rounded-2xl p-6 bg-gradient-to-r from-white/3 to-white/2 border border-white/6 backdrop-blur-sm shadow-xl">
               <div className="flex items-center gap-4">
@@ -47,7 +47,7 @@ export default function HeroSection() {
         {/* Featured Quest Card */}
         <Card className="max-w-2xl mx-auto p-8 bg-card/50 backdrop-blur-sm border-card-border hover-elevate" data-testid="featured-quest-card">
           <div className="flex items-start space-x-4">
-                <img src={siteLogo} alt="Nexura" className="w-16 h-16" />
+            <img src={siteLogo} alt="Nexura" className="w-16 h-16" />
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
                 <span className="bg-accent/20 text-accent px-2 py-1 rounded text-sm font-medium">
@@ -58,7 +58,7 @@ export default function HeroSection() {
               <p className="text-muted-foreground mb-4">
                 Learn crypto through curated lessons at your own pace, and mint CUBEs as your proof of progress at no cost.
               </p>
-              
+
               <div className="flex items-center space-x-4">
                 <div className="flex -space-x-2">
                   {[...Array(3)].map((_, i) => (

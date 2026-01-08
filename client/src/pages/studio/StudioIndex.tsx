@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../components/ui/button";
 import StudioLayout from "./StudioLayout";
 
 export default function StudioIndex() {

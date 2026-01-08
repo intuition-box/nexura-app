@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiRequestV2 } from "@/lib/queryClient";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/lib/auth";
-import { url } from "@/lib/constants";
-import { claimReferralReward } from "@/lib/performOnchainAction";
+import { apiRequestV2 } from "../lib/queryClient";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Avatar, AvatarFallback } from "../components/ui/avatar";
+import { Progress } from "../components/ui/progress";
+import { useAuth } from "../lib/auth";
+import { url } from "../lib/constants";
+import { claimReferralReward } from "../lib/performOnchainAction";
 import { InviteIcon, RegisterIcon, EarnIcon, UsersIcon, ActiveIcon, TrustIcon } from "@/svgs/icons";
 
 type Referral = {
@@ -171,8 +171,8 @@ export default function ReferralsPage() {
                 </div>
                 <span className="opacity-60">{dateJoined}</span>
                 <span className={`px-3 py-1 text-xs rounded-full ${status === "Active"
-                    ? "bg-green-500/15 text-green-400 border border-green-500/30"
-                    : "opacity-40 border border-white/10"
+                  ? "bg-green-500/15 text-green-400 border border-green-500/30"
+                  : "opacity-40 border border-white/10"
                   }`}>
                   {status}
                 </span>

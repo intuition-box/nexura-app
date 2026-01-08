@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useAuth } from "@/lib/auth";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { useAuth } from "../lib/auth";
 
 export default function LoginDialog({ onClose }: { onClose?: () => void }) {
 	const { signUp } = useAuth();

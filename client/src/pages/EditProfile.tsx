@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/lib/auth";
-import { uploadFile } from "@/lib/upload";
-import { getSessionToken, emitSessionChange } from "@/lib/session";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { useAuth } from "../lib/auth";
+import { uploadFile } from "../lib/upload";
+import { getSessionToken, emitSessionChange } from "../lib/session";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Separator } from "../components/ui/separator";
 import { ArrowLeft, Save, Upload, X, Camera } from "lucide-react";
 import { FaDiscord, FaTwitter } from "react-icons/fa";
 import { Link, useLocation } from "wouter";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequestV2 } from "@/lib/queryClient";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import { discordAuthUrl } from "@/lib/constants";
-import { getAuthUrl } from "@/lib/generateXAuthUrl";
+import { useToast } from "../hooks/use-toast";
+import { apiRequestV2 } from "../lib/queryClient";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import AnimatedBackground from "../components/AnimatedBackground";
+import { discordAuthUrl } from "../lib/constants";
+import { getAuthUrl } from "../lib/generateXAuthUrl";
 
 export default function EditProfile() {
   const [, setLocation] = useLocation();
@@ -24,7 +24,7 @@ export default function EditProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  
+
   const [profileData, setProfileData] = useState({
     displayName: user?.displayName || user?.username || "User",
     socialProfiles: {
@@ -51,41 +51,41 @@ export default function EditProfile() {
   const handleSave = async () => {
     try {
 
-    let updateUser: FormData | Record<string, unknown>;
-    console.log({profileData})
+      let updateUser: FormData | Record<string, unknown>;
+      console.log({ profileData })
 
-    if (profileData.avatar instanceof File) {
-      const formData = new FormData();
+      if (profileData.avatar instanceof File) {
+        const formData = new FormData();
 
-      formData.append("username", profileData.displayName);
-      formData.append("profilePic", profileData.avatar);
-      formData.append("socialProfiles", JSON.stringify(profileData.socialProfiles))
+        formData.append("username", profileData.displayName);
+        formData.append("profilePic", profileData.avatar);
+        formData.append("socialProfiles", JSON.stringify(profileData.socialProfiles))
 
-      updateUser = formData;
-    } else {
-      updateUser = {
-        username: profileData.displayName,
-        // avatar: profileData.avatar,
-        socialProfiles: profileData.socialProfiles,
-      };
+        updateUser = formData;
+      } else {
+        updateUser = {
+          username: profileData.displayName,
+          // avatar: profileData.avatar,
+          socialProfiles: profileData.socialProfiles,
+        };
+      }
+
+      // Send update to backend
+      await apiRequestV2('PATCH', '/api/user/update', updateUser);
+
+      // Show toast and navigate
+      toast({ title: "Profile updated", description: "Your profile has been successfully updated." });
+      setLocation("/profile");
+      window.location.reload();
+    } catch (e: any) {
+      console.error('Profile update error:', e);
+      toast({ title: "Update failed", description: e.message, variant: "destructive" });
     }
-
-    // Send update to backend
-    await apiRequestV2('PATCH', '/api/user/update', updateUser);
-
-    // Show toast and navigate
-    toast({ title: "Profile updated", description: "Your profile has been successfully updated." });
-    setLocation("/profile");
-    window.location.reload();
-  } catch (e: any) {
-    console.error('Profile update error:', e);
-    toast({ title: "Update failed", description: e.message, variant: "destructive" });
-  }
-};
+  };
 
   const handleFileSelect = (file: File | null) => {
     if (!file) return;
-    
+
     if (!file.type.startsWith('image/')) {
       toast({ title: "Invalid file", description: "Please select an image file", variant: "destructive" });
       return;
@@ -119,7 +119,7 @@ export default function EditProfile() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const file = e.dataTransfer.files[0];
     handleFileSelect(file);
   };
@@ -195,13 +195,13 @@ export default function EditProfile() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="displayName">Display Name</Label>
-                <Input
-                  id="displayName"
-                  value={profileData.displayName}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
-                  data-testid="input-display-name"
-                />
+              <Label htmlFor="displayName">Display Name</Label>
+              <Input
+                id="displayName"
+                value={profileData.displayName}
+                onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
+                data-testid="input-display-name"
+              />
             </div>
 
             <Separator className="my-6" />
@@ -209,7 +209,7 @@ export default function EditProfile() {
             {/* Avatar Upload Section */}
             <div className="space-y-3">
               <Label>Profile Picture</Label>
-              
+
               <div className="flex items-start gap-6">
                 {/* Current Avatar Preview */}
                 <div className="relative">
@@ -238,8 +238,8 @@ export default function EditProfile() {
                     onDrop={handleDrop}
                     className={`
                       relative border-2 border-dashed rounded-lg p-6 transition-all cursor-pointer
-                      ${isDragging 
-                        ? 'border-primary bg-primary/5 scale-[1.02]' 
+                      ${isDragging
+                        ? 'border-primary bg-primary/5 scale-[1.02]'
                         : 'border-border hover:border-primary/50 hover:bg-accent/50'
                       }
                     `}
@@ -252,7 +252,7 @@ export default function EditProfile() {
                       onChange={handleFileInputChange}
                       className="hidden"
                     />
-                    
+
                     <div className="flex flex-col items-center justify-center text-center space-y-2">
                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                         <Camera className="w-6 h-6 text-primary" />
@@ -293,15 +293,15 @@ export default function EditProfile() {
                 </div>
               </div>
               {profileData.socialProfiles.x.connected ? (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => handleDisconnect("x")}
                   data-testid="button-disconnect-x"
                 >
                   Disconnect
                 </Button>
               ) : (
-                <Button 
+                <Button
                   onClick={() => handleConnect("x")}
                   data-testid="button-connect-x"
                 >
@@ -326,15 +326,15 @@ export default function EditProfile() {
                 </div>
               </div>
               {profileData.socialProfiles.discord.connected ? (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => handleDisconnect("discord")}
                   data-testid="button-disconnect-discord"
                 >
                   Disconnect
                 </Button>
               ) : (
-                <Button 
+                <Button
                   onClick={() => handleConnect("discord")}
                   data-testid="button-connect-discord"
                 >

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import { ExternalLink, Target, Star } from "lucide-react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/lib/auth";
-import { useToast } from "@/hooks/use-toast";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import { useAuth } from "../lib/auth";
+import { useToast } from "../hooks/use-toast";
+import AnimatedBackground from "../components/AnimatedBackground";
 import { motion } from "framer-motion";
 import { apiRequestV2, getStoredAccessToken } from "../lib/queryClient";
 

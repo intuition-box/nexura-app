@@ -1,7 +1,7 @@
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "./ui/card";
+import { Badge } from "./ui/badge";
 import { useLocation } from "wouter";
-import userAvatar from "@assets/generated_images/User_avatar_Web3_0f8d9459.png";
+const userAvatar = require("../../../attached_assets/generated_images/User_avatar_Web3_0f8d9459.png");
 
 interface QuestCardProps {
   title: string;
@@ -50,25 +50,25 @@ export default function QuestCard({
   };
 
   return (
-    <Card 
-      className="overflow-hidden glass glass-hover cursor-pointer group relative rounded-3xl hover:-translate-y-1 transition-all duration-300" 
+    <Card
+      className="overflow-hidden glass glass-hover cursor-pointer group relative rounded-3xl hover:-translate-y-1 transition-all duration-300"
       onClick={handleClick}
       data-testid={`quest-card-${title.toLowerCase().replace(/\s+/g, '-')}`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
       {/* Hero Image */}
       <div className="relative h-48 overflow-hidden">
-        <img 
-          src={heroImage} 
+        <img
+          src={heroImage}
           alt={title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        
+
         {/* Project Logo */}
         <div className="absolute top-4 left-4 animate-float">
-          <img 
-            src={projectLogo} 
+          <img
+            src={projectLogo}
             alt={projectName}
             className="w-12 h-12 rounded-full border-2 border-white/30 shadow-xl"
           />
@@ -102,9 +102,9 @@ export default function QuestCard({
         <div className="flex items-center space-x-2 mb-2">
           <span className="text-sm text-muted-foreground">{projectName}</span>
         </div>
-        
+
         <h3 className="text-lg font-bold text-card-foreground mb-2 line-clamp-2">{title}</h3>
-        
+
         {description && (
           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{description}</p>
         )}

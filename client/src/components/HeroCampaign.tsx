@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "./ui/badge";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";

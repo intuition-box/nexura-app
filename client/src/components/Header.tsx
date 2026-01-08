@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import { Link } from "wouter";
-import siteLogo from "@assets/logo.png";
+const siteLogo = require("../../../attached_assets/generated_images/logo.png");
 
 export default function Header() {
   const navItems = [
@@ -64,18 +64,18 @@ export default function Header() {
 
           {/* CTA Buttons */}
           <div className="flex items-center space-x-3">
-            <Button 
-              variant="default" 
-              size="sm" 
+            <Button
+              variant="default"
+              size="sm"
               className="btn-shine btn-float btn-glow"
               data-testid="button-launch-activation"
               onClick={() => handleNavClick('Launch Activation')}
             >
               Launch Activation
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="btn-float"
               data-testid="button-intel"
               onClick={() => handleNavClick('Intel')}

@@ -10,8 +10,8 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarFooter,
-} from "@/components/ui/sidebar";
-import { useAuth } from "@/lib/auth";
+} from "./ui/sidebar";
+import { useAuth } from "../lib/auth";
 import { Layout, Calendar, BarChart2, Trophy, Users, Settings } from "lucide-react";
 
 export default function ProjectNav({ base, projectName }: { base: string; projectName?: string }) {
@@ -26,7 +26,7 @@ export default function ProjectNav({ base, projectName }: { base: string; projec
 
   const tabs: { key: string; label: string; to: string; Icon: any }[] = [
     { key: "overview", label: "Overview", to: `${base}/dashboard`, Icon: Layout },
-  { key: "campaigns", label: "Campaigns", to: `${base}/campaigns`, Icon: Calendar },
+    { key: "campaigns", label: "Campaigns", to: `${base}/campaigns`, Icon: Calendar },
     { key: "analytics", label: "Analytics", to: `${base}/analytics`, Icon: BarChart2 },
     { key: "leaderboard", label: "Leaderboard", to: `${base}/leaderboard`, Icon: Trophy },
     { key: "collabs", label: "Collaborators", to: `${base}/collabs`, Icon: Users },
@@ -41,7 +41,7 @@ export default function ProjectNav({ base, projectName }: { base: string; projec
   return (
     <SidebarProvider defaultOpen={true}>
       <Sidebar className="border-r border-border/40">
-          <SidebarContent className="bg-background">
+        <SidebarContent className="bg-background">
           {/* Project header mirrors the site header styling for parity */}
           <div className="p-6 border-b border-border/40 project-sidebar-header">
             <div className="flex items-center space-x-3">

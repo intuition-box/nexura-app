@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { apiRequest } from "../lib/queryClient";
+import { Button } from "../components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { Search } from "lucide-react";
 import { useLocation } from "wouter";
-import { queryClient } from "@/lib/queryClient";
-import HeroCampaign from "@/components/HeroCampaign";
-import QuestCard from "@/components/QuestCard";
-import CampaignCard from "@/components/CampaignCard";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import { queryClient } from "../lib/queryClient";
+import HeroCampaign from "../components/HeroCampaign";
+import QuestCard from "../components/QuestCard";
+import CampaignCard from "../components/CampaignCard";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 // Import user avatar images for trending claims
 import avatar1 from "/claim1.jpg";

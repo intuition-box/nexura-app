@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "wouter";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { CheckCircle2, Play, RotateCcw } from "lucide-react";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import { apiRequestV2, apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/lib/auth";
-import { claimCampaignOnchainReward } from "@/lib/performOnchainAction";
+import AnimatedBackground from "../components/AnimatedBackground";
+import { apiRequestV2, apiRequest } from "../lib/queryClient";
+import { useToast } from "../hooks/use-toast";
+import { useAuth } from "../lib/auth";
+import { claimCampaignOnchainReward } from "../lib/performOnchainAction";
 
 type Quest = {
   _id: string;

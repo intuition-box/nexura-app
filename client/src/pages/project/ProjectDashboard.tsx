@@ -6,7 +6,7 @@ import ProjectAnalytics from "@/pages/project/ProjectAnalytics";
 import ProjectSettings from "@/pages/project/ProjectSettings";
 import ProjectLeaderboard from "@/pages/project/ProjectLeaderboard";
 import ProjectCollabs from "@/pages/project/ProjectCollabs";
-import ProjectNav from "@/components/ProjectNav";
+import ProjectNav from "../../components/ProjectNav";
 import { useLocation } from "wouter";
 import ProjectCreateCampaign from "@/pages/project/ProjectCreateCampaign";
 

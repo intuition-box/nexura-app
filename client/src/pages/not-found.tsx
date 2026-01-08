@@ -1,6 +1,6 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { AlertCircle } from "lucide-react";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 export default function NotFound() {
   return (

@@ -1,10 +1,10 @@
 import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "./ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./ui/card";
 import { KeyRound } from "lucide-react";
-import { useWallet } from "@/hooks/use-wallet";
-import { createUserFromWallet, createProjectAccount } from "@/lib/remoteDb";
-import { apiRequest } from "@/lib/queryClient";
+import { useWallet } from "../hooks/use-wallet";
+import { createUserFromWallet, createProjectAccount } from "../lib/remoteDb";
+import { apiRequest } from "../lib/queryClient";
 
 export default function WalletAuthCard({ mode = "user", action = "signin" }: { mode?: "user" | "project"; action?: "signin" | "signup" }) {
   const { connectWallet, address, isConnected } = useWallet();

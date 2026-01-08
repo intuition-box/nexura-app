@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, Link } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../components/ui/button";
 
 export default function ProjectTasks() {
   const [location, setLocation] = useLocation();

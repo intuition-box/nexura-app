@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "wouter";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { Play, CheckCircle2, RotateCcw } from "lucide-react";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import { getStoredAccessToken, apiRequestV2, apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import AnimatedBackground from "../components/AnimatedBackground";
+import { getStoredAccessToken, apiRequestV2, apiRequest } from "../lib/queryClient";
+import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../lib/auth";
 
 type Quest = {
@@ -194,8 +194,8 @@ export default function QuestEnvironment() {
         <button
           onClick={() => !visited ? visitQuest(quest) : claimReward(quest)}
           className={`w-full md:w-auto px-5 py-2.5 rounded-full text-sm font-semibold ${quest.done || claimedQuests.includes(quest._id)
-              ? "bg-gray-600 cursor-not-allowed"
-              : "bg-purple-700 hover:bg-purple-800"
+            ? "bg-gray-600 cursor-not-allowed"
+            : "bg-purple-700 hover:bg-purple-800"
             }`}
         >
           {buttonText}

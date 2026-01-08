@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc -b && vite build",
+    "lint": "bunx --bun tsc -b && bunx --bun prettier --write . && bunx --bun eslint --fix .",
     "preview": "vite preview"
   },
   "dependencies": {

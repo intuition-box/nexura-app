@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { setSessionToken, emitSessionChange } from "@/lib/session";
-import { buildUrl } from "@/lib/queryClient";
+import { setSessionToken, emitSessionChange } from "../lib/session";
+import { buildUrl } from "../lib/queryClient";
 import { apiRequestV2 } from "../lib/queryClient";
 
 type WalletState = {
@@ -32,7 +32,7 @@ export function useWallet() {
   const connectWallet = useCallback(async (opts?: { noReload?: boolean, purpose?: string }): Promise<string | null> => {
     try {
       console.log("🔌 Starting wallet connection...");
-      
+
       const eth = (window as any).ethereum;
       if (!eth || !eth.request) {
         console.error("No Ethereum provider found");
@@ -46,7 +46,7 @@ export function useWallet() {
       const accounts: string[] = await eth.request({ method: "eth_requestAccounts" });
       const address = (accounts && accounts[0]) || null;
       if (!address) throw new Error("No account returned from wallet");
-      
+
       console.log("✅ Account received:", address.substring(0, 10) + "...");
 
       const chainHex = await eth.request({ method: "eth_chainId" });
@@ -54,7 +54,7 @@ export function useWallet() {
       console.log("🔗 Chain ID:", chainId);
 
       let message: string | null = null;
-      
+
       if (!message) message = `Nexura Wallet Login\nAddress: ${address}\nNonce: ${Date.now()}`;
 
       let signature: string | null = null;
@@ -120,16 +120,16 @@ export function useWallet() {
       // Reload page to update UI with connected wallet state
       if (shouldReload) {
         console.log("🔄 Reloading page...");
-        try { 
-          window.location.reload(); 
-        } catch (e) { 
-          window.location.href = "/"; 
+        try {
+          window.location.reload();
+        } catch (e) {
+          window.location.href = "/";
         }
       }
 
       // subscribe to provider events
       try {
-            eth.on?.("accountsChanged", async (accounts: string[]) => {
+        eth.on?.("accountsChanged", async (accounts: string[]) => {
           if (!accounts || accounts.length === 0) {
             try { await fetch(buildUrl('/auth/logout'), { method: "POST" }); } catch (e) { /* ignore */ }
             try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
@@ -151,14 +151,14 @@ export function useWallet() {
     } catch (e: any) {
       console.error("connectWallet error", e);
       setState((s) => ({ ...s, isConnecting: false }));
-      
+
       // Provide user-friendly error messages
       const errorMsg = e?.message ?? String(e);
       if (errorMsg.includes("User rejected") || errorMsg.includes("User denied")) {
         console.log("User cancelled wallet connection");
         return null;
       }
-      
+
       alert("Failed to connect wallet: " + errorMsg);
       return null;
     }

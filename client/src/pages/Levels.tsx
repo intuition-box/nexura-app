@@ -1,11 +1,11 @@
 import React from "react";
-import AuthGuard from "@/components/AuthGuard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth";
+import AuthGuard from "../components/AuthGuard";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { useAuth } from "../lib/auth";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "../lib/queryClient";
+import { useToast } from "../hooks/use-toast";
 
 const XP_PER_LEVEL = 100;
 const MAX_LEVEL = 12;

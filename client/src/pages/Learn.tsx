@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { BookOpen, Clock } from "lucide-react";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 export default function Learn() {
   return (
@@ -31,7 +31,7 @@ export default function Learn() {
           </CardHeader>
           <CardContent className="text-center space-y-3 sm:space-y-4">
             <p className="text-sm sm:text-base text-white/60 leading-relaxed">
-              We're currently preparing comprehensive learning materials about Web3, DeFi, and Intuition. 
+              We're currently preparing comprehensive learning materials about Web3, DeFi, and Intuition.
               Check back soon for tutorials, guides, and educational content.
             </p>
             <div className="text-xs sm:text-sm text-muted-foreground">

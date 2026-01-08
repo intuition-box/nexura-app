@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Users, MessageCircle } from "lucide-react";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 export default function Community() {
   return (
@@ -28,7 +28,7 @@ export default function Community() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-white/60 mb-4">
-              We're building an amazing community space where questers can connect, collaborate, and share their achievements. 
+              We're building an amazing community space where questers can connect, collaborate, and share their achievements.
               Stay tuned for discussions, leaderboards, and community events.
             </p>
             <div className="text-sm text-muted-foreground">

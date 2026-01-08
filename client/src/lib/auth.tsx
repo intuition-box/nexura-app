@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { apiRequest } from "./queryClient";
+import { apiRequest, buildUrl } from "./queryClient";
 import { setSessionToken, clearSession, getSessionToken, onSessionChange, emitSessionChange } from "./session";
-import { toast } from "@/hooks/use-toast";
-import { buildUrl } from "@/lib/queryClient";
+import { toast } from "../hooks/use-toast";
 
 type User = any;
 

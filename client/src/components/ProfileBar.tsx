@@ -1,22 +1,22 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "./ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "./ui/dropdown-menu";
 import { User, Trophy, LogOut } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 
-import { useAuth } from "@/lib/auth";
-import { useWallet } from "@/hooks/use-wallet";
-import SignUpPopup from "@/components/SignUpPopup";
-import { getIntuitionNetworkParams } from "@/lib/utils";
-import { network } from "@/lib/constants";
+import { useAuth } from "../lib/auth";
+import { useWallet } from "../hooks/use-wallet";
+import SignUpPopup from "./SignUpPopup";
+import { getIntuitionNetworkParams } from "../lib/utils";
+import { network } from "../lib/constants";
 
 interface ProfileBarProps {
   userId?: string;

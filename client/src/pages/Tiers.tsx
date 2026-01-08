@@ -1,12 +1,12 @@
 import { useMemo, useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import { CheckCircle } from "lucide-react";
-import { useAuth } from "@/lib/auth";
-import { toast } from "@/hooks/use-toast";
+import { useAuth } from "../lib/auth";
+import { toast } from "../hooks/use-toast";
 import { TIER_UNLOCK_MIN_LEVEL, TIER_COLORS } from "@shared/schema";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import { buildUrl } from "@/lib/queryClient";
+import AnimatedBackground from "../components/AnimatedBackground";
+import { buildUrl } from "../lib/queryClient";
 
 const TIER_LEVEL_RANGES = {
   enchanter: { min: 0, max: 5 },
@@ -20,7 +20,7 @@ const tierData = [
   {
     key: "enchanter" as const,
     name: "Enchanter",
-  description: "Begin your journey in the Nexura realm",
+    description: "Begin your journey in the Nexura realm",
     levelRange: "Level 0-5"
   },
   {
@@ -44,7 +44,7 @@ const tierData = [
   {
     key: "templar" as const,
     name: "Templar",
-  description: "The pinnacle of Nexura mastery",
+    description: "The pinnacle of Nexura mastery",
     levelRange: "Level 50+"
   }
 ];
@@ -69,10 +69,10 @@ export default function Tiers() {
               toast({ title: 'Mint error', description: data.error || 'Mint failed' });
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       };
       setWs(socket);
-      return () => { try { socket.close(); } catch(e) {} };
+      return () => { try { socket.close(); } catch (e) { } };
     } catch (e) {
       // ignore
     }
@@ -116,7 +116,7 @@ export default function Tiers() {
         {/* Current Tier Highlight */}
         <Card className="border-primary/50 bg-primary/5">
           <CardContent className="p-6 text-center">
-            <Badge 
+            <Badge
               className="text-white border-0 mb-2"
               style={{ backgroundColor: TIER_COLORS[userTier] }}
             >
@@ -139,24 +139,23 @@ export default function Tiers() {
             const isNextTier = !isUnlocked && index === tierData.findIndex(t => t.key === userTier) + 1;
 
             return (
-              <Card 
+              <Card
                 key={tier.key}
-                className={`relative overflow-hidden transition-all ${
-                  isCurrentTier 
-                    ? 'border-primary shadow-lg scale-[1.02]' 
-                    : isUnlocked 
-                      ? 'border-green-500/30 bg-green-500/5'
-                      : isNextTier
-                        ? 'border-orange-500/30 bg-orange-500/5'
-                        : 'border-border'
-                }`}
+                className={`relative overflow-hidden transition-all ${isCurrentTier
+                  ? 'border-primary shadow-lg scale-[1.02]'
+                  : isUnlocked
+                    ? 'border-green-500/30 bg-green-500/5'
+                    : isNextTier
+                      ? 'border-orange-500/30 bg-orange-500/5'
+                      : 'border-border'
+                  }`}
                 data-testid={`tier-${tier.key}`}
               >
                 <CardContent className="p-8">
                   <div className="flex items-start gap-6">
                     {/* Tier Icon */}
                     <div className="relative flex-shrink-0">
-                      <div 
+                      <div
                         className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg"
                         style={{ backgroundColor: TIER_COLORS[tier.key] }}
                       >
@@ -210,7 +209,7 @@ export default function Tiers() {
 
                 {/* Current tier highlight overlay */}
                 {isCurrentTier && (
-                  <div 
+                  <div
                     className="absolute inset-0 opacity-10 pointer-events-none"
                     style={{
                       background: `linear-gradient(135deg, ${TIER_COLORS[tier.key]}, transparent)`

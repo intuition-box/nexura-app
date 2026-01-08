@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequestV2 } from "@/lib/queryClient";
-import { useAuth } from "@/lib/auth";
+import { useToast } from "../hooks/use-toast";
+import { apiRequestV2 } from "../lib/queryClient";
+import { useAuth } from "../lib/auth";
 
 export default function XCallback() {
   const [, setLocation] = useLocation();

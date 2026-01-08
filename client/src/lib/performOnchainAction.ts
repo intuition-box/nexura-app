@@ -15,6 +15,7 @@ export const createCampaignOnchain = async () => {
 export const claimCampaignOnchainReward = async ({ campaignAddress, userId }: { campaignAddress: string, userId: string }) => {
   try {
     const walletClient = getWalletClient();
+    if (!walletClient) throw new Error("Please install an injected wallet like MetaMask to perform this action.");
 
     const mainnet = network === "mainnet";
 
@@ -39,6 +40,7 @@ export const claimCampaignOnchainReward = async ({ campaignAddress, userId }: { 
 export const claimReferralReward = async (userId: string) => {
   try {
     const walletClient = getWalletClient();
+    if (!walletClient) throw new Error("Please install an injected wallet like MetaMask to perform this action.");
 
     const mainnet = network === "mainnet";
 

@@ -1,7 +1,7 @@
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "../lib/auth";
 import { useLocation } from "wouter";
 import { LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 
 export default function ProjectLogoutButton() {
   const auth = useAuth();
@@ -12,7 +12,7 @@ export default function ProjectLogoutButton() {
       auth.signOut();
     } catch (e) {
       // logout endpoint doesn't rely on cookies; call without credentials
-      fetch('/auth/logout', { method: 'POST' }).catch(() => {});
+      fetch('/auth/logout', { method: 'POST' }).catch(() => { });
     }
     setLocation('/profile');
   };

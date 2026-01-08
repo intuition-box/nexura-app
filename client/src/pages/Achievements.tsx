@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/lib/auth";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import { Card, CardContent } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Progress } from "../components/ui/progress";
+import { useAuth } from "../lib/auth";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 // Level achievement data
 const levelAchievements = [
@@ -54,27 +54,26 @@ export default function Achievements() {
           {levelAchievements.map((achievement) => {
             const progress = Math.min((userXp / achievement.xpRequired) * 100, 100);
             const isUnlocked = userLevel >= achievement.level;
-            
+
             return (
-              <Card 
+              <Card
                 key={achievement.level}
-                className={`glass glass-hover rounded-3xl relative overflow-hidden transition-all ${
-                  isUnlocked ? 'border-primary/50 bg-primary/5' : 'border-white/10'
-                }`}
+                className={`glass glass-hover rounded-3xl relative overflow-hidden transition-all ${isUnlocked ? 'border-primary/50 bg-primary/5' : 'border-white/10'
+                  }`}
                 data-testid={`achievement-level-${achievement.level}`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     {/* Level Icon */}
-                    <div 
+                    <div
                       className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
-                      style={{ 
+                      style={{
                         backgroundColor: achievement.level === 30 ? achievement.color : (isUnlocked ? achievement.color : '#6b7280')
                       }}
                     >
                       {achievement.level}
                     </div>
-                    
+
                     {/* Progress Indicator */}
                     <div className="text-right">
                       <div className="text-sm text-muted-foreground">
@@ -104,8 +103,8 @@ export default function Achievements() {
                         {Math.min(userXp, achievement.xpRequired)} / {achievement.xpRequired}
                       </span>
                     </div>
-                    <Progress 
-                      value={progress} 
+                    <Progress
+                      value={progress}
                       className="h-2"
                       style={{
                         '--progress-background': isUnlocked ? achievement.color : '#6b7280'

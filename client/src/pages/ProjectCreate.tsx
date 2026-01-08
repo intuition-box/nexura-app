@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { createProject } from "@/lib/remoteDb";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Button } from "../components/ui/button";
+import { createProject } from "../lib/remoteDb";
 import { ProjectSchema } from "@/schemas/project.schema";
-import { useWallet } from "@/hooks/use-wallet";
-import { uploadFile } from "@/lib/upload";
+import { useWallet } from "../hooks/use-wallet";
+import { uploadFile } from "../lib/upload";
 
 export default function ProjectCreate() {
   const { isConnected, connectWallet, address } = useWallet();
@@ -63,42 +63,42 @@ export default function ProjectCreate() {
         <h2 className="text-3xl font-bold text-white mb-3">Create Your Project</h2>
         <p className="text-white/60">Fill in the details below to launch your project on Nexura</p>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6">
             <div>
               <label className="block text-sm font-bold text-white mb-3">Project Name</label>
-              <Input 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                required 
-                className="text-lg h-12 glass border-white/10 text-white focus:border-purple-500" 
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="text-lg h-12 glass border-white/10 text-white focus:border-purple-500"
                 placeholder="Enter your project name"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-bold text-white mb-3">Website</label>
-              <Input 
-                value={website} 
-                onChange={(e) => setWebsite(e.target.value)} 
-                placeholder="https://yourproject.com" 
+              <Input
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://yourproject.com"
                 className="h-12 glass border-white/10 text-white focus:border-purple-500"
               />
             </div>
 
             <div>
               <label className="block text-sm font-bold text-white mb-3">Social</label>
-              <Input 
-                value={twitter} 
-                onChange={(e) => setTwitter(e.target.value)} 
-                placeholder="@handle or https://twitter.com/handle" 
+              <Input
+                value={twitter}
+                onChange={(e) => setTwitter(e.target.value)}
+                placeholder="@handle or https://twitter.com/handle"
                 className="h-12 glass border-white/10 text-white focus:border-purple-500"
               />
             </div>
           </div>
-          
+
           <div className="flex flex-col items-center">
             <label className="block text-sm font-bold text-white mb-3">Project Image</label>
             <div className="w-48 h-48 border-2 border-dashed border-purple-500/50 rounded-2xl flex items-center justify-center overflow-hidden bg-white/5 hover:border-purple-400 transition-all duration-300">
@@ -118,9 +118,9 @@ export default function ProjectCreate() {
                 Upload
               </label>
               {file && (
-                <button 
-                  type="button" 
-                  onClick={() => setFile(null)} 
+                <button
+                  type="button"
+                  onClick={() => setFile(null)}
                   className="px-5 py-2.5 glass border-white/10 rounded-full text-sm text-white hover:bg-white/10 transition-all font-bold"
                 >
                   Remove
@@ -132,9 +132,9 @@ export default function ProjectCreate() {
 
         <div>
           <label className="block text-sm font-bold text-white mb-3">Description</label>
-          <Textarea 
-            value={description} 
-            onChange={(e) => setDescription(e.target.value)} 
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             className="min-h-32 glass border-white/10 text-white focus:border-purple-500 resize-none"
             placeholder="Describe your project, its goals, and what makes it unique..."
           />
@@ -144,9 +144,9 @@ export default function ProjectCreate() {
           <Button variant="outline" onClick={() => setLocation("/projects")} className="rounded-full">
             Cancel
           </Button>
-          <Button 
-            type="submit" 
-            disabled={submitting} 
+          <Button
+            type="submit"
+            disabled={submitting}
             className="px-8 py-3 rounded-full font-bold"
           >
             {submitting ? "Creating..." : "Create Project"}

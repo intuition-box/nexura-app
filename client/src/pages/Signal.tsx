@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { TrendingUp, BarChart3 } from "lucide-react";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 export default function Signal() {
   return (
@@ -28,7 +28,7 @@ export default function Signal() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-white/60 mb-4">
-              We're developing comprehensive analytics and insights tools to help you track ecosystem growth, 
+              We're developing comprehensive analytics and insights tools to help you track ecosystem growth,
               quest completion rates, and token metrics across the Intuition testnet.
             </p>
             <div className="text-sm text-muted-foreground">
