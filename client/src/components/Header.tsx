@@ -1,6 +1,6 @@
 import { Button } from "./ui/button";
 import { Link } from "wouter";
-import siteLogo from "../../../attached_assets/generated_images/logo.png";
+import siteLogo from "@assets/generated_images/logo.png";
 
 export default function Header() {
   const navItems = [

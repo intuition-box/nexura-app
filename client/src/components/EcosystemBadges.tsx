@@ -1,4 +1,4 @@
-import intuitionLogo from "../../attached_assets/image_1758369448125.png";
+import intuitionLogo from "@assets/image_1758369448125.png";
 
 interface Ecosystem {
   name: string;
@@ -11,7 +11,7 @@ interface EcosystemBadgesProps {
   ecosystems?: Ecosystem[];
 }
 
-export default function EcosystemBadges({ 
+export default function EcosystemBadges({
   title = "Network",
   ecosystems = [] // todo: remove mock functionality - passed as prop
 }: EcosystemBadgesProps) {
@@ -27,7 +27,7 @@ export default function EcosystemBadges({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-foreground">{title}</h2>
-          <button 
+          <button
             className="text-sm text-primary hover:text-primary/80 font-medium"
             onClick={() => console.log('Show all ecosystems clicked')} // todo: remove mock functionality
             data-testid="button-show-all-ecosystems"
@@ -45,8 +45,8 @@ export default function EcosystemBadges({
               data-testid={`ecosystem-${ecosystem.name.toLowerCase()}`}
             >
               <div className="w-12 h-12 mb-3 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                <img 
-                  src={ecosystem.logo} 
+                <img
+                  src={ecosystem.logo}
                   alt={ecosystem.name}
                   className="w-10 h-10 object-cover"
                 />

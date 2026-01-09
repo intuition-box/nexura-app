@@ -1,7 +1,7 @@
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import userAvatar from "../../../attached_assets/generated_images/User_avatar_Web3_0f8d9459.png";
-import siteLogo from "../../../attached_assets/logo.png";
+import userAvatar from "@assets/generated_images/User_avatar_Web3_0f8d9459.png";
+import siteLogo from "@assets/logo.png";
 
 export default function HeroSection() {
   return (

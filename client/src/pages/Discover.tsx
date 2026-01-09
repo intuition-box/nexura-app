@@ -19,11 +19,11 @@ import AnimatedBackground from "../components/AnimatedBackground";
 // import avatar5 from "/claim5.jpg";
 // import avatar6 from "/claim6.jpg";
 
-import intuitionPortal from "../../attached_assets/intuitionPortal.jpg";
-import intuitionBets from "../../attached_assets/intuitionBets.jpg";
-import intuRank from "../../attached_assets/intuRank.jpg";
-import tribeMeme from "../../attached_assets/tribeMeme.jpg";
-import tnsLogo from "../../attached_assets/tnsLogo.jpg";
+import intuitionPortal from "@assets/intuitionPortal.jpg";
+import intuitionBets from "@assets/intuitionBets.jpg";
+import intuRank from "@assets/intuRank.jpg";
+import tribeMeme from "@assets/tribeMeme.jpg";
+import tnsLogo from "@assets/tnsLogo.jpg";
 
 export default function Discover() {
   const [activeTab, setActiveTab] = useState("all");

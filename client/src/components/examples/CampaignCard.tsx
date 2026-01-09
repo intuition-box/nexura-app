@@ -1,6 +1,6 @@
 import CampaignCard from '../CampaignCard';
-import questHero from "../../../attached_assets/generated_images/Gaming_quest_interface_0f81d47c.png";
-import siteLogo from "../../../attached_assets/generated_images/logo.png";
+import questHero from "@assets/generated_images/Gaming_quest_interface_0f81d47c.png";
+import siteLogo from "@assets/generated_images/logo.png";
 
 export default function CampaignCardExample() {
   return (

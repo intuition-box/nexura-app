@@ -1,7 +1,7 @@
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { useLocation } from "wouter";
-import userAvatar from "../../../attached_assets/generated_images/User_avatar_Web3_0f8d9459.png";
+import userAvatar from "@assets/generated_images/User_avatar_Web3_0f8d9459.png";
 
 interface QuestCardProps {
   title: string;
