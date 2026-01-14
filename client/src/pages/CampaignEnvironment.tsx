@@ -50,6 +50,7 @@ export default function CampaignEnvironment() {
   const [description, setDescription] = useState("");
   const [title, setTitle] = useState("");
   const [subTitle, setSubTitle] = useState("");
+  const [trustClaimed, setTrustClaimed] = useState(0);
   const [projectName, setProjectName] = useState("");
   const [campaignNumber, setCampaignNumber] = useState("000");
   const [reward, setReward] = useState<{ trustTokens: number; xp: number }>({ trustTokens: 0, xp: 0 });
@@ -71,10 +72,11 @@ export default function CampaignEnvironment() {
       setProjectName(res.project_name || "");
       setCampaignNumber(res.campaignNumber || "000");
       setReward(res.reward || { trustTokens: 0, xp: 0 });
+      setTrustClaimed(res.trustClaimed || 0);
       setQuestsCompleted(res.campaignCompleted?.questsCompleted || false);
 
     })();
-  }, [campaignId]);
+  }, [claimedQuests, userId]);
 
   // Sync localStorage for visited, claimed, completed, discordJoined
   useEffect(() => {
@@ -113,26 +115,27 @@ export default function CampaignEnvironment() {
 
       try {
         const id = getId(quest.link);
-        if (["like", "follow", "comment", "repost"].includes(quest.tag)) {
-          if (!user?.socialProfiles.x.connected) {
-            throw new Error("x not connected yet, go to profile to connect.");
-          }
-
-          const { success } = await apiRequestV2("POST", "/api/check-x", { id, tag: quest.tag, questId: quest._id, page: "campaign" });
-          if (!success) {
-            throw new Error(`Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`);
-          }
-        } else if (["join", "message"].includes(quest.tag)) {
-          if (!user?.socialProfiles.discord.connected) {
-            throw new Error("discord not connected yet, go to profile to connect");
-          }
-
-          const { success } = await apiRequestV2("POST", "/api/check-discord", { channelId: id, tag: quest.tag });
-          if (!success) {
-            throw new Error(`Kindly ${quest.tag} the discord channel`);
+        if (trustClaimed < 4000) {
+          if (["follow", "comment", "repost"].includes(quest.tag)) {
+            if (!user?.socialProfiles.x.connected) {
+              throw new Error("x not connected yet, go to profile to connect.");
+            }
+  
+            const { success } = await apiRequestV2("POST", "/api/check-x", { id, tag: quest.tag, questId: quest._id, page: "campaign" });
+            if (!success) {
+              throw new Error(`Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`);
+            }
+          } else if (["join", "message"].includes(quest.tag)) {
+            if (!user?.socialProfiles.discord.connected) {
+              throw new Error("discord not connected yet, go to profile to connect");
+            }
+  
+            const { success } = await apiRequestV2("POST", "/api/check-discord", { channelId: id, tag: quest.tag });
+            if (!success) {
+              throw new Error(`Kindly ${quest.tag} the discord channel`);
+            }
           }
         }
-
       } catch (error: any) {
         console.error(error);
         throw new Error(error.message);
@@ -162,9 +165,10 @@ export default function CampaignEnvironment() {
 
   // Claim campaign reward
   const claimCampaignReward = async () => {
-
     try {
-      await claimCampaignOnchainReward({ campaignAddress, userId });
+      if (trustClaimed < 4000) {
+        await claimCampaignOnchainReward({ campaignAddress, userId });
+      }
 
       await apiRequestV2("POST", `/api/campaign/complete-campaign?id=${campaignId}`);
 
