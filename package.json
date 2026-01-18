@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@fontsource/geist": "^5.2.8",
+    "framer-motion": "^12.26.2"
+  }
+}
