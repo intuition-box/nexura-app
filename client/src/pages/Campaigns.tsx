@@ -7,6 +7,7 @@ import { useLocation } from "wouter";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { apiRequestV2 } from "../lib/queryClient";
 import { useToast } from "../hooks/use-toast";
+import { motion } from "framer-motion";
 
 interface Campaign {
   _id: string;
@@ -24,24 +25,74 @@ interface Campaign {
 }
 
 // Main TASKS card
-const TASKS_CARD: Campaign = {
-  _id: "tasks-card",
-  title: "Start Campaign Tasks",
-  description: "Complete unique tasks in the Nexura ecosystem and earn rewards",
-  project_name: "NEXURA",
-  joined: false,
-  participants: 250,
-  reward: { trustTokens: 16, xp: 5, pool: 4000 },
-  projectCoverImage: "/campaign.png",
-  starts_at: new Date("2025-12-05T00:00:00").toISOString(),
-  ends_at: undefined,
-  metadata: JSON.stringify({ category: "Tasks" }),
-};
+// const TASKS_CARD: Campaign = {
+//   _id: "tasks-card",
+//   title: "Start Campaign Tasks",
+//   description: "Complete unique tasks in the Nexura ecosystem and earn rewards",
+//   project_name: "NEXURA",
+//   joined: false,
+//   participants: 250,
+//   reward: { trustTokens: 16, xp: 5, pool: 4000 },
+//   projectCoverImage: "/campaign.png",
+//   // starts_at: new Date().toISOString(),
+//   starts_at: new Date(Date.now() - 86400000).toISOString(), // yesterday
+
+//   ends_at: undefined,
+//   metadata: JSON.stringify({ category: "Tasks" }),
+//   status: "Active",
+// };
+
+const DEV_CAMPAIGNS: Campaign[] = [
+  {
+    _id: "tasks-card",
+    title: "Start Campaign Tasks",
+    description: "Complete unique tasks in the Nexura ecosystem and earn rewards",
+    project_name: "NEXURA",
+    joined: false,
+    participants: 250,
+    reward: { trustTokens: 16, xp: 5, pool: 4000 },
+    projectCoverImage: "/campaign.png",
+    starts_at: new Date().toISOString(),
+    ends_at: undefined,
+    metadata: JSON.stringify({ category: "Tasks" }),
+    status: "Active",
+  },
+  {
+    _id: "social-card",
+    title: "Social Boost Campaign",
+    description: "Engage on social platforms and earn bonus rewards",
+    project_name: "NEXURA",
+    joined: false,
+    participants: 540,
+    reward: { trustTokens: 24, xp: 10, pool: 8000 },
+    projectCoverImage: "/campaign.png",
+    starts_at: new Date().toISOString(),
+    ends_at: undefined,
+    metadata: JSON.stringify({ category: "Social" }),
+    status: "Active",
+  },
+  {
+    _id: "referral-card",
+    title: "Referral Sprint",
+    description: "Invite friends and climb the leaderboard",
+    project_name: "NEXURA",
+    joined: false,
+    participants: 120,
+    reward: { trustTokens: 40, xp: 20, pool: 12000 },
+    projectCoverImage: "/campaign.png",
+    starts_at: new Date().toISOString(),
+    ends_at: undefined,
+    metadata: JSON.stringify({ category: "Referral" }),
+    status: "Active",
+  },
+];
 
 export default function Campaigns() {
   const [, setLocation] = useLocation();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([TASKS_CARD]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // const [campaigns, setCampaigns] = useState<Campaign[]>([TASKS_CARD]);
+  // const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(DEV_CAMPAIGNS);
+  const [isLoading, setIsLoading] = useState(false);
   const [loadingCampaign, setLoadingCampaign] = useState<string | null>(null);
 
   const { toast } = useToast();
@@ -104,45 +155,53 @@ export default function Campaigns() {
   const upcomingCampaigns = allCampaigns.filter((c) => c.status === "Upcoming");
 
   const renderCampaignCard = (campaign: Campaign, isActive: boolean) => {
-    let metadata: any = {};
-    try {
-      metadata = campaign.metadata ? JSON.parse(campaign.metadata) : {};
-    } catch {
-      metadata = {};
-    }
+  let metadata: any = {};
+  try {
+    metadata = campaign.metadata ? JSON.parse(campaign.metadata) : {};
+  } catch {
+    metadata = {};
+  }
 
-    const status = isActive ? "Active" : "Coming Soon";
+  const status = isActive ? "Active" : "Coming Soon";
 
-    const starts_atFormatted = campaign.starts_at
-      ? new Date(campaign.starts_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })
-      : "";
-    const ends_atFormatted = campaign.ends_at
-      ? new Date(campaign.ends_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })
-      : "TBA";
+  const starts_atFormatted = campaign.starts_at
+    ? new Date(campaign.starts_at).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+      })
+    : "";
 
-    return (
-      <Card
-        key={campaign._id}
-        className="bg-[#0d1117] border border-white/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition flex flex-col sm:flex-col"
-      >
-        {/* Campaign Banner */}
-        <div className="relative h-40 sm:h-48 md:h-44 bg-black w-full">
-          {campaign.projectCoverImage && (
-            <img
-              src={campaign.projectCoverImage}
-              alt={campaign.title}
-              className="w-full h-full object-cover rounded-t-2xl"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+  const ends_atFormatted = campaign.ends_at
+    ? new Date(campaign.ends_at).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+      })
+    : "TBA";
 
-          {/* Status Badge */}
+  return (
+    <motion.div
+      key={campaign._id}
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+    >
+      <Card className="mx-3 sm:mx-0 bg-[#0d1117] border border-white/10 rounded-2xl overflow-hidden flex flex-col transition-transform md:hover:-translate-y-1">
+        {/* Image */}
+        <div className="relative h-36 sm:h-44 w-full">
+          <img
+            src={campaign.projectCoverImage}
+            alt={campaign.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+          {/* Status */}
           <div className="absolute top-2 right-2">
             <Badge
               className={
                 isActive
-                  ? "bg-green-500/20 text-green-400 border border-green-500/30 text-[0.65rem] sm:text-xs"
-                  : "bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[0.65rem] sm:text-xs"
+                  ? "bg-green-500/20 text-green-400 border border-green-500/30 text-[0.65rem]"
+                  : "bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[0.65rem]"
               }
             >
               {status}
@@ -151,87 +210,90 @@ export default function Campaigns() {
 
           {/* Category */}
           {metadata.category && (
-            <div className="absolute top-2 left-2 text-[0.65rem] sm:text-xs text-white/80 font-medium">
+            <div className="absolute top-2 left-2 text-[0.65rem] text-white/80 font-medium">
               {metadata.category}
             </div>
           )}
         </div>
 
-        {/* Campaign Details */}
-        <div className="p-4 sm:p-5 flex flex-col space-y-2">
-          <h2 className="text-sm sm:text-base font-semibold text-white">{campaign.title}</h2>
-          <p className="text-xs sm:text-sm text-gray-400">{campaign.description}</p>
-
-          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm gap-1">
-            <span className="text-gray-500">Project:</span>
-            <span className="text-white">{campaign.project_name}</span>
+        {/* Content */}
+        <div className="p-4 flex flex-col gap-3 flex-1">
+          <div className="space-y-1">
+            <h2 className="text-sm sm:text-base font-semibold text-white leading-tight">
+              {campaign.title}
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-400 line-clamp-2">
+              {campaign.description}
+            </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm gap-1 items-start sm:items-center">
-            <span className="text-gray-500">Participants:</span>
-            <span className="text-white flex items-center gap-1">
-              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-              {campaign.participants.toLocaleString()}
-            </span>
-          </div>
+          {/* Meta */}
+          <div className="space-y-2 text-xs sm:text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Project</span>
+              <span className="text-white">{campaign.project_name}</span>
+            </div>
 
-          <div className="flex flex-col sm:flex-row justify-between text-sm items-center">
-            <span className="text-gray-500">Reward:</span>
-            <span className="text-white flex items-center gap-1">
-              {`${campaign.reward.trustTokens} TRUST + ${campaign.reward.xp} XP`}
-            </span>
-          </div>
-
-          {campaign.reward.pool && (
-            <div className="flex flex-col sm:flex-row justify-between text-sm items-center">
-              <span className="text-gray-500">Reward Pool:</span>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Participants</span>
               <span className="text-white flex items-center gap-1">
-                {campaign.reward.pool} TRUST (FCFS)
+                <Users className="w-3 h-3" />
+                {campaign.participants.toLocaleString()}
               </span>
             </div>
-          )}
 
-          {campaign.starts_at && (
-            <div className="flex flex-col sm:flex-row justify-between text-sm items-center">
-              <span className="text-gray-500">Duration:</span>
-              <span className="text-white flex items-center gap-1">
-                <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                {starts_atFormatted} – {ends_atFormatted}
+            <div className="flex justify-between">
+              <span className="text-gray-500">Reward</span>
+              <span className="text-white font-medium">
+                {campaign.reward.trustTokens} TRUST + {campaign.reward.xp} XP
               </span>
             </div>
-          )}
 
+            {campaign.starts_at && (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Duration</span>
+                <span className="text-white flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {starts_atFormatted} – {ends_atFormatted}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* CTA */}
           <Button
-            className={`w-full mt-2 sm:mt-3 py-2.5 sm:py-3 text-sm sm:text-base font-medium rounded-xl ${loadingCampaign === campaign._id
-              ? "bg-gray-600 cursor-not-allowed text-gray-300"
-              : isActive
-                ? "bg-[#1f6feb] hover:bg-[#388bfd] text-white"
-                : "bg-gray-600 cursor-not-allowed text-gray-300"
-              }`}
+            className={`mt-auto w-full py-3 text-sm font-medium rounded-xl ${
+              loadingCampaign === campaign._id
+                ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                : isActive
+                ? "bg-gradient-to-r from-purple-700 to-indigo-700 hover:opacity-90 text-white"
+                : "bg-gray-600 text-gray-300 cursor-not-allowed"
+            }`}
+            disabled={loadingCampaign === campaign._id || !isActive}
             onClick={(e) => {
               e.stopPropagation();
               goToCampaign(campaign, isActive);
             }}
-            disabled={loadingCampaign === campaign._id || !isActive}
           >
             {loadingCampaign === campaign._id ? (
-              <>Joining...</>
+              "Joining..."
             ) : isActive ? (
-              <>
-                <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="flex items-center justify-center gap-2">
+                <ExternalLink className="w-4 h-4" />
                 Join Campaign
-              </>
+              </span>
             ) : (
-              <>
-                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Coming Soon
-              </>
+              <span className="flex items-center justify-center gap-2">
+                <Clock className="w-4 h-4" />
+                Coming Soon
+              </span>
             )}
           </Button>
         </div>
       </Card>
-    );
-  };
-
+    </motion.div>
+  );
+};
   return (
     <div className="min-h-screen bg-black text-white overflow-auto p-4 sm:p-6 relative">
       <AnimatedBackground />

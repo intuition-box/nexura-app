@@ -3417,4 +3417,5 @@ body {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.02); }
 }
-.animate-pulse-slow { animation: pulse-slow 1.2s infinite ease-in-out; }
+.animate-pulse-slow { animation: pulse-slow 1.2s infinite ease-in-out;
+}

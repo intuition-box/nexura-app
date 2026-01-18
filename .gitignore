@@ -51,5 +51,4 @@ pids
 .env*.local
 
 # Large assets (should be served from CDN or external storage)
-
 *.log
