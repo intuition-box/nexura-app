@@ -23,7 +23,8 @@ import {
 	validateCampaignQuestData,
 	padNumber,
 	validateEcosystemQuestData,
-	validateMiniQuestData
+	validateMiniQuestData,
+	updateLevel
 } from "@/utils/utils";
 import mongoose from "mongoose";
 
@@ -478,6 +479,10 @@ export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 			}
 		}
 
+		const level = await updateLevel(questUser.xp, questUser._id.toString());
+
+		questUser.level = level;
+
 		await questUser.save();
 
 		res.status(OK).json({ message: "quest done!" });
@@ -543,6 +548,10 @@ export const claimEcosystemQuest = async (
 		ecosystemQuestUser.xp += ecosystemQuestFound.reward;
 
 		ecosystemQuestToClaim.done = true;
+
+		const level = await updateLevel(ecosystemQuestUser.xp, ecosystemQuestUser._id.toString());
+
+		ecosystemQuestUser.level = level;
 
 		await ecosystemQuestToClaim.save();
 		await ecosystemQuestUser.save();

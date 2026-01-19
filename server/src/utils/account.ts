@@ -24,11 +24,11 @@ export const performIntuitionOnchainAction = async ({
 	action,
 	contractAddress,
 	userId,
-	lvl,
+	level
 }: {
 	action: string;
   userId: string;
-	lvl?: string;
+	level?: string;
 	contractAddress?: string;
 }) => {
 	const walletClient = getWalletClient();
@@ -56,16 +56,16 @@ export const performIntuitionOnchainAction = async ({
 				chain
 			});
 			return;
-    case "allow-mint":
-      await walletClient.writeContract({
-				address: NexonsAddress[lvl!]!,
+		case "allow-mint":
+			await walletClient.writeContract({
+				address: NexonsAddress[level!]!,
 				abi: parseAbi(["function allowUserToMint(string memory userId)"]),
 				functionName: "allowUserToMint",
 				args: [userId],
 				account,
 				chain
-      });
-			return
+			});
+			return;
 		case "claim-ref-reward":
 			await walletClient.writeContract({
 				address: network === "mainnet" ? "0x" : "0x1b18236aa21212ae375ab72F4c4226987c7d8D59",

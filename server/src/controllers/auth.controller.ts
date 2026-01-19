@@ -124,6 +124,76 @@ export const xCallback = async (req: GlobalRequest, res: GlobalResponse) => {
 	}
 }
 
+export const updateRefreshToken = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+
+	} catch (error) {
+		logger.error(error);
+		// send email to me (beardless)
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating users access tokens" });
+	}
+};
+
+export const disconnectX = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const userId = req.id;
+		const userToken = await token.findOne({ userId });
+		if (!userToken) {
+			res.status(BAD_REQUEST).json({ error: "user not logged into x" });
+			return;
+		}
+
+		const userToBeLoggedOut = await user.findById(userId);
+		if (!userToBeLoggedOut) {
+			res.status(BAD_REQUEST).json({ error: "user not found/doesn't exist" });
+			return;
+		}
+
+		await fetch("https://api.x.com/2/oauth2/revoke", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/x-www-form-urlencoded",
+			},
+			body: new URLSearchParams({
+				token: userToken.refreshToken,
+				clientId: X_API_CLIENT_ID,
+			}),
+		});
+
+		await token.deleteOne({ userId });
+		userToBeLoggedOut!.socialProfiles!.x = { id: undefined, connected: false, username: undefined };
+		await userToBeLoggedOut.save();
+
+		res.status(OK).json({ message: "user logged out of x" });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error disconnecting x" });
+	}
+}
+
+export const disconnectDiscord = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const userToBeLoggedOut = await user.findById(req.id);
+		if (!userToBeLoggedOut) {
+			res.status(BAD_REQUEST).json({ error: "user does not exist or id is invalid" });
+			return;
+		}
+
+		if (!userToBeLoggedOut!.socialProfiles?.discord) {
+			res.status(BAD_REQUEST).json({ error: "user has not logged in to discord" });
+			return
+		}
+
+		userToBeLoggedOut!.socialProfiles!.discord = { id: undefined, connected: false, username: "" };
+		await userToBeLoggedOut.save();
+
+		res.status(OK).json({ message: "user logged out of discord" });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error disconnecting discord" });
+	}
+}
+
 export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 

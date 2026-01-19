@@ -153,18 +153,27 @@ export default function EditProfile() {
     window.location.assign(urls[service]);
   };
 
-  const handleDisconnect = (service: "x" | "discord") => {
-    setProfileData(prev => ({
-      ...prev,
-      socialProfiles: {
-        ...prev.socialProfiles,
-        [service]: { connected: false, username: "" }
+  const handleDisconnect = async (service: "x" | "discord") => {
+    try {
+      if (service === "x") {
+        await apiRequestV2("GET", "/api/auth/x/logout");
+      } else {
+        await apiRequestV2("GET", "/api/auth/discord/logout");
       }
-    }));
-    toast({
-      title: `Disconnected from ${service}`,
-      description: `Your ${service} account has been disconnected.`,
-    });
+      setProfileData(prev => ({
+        ...prev,
+        socialProfiles: {
+          ...prev.socialProfiles,
+          [service]: { connected: false, username: "" }
+        }
+      }));
+      toast({
+        title: `Disconnected from ${service}`,
+        description: `Your ${service} account has been disconnected.`,
+      });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
 
   return (

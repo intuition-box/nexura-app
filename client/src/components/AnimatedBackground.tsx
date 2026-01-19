@@ -1,10 +1,21 @@
-// Animated background blobs component - reusable across all pages
 export default function AnimatedBackground() {
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-blue-600/20 rounded-full blur-[120px] animate-blob mix-blend-screen" />
-      <div className="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-purple-600/20 rounded-full blur-[120px] animate-blob animation-delay-2000 mix-blend-screen" />
-      <div className="absolute bottom-[-10%] left-[20%] w-[45vw] h-[45vw] bg-indigo-600/20 rounded-full blur-[120px] animate-blob animation-delay-4000 mix-blend-screen" />
-    </div>
+    <div
+      className="absolute inset-0 z-0 pointer-events-none"
+      style={{
+        background: `
+          radial-gradient(circle at 80% 10%, rgba(102, 0, 153, 0.6) 0%, transparent 50%),
+          radial-gradient(circle at 50% 50%, rgba(75, 0, 130, 0.5) 0%, transparent 60%),
+          radial-gradient(circle at 20% 90%, rgba(48, 0, 96, 0.4) 0%, transparent 70%),
+          linear-gradient(135deg, #000000 50%, #000000 50%)
+        `,
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
+        // REMOVE overlay blend mode
+        // backgroundBlendMode: "overlay", 
+        animation: "bg-pan 60s linear infinite",
+      }}
+    />
   );
 }

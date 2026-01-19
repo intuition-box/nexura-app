@@ -15,7 +15,7 @@ import {
 	FORBIDDEN,
 	UNAUTHORIZED,
 } from "@/utils/status.utils";
-import { validateCampaignData } from "@/utils/utils";
+import { validateCampaignData, updateLevel } from "@/utils/utils";
 
 interface IReward {
 	xp: number;
@@ -378,6 +378,10 @@ export const claimCampaignRewards = async (
 		campaignToClaimRewards.trustClaimed += trustTokens;
 
 		completedCampaign.campaignCompleted = true;
+
+		const level = await updateLevel(userToReward.xp, userToReward._id.toString());
+		
+		userToReward.level = level;
 
 		await completedCampaign.save();
 		await campaignToClaimRewards.save();

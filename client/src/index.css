@@ -1,4 +1,8 @@
 /* Global index.css - base app styles. Recreated and includes leaderboard styles. */
+@import "@fontsource/geist/400.css";
+@import "@fontsource/geist/500.css";
+@import "@fontsource/geist/600.css";
+@import "@fontsource/geist/700.css";
 
 /* @import rules must come first */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
@@ -682,82 +686,98 @@ body {
 
 /* Navigation Item Selection Colors */
 .nav-learn-active {
-  background-color: rgba(59, 130, 246, 0.1) !important;
-  color: rgb(59, 130, 246) !important;
-  border-left: 3px solid rgb(59, 130, 246);
-  animation: lightning-glow 2s ease-in-out infinite;
+  color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
+}
+
+.nav-learn-active:hover{
+    color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
 }
 
 .nav-explore-active {
-  background-color: rgba(251, 146, 60, 0.1) !important;
-  color: rgb(251, 146, 60) !important;
-  border-left: 3px solid rgb(251, 146, 60);
-  animation: lightning-glow 2s ease-in-out infinite;
+  color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
 }
 
 .nav-rewards-active {
-  background-color: rgba(133, 153, 0, 0.1) !important;
-  color: rgb(133, 153, 0) !important;
-  border-left: 3px solid rgb(133, 153, 0);
+  color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
 }
 
 .nav-referrals-active {
-  background-color: rgba(147, 51, 234, 0.1) !important;
+  /* background-color: rgba(147, 51, 234, 0.1) !important; */
   color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
   border-left: 3px solid rgb(147, 51, 234);
-  animation: lightning-glow 2s ease-in-out infinite;
+  /* animation: lightning-glow 2s ease-in-out infinite; */
 }
 
 .nav-quests-active {
-  background-color: rgba(239, 68, 68, 0.1) !important;
-  color: rgb(239, 68, 68) !important;
-  border-left: 3px solid rgb(239, 68, 68);
-  animation: lightning-glow 2s ease-in-out infinite;
+  color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
 }
 
 .nav-campaigns-active {
-  background-color: rgba(161, 148, 122, 0.1) !important;
-  color: rgb(161, 148, 122) !important;
-  border-left: 3px solid rgb(161, 148, 122);
-  animation: lightning-glow 2s ease-in-out infinite;
+  color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
 }
-
+/* 
 .nav-my-analytics-active {
   background-color: rgba(106, 90, 205, 0.1) !important;
   color: rgb(106, 90, 205) !important;
   border-left: 3px solid rgb(106, 90, 205);
-}
+} */
 
-.nav-platform-analytics-active {
+/* .nav-platform-analytics-active {
   background-color: rgba(128, 0, 32, 0.1) !important;
   color: rgb(128, 0, 32) !important;
   border-left: 3px solid rgb(128, 0, 32);
   animation: lightning-glow 2s ease-in-out infinite;
-}
+} */
 
 .nav-ecosystem-dapps-active {
-  background-color: rgba(34, 197, 94, 0.1) !important;
-  color: rgb(34, 197, 94) !important;
-  border-left: 3px solid rgb(34, 197, 94);
-  animation: lightning-glow 2s ease-in-out infinite;
+  color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
+}
+
+.nav-leaderboard-active{
+    color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
+}
+
+.nav-portal-claims-active{
+    color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
 }
 
 /* Project-specific active/nav glow to match homepage style */
 .nav-project-active {
-  background-color: rgba(99,102,241,0.08) !important; /* indigo tint */
-  color: rgb(99,102,241) !important;
-  border-left: 4px solid rgb(99,102,241);
-  animation: lightning-glow 2s ease-in-out infinite;
-  box-shadow: 0 6px 18px rgba(99,102,241,0.06);
+  color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
 }
 
 /* Hover glow for project nav buttons to match homepage feel */
 .nav-project-button:hover,
 .nav-project-button:focus {
-  color: rgb(99,102,241) !important;
+  /* color: rgb(99,102,241) !important;
   animation: lightning-glow 2s ease-in-out infinite;
   box-shadow: 0 8px 22px rgba(99,102,241,0.06);
-  background-color: rgba(99,102,241,0.04) !important;
+  background-color: rgba(99,102,241,0.04) !important; */
+
+    color: rgb(147, 51, 234) !important;
+  border: 2px solid rgb(147, 51, 234);
+  border-left: 3px solid rgb(147, 51, 234);
 }
 
 /* Project sidebar header styling */
@@ -3353,4 +3373,49 @@ body {
   font-style: normal;
   font-weight: 500;
   line-height: 24px;
+}
+
+/* Arrows */
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+.animate-bounce-slow { animation: bounce-slow 1.5s infinite ease-in-out; }
+
+/* Copy button pop */
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.animate-pop { animation: pop 0.3s ease-in-out; }
+
+/* Slide up animation with fade-in */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Base class for slide-up */
+.animate-slide-up {
+  opacity: 0; /* start invisible */
+  animation: slide-up 1s ease-out forwards; /* forwards keeps final state */
+}
+
+/* Staggered delays */
+.delay-100 { animation-delay: 0.5s; }
+.delay-200 { animation-delay: 1.0s; }
+.delay-300 { animation-delay: 1.5s; }
+.delay-400 { animation-delay: 2.0s; }
+.delay-500 { animation-delay: 2.5s; }
+.delay-600 { animation-delay: 3.0s; }
+.delay-700 { animation-delay: 3.5s; }
+.delay-800 { animation-delay: 4.0s; }
+
+/* Milestone progress button pulse */
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+.animate-pulse-slow { animation: pulse-slow 1.2s infinite ease-in-out;
 }

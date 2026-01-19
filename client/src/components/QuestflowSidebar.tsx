@@ -19,10 +19,11 @@ import {
 } from "lucide-react";
 import React from "react";
 import { Link, useLocation } from "wouter";
+import AnimatedBackground from "./AnimatedBackground";
 
 const mainNavItems = [
   { title: "Learn", subtitle: "", icon: BookOpen, href: "/learn", activeClass: "nav-learn-active" },
-  { title: "Explore", icon: Compass, href: "/", activeClass: "nav-explore-active" },
+  { title: "Explore", icon: Compass, href: "/discover", activeClass: "nav-explore-active" },
   { title: "Referrals", icon: Users, href: "/referrals", activeClass: "nav-referrals-active" },
   { title: "Quests", icon: Zap, href: "/quests", activeClass: "nav-quests-active" },
   { title: "Campaigns", icon: Calendar, href: "/campaigns", activeClass: "nav-campaigns-active" },
@@ -51,7 +52,8 @@ export default function NexuraSidebar() {
 
   return (
     <Sidebar ref={sidebarRef} className="border-r border-border/40">
-      <SidebarContent className="bg-background">
+      <AnimatedBackground />
+      <SidebarContent className="bg-black/55 backdrop-blur-sm relative z-10">
         {/* Logo */}
         <div className="p-6 border-b border-border/40">
           <div className="flex items-center">

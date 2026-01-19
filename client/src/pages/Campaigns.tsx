@@ -7,6 +7,7 @@ import { useLocation } from "wouter";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { apiRequestV2 } from "../lib/queryClient";
 import { useToast } from "../hooks/use-toast";
+import { useAuth } from "../lib/auth";
 
 interface Campaign {
   _id: string;
@@ -39,6 +40,8 @@ const TASKS_CARD: Campaign = {
 };
 
 export default function Campaigns() {
+  const { user } = useAuth();
+
   const [, setLocation] = useLocation();
   const [campaigns, setCampaigns] = useState<Campaign[]>([TASKS_CARD]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -67,6 +70,11 @@ export default function Campaigns() {
 
   const goToCampaign = async (campaign: Campaign, active: boolean) => {
     if (!active) return;
+
+    if (!user) {
+      toast({ title: "Error", description: "Please log in to continue", variant: "destructive" });
+      return;
+    }
 
     try {
       setLoadingCampaign(campaign._id);

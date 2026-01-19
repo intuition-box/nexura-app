@@ -49,22 +49,12 @@ const userSchema = new Schema({
 		type: String,
 		default: "1",
 	},
-	tier: {
-		name: {
-			type: String,
-			default: "Trail Initiate",
-		},
-		level: {
-			type: Number,
-			default: 1,
-		},
-	},
 	xp: {
 		type: Number,
 		default: 0,
 	},
 	badges: [{
-		type: String
+		type: Number
 	}],
 	referral: {
 		code: {

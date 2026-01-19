@@ -123,6 +123,37 @@ export const referralInfo = async (req: GlobalRequest, res: GlobalResponse) => {
   }
 }
 
+export const updateBadge = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { level }: { level: number } = req.body
+    const userToUpdate = await user.findById(req.id);
+
+    if (isNaN(level)) {
+      res.status(BAD_REQUEST).json({ error: "send level as a number" });
+      return;
+    }
+
+    if (!userToUpdate) {
+      res.status(BAD_REQUEST).json({ error: "invalid user id" });
+      return;
+    }
+
+    if (!userToUpdate.badges.includes(level)) {
+      userToUpdate.badges.push(level);
+
+      await userToUpdate.save();
+
+      res.status(OK).json({ message: "badge updated" });
+      return;
+    }
+
+    res.status(BAD_REQUEST).json({ error: "user already has the badge" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating badge" });
+  }
+}
+
 export const allowRefRewardClaim = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const userId = req.id!;

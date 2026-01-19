@@ -1,10 +1,57 @@
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { JWT_SECRET, REFRESH_SECRET } from "./env.utils";
+import { performIntuitionOnchainAction } from "./account";
+import { NexonsAddress } from "./constants";
 
 export const padNumber = (numberToBePadded: number) => {
 	return numberToBePadded.toString().padStart(3, "0");
 }
+
+async function updateLevel (xp: number, userId: string) {
+	let address: `0x${string}` | undefined = undefined;
+	let level: string = "1";
+
+	if (xp > 1000 && xp < 3000) {
+		level = "1";
+		address = NexonsAddress[level]
+	} else if (xp > 3000 && xp < 6000) {
+		level = "2";
+		address = NexonsAddress[level]
+	} else if (xp > 6000 && xp < 10000) {
+		level = "3";
+		address = NexonsAddress[level]
+	} else if (xp > 10000 && xp < 15000) {
+		level = "4";
+		address = NexonsAddress[level]
+	} else if (xp > 15000 && xp < 20000) {
+		level = "5";
+		address = NexonsAddress[level]
+	} else if (xp > 20000 && xp < 30000) {
+		level = "6";
+		address = NexonsAddress[level]
+	} else if (xp > 30000 && xp < 40000) {
+		level = "7";
+		address = NexonsAddress[level]
+	} else if (xp > 40000 && xp < 50000) {
+		level = "8";
+		address = NexonsAddress[level]
+	} else if (xp > 50000 && xp < 65000) {
+		level = "9";
+		address = NexonsAddress[level]
+	} else if (xp >= 65000) {
+		level = "10";
+		address = NexonsAddress[level]
+	}
+
+	if (address) {
+		await performIntuitionOnchainAction({ action: "allow-mint", level, userId });
+	}
+
+	return level;
+}
+
+export { updateLevel };
 
 export const validateCampaignData = (reqData: any) => {
 	const campaignSchema = z.object({

@@ -23,6 +23,43 @@ interface Dapp {
   websiteUrl: string;
 }
 
+const DUMMY_DAPP: Dapp[] = [
+  {
+    _id: "dummy-1",
+    name: "NexSwap",
+    description: "A decentralized exchange for fast, low-fee token swaps within the Nexura ecosystem.",
+    category: "DeFi",
+    logo: "https://images.unsplash.com/photo-1639322537228-f710d846310a?q=80&w=1200&auto=format&fit=crop",
+    reward: "50",
+    done: false,
+    isCompleted: false,
+    websiteUrl: "https://example.com"
+  },
+  {
+    _id: "dummy-2",
+    name: "NexBridge",
+    description: "Bridge assets seamlessly across multiple blockchains supported by Nexura.",
+    category: "Infrastructure",
+    logo: "https://images.unsplash.com/photo-1644088379091-d574269d422f?q=80&w=1200&auto=format&fit=crop",
+    reward: "75",
+    done: false,
+    isCompleted: false,
+    websiteUrl: "https://example.com"
+  },
+  {
+    _id: "dummy-3",
+    name: "NexStake",
+    description: "Stake your tokens securely and earn passive rewards over time.",
+    category: "Staking",
+    logo: "https://images.unsplash.com/photo-1620121692029-d088224ddc74?q=80&w=1200&auto=format&fit=crop",
+    reward: "100",
+    done: false,
+    isCompleted: false,
+    websiteUrl: "https://example.com"
+  }
+];
+
+
 export default function EcosystemDapps() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
@@ -40,6 +77,11 @@ export default function EcosystemDapps() {
       setDapps(ecosystemQuests);
     })();
   }, []);
+
+  // useEffect(() => {
+  //   setDapps(DUMMY_DAPP);
+  // }, []);
+
 
   const categories = ["All", ...Array.from(new Set(dapps.map(d => d.category)))];
 
@@ -144,12 +186,12 @@ export default function EcosystemDapps() {
   return (
     <div className="min-h-screen bg-black text-white overflow-auto p-4 sm:p-6 relative" data-testid="ecosystem-dapps-page">
       <AnimatedBackground />
-      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 sm:px-4 md:px-6 space-y-8 relative z-10">
         {/* Header */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Ecosystem Dapps</h1>
           <p className="text-muted-foreground">
-            Explore popular dapps in the ecosystem and complete one-time quests to earn rewards
+            Explore popular dapps in the ecosystem and complete one-time quests to earn rewards.
           </p>
         </div>
 
@@ -167,13 +209,17 @@ export default function EcosystemDapps() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {filteredDapps.map((dapp, index) => (
             <motion.div
               key={dapp._id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
+              transition={{
+                duration: 0.45,
+                ease: "easeOut",
+                delay: index * 0.08
+              }}
             >
               <Card className="h-full flex flex-col overflow-hidden hover:border-primary/50 transition-colors group bg-card/50 backdrop-blur-sm border-white/10">
                 <div className="h-48 overflow-hidden relative">
@@ -203,19 +249,15 @@ export default function EcosystemDapps() {
                   <CardDescription className="mt-2">{dapp.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="mt-auto space-y-4">
+
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Reward:</span>
-                    <span className="font-bold text-primary">{dapp.reward} XP</span>
-                    <span className="text-muted-foreground">Timer:</span>
-                    <span className="font-bold text-primary">1 Minute</span>
+                    <span className="text-muted-foreground">Reward</span>
+                    <span className="font-semibold text-primary">
+                      {dapp.reward} XP
+                    </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Reward:</span>
-                    <span className="text-xs font-bold text-primary">{dapp.reward}</span>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2 mt-auto">
+                  <div className="flex flex-col gap-3 mt-auto">
                     <a
                       href={dapp.websiteUrl}
                       target="_blank"
@@ -230,13 +272,18 @@ export default function EcosystemDapps() {
 
                     <Button
                       size="sm"
-                      className="w-full sm:w-40"
-                      variant={claimedDapps.includes(dapp._id) ? 'outline' : 'quest'}
+                      className={`
+    w-full sm:w-40
+    bg-gradient-to-r from-purple-700 via-purple-800 to-indigo-900
+    text-white
+    hover:from-purple-600 hover:via-purple-700 hover:to-indigo-800
+    active:scale-[0.98]
+    transition-all
+  `}
                       disabled={!visitedDapps.includes(dapp._id) || claimedDapps.includes(dapp._id)}
                       onClick={(e) => { e.stopPropagation(); handleClaim(dapp); }}
-                      data-testid={`claim-dapp-${dapp._id}`}
                     >
-                      {claimedDapps.includes(dapp._id) ? 'Claimed' : `Claim ${dapp.reward}`}
+                      {claimedDapps.includes(dapp._id) ? "Claimed" : `Claim ${dapp.reward}`}
                     </Button>
                   </div>
                 </CardContent>

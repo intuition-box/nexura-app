@@ -35,11 +35,15 @@ import OrgSignInButton from "./components/OrgSignInButton";
 import ProjectLogoutButton from "./components/ProjectLogoutButton";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PortalClaims from "./pages/PortalClaims";
+import AnimatedBackground from "./components/AnimatedBackground";
+import Home from "./pages/Home";
 
 function Router() {
   return (
+    // <Home />
     <Switch>
-      <Route path="/" component={Discover} />
+      <Route path="/" component={Home} />
+      <Route path="/home" component={Home} />
       <Route path="/discover" component={Discover} />
       <Route path="/levels" component={Levels} />
       {/* NEXURA pages */}
@@ -90,34 +94,35 @@ function App() {
             <SidebarProvider style={sidebarStyle as React.CSSProperties}>
               {(() => {
                 const [location] = useLocation();
-                const isStudio = location?.startsWith?.("/studio");
-                const isProject = location?.startsWith?.("/project/");
+
+const isHome = location === "/" || location === "/home";
+const isStudio = location.startsWith("/studio");
+const isProject = location.startsWith("/project/");
                 return (
-                  <div className="flex h-screen w-full bg-black text-white selection:bg-blue-500/30">
-                    {!isStudio && !isProject && <NexuraSidebar />}
-                    <div className={`flex flex-col flex-1 ${isStudio ? '' : ''}`}>
-                      {/* Top Header with Profile Bar (hide on Studio and Project dashboard pages) */}
-                      {!isStudio && !isProject && (
-                        <header className="flex items-center justify-between p-4 app-header">
-                          <SidebarTrigger data-testid="button-sidebar-toggle" />
-                          <ProfileBar />
-                        </header>
-                      )}
-                      {/* Main Content with Better Scrolling */}
-                      <main className="flex-1 overflow-y-auto main-shell">
-                        <div className="container max-w-7xl mx-auto">
-                          <div className="card-glass p-6">
-                            <ErrorBoundary>
-                              <Router />
-                            </ErrorBoundary>
-                          </div>
-                        </div>
-                      </main>
-                    </div>
-                    {!isStudio && !isProject && <OrgSignInButton />}
-                    {isProject && <ProjectLogoutButton />}
-                  </div>
-                );
+                  <div className="flex h-screen w-full text-white selection:bg-blue-500/30 relative">
+  {/* Background behind everything */}
+  <AnimatedBackground />
+
+{/* Sidebar */}
+{!isHome && !isStudio && !isProject && <NexuraSidebar />}
+
+  {/* Main content */}
+  <div className="flex-1 flex flex-col relative z-10">
+    {!isHome && !isStudio && !isProject && (
+      <header className="flex items-center justify-between p-4 app-header">
+        <SidebarTrigger data-testid="button-sidebar-toggle" />
+        <ProfileBar />
+      </header>
+    )}
+    <main className="flex-1 overflow-y-auto">
+      <Router />
+    </main>
+  </div>
+
+{!isHome && !isStudio && !isProject && <OrgSignInButton />}
+  {isProject && <ProjectLogoutButton />}
+</div>
+);
               })()}
             </SidebarProvider>
             <Toaster />
