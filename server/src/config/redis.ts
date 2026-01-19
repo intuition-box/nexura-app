@@ -13,28 +13,28 @@ else
     host: REDIS_URI,
     maxRetriesPerRequest: null,
     password: REDIS_PASSWORD,
-    port: REDIS_PORT,
+    port: parseInt(REDIS_PORT, 10),
     username: REDIS_USERNAME,
   });
 
 redis.on("connect", () => {
-  logger.info({ module: "REDIS", msg: "🔌 Redis connected" });
+  logger.info("🔌 Redis connected");
 });
 
 redis.on("ready", () => {
-  logger.info({ module: "REDIS", msg: "✅ Redis ready" });
+  logger.info("✅ Redis ready");
 });
 
 redis.on("error", (error: any) => {
-  logger.error({ module: "REDIS", msg: "❌ Redis error", data: error });
+  logger.error(`❌ Redis error: ${error.message}`);
 });
 
 redis.on("end", () => {
-  logger.warn({ module: "REDIS", msg: "⚠️ Redis connection closed" });
+  logger.warn("⚠️ Redis connection closed");
 });
 
 redis.on("reconnecting", (time: number) => {
-  logger.warn({ module: "REDIS", msg: `♻️ Redis reconnecting in ${time}ms` });
+  logger.warn(`♻️ Redis reconnecting in ${time}ms`);
 });
 
 export { redis };
