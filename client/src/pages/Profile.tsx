@@ -16,11 +16,13 @@ import { Badge } from "../components/ui/badge";
 import { Edit2, Calendar } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "../lib/auth";
+import { useToast } from "../hooks/use-toast";
 import { Progress } from "../components/ui/progress";
 import { emitSessionChange } from "../lib/session";
 import { apiRequestV2 } from "../lib/queryClient";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { FaTwitter, FaDiscord } from "react-icons/fa";
+import { mintNexon } from "../lib/performOnchainAction";
 
 // Level images (10 levels)
 const LEVEL_IMAGES = [
@@ -97,6 +99,8 @@ export default function Profile() {
   const { user, loading, setUser } = useAuth();
   const { address } = useWallet();
 
+  const { toast } = useToast();
+
   // Store list of minted levels, NOT a counter
   const [mintedLevels, setMintedLevels] = useState<number[]>([]);
 
@@ -109,6 +113,7 @@ export default function Profile() {
       if (!profile) return;
 
       setUser(profile);
+      setMintedLevels(profile.badges);
     })();
   }, [user]);
 
@@ -188,12 +193,22 @@ export default function Profile() {
     levelInfo;
 
   // STRICT MINT LOGIC
-  const handleMint = (levelIndex: number) => {
+  const handleMint = async (levelIndex: number) => {
+    if (!user) {
+      toast({ title: "Error", description: "Please log in to continue", variant: "destructive" });
+      return;
+    }
+
     if (levelIndex !== currentLevelIndex) return;        // can't mint future level
     if (mintedLevels.includes(levelIndex)) return;       // can't mint twice
     if (xpValue < LEVELS[levelIndex].xp) return;         // not achieved yet
 
+    await mintNexon(levelIndex, user._id);
+
+    await apiRequestV2("PATCH", "/api/user/update-badge", { level: levelIndex });
     setMintedLevels(prev => [...prev, levelIndex]);
+
+    toast({ title: "Nexon Minted", description: "Nexon minted successfully" });
   };
 
   const totalMinted = mintedLevels.length;
@@ -323,8 +338,7 @@ export default function Profile() {
             const isMinted = mintedLevels.includes(idx);
             const isAchieved = xpValue >= lvl.xp;
 
-            const showMint =
-              isCurrent && isAchieved && !isMinted;
+            const showMint = isAchieved && !isMinted;
 
             return (
               <Card
@@ -335,7 +349,7 @@ export default function Profile() {
                 {/* MINT BUTTON — ONLY WHEN ALLOWED */}
                 {showMint && (
                   <button
-                    onClick={() => handleMint(idx)}
+                    onClick={() => handleMint(idx + 1)}
                     className="absolute top-3 right-3 text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg"
                   >
                     Mint
