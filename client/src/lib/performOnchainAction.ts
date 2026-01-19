@@ -1,6 +1,6 @@
 import chain from "./chain";
 import { getWalletClient } from "./viem";
-import { network } from "./constants";
+import { network, NEXONS } from "./constants";
 import { parseAbi, type Address } from "viem";
 
 export const createCampaignOnchain = async () => {
@@ -61,3 +61,30 @@ export const claimReferralReward = async (userId: string) => {
     throw new Error(error.message);
   }
 }
+
+export const mintNexon = async (level: number, userId: string) => {
+  try {
+    const walletClient = getWalletClient();
+    if (!walletClient) throw new Error("Please install an injected wallet like MetaMask to perform this action.");
+
+    const mainnet = network === "mainnet";
+
+    await walletClient.switchChain({ id: mainnet ? 1155 : 13579 });
+
+    const account = await walletClient.getAddresses();
+
+    const { address, metadata } = NEXONS[level];
+
+    await walletClient.writeContract({
+      address,
+      abi: parseAbi(["function mint(string memory metadataURI, string memory userId)"]),
+      functionName: "mint",
+      args: [metadata, userId],
+      account: account[0],
+      chain
+    });
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error.message);
+  }
+};
