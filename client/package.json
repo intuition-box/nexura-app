@@ -4,10 +4,12 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "build": "tsc -b && vite build",
     "dev": "vite",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/geist": "^5.2.8",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
