@@ -181,7 +181,7 @@ export const getTasks = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const { id, action } = req.query as { id: string; action: string };
+		const { id, action, validatedBy }: { id: string; action: string; validatedBy: string } = req.body;
 
 		const taskToBeVerified = await submission.findById(id);
 
@@ -199,12 +199,14 @@ export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {
 				return
 			}
 
-			if (action !== "done") {
-				taskToBeVerified.status = "done";
-				model.status = "done"
-			} else {
+			if (action !== "accept") {
 				taskToBeVerified.status = "retry";
+				taskToBeVerified.validatedBy = validatedBy;
 				model.status = "retry";
+			} else {
+				taskToBeVerified.status = "done";
+				taskToBeVerified.validatedBy = validatedBy;
+				model.status = "done";
 			}
 
 		} else {
@@ -214,12 +216,14 @@ export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {
 				return
 			}
 
-			if (action !== "done") {
-				taskToBeVerified.status = "done";
-				model.status = "done"
-			} else {
+			if (action !== "accept") {
 				taskToBeVerified.status = "retry";
+				taskToBeVerified.validatedBy = validatedBy;
 				model.status = "retry";
+			} else {
+				taskToBeVerified.status = "done";
+				taskToBeVerified.validatedBy = validatedBy;
+				model.status = "done";
 			}
 		}
 
