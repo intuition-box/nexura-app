@@ -107,7 +107,7 @@ export default function CampaignCard({
         <h3 className="text-lg font-bold text-card-foreground mb-4">{title}</h3>
 
         {/* Date Range */}
-        <div className="flex items-center space-x-4 mb-4">
+        {/* <div className="flex items-center space-x-4 mb-4">
           <div className="text-center">
             <div className="text-sm font-bold text-card-foreground">
               {formatDate(starts_at).split(',')[0].split(' ')[0]}
@@ -117,10 +117,8 @@ export default function CampaignCard({
             </div>
           </div>
           <div className="flex-1 text-xs text-muted-foreground">
-            <div>{formatDate(starts_at)}</div>
-            <div>to {formatDate(ends_at)}</div>
           </div>
-        </div>
+        </div> */}
 
         {/* Reward Pool */}
         {reward && (
@@ -130,7 +128,6 @@ export default function CampaignCard({
               <span className="text-blue-500 font-bold">{reward.xp} XP</span>
               <span className="text-muted-foreground">+</span>
               <div className="flex items-center space-x-1">
-                <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
                 <span className="font-bold text-card-foreground">{reward.trustTokens} TRUST</span>
               </div>
             </div>

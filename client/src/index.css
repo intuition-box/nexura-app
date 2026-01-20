@@ -3403,19 +3403,19 @@ body {
 }
 
 /* Staggered delays */
-.delay-100 { animation-delay: 0.5s; }
-.delay-200 { animation-delay: 1.0s; }
-.delay-300 { animation-delay: 1.5s; }
-.delay-400 { animation-delay: 2.0s; }
-.delay-500 { animation-delay: 2.5s; }
-.delay-600 { animation-delay: 3.0s; }
-.delay-700 { animation-delay: 3.5s; }
-.delay-800 { animation-delay: 4.0s; }
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.3s; }
+.delay-300 { animation-delay: 0.5s; }
+.delay-400 { animation-delay: 1.0s; }
+.delay-500 { animation-delay: 1.3s; }
+.delay-600 { animation-delay: 1.4s; }
+.delay-700 { animation-delay: 1.7s; }
+.delay-800 { animation-delay: 2.0s; }
 
 /* Milestone progress button pulse */
 @keyframes pulse-slow {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.02); }
 }
-.animate-pulse-slow { animation: pulse-slow 1.2s infinite ease-in-out;
+.animate-pulse-slow { animation: pulse-slow 0.8s infinite ease-in-out;
 }

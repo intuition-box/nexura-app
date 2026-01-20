@@ -32,7 +32,7 @@ interface Quest {
   tag?: string;
 }
 
-const DUMMY_QUESTS: Quest[] = [
+export const DUMMY_QUESTS: Quest[] = [
   {
     _id: "tasks-card",
     title: "Start Tasks",

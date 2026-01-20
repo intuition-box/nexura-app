@@ -90,37 +90,54 @@ export default function EcosystemDapps() {
     : dapps.filter(dapp => dapp.category === selectedCategory);
 
   // Track visited and claimed state locally for UI. Authoritative state is server-side.
-  const [visitedDapps, setVisitedDapps] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('nexura:visited:dapps') || '[]')[userId] || []; } catch { return []; }
-  });
-  const [claimedDapps, setClaimedDapps] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('nexura:claimed:dapps') || '[]')[userId] || []; } catch { return []; }
-  });
+const [visitedDapps, setVisitedDapps] = useState<string[]>(() => {
+  try {
+    const stored = JSON.parse(localStorage.getItem('nexura:visited:dapps') || '{}');
+    return stored[userId] || [];
+  } catch {
+    return [];
+  }
+});
+
+const [claimedDapps, setClaimedDapps] = useState<string[]>(() => {
+  try {
+    const stored = JSON.parse(localStorage.getItem('nexura:claimed:dapps') || '{}');
+    return stored[userId] || [];
+  } catch {
+    return [];
+  }
+});
+
 
   useEffect(() => {
-    try {
-      const value: Record<string, string[]> = {};
-      value[userId] = visitedDapps;
+  try {
+    const stored: Record<string, string[]> = JSON.parse(localStorage.getItem('nexura:visited:dapps') || '{}');
+    stored[userId] = visitedDapps;
+    localStorage.setItem('nexura:visited:dapps', JSON.stringify(stored));
+  } catch (e) {
+    console.error('Failed to save visitedDapps', e);
+  }
+}, [visitedDapps, userId]);
 
-      localStorage.setItem('nexura:visited:dapps', JSON.stringify(value));
-    } catch { }
-  }, [visitedDapps]);
-  useEffect(() => {
-    try {
-      const value: Record<string, string[]> = {};
-      value[userId] = claimedDapps;
+useEffect(() => {
+  try {
+    const stored: Record<string, string[]> = JSON.parse(localStorage.getItem('nexura:claimed:dapps') || '{}');
+    stored[userId] = claimedDapps;
+    localStorage.setItem('nexura:claimed:dapps', JSON.stringify(stored));
+  } catch (e) {
+    console.error('Failed to save claimedDapps', e);
+  }
+}, [claimedDapps, userId]);
 
-      localStorage.setItem('nexura:claimed:dapps', JSON.stringify(value));
-    } catch { }
-  }, [claimedDapps]);
 
-  const markVisited = async (dapp: Dapp) => {
-    if (!visitedDapps.includes(dapp._id)) setVisitedDapps(prev => [...prev, dapp._id]);
+const markVisited = (dapp: Dapp) => {
+  if (!visitedDapps.includes(dapp._id)) setVisitedDapps(prev => [...prev, dapp._id]);
+  window.open(dapp.websiteUrl, "_blank");
 
-    window.open(dapp.websiteUrl, "_blank");
+  // fire-and-forget
+  apiRequestV2("POST", `/api/quest/set-timer?id=${dapp._id}`).catch(console.error);
+};
 
-    await apiRequestV2("POST", `/api/quest/set-timer?id=${dapp._id}`);
-  };
 
   const markClaimed = (id: string) => {
     if (!claimedDapps.includes(id)) setClaimedDapps(prev => [...prev, id]);
@@ -301,6 +318,17 @@ export default function EcosystemDapps() {
             </p>
           </div>
         )}
+
+        {/* Disclaimer */}
+        <div className="max-w-7xl mx-auto px-6 sm:px-4 md:px-6 mt-12 text-xs sm:text-sm text-white/60">
+          <p>
+            <strong>Disclaimer:</strong> All dapps listed on Nexura, except the Intuition Portal, are community-built. 
+            We only display them for discovery and visibility purposes. This does not mean we endorse, control, audit, 
+            or take responsibility for these projects. We do not have control over how these dapps function, how they manage 
+            user data, funds, or any issues you may encounter while using them. Users are advised to do their own research 
+            and exercise caution when interacting with any third-party dapps.
+          </p>
+        </div>
       </div>
     </div>
   );

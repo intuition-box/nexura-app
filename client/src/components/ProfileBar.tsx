@@ -11,7 +11,6 @@ import {
 import { User, Trophy, LogOut } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "../hooks/use-toast";
-
 import { useAuth } from "../lib/auth";
 import { useWallet } from "../hooks/use-wallet";
 import SignUpPopup from "./SignUpPopup";
@@ -29,7 +28,7 @@ const LEVELS = [
   { name: "Scout of Lore", xp: 6000 },
   { name: "Relic Runner", xp: 10000 },
   { name: "Rune Raider", xp: 15000 },
-  { name: "Vault Sever", xp: 20000 },
+  { name: "Vault Server", xp: 20000 },
   { name: "Crypt Diver", xp: 30000 },
   { name: "Temple Warden", xp: 40000 },
   { name: "Relic Master", xp: 50000 },
@@ -130,8 +129,8 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
         </div>
         <div className="flex flex-col">
           <span className="text-xs text-white/50 font-medium">Level</span>
-          <span className="text-xs sm:text-sm font-bold text-white hidden sm:block">
-            {levelName}
+          <span className="text-xs sm:text-sm font-bold text-white">
+  {levelName}
           </span>
         </div>
       </div>

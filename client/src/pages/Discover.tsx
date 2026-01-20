@@ -24,6 +24,8 @@ import intuitionBets from "@assets/intuitionBets.jpg";
 import intuRank from "@assets/intuRank.jpg";
 import tribeMeme from "@assets/tribeMeme.jpg";
 import tnsLogo from "@assets/tnsLogo.jpg";
+import { DEV_CAMPAIGNS } from "../pages/Campaigns";
+import { DUMMY_QUESTS } from "../pages/Quests";
 
 export default function Discover() {
   const [activeTab, setActiveTab] = useState("all");
@@ -94,9 +96,46 @@ export default function Discover() {
     retry: false,
   });
 
+//   const allQuests =
+//   questsData
+//     ? [
+//         ...(questsData.oneTimeQuests ?? []),
+//         ...(questsData.weeklyQuests ?? []),
+//         ...(questsData.featuredQuests ?? []),
+//       ]
+//     : [];
+
+// const trendingQuests = allQuests
+//   .filter((q: any) => q.status === "active")
+//   .slice(0, 3);
+
+  const campaigns =
+  Array.isArray(campaignsData?.campaigns) && campaignsData.campaigns.length > 0
+    ? campaignsData.campaigns
+    : DEV_CAMPAIGNS;
+
+const trendingCampaigns = campaigns
+  .filter((c: any) => c.status?.toLowerCase() === "active")
+  .slice(0, 3);
+  
+const allQuests =
+  questsData
+    ? [
+        ...(questsData.oneTimeQuests ?? []),
+        ...(questsData.weeklyQuests ?? []),
+        ...(questsData.featuredQuests ?? []),
+      ]
+    : DUMMY_QUESTS;
+
+const trendingQuests = allQuests
+  .filter((q: any) => q.status === "active")
+  .slice(0, 3);
+
+
+
   const trendingDapps = [
     { name: "Intuition Portal", logo: intuitionPortal, category: "Portal" },
-    { name: "Intuition Bets", logo: intuitionBets, category: "Prediction Market" },
+    // { name: "Intuition Bets", logo: intuitionBets, category: "Prediction Market" },
     { name: "IntuRank", logo: intuRank, category: "DeFi" },
     { name: "Tribe Meme", logo: tribeMeme, category: "Gaming" },
     { name: "Trust Name Service", logo: tnsLogo, category: "Domain" },
@@ -125,22 +164,31 @@ export default function Discover() {
       </div>
 
       {/* Main Content */}
-      <div className="p-4 sm:p-6 relative z-10">
+<div className="relative z-10 space-y-8 px-3 sm:px-4 md:px-6">
+  <div className="mx-auto w-full max-w-[1100px]">
+
+
         {/* Hero Campaign Section */}
-        <HeroCampaign campaigns={campaignsData?.campaigns ?? []} />
+<div className="animate-slide-up delay-100 w-full overflow-hidden rounded-3xl">
+  <HeroCampaign campaigns={campaigns} />
+</div>
 
         {/* Tab Navigation */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="grid w-fit grid-cols-1 bg-muted/50">
+        <Tabs
+  value={activeTab}
+  onValueChange={setActiveTab}
+  className="mb-6 w-full"
+>
+          <TabsList className="flex w-full max-w-xs sm:max-w-sm bg-muted/50 overflow-x-auto rounded-lg">
             <TabsTrigger value="all">All</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="all" className="space-y-12">
+          <TabsContent value="all" className="space-y-8 sm:space-y-12">
 
             {/* Trending Campaigns */}
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl sm:text-2xl md:text-4xl font-bold">
+                <h2 className="text-lg sm:text-2xl md:text-4xl font-bold animate-slide-up delay-200">
                   Trending Campaigns
                 </h2>
                 <Button
@@ -151,34 +199,56 @@ export default function Discover() {
                   Show all
                 </Button>
               </div>
-              {/* ✅ FIXED GRID */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-                {Array.isArray(campaignsData?.campaigns) &&
-                  campaignsData.campaigns.length > 0 ? (
-                  campaignsData.campaigns.map((campaign: any, index: number) => (
-                    <div
-                      key={`campaign-${index}`}
-                      className="transform-wrapper"
-                      style={{
-                        transform: "scale(0.9)",
-                        transformOrigin: "top left",
-                      }}
-                    >
-                      <CampaignCard {...campaign} from="explore" />
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-muted-foreground">
-                    No campaigns available.
-                  </div>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 px-8 sm:px-0">
+                {trendingCampaigns.map((campaign: any, index: number) => (
+  <div
+    key={campaign._id ?? index}
+    className={`animate-slide-up delay-${(index + 1) * 100}`}
+  >
+    <CampaignCard {...campaign} from="explore" />
+  </div>
+))}
               </div>
             </section>
+
+            {/* Trending Quests */}
+<section>
+  <div className="flex items-center justify-between mb-6">
+    <h2 className="text-lg sm:text-2xl md:text-4xl font-bold animate-slide-up delay-200">
+      Trending Quests
+    </h2>
+    <Button
+      variant="ghost"
+      size="sm"
+      className="animate-slide-up delay-300"
+      onClick={() => setLocation("/quests")}
+    >
+      Show all
+    </Button>
+  </div>
+
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 px-8 sm:px-0">
+    {trendingQuests.length > 0 ? (
+      trendingQuests.map((quest: any, index: number) => (
+        <div
+          key={`quest-${quest._id}`}
+          className={`animate-slide-up delay-${(index + 1) * 100}`}
+        >
+          <QuestCard {...quest} />
+        </div>
+      ))
+    ) : (
+      <div className="text-white/50 animate-slide-up delay-100">
+        No quests available.
+      </div>
+    )}
+  </div>
+</section>
 
             {/* Trending Dapps */}
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl sm:text-2xl md:text-4xl font-bold">
+                <h2 className="text-lg sm:text-2xl md:text-4xl font-bold animate-slide-up delay-200">
                   Trending Dapps
                 </h2>
                 <Button
@@ -190,7 +260,7 @@ export default function Discover() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 px-8 sm:px-0">
                 {trendingDapps.map((dapp, index) => (
                   <div
                     key={`dapp-${index}`}
@@ -216,6 +286,7 @@ export default function Discover() {
             </section>
           </TabsContent>
         </Tabs>
+          </div>
       </div>
     </div>
   );

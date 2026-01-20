@@ -137,15 +137,18 @@ export const updateRefreshToken = async (req: GlobalRequest, res: GlobalResponse
 export const disconnectX = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const userId = req.id;
-		const userToken = await token.findOne({ userId });
-		if (!userToken) {
-			res.status(BAD_REQUEST).json({ error: "user not logged into x" });
-			return;
-		}
 
 		const userToBeLoggedOut = await user.findById(userId);
 		if (!userToBeLoggedOut) {
 			res.status(BAD_REQUEST).json({ error: "user not found/doesn't exist" });
+			return;
+		}
+
+		const xId = userToBeLoggedOut.socialProfiles?.x?.id;
+
+		const userToken = await token.findOne({ userId: xId });
+		if (!userToken) {
+			res.status(BAD_REQUEST).json({ error: "user not logged into x" });
 			return;
 		}
 
@@ -160,7 +163,7 @@ export const disconnectX = async (req: GlobalRequest, res: GlobalResponse) => {
 			}),
 		});
 
-		await token.deleteOne({ userId });
+		await token.deleteOne({ userId: xId });
 		userToBeLoggedOut!.socialProfiles!.x = { id: undefined, connected: false, username: undefined };
 		await userToBeLoggedOut.save();
 

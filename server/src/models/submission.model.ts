@@ -18,6 +18,9 @@ const submissionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  validatedBy: {
+    type: String,
+  },
   username: {
     type: String,
     required: true

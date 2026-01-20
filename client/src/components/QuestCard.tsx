@@ -49,6 +49,11 @@ export default function QuestCard({
     }
   };
 
+  const safeParticipants = Number.isFinite(Number(participants))
+  ? Number(participants)
+  : 0;
+
+
   return (
     <Card
       className="overflow-hidden glass glass-hover cursor-pointer group relative rounded-3xl hover:-translate-y-1 transition-all duration-300"
@@ -113,7 +118,7 @@ export default function QuestCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="flex -space-x-2">
-              {[...Array(Math.min(3, Math.ceil(participants / 1000)))].map((_, i) => (
+              {[...Array(Math.min(3, Math.ceil(safeParticipants / 1000)))].map((_, i) => (
                 <img
                   key={i}
                   src={userAvatar}
@@ -123,7 +128,7 @@ export default function QuestCard({
               ))}
             </div>
             <div className="text-sm">
-              <span className="font-medium text-card-foreground">{formatParticipants(participants)}</span>
+              <span className="font-medium text-card-foreground">{formatParticipants(safeParticipants)}</span>
               <span className="text-muted-foreground ml-1">Participants</span>
             </div>
           </div>

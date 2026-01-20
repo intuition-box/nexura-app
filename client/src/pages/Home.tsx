@@ -14,15 +14,16 @@ export default function Home() {
         <div className="relative w-full">
 
           {/* Desktop + Mobile Video */}
-          <video
-            src="/nexura-logo-mov.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-screen object-cover opacity-10 object-center"
-          />
-
+          <div className="relative w-full h-screen overflow-hidden">
+            <video
+              src="/nexura-logo-mov.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute top-0 left-0 w-full h-full object-cover opacity-20"
+            />
+          </div>
 
           {/* Top-left Logo */}
           <img

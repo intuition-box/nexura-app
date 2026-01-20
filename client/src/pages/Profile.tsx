@@ -26,16 +26,16 @@ import { mintNexon } from "../lib/performOnchainAction";
 
 // Level images (10 levels)
 const LEVEL_IMAGES = [
-  "trail-initiate.png",
-  "pathfinder.png",
-  "scout-of-lore.png",
-  "relic-runner.png",
-  "rune-raider.png",
-  "temple-warden.png",
-  "crypt-driver.png",
-  "vault-server.png",
-  "relic-master.png",
-  "nexon-vanguard.png",
+  "trail-initiate.jpg",
+  "pathfinder.jpg",
+  "scout-of-lore.jpg",
+  "relic-runner.jpg",
+  "rune-raider.jpg",
+  "temple-warden.jpg",
+  "crypt-driver.jpg",
+  "vault-server.jpg",
+  "relic-master.jpg",
+  "nexon-vanguard.jpg",
 ];
 
 const LEVELS = [

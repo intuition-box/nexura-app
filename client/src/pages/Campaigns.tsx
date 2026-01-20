@@ -34,10 +34,58 @@ const TASKS_CARD: Campaign = {
   participants: 250,
   reward: { trustTokens: 16, xp: 5, pool: 4000 },
   projectCoverImage: "/campaign.png",
-  starts_at: new Date("2025-12-05T00:00:00").toISOString(),
+  // starts_at: new Date().toISOString(),
+  starts_at: new Date(Date.now() - 86400000).toISOString(), // yesterday
+
   ends_at: undefined,
   metadata: JSON.stringify({ category: "Tasks" }),
+  status: "Active",
 };
+
+export const DEV_CAMPAIGNS: Campaign[] = [
+  {
+    _id: "tasks-card",
+    title: "Start Campaign Tasks",
+    description: "Complete unique tasks in the Nexura ecosystem and earn rewards",
+    project_name: "NEXURA",
+    joined: false,
+    participants: 250,
+    reward: { trustTokens: 16, xp: 5, pool: 4000 },
+    projectCoverImage: "/campaign.png",
+    starts_at: new Date().toISOString(),
+    ends_at: undefined,
+    metadata: JSON.stringify({ category: "Tasks" }),
+    status: "Active",
+  },
+  {
+    _id: "social-card",
+    title: "Social Boost Campaign",
+    description: "Engage on social platforms and earn bonus rewards",
+    project_name: "NEXURA",
+    joined: false,
+    participants: 540,
+    reward: { trustTokens: 24, xp: 10, pool: 8000 },
+    projectCoverImage: "/campaign.png",
+    starts_at: new Date().toISOString(),
+    ends_at: undefined,
+    metadata: JSON.stringify({ category: "Social" }),
+    status: "Active",
+  },
+  {
+    _id: "referral-card",
+    title: "Referral Sprint",
+    description: "Invite friends and climb the leaderboard",
+    project_name: "NEXURA",
+    joined: false,
+    participants: 120,
+    reward: { trustTokens: 40, xp: 20, pool: 12000 },
+    projectCoverImage: "/campaign.png",
+    starts_at: new Date().toISOString(),
+    ends_at: undefined,
+    metadata: JSON.stringify({ category: "Referral" }),
+    status: "Active",
+  },
+];
 
 export default function Campaigns() {
   const { user } = useAuth();
