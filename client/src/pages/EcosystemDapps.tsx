@@ -273,17 +273,17 @@ export default function EcosystemDapps() {
                     <Button
                       size="sm"
                       className={`
-    w-full sm:w-40
-    bg-gradient-to-r from-purple-700 via-purple-800 to-indigo-900
-    text-white
-    hover:from-purple-600 hover:via-purple-700 hover:to-indigo-800
-    active:scale-[0.98]
-    transition-all
-  `}
-                      disabled={!visitedDapps.includes(dapp._id) || claimedDapps.includes(dapp._id)}
+                        w-full sm:w-40
+                        bg-gradient-to-r from-purple-700 via-purple-800 to-indigo-900
+                        text-white
+                        hover:from-purple-600 hover:via-purple-700 hover:to-indigo-800
+                        active:scale-[0.98]
+                        transition-all
+                      `}
+                      disabled={dapp.done || !visitedDapps.includes(dapp._id) || claimedDapps.includes(dapp._id)}
                       onClick={(e) => { e.stopPropagation(); handleClaim(dapp); }}
                     >
-                      {claimedDapps.includes(dapp._id) ? "Claimed" : `Claim ${dapp.reward}`}
+                      {dapp.done ?? claimedDapps.includes(dapp._id) ? "Claimed" : `Claim ${dapp.reward}`}
                     </Button>
                   </div>
                 </CardContent>

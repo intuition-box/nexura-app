@@ -379,7 +379,7 @@ export const claimCampaignRewards = async (
 
 		completedCampaign.campaignCompleted = true;
 
-		const level = await updateLevel(userToReward.xp, userToReward._id.toString());
+		const level = await updateLevel(userToReward.xp, userToReward.badges, userToReward._id.toString());
 		
 		userToReward.level = level;
 

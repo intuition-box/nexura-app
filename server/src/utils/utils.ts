@@ -8,40 +8,60 @@ export const padNumber = (numberToBePadded: number) => {
 	return numberToBePadded.toString().padStart(3, "0");
 }
 
-async function updateLevel (xp: number, userId: string) {
+async function updateLevel (xp: number, badges: number[], userId: string) {
 	let address: `0x${string}` | undefined = undefined;
 	let level: string = "1";
 
 	if (xp > 1000 && xp < 3000) {
 		level = "1";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	} else if (xp > 3000 && xp < 6000) {
 		level = "2";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	} else if (xp > 6000 && xp < 10000) {
 		level = "3";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	} else if (xp > 10000 && xp < 15000) {
 		level = "4";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	} else if (xp > 15000 && xp < 20000) {
 		level = "5";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	} else if (xp > 20000 && xp < 30000) {
 		level = "6";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	} else if (xp > 30000 && xp < 40000) {
 		level = "7";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	} else if (xp > 40000 && xp < 50000) {
 		level = "8";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	} else if (xp > 50000 && xp < 65000) {
 		level = "9";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	} else if (xp >= 65000) {
 		level = "10";
-		address = NexonsAddress[level]
+		if (!badges.includes(parseInt(level))) {
+			address = NexonsAddress[level]
+		}
 	}
 
 	if (address) {
