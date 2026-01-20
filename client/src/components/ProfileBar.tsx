@@ -65,7 +65,7 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
     signOut();
     try { localStorage.removeItem("nexura:wallet"); } catch { }
     try { disconnect?.(); } catch { }
-    setLocation("/");
+    setLocation("/discover");
     toast({ title: "Signed out", description: "Your session was cleared." });
   };
 

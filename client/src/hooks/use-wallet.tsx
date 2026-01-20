@@ -123,7 +123,7 @@ export function useWallet() {
         try {
           window.location.reload();
         } catch (e) {
-          window.location.href = "/";
+          window.location.href = "/discover";
         }
       }
 
