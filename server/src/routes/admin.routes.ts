@@ -6,7 +6,7 @@ const router = Router();
 
 router
   .post("/create-quest", authenticateAdmin, createQuest)
-  .post("/validate-quest", authenticateAdmin, markTask)
+  .post("/validate-task", authenticateAdmin, markTask)
   .post("/add-admin", authenticateAdmin, addAdmin)
   .post("/register", authenticateAdmin, createAdmin)
   .post("/login", authenticateAdmin, adminLogin)
