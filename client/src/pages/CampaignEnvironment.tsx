@@ -380,9 +380,10 @@ export default function CampaignEnvironment() {
                         </button>
                       )}
                       {claimed && !pending && (
-                      <span className={`text-sm ${claimed ? "text-green-400" : "text-white"} font-semibold`}>
-                          {claimed ? "Completed" : "Pending"}
-                        </span>
+                        <span className="text-sm text-green-400 font-semibold">Completed</span>
+                      )}
+                      {!claimed && pending && (
+                        <span className="text-sm text-white font-semibold">Pending</span>
                       )}
                       {/* {pending && <button disabled={true} className="text-sm text-white bg-white/10 font-semibold">Pending</button>} */}
                     </div>
