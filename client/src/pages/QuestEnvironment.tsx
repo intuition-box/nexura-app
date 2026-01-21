@@ -49,7 +49,7 @@ export default function QuestEnvironment() {
     return JSON.parse(localStorage.getItem('nexura:quest:claimed') || '[]')[userId] || [];
   });
   const [pendingQuests, setPendingQuests] = useState<string[]>(() => {
-    const stored = JSON.parse(localStorage.getItem("nexura:campaign:pending") || "{}");
+    const stored = JSON.parse(localStorage.getItem("nexura:quest:pending") || "{}");
     return stored[userId] || [];
   });
   const [questCompleted, setQuestCompleted] = useState<boolean>(() => {
@@ -109,10 +109,10 @@ export default function QuestEnvironment() {
   }, [questCompleted]);
 
   useEffect(() => {
-    const pending: any = JSON.parse(localStorage.getItem("nexura:campaign:pending") || "{}");
+    const pending: any = JSON.parse(localStorage.getItem("nexura:quest:pending") || "{}");
     pending[userId] = pendingQuests;
-    localStorage.setItem("nexura:campaign:pending", JSON.stringify(pending));
-  }, [pendingQuests, userId]);
+    localStorage.setItem("nexura:quest:pending", JSON.stringify(pending));
+  }, [pendingQuests]);
 
   const miniQuestsCompleted = miniQuests.filter((m) => m.done === true).length === miniQuests.length;
 
@@ -197,7 +197,6 @@ export default function QuestEnvironment() {
           q._id === miniQuest._id ? { ...q, done: true } : q
         )
       );
-
 
       // window.location.reload();
     } catch (error: any) {
@@ -290,7 +289,7 @@ export default function QuestEnvironment() {
             </button>
           )}
 
-          {visited && isCommentQuest && !pending && (
+          {visited && isCommentQuest && !claimed && !pending && (
             <button
               onClick={() =>
                 setExpandedQuestId(isExpanded ? null : quest._id)
