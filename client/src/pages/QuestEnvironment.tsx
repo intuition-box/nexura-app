@@ -264,12 +264,6 @@ export default function QuestEnvironment() {
     const isCommentQuest = quest.tag === "comment";
     const isExpanded = expandedQuestId === quest._id;
 
-    let buttonText = "Start Quest";
-
-    if (visited) buttonText = "Claim";
-    if (pending) buttonText = "Pending";
-    if (claimed) buttonText = "Completed";
-
     return (
       <div
         key={index}
@@ -283,7 +277,7 @@ export default function QuestEnvironment() {
               onClick={() => visitQuest(quest)}
               className="px-5 py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-sm font-semibold"
             >
-              {buttonText}
+              Start Task
             </button>
           )}
 
@@ -292,7 +286,7 @@ export default function QuestEnvironment() {
               onClick={() => claimReward(quest)}
               className="px-5 py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-sm font-semibold"
             >
-              {buttonText}
+              Claim
             </button>
           )}
 
@@ -307,13 +301,13 @@ export default function QuestEnvironment() {
             </button>
           )}
 
-          {claimed && (
-            <span className="text-sm text-green-400 font-semibold">
-              Completed
+          {claimed && !pending && (
+            <span className={`text-sm ${claimed ? "text-green-400" : "text-white"} font-semibold`}>
+              {claimed ? "Completed" : "Pending"}
             </span>
           )}
 
-          {pending && <button disabled={true} className="text-sm text-white bg-white/10 font-semibold">Pending</button>}
+          {/* {pending && <button disabled={true} className="text-sm text-white bg-white/10 font-semibold">Pending</button>} */}
         </div>
 
         {/* DROPDOWN PROOF INPUT */}
