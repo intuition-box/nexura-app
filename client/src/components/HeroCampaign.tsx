@@ -70,7 +70,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
 
   return (
     <div
-      className="relative h-96 glass rounded-3xl overflow-hidden mb-8 cursor-pointer group"
+    className="relative h-[24rem] sm:h-96 glass rounded-3xl overflow-hidden mb-6 cursor-pointer group"
       onClick={handleCampaignClick}
       data-testid="hero-campaign-card"
     >
@@ -90,7 +90,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
           e.stopPropagation();
           prevCampaign();
         }}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-300"
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 glass hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-300"
         data-testid="button-prev-campaign"
       >
         <ChevronLeft className="w-5 h-5 text-white" />
@@ -107,8 +107,8 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
         <ChevronRight className="w-5 h-5 text-white" />
       </button>
 
-      <div className="relative h-full flex items-center">
-        <div className="flex-1 p-8">
+      <div className="relative h-full flex flex-col sm:flex-row items-start sm:items-center">
+        <div className="flex-1 p-4 sm:p-8">
           {/* Participant Count */}
           <div className="text-white/80 text-sm mb-2">
             {formatParticipants(currentCampaign.participants ?? 0)} participants
@@ -117,11 +117,12 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
           {/* Campaign Label */}
           <div className="text-white/60 text-sm mb-2">Campaign</div>
 
-          {/* Title */}
-          <h1 className="text-4xl font-bold text-white mb-4">{currentCampaign.title}</h1>
 
-          {/* Description */}
-          <p className="text-white/80 text-lg mb-6 max-w-md">{currentCampaign.description}</p>
+          {/* Campaign Title */}
+          <h1 className="text-2xl sm:text-4xl font-bold text-white mb-2 sm:mb-4">{currentCampaign.title}</h1>
+
+          {/* Campaign Description */}
+          <p className="text-sm sm:text-lg text-white/80 mb-4 sm:mb-6 max-w-full sm:max-w-md">{currentCampaign.description}</p>
 
           {/* Date and Status */}
           <div className="flex items-center space-x-6 mb-6">
@@ -161,10 +162,10 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
         </div>
 
         {/* 3D Hexagonal Logo Display */}
-        <div className="flex-shrink-0 pr-8">
+        <div className="flex-shrink-0 mt-6 sm:mt-0 sm:pr-8 flex justify-center sm:justify-end">
           <div className="relative">
             {/* 3D Hexagonal Base */}
-            <div className="relative w-48 h-48">
+            <div className="relative w-32 h-32 sm:w-48 sm:h-48">
               {/* Base hexagon */}
               <div className="absolute inset-0 transform perspective-1000 rotate-x-20">
                 <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 clip-hexagon transform-3d"></div>
@@ -177,7 +178,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
 
               {/* Project Logo */}
               <div className="absolute inset-8 flex items-center justify-center">
-                <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center border-4 border-white/20">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 bg-black rounded-full flex items-center justify-center border-4 border-white/20">
                   <img
                     src={currentCampaign.projectLogo}
                     alt={currentCampaign.project_name}

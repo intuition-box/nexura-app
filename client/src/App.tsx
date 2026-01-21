@@ -36,7 +36,7 @@ import ProjectLogoutButton from "./components/ProjectLogoutButton";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PortalClaims from "./pages/PortalClaims";
 import AnimatedBackground from "./components/AnimatedBackground";
-import Home from "./pages/Home";
+import Home from "./pages/Home.tsx";
 
 function Router() {
   return (

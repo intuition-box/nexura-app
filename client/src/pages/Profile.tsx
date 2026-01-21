@@ -32,8 +32,8 @@ const LEVEL_IMAGES = [
   "relic-runner.jpg",
   "rune-raider.jpg",
   "temple-warden.jpg",
-  "crypt-driver.jpg",
-  "vault-server.jpg",
+  "crypt-diver.jpg",
+  "vault-sever.jpg",
   "relic-master.jpg",
   "nexon-vanguard.jpg",
 ];
@@ -49,7 +49,7 @@ const LEVELS = [
   { name: "Temple Warden", xp: 40000 },
   { name: "Relic Master", xp: 50000 },
   { name: "Nexon Vanguard", xp: 65000 },
-].map((lvl, idx) => ({ ...lvl, img: `/profile/${LEVEL_IMAGES[idx]}` }));
+].map((lvl, idx) => ({ ...lvl, img: `/LEVELS/${LEVEL_IMAGES[idx]}` }));
 
 function WalletDropdown() {
   const { isConnected, connectWallet, address, disconnect } = useWallet();
