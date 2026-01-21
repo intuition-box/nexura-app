@@ -1,4 +1,3 @@
-import logo from "/nexura-logo.png";
 import HomeBackground from "../components/HomeBackground"
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
@@ -28,10 +27,11 @@ export default function Home() {
 
     {/* Top-left Logo */}
     <img
-      src={logo}
-      alt="Nexura Logo"
-      className="absolute top-6 left-4 w-24 sm:w-32 sm:top-12 sm:left-12 z-10"
-    />
+  src="/nexura-logo.png"
+  alt="Nexura Logo"
+  className="absolute top-6 left-4 w-24 sm:w-32 sm:top-12 sm:left-12 z-10"
+/>
+
 
     <div className="absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 text-center z-10 h-screen">
 
