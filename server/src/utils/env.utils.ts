@@ -17,6 +17,8 @@ export const REDIS_USERNAME = process.env.REDIS_USERNAME as string;
 
 export const ADMIN_URL = process.env.ADMIN_URL as string;
 
+export const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS as unknown as string[];
+
 export const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
 export const AWS_REGION = process.env.AWS_REGION as string;
 export const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY as string;

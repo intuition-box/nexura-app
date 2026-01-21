@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import helmet from "helmet";
-import { port, BOT_TOKEN } from "@/utils/env.utils";
+import { port, BOT_TOKEN, ALLOWED_ORIGINS } from "@/utils/env.utils";
 import DB from "@/config/db";
 import logger from "@/config/logger";
 import appRoutes from "@/routes";
@@ -10,7 +10,7 @@ import { firstMessage } from "@/models/msg.model";
 
 const server = express();
 
-server.use(cors({ origin: ["http://localhost:5173", "https://nexura-app-jg48.vercel.app", "https://nexura.intuition.box"] }));
+server.use(cors({ origin: ALLOWED_ORIGINS }));
 server.use(helmet());
 server.use(express.json());
 server.use(express.urlencoded({ extended: true }));
