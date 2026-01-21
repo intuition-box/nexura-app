@@ -77,62 +77,61 @@ export default function Leaderboard() {
   const currentUserId = user?._id ?? "8"; // Logged-in user ID
   const [cardState, setCardState] = useState<"floatingBottom" | "normal" | "stickyTop">("normal");
 
-  useEffect(() => {
-    if (!currentUserRowRef.current) return;
+  // useEffect(() => {
+  //   if (!currentUserRowRef.current) return;
 
-    const cardEl = currentUserRowRef.current;
-    const topSentinel = topSentinelRef.current;
-    const bottomSentinel = bottomSentinelRef.current;
-    if (!topSentinel || !bottomSentinel) return;
+  //   const cardEl = currentUserRowRef.current;
+  //   const topSentinel = topSentinelRef.current;
+  //   const bottomSentinel = bottomSentinelRef.current;
+  //   if (!topSentinel || !bottomSentinel) return;
 
-    // Measure card height dynamically
-    const resizeObserver = new ResizeObserver(() => {
-      setCardHeight(cardEl.offsetHeight);
-    });
-    resizeObserver.observe(cardEl);
+  //   // Measure card height dynamically
+  //   const resizeObserver = new ResizeObserver(() => {
+  //     setCardHeight(cardEl.offsetHeight);
+  //   });
+  //   resizeObserver.observe(cardEl);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        let topVisible = true;
-        let bottomVisible = true;
+  //   const observer = new IntersectionObserver(
+  //     (entries) => {
+  //       let topVisible = true;
+  //       let bottomVisible = true;
 
-        entries.forEach((entry) => {
-          if (entry.target === topSentinel) {
-            topVisible = entry.isIntersecting;
-          }
-          if (entry.target === bottomSentinel) {
-            bottomVisible = entry.isIntersecting;
-          }
-        });
+  //       entries.forEach((entry) => {
+  //         if (entry.target === topSentinel) {
+  //           topVisible = entry.isIntersecting;
+  //         }
+  //         if (entry.target === bottomSentinel) {
+  //           bottomVisible = entry.isIntersecting;
+  //         }
+  //       });
 
-        // PRIORITY FIX:
-        if (!topVisible) {
-          setCardState("floatingBottom");  // card below viewport → float bottom
-        } else if (!bottomVisible) {
-          setCardState("stickyTop"); // scroll down past card → stick to top
-        } else {
-          setCardState("normal"); // card in viewport → normal
-        }
-      }, { threshold: 0 }
-    );
+  //       // PRIORITY FIX:
+  //       if (!topVisible) {
+  //         setCardState("floatingBottom");  // card below viewport → float bottom
+  //       } else if (!bottomVisible) {
+  //         setCardState("stickyTop"); // scroll down past card → stick to top
+  //       } else {
+  //         setCardState("normal"); // card in viewport → normal
+  //       }
+  //     }, { threshold: 0 }
+  //   );
 
-    observer.observe(topSentinel);
-    observer.observe(bottomSentinel);
+  //   observer.observe(topSentinel);
+  //   observer.observe(bottomSentinel);
 
-    return () => {
-      observer.disconnect();
-      resizeObserver.disconnect();
-    };
-  }, [list]);
+  //   return () => {
+  //     observer.disconnect();
+  //     resizeObserver.disconnect();
+  //   };
+  // }, [list]);
 
 
   return (
     // <div className="min-h-screen bg-black text-white p-6 relative">
-    <div className="min-h-screen bg-black text-white px-3 sm:px-4 md:px-6 py-6 relative">
-      <AnimatedBackground />
+    <div className="min-h-screen bg-black text-white py-8 relative">
+  <AnimatedBackground />
+  <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 space-y-6 relative z-10">
 
-      {/* <div className="max-w-4xl mx-auto space-y-6 relative z-10"> */}
-      <div className="max-w-4xl mx-auto space-y-6 relative z-10 px-1 sm:px-0">
         {/* <header className="flex items-center justify-between"> */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           {/* Left side: icon + title */}
@@ -203,7 +202,8 @@ export default function Leaderboard() {
                   >
                     {/* Avatar */}
                     {/* <Avatar className="w-24 h-24 -translate-y-6 ring-2 ring-white/15"> */}
-                    <Avatar className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 -translate-y-4 sm:-translate-y-6 ring-2 ring-white/15">
+                    <Avatar className="w-12 h-12 sm:w-16 md:w-20 -translate-y-3 sm:-translate-y-5 ring-2 ring-white/15">
+
                       <AvatarImage
                         src={
                           user.avatar ||
@@ -348,7 +348,7 @@ export default function Leaderboard() {
             if (isCurrentUser) {
               if (cardState === "floatingBottom") {
                 positionClass +=
-                  "fixed bottom-3 left-1/2 -translate-x-1/2 p-4 rounded-3xl border-2 w-[95%] sm:w-full max-w-4xl";
+                  "fixed bottom-3 left-1/2 -translate-x-1/2 p-4 rounded-3xl border-2 w-[95%] w-full max-w-xl";
               } else if (cardState === "stickyTop") {
                 positionClass +=
                   " fixed top-3 left-1/2 -translate-x-1/2 z-[999] p-4 rounded-3xl border-2 w-[95%] sm:w-full max-w-4xl";
@@ -400,7 +400,7 @@ export default function Leaderboard() {
                     <div className="flex items-center gap-4">
                       {/* Rank */}
                       <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center font-bold border-2 ${isCurrentUser ? "bg-[#f5c542]/20 text-[#f5c542]" : `${accent.text} ${accent.bg}`
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold border-2 ${isCurrentUser ? "bg-[#f5c542]/20 text-[#f5c542]" : `${accent.text} ${accent.bg}`
                           }`}
                         style={{
                           borderColor: isCurrentUser ? "#f5c542" : accent.border,
@@ -440,7 +440,7 @@ export default function Leaderboard() {
                     </div>
                     {/* XP */}
                     <div className="flex items-center gap-1">
-                      <img src={xpIcon} alt="XP" className="w-5 h-5" />
+                      <img src={xpIcon} alt="XP" className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span className={`text-xl font-bold ${isCurrentUser ? "text-[#f5c542]" : accent.text}`}>
                         {entry.xp}
                       </span>
