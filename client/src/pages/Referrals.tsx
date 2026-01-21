@@ -183,10 +183,10 @@ export default function ReferralsPage() {
             <Card className="w-full bg-white/5 rounded-2xl p-6 space-y-3 animate-slide-up">
               <p className="text-sm font-medium">Important Rule</p>
               <p className="text-xs text-white/80">
-                Referrals only count as <span className="font-medium">“Active”</span> after they complete their <span className="font-medium">first quest or campaign</span>.
+                Referrals are only counted as <span className="font-medium">“active”</span> after they complete their <span className="font-medium">first quest or campaign</span>.
               </p>
               <p className="text-xs text-white/80">
-                You can refer up to <span className="font-medium">10 people max</span>, and only <span className="font-medium">active referrals</span> qualify.
+                You can refer as many people as you want, but only a maximum of <span className="font-medium">10 active referrals</span> will qualify for referral rewards.
               </p>
             </Card>
           </div>

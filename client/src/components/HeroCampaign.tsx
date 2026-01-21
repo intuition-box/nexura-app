@@ -180,7 +180,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
               <div className="absolute inset-8 flex items-center justify-center">
                 <div className="w-16 h-16 sm:w-24 sm:h-24 bg-black rounded-full flex items-center justify-center border-4 border-white/20">
                   <img
-                    src={currentCampaign.projectLogo}
+                    src="/3D%20LOGO.png"
                     alt={currentCampaign.project_name}
                     className="w-16 h-16 rounded-full object-cover"
                   />

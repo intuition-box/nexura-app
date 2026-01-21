@@ -7,7 +7,6 @@ import { Search } from "lucide-react";
 import { useLocation } from "wouter";
 import { queryClient } from "../lib/queryClient";
 import HeroCampaign from "../components/HeroCampaign";
-import QuestCard from "../components/QuestCard";
 import CampaignCard from "../components/CampaignCard";
 import AnimatedBackground from "../components/AnimatedBackground";
 
@@ -25,7 +24,6 @@ import intuRank from "@assets/intuRank.jpg";
 import tribeMeme from "@assets/tribeMeme.jpg";
 import tnsLogo from "@assets/tnsLogo.jpg";
 import { DEV_CAMPAIGNS } from "../pages/Campaigns";
-import { DUMMY_QUESTS } from "../pages/Quests";
 
 export default function Discover() {
   const [activeTab, setActiveTab] = useState("all");
@@ -87,14 +85,6 @@ export default function Discover() {
     retry: false,
   });
 
-  const { data: questsData } = useQuery({
-    queryKey: ["/api/quests"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/quests");
-      return res.json();
-    },
-    retry: false,
-  });
 
 //   const allQuests =
 //   questsData
@@ -118,18 +108,6 @@ export default function Discover() {
     .filter((c: any) => c.status?.toLowerCase() === "active")
     .slice(0, 3);
     
-  const allQuests =
-    questsData
-      ? [
-          ...(questsData.oneTimeQuests ?? []),
-          ...(questsData.weeklyQuests ?? []),
-          ...(questsData.featuredQuests ?? []),
-        ]
-      : DUMMY_QUESTS;
-
-  const trendingQuests = allQuests
-    .filter((q: any) => q.status === "active")
-    .slice(0, 3);
 
   const trendingDapps = [
     { name: "Intuition Portal", logo: intuitionPortal, category: "Portal" },
@@ -209,39 +187,6 @@ export default function Discover() {
               </div>
             </section>
 
-            {/* Trending Quests */}
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg sm:text-2xl md:text-4xl font-bold animate-slide-up delay-200">
-                  Trending Quests
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="animate-slide-up delay-300"
-                  onClick={() => setLocation("/quests")}
-                >
-                  Show all
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 px-8 sm:px-0">
-                {trendingQuests.length > 0 ? (
-                  trendingQuests.map((quest: any, index: number) => (
-                    <div
-                      key={`quest-${quest._id}`}
-                      className={`animate-slide-up delay-${(index + 1) * 100}`}
-                    >
-                      <QuestCard {...quest} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-white/50 animate-slide-up delay-100">
-                    No quests available.
-                  </div>
-                )}
-              </div>
-            </section>
 
             {/* Trending Dapps */}
             <section>
