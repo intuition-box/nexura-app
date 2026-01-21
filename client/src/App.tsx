@@ -37,6 +37,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PortalClaims from "./pages/PortalClaims";
 import AnimatedBackground from "./components/AnimatedBackground";
 import Home from "./pages/Home";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function Router() {
   return (
@@ -44,6 +45,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/home" component={Home} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route path="/discover" component={Discover} />
       <Route path="/levels" component={Levels} />
       {/* NEXURA pages */}
@@ -98,17 +100,18 @@ function App() {
 const isHome = location === "/" || location === "/home";
 const isStudio = location.startsWith("/studio");
 const isProject = location.startsWith("/project/");
+const isAdmin = location.startsWith("/admin");
                 return (
                   <div className="flex h-screen w-full text-white selection:bg-blue-500/30 relative">
   {/* Background behind everything */}
   <AnimatedBackground />
 
 {/* Sidebar */}
-{!isHome && !isStudio && !isProject && <NexuraSidebar />}
+{!isHome && !isStudio && !isProject && !isAdmin && <NexuraSidebar />}
 
   {/* Main content */}
   <div className="flex-1 flex flex-col relative z-10">
-    {!isHome && !isStudio && !isProject && (
+    {!isHome && !isStudio && !isProject && !isAdmin && (
       <header className="flex items-center justify-between p-4 app-header">
         <SidebarTrigger data-testid="button-sidebar-toggle" />
         <ProfileBar />
@@ -119,7 +122,7 @@ const isProject = location.startsWith("/project/");
     </main>
   </div>
 
-{!isHome && !isStudio && !isProject && <OrgSignInButton />}
+{!isHome && !isStudio && !isProject && !isAdmin && <OrgSignInButton />}
   {isProject && <ProjectLogoutButton />}
 </div>
 );
