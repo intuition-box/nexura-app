@@ -158,12 +158,12 @@ export default function Quests() {
               {quest.sub_title}
             </p>
 
-            {quest.project_name && (
+            {/* {quest.project_name && ( */}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Project:</span>
-                <span className="text-white">{quest.project_name}</span>
+                <span className="text-white">{quest.project_name ?? "Intuition Ecosystem"}</span>
               </div>
-            )}
+            {/* )} */}
 
             <div className="flex justify-between text-sm items-center">
               <span className="text-gray-500">Reward:</span>
