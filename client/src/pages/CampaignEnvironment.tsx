@@ -268,9 +268,9 @@ export default function CampaignEnvironment() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <p className="text-[0.65rem] sm:text-sm opacity-70 uppercase">Total Rewards</p>
+              <p className="text-[0.65rem] sm:text-sm opacity-70 uppercase">Total XP</p>
               <div className="bg-purple-600/30 border border-purple-500/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full flex items-center gap-1 sm:gap-2">
-                <span className="font-bold text-xs sm:text-sm">{reward.xp} XP + {reward.trustTokens} Trust</span>
+                <span className="font-bold text-xs sm:text-sm">{reward.xp} XP</span>
               </div>
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function CampaignEnvironment() {
                 </div>
                 <div className="mt-3 space-y-1">
                   <p className="text-xs opacity-50 uppercase">Rewards</p>
-                  <p className="text-sm">{reward.xp} XP</p>
+                  <p className="text-sm">{reward.xp} XP + {reward.trustTokens} Trust</p>
                 </div>
               </div>
 
@@ -379,10 +379,13 @@ export default function CampaignEnvironment() {
                           Submit Proof
                         </button>
                       )}
-                      {claimed && <span className="text-sm text-green-400 font-semibold">Completed</span>}
-                      {pending && <button disabled={true} className="text-sm text-white bg-white/10 font-semibold">Pending</button>}
+                      {claimed && !pending && (
+                      <span className={`text-sm ${claimed ? "text-green-400" : "text-white"} font-semibold`}>
+                          {claimed ? "Completed" : "Pending"}
+                        </span>
+                      )}
+                      {/* {pending && <button disabled={true} className="text-sm text-white bg-white/10 font-semibold">Pending</button>} */}
                     </div>
-
                   </div>
 
                   {isExpanded && isCommentQuest && (
