@@ -34,7 +34,6 @@ export default function QuestEnvironment() {
   const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
   const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
 
-
   const userId = user?._id || "";
 
   const [questNumber, setQuestNumber] = useState<string>("000");
@@ -43,10 +42,10 @@ export default function QuestEnvironment() {
   // const [miniQuestsCompleted, setMiniQuestsCompleted] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
   const [visitedQuests, setVisitedQuests] = useState<string[]>(() => {
-    return JSON.parse(localStorage.getItem('nexura:quest:visited') || '[]')[userId] || [];
+    return JSON.parse(localStorage.getItem('nexura:quest:visited') || '{}')[userId] || [];
   });
   const [claimedQuests, setClaimedQuests] = useState<string[]>(() => {
-    return JSON.parse(localStorage.getItem('nexura:quest:claimed') || '[]')[userId] || [];
+    return JSON.parse(localStorage.getItem('nexura:quest:claimed') || '{}')[userId] || [];
   });
   const [pendingQuests, setPendingQuests] = useState<string[]>(() => {
     const stored = JSON.parse(localStorage.getItem("nexura:quest:pending") || "{}");
@@ -94,27 +93,41 @@ export default function QuestEnvironment() {
     const value: Record<string, string[]> = {};
     value[userId] = visitedQuests;
 
-    localStorage.setItem('nexura:quest:visited', JSON.stringify(value))
-  }, [visitedQuests]);
+    if (userId) {
+      localStorage.setItem('nexura:quest:visited', JSON.stringify(value))
+    }
+
+  }, [visitedQuests, userId]);
+
   useEffect(() => {
     const value: Record<string, string[]> = {};
     value[userId] = claimedQuests;
 
-    localStorage.setItem('nexura:quest:claimed', JSON.stringify(value))
-  }, [claimedQuests]);
+    if (userId) {
+      localStorage.setItem('nexura:quest:claimed', JSON.stringify(value))
+    }
+
+  }, [claimedQuests, userId]);
+
   useEffect(() => {
     const value: Record<string, boolean> = {};
     value[userId] = questCompleted;
 
-    localStorage.setItem('nexura:quest:completed', JSON.stringify(value))
-  }, [questCompleted]);
+    if (userId) {
+      localStorage.setItem('nexura:quest:completed', JSON.stringify(value))
+    }
+
+  }, [questCompleted, userId]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};
     value[userId] = pendingQuests;
 
-    localStorage.setItem("nexura:quest:pending", JSON.stringify(value));
-  }, [pendingQuests]);
+    if (userId) {
+      localStorage.setItem('nexura:quest:pending', JSON.stringify(value))
+    }
+
+  }, [pendingQuests, userId]);
 
   const miniQuestsCompleted = miniQuests.filter((m) => m.done === true).length === miniQuests.length;
 

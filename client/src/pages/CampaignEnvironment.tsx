@@ -32,7 +32,9 @@ const campaignQuestsInitial: Quest[] = [
 
 export default function CampaignEnvironment() {
   const { user } = useAuth();
+
   const userId = user?._id || "";
+
   const { campaignId } = useParams();
   const { toast } = useToast();
 
@@ -100,22 +102,31 @@ export default function CampaignEnvironment() {
     const value: Record<string, string[]> = {};
     value[userId] = visitedQuests;
 
-    localStorage.setItem('nexura:campaign:visited', JSON.stringify(value))
-  }, [visitedQuests]);
+    if (userId) {
+      localStorage.setItem('nexura:campaign:visited', JSON.stringify(value))
+    }
+
+  }, [visitedQuests, userId]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};
     value[userId] = claimedQuests;
 
-    localStorage.setItem('nexura:campaign:claimed', JSON.stringify(value))
-  }, [claimedQuests]);
+    if (userId) {
+      localStorage.setItem('nexura:campaign:claimed', JSON.stringify(value))
+    }
+
+  }, [claimedQuests, userId]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};
     value[userId] = pendingQuests;
 
-    localStorage.setItem("nexura:campaign:pending", JSON.stringify(value));
-  }, [pendingQuests]);
+    if (userId) {
+      localStorage.setItem('nexura:campaign:pending', JSON.stringify(value))
+    }
+
+  }, [pendingQuests, userId]);
 
   // Open quest links
   const markQuestAsVisited = (quest: Quest) => {
