@@ -1,4 +1,5 @@
 import * as dotenv from "dotenv";
+import { z } from "zod";
 
 dotenv.config({ quiet: true });
 
@@ -17,7 +18,25 @@ export const REDIS_USERNAME = process.env.REDIS_USERNAME as string;
 
 export const ADMIN_URL = process.env.ADMIN_URL as string;
 
-export const ALLOWED_ORIGINS = JSON.parse(process.env.ALLOWED_ORIGINS as string) as string[];
+export const SERVER_ENV = z
+  .object({
+    ALLOWED_ORIGINS: z
+      .string()
+      .transform((value) => value.split(",").map((origin) => origin.trim()))
+      .refine(
+        (urls) =>
+          urls.every((url) => {
+            try {
+              new URL(url);
+              return true;
+            } catch {
+              return false;
+            }
+          }),
+        { message: "One or more ALLOWED_ORIGINS are invalid URLs" },
+      ),
+  })
+  .parse(process.env);
 
 export const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
 export const AWS_REGION = process.env.AWS_REGION as string;
