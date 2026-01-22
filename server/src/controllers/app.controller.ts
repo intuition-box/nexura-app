@@ -136,7 +136,7 @@ export const fetchUser = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const referralInfo = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const id = req.id;
+    const id = req.id as string;
     const userFetched = await user.findById(id);
 
     if (!userFetched) {
@@ -145,6 +145,15 @@ export const referralInfo = async (req: GlobalRequest, res: GlobalResponse) => {
     }
 
     const usersReferred = await referredUsers.find({ user: id });
+    const activeUsers = usersReferred.filter((user: { status: string }) => user.status === "Active");
+    if (activeUsers.length >= 10) {
+      if (!userFetched.refRewardClaimed) {
+        await performIntuitionOnchainAction({
+          action: "allow-ref-reward",
+          userId: id,
+        });
+      }
+    }
 
     res.status(OK).json({ message: "referral info fetched!", referralCode: userFetched.referral!.code, usersReferred });
   } catch (error) {
@@ -183,30 +192,6 @@ export const updateBadge = async (req: GlobalRequest, res: GlobalResponse) => {
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating badge" });
   }
 }
-
-export const allowRefRewardClaim = async (req: GlobalRequest, res: GlobalResponse) => {
-  try {
-    const userId = req.id!;
-
-    const usersReferred = await referredUsers.find({ user: userId });
-
-    const activeUsers = usersReferred.filter((u) => u.status === "Active");
-    if (activeUsers.length < 10) {
-      res.status(FORBIDDEN).json({ error: "active users threshold hasn't been met!" });
-      return;
-    }
-
-    await performIntuitionOnchainAction({
-      action: "claim-ref-reward",
-      userId,
-    });
-
-    res.status(OK).json({ message: "user allowed to claim referrer reward!" });
-  } catch (error) {
-    logger.error(error);
-    res.status(INTERNAL_SERVER_ERROR).json({ error: "error allowing user to claim referrer reward" })
-  }
-};
 
 export const claimReferreralReward = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
