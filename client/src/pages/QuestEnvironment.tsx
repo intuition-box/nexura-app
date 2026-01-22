@@ -88,6 +88,22 @@ export default function QuestEnvironment() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!userId || !questId) return;
+
+    const visited =
+      JSON.parse(localStorage.getItem("nexura:quest:visited") || "{}")[userId] || [];
+
+    const claimed =
+      JSON.parse(localStorage.getItem("nexura:quest:claimed") || "{}")[userId] || [];
+
+    const pending =
+      JSON.parse(localStorage.getItem("nexura:quest:pending") || "{}")[userId] || [];
+
+    setVisitedQuests(visited);
+    setClaimedQuests(claimed);
+    setPendingQuests(pending);
+  }, [userId]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};
@@ -127,7 +143,7 @@ export default function QuestEnvironment() {
       localStorage.setItem('nexura:quest:pending', JSON.stringify(value))
     }
 
-  }, [pendingQuests, userId]);
+  }, [pendingQuests]);
 
   const miniQuestsCompleted = miniQuests.filter((m) => m.done === true).length === miniQuests.length;
 
