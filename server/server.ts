@@ -49,8 +49,7 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 server.listen(port, async () => {
-	// await DB();
-	console.log(SERVER_ENV.ALLOWED_ORIGINS)
+	await DB();
 	await client.login(BOT_TOKEN);
 	logger.info(`Server is running on port ${port}`);
 });
