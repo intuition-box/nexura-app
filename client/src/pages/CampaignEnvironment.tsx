@@ -97,6 +97,25 @@ export default function CampaignEnvironment() {
     })();
   }, [claimedQuests, userId]);
 
+  console.log({ visitedQuests })
+
+  useEffect(() => {
+    if (!userId || !campaignId) return;
+
+    const visited =
+      JSON.parse(localStorage.getItem("nexura:campaign:visited") || "{}")[userId] || [];
+
+    const claimed =
+      JSON.parse(localStorage.getItem("nexura:campaign:claimed") || "{}")[userId] || [];
+
+    const pending =
+      JSON.parse(localStorage.getItem("nexura:campaign:pending") || "{}")[userId] || [];
+
+    setVisitedQuests(visited);
+    setClaimedQuests(claimed);
+    setPendingQuests(pending);
+  }, [userId]);
+
   // Sync localStorage for visited, claimed, and pending
   useEffect(() => {
     const value: Record<string, string[]> = {};
@@ -106,7 +125,7 @@ export default function CampaignEnvironment() {
       localStorage.setItem('nexura:campaign:visited', JSON.stringify(value))
     }
 
-  }, [visitedQuests]);
+  }, [visitedQuests, userId]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};
@@ -116,7 +135,7 @@ export default function CampaignEnvironment() {
       localStorage.setItem('nexura:campaign:claimed', JSON.stringify(value))
     }
 
-  }, [claimedQuests]);
+  }, [claimedQuests, userId]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};
@@ -126,7 +145,7 @@ export default function CampaignEnvironment() {
       localStorage.setItem('nexura:campaign:pending', JSON.stringify(value))
     }
 
-  }, [pendingQuests]);
+  }, [pendingQuests, userId]);
 
   // Open quest links
   const markQuestAsVisited = (quest: Quest) => {

@@ -88,6 +88,22 @@ export default function QuestEnvironment() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!userId || !questId) return;
+
+    const visited =
+      JSON.parse(localStorage.getItem("nexura:quest:visited") || "{}")[userId] || [];
+
+    const claimed =
+      JSON.parse(localStorage.getItem("nexura:quest:claimed") || "{}")[userId] || [];
+
+    const pending =
+      JSON.parse(localStorage.getItem("nexura:quest:pending") || "{}")[userId] || [];
+
+    setVisitedQuests(visited);
+    setClaimedQuests(claimed);
+    setPendingQuests(pending);
+  }, [userId]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};
@@ -97,7 +113,7 @@ export default function QuestEnvironment() {
       localStorage.setItem('nexura:quest:visited', JSON.stringify(value))
     }
 
-  }, [visitedQuests]);
+  }, [visitedQuests, userId]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};
@@ -107,7 +123,7 @@ export default function QuestEnvironment() {
       localStorage.setItem('nexura:quest:claimed', JSON.stringify(value))
     }
 
-  }, [claimedQuests]);
+  }, [claimedQuests, userId]);
 
   useEffect(() => {
     const value: Record<string, boolean> = {};
@@ -117,7 +133,7 @@ export default function QuestEnvironment() {
       localStorage.setItem('nexura:quest:completed', JSON.stringify(value))
     }
 
-  }, [questCompleted]);
+  }, [questCompleted, userId]);
 
   useEffect(() => {
     const value: Record<string, string[]> = {};
