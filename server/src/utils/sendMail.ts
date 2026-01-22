@@ -36,7 +36,8 @@ export const sendEmailToAdmin = async (email: string, code: string) => {
       subject: "Complete Nexura Admin Setup",
       template: "admin",
       context: {
-        url: `${ADMIN_URL}/register?code=${code}`,
+        url: `${ADMIN_URL}/register`,
+        code
       },
     } as MailOptions);
   } catch (error: any) {
