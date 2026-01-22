@@ -53,7 +53,7 @@ export default function QuestEnvironment() {
     return stored[userId] || [];
   });
   const [questCompleted, setQuestCompleted] = useState<boolean>(() => {
-    try { return Boolean(JSON.parse(localStorage.getItem('nexura:quest:completed') || "")[userId]); } catch (error) { return false }
+    try { return Boolean(JSON.parse(localStorage.getItem('nexura:quest:completed') || "{}")[userId]); } catch (error) { return false }
   });
   const [failedQuests, setFailedQuests] = useState<string[]>([]);
   const completedQuestsCount = miniQuests.filter(
