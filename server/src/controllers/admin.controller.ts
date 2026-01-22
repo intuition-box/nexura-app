@@ -139,9 +139,9 @@ export const adminLogin = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const { password, confirmPassword, email, code }: { password: string; confirmPassword: string; code: string; email: string } = req.body;
+		const { password, confirmPassword, email, code, username }: { username: string; password: string; confirmPassword: string; code: string; email: string } = req.body;
 
-		if (!password || !confirmPassword || !email) {
+		if (!password || !confirmPassword || !email || !username || !code) {
 			res.status(BAD_REQUEST).json({ error: "send the required details" });
 			return;
 		}
@@ -168,6 +168,7 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		semiAdmin.verified = true;
 		semiAdmin.password = hashedPassword;
+		semiAdmin.username = username;
 		semiAdmin.code = "";
 
 		await semiAdmin.save();
