@@ -8,8 +8,8 @@ router
   .post("/create-quest", authenticateAdmin, createQuest)
   .post("/validate-task", authenticateAdmin, markTask)
   .post("/add-admin", authenticateAdmin, addAdmin)
-  .post("/register", authenticateAdmin, createAdmin)
-  .post("/login", authenticateAdmin, adminLogin)
+  .post("/register", createAdmin)
+  .post("/login", adminLogin)
   .post("/remove-admin", authenticateAdmin, removeAdmin)
   .get("/get-quests", authenticateAdmin, getTasks)
   .get("/get-admins", authenticateAdmin, getAdmins);
