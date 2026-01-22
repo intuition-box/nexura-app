@@ -57,6 +57,7 @@ const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
 const [proofStatus, setProofStatus] = useState<
   Record<string, "idle" | "pending" | "approved">
 >({});
+const [pendingTasks, setPendingTasks] = useState<string[]>([]);
 
 
   const progressPercentage = miniQuests.length
@@ -220,17 +221,18 @@ setMiniQuests((prev) =>
 
   const submitCommentProof = async (quest: Quest) => {
   const link = proofLinks[quest._id];
-
   if (!link) {
-    toast({
-      title: "Missing link",
-      description: "Please paste your comment link.",
-      variant: "destructive",
-    });
+    toast({ title: "Missing link", description: "Please paste your comment link.", variant: "destructive" });
     return;
   }
 
   try {
+    // 1. Immediately mark as pending locally
+    setPendingTasks(prev => [...prev, quest._id]);
+    setProofStatus(prev => ({ ...prev, [quest._id]: "pending" }));
+    setExpandedQuestId(null);
+
+    // 2. Send to backend
     await apiRequestV2("POST", "/api/quest/submit-quest", {
       questId,
       miniQuestId: quest._id,
@@ -238,30 +240,15 @@ setMiniQuests((prev) =>
       type: "comment",
     });
 
-    toast({
-      title: "Submitted",
-      description: "Your proof has been submitted for review.",
-    });
-
-    setProofStatus(prev => ({
-      ...prev,
-      [quest._id]: "pending",
-    }));
-
-    setExpandedQuestId(null);
-
-    toast({
-      title: "Submitted",
-      description: "Your proof has been submitted for review.",
-    });
+    toast({ title: "Submitted", description: "Your proof has been submitted for review." });
   } catch (err: any) {
-    toast({
-      title: "Error",
-      description: err.message,
-      variant: "destructive",
-    });
+    // 3. Rollback if something fails
+    setPendingTasks(prev => prev.filter(id => id !== quest._id));
+    setProofStatus(prev => ({ ...prev, [quest._id]: "idle" }));
+    toast({ title: "Error", description: err.message, variant: "destructive" });
   }
 };
+
 
 useEffect(() => {
   if (!questId) return;
@@ -281,7 +268,6 @@ useEffect(() => {
     }
   })();
 }, [questId]);
-
 
   const renderQuestRow = (quest: Quest, index: number) => {
   const visited = visitedQuests.includes(quest._id);
