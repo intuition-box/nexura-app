@@ -4,7 +4,7 @@ import { quest } from "@/models/quests.model";
 import { admin } from "@/models/admin.model";
 import crypto from "crypto";
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, UNAUTHORIZED } from "@/utils/status.utils";
-import { validateQuestData } from "@/utils/utils";
+import { getRefreshToken, JWT, validateQuestData } from "@/utils/utils";
 import { sendEmailToAdmin } from "@/utils/sendMail";
 import { campaignQuestCompleted, miniQuestCompleted } from "@/models/questsCompleted.models";
 import { submission } from "@/models/submission.model";
@@ -119,7 +119,18 @@ export const adminLogin = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
 		}
 
-		res.status(OK).json({ message: "admin logged in" });
+		const accessToken = JWT.sign({ id: adminExists._id, status: "admin" });
+		const refreshToken = getRefreshToken(adminExists._id);
+
+		req.id = adminExists._id as unknown as string;
+
+		res.cookie("refreshToken", refreshToken, {
+			httpOnly: true,
+			secure: true,
+			maxAge: 30 * 24 * 60 * 60,
+		});
+
+		res.status(OK).json({ message: "admin logged in", accessToken });
 	} catch (error) {
 		logger.error(error);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
@@ -157,11 +168,22 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		semiAdmin.verified = true;
 		semiAdmin.password = hashedPassword;
-		semiAdmin.code = "code";
+		semiAdmin.code = "";
 
 		await semiAdmin.save();
 
-		res.status(OK).json({ message: "admin verified" });
+		const accessToken = JWT.sign({ id: semiAdmin._id, status: "admin" });
+		const refreshToken = getRefreshToken(semiAdmin._id);
+
+		req.id = semiAdmin._id as unknown as string;
+
+		res.cookie("refreshToken", refreshToken, {
+			httpOnly: true,
+			secure: true,
+			maxAge: 30 * 24 * 60 * 60,
+		});
+
+		res.status(OK).json({ message: "admin verified", accessToken });
 	} catch (error) {
 		logger.error(error);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
