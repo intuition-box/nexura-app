@@ -95,34 +95,34 @@ function App() {
               {(() => {
                 const [location] = useLocation();
 
-const isHome = location === "/" || location === "/home";
-const isStudio = location.startsWith("/studio");
-const isProject = location.startsWith("/project/");
+                const isHome = location === "/" || location === "/home";
+                const isStudio = location.startsWith("/studio");
+                const isProject = location.startsWith("/project/");
                 return (
                   <div className="flex h-screen w-full text-white selection:bg-blue-500/30 relative">
-  {/* Background behind everything */}
-  <AnimatedBackground />
+                    {/* Background behind everything */}
+                    <AnimatedBackground />
 
-{/* Sidebar */}
-{!isHome && !isStudio && !isProject && <NexuraSidebar />}
+                    {/* Sidebar */}
+                    {!isHome && !isStudio && !isProject && <NexuraSidebar />}
 
-  {/* Main content */}
-  <div className="flex-1 flex flex-col relative z-10">
-    {!isHome && !isStudio && !isProject && (
-      <header className="flex items-center justify-between p-4 app-header">
-        <SidebarTrigger data-testid="button-sidebar-toggle" />
-        <ProfileBar />
-      </header>
-    )}
-    <main className="flex-1 overflow-y-auto">
-      <Router />
-    </main>
-  </div>
+                    {/* Main content */}
+                    <div className="flex-1 flex flex-col relative z-10">
+                      {!isHome && !isStudio && !isProject && (
+                        <header className="flex items-center justify-between p-4 app-header">
+                          <SidebarTrigger data-testid="button-sidebar-toggle" />
+                          <ProfileBar />
+                        </header>
+                      )}
+                      <main className="flex-1 overflow-y-auto">
+                        <Router />
+                      </main>
+                    </div>
 
-{!isHome && !isStudio && !isProject && <OrgSignInButton />}
-  {isProject && <ProjectLogoutButton />}
-</div>
-);
+                    {/* {!isHome && !isStudio && !isProject && <OrgSignInButton />} */}
+                    {isProject && <ProjectLogoutButton />}
+                  </div>
+                );
               })()}
             </SidebarProvider>
             <Toaster />
