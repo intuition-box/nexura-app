@@ -622,13 +622,19 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		let notComplete;
 
+		const submissionExists = await submission.findOne({ miniQuestId: id, user: userExists._id, page });
+		if (submissionExists) {
+			res.status(BAD_REQUEST).json({ error: "quest already submitted" });
+			return;
+		}
+
 		if (page !== "campaign") {
 			notComplete = await miniQuestCompleted.create({ miniQuest: id, quest: questId });
 		} else {
 			notComplete = await campaignQuestCompleted.create({ campaign: questId, campaignQuest: id });
 		}
 
-		await submission.create({ submissionLink, taskType: tag, username: userExists.username, questId, user: userExists._id, page, questCompleted: notComplete._id });
+		await submission.create({ submissionLink, taskType: tag, username: userExists.username, miniQuestId: id, user: userExists._id, page, questCompleted: notComplete._id });
 
 		res.status(OK).json({ message: "quest submitted" });
 	} catch (error) {
