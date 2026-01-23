@@ -636,14 +636,14 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 				res.status(BAD_REQUEST).json({ error: "mini quest id is invalid" });
 				return;
 			}
-			notComplete = await miniQuestCompleted.create({ miniQuest: id, quest: questId });
+			notComplete = await miniQuestCompleted.create({ miniQuest: id, quest: questId, user: userExists._id });
 		} else {
 			questExists = await campaignQuest.findById(id);
 			if (!questExists) {
 				res.status(BAD_REQUEST).json({ error: "campaign quest id is invalid" });
 				return;
 			}
-			notComplete = await campaignQuestCompleted.create({ campaign: questId, campaignQuest: id });
+			notComplete = await campaignQuestCompleted.create({ campaign: questId, campaignQuest: id, user: userExists._id });
 		}
 
 		await submission.create({ submissionLink, taskType: tag, username: userExists.username, miniQuestId: id, user: userExists._id, page, questCompleted: notComplete._id });
