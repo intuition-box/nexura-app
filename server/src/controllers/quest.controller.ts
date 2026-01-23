@@ -440,6 +440,12 @@ export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
 		}
 
+		const isQuestCompleted = await questCompleted.findOne({ quest: id, user: questUser._id });
+		if (isQuestCompleted) {
+			res.status(FORBIDDEN).json({ error: "quest already completed" });
+			return;
+		}
+
 		questUser.questsCompleted += 1;
 
 		questUser.xp += questFound.reward;

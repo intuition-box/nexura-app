@@ -69,10 +69,10 @@ export default function QuestEnvironment() {
         title: t,
         questNumber: quest_no,
         sub_title: st,
-        questCompleted
+        questCompleted: comp
       } = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
 
-      setCompleted(questCompleted);
+      setCompleted(comp);
       // setMiniQuestsCompleted();
       setMiniQuests(quests);
       setTotalXP(totalXp);
@@ -430,7 +430,7 @@ export default function QuestEnvironment() {
 
               <Button
                 onClick={() => claimQuestReward()}
-                disabled={!miniQuestsCompleted || questCompleted}
+                disabled={!miniQuestsCompleted || completed}
                 className={`w-full font-semibold rounded-xl py-3 mt-6 
                   ${miniQuestsCompleted || !completed || claimedQuests.length === miniQuests.length || !questCompleted
                     ? "bg-purple-600 hover:bg-purple-700 text-white"

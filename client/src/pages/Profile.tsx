@@ -99,10 +99,14 @@ export default function Profile() {
   const { user, loading, setUser } = useAuth();
   const { address } = useWallet();
 
+  const userId = user?._id || "";
+
   const { toast } = useToast();
 
   // Store list of minted levels, NOT a counter
-  const [mintedLevels, setMintedLevels] = useState<number[]>([]);
+  const [mintedLevels, setMintedLevels] = useState<number[]>(() => {
+    return JSON.parse(localStorage.getItem('nexura:nexon:minted') || '{}')[userId] || [];
+  });
 
   const [referralCount, setReferralCount] = useState<number>(0);
   const [loadingReferrals, setLoadingReferrals] = useState(false);
@@ -188,6 +192,24 @@ export default function Profile() {
     };
   }, [userData?.xp]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const minted =
+      JSON.parse(localStorage.getItem("nexura:nexon:minted") || "{}")[userId] || [];
+
+    setMintedLevels(minted);
+  }, [user]);
+
+  useEffect(() => {
+    const value: Record<string, number[]> = {};
+    value[userId] = mintedLevels;
+
+    if (user) {
+      localStorage.setItem('nexura:nexon:minted', JSON.stringify(value))
+    }
+
+  }, [mintedLevels, user]);
 
   const { levelName, levelValue, xpValue, nextLevelXp, neededXp, progressPercentage, currentLevelIndex } =
     levelInfo;
