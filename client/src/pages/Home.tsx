@@ -1,4 +1,4 @@
-import HomeBackground from "../components/HomeBackground"
+import AnimatedBackground from "../components/AnimatedBackground"
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import React from "react";
@@ -7,21 +7,23 @@ export default function Home() {
   return (
     <>
     {/* HERO SECTION */}
-<div className="relative text-white overflow-hidden">
+<div className="relative h-screen w-full text-white overflow-hidden">
 
-  {/* Mobile Gradient / Desktop Video wrapper */}
-  <div className="relative w-full">
+  {/* Background Video */}
+  <div className="absolute inset-0">
+    <video
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="absolute inset-0 w-full h-full object-cover"
+    >
+      <source src="/nexura-logo-mov.mp4" type="video/mp4" />
+    </video>
 
-<div className="relative w-full h-screen overflow-hidden">
-  <video
-    src="/nexura-logo-mov.mp4"
-    autoPlay
-    loop
-    muted
-    playsInline
-    className="absolute top-0 left-0 w-full h-full object-cover opacity-20"
-  />
-</div>
+    {/* Overlay — NOT opacity on video */}
+    <div className="absolute inset-0 bg-black/60" />
+  </div>
 
     {/* Top Left Logo */}
     <img
@@ -111,23 +113,27 @@ export default function Home() {
   </a>
 </div>
     </div>
-  </div>
 
   {/* Top & bottom fade overlay */}
   <div className="absolute inset-0 pointer-events-none">
     <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-black/100 to-black/0" />
     <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black/100 to-black/0" />
   </div>
+  </div> {/* END HERO SECTION */}
+
 
 
 <motion.section
+  className="relative overflow-hidden"
   initial={{ opacity: 0, y: 100 }}
   whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, amount: 0.2 }} // 20% of the section must be visible
+  viewport={{ once: true, amount: 0.2 }}
   transition={{ duration: 1.5 }}
 >
-  {/* DISCOVER SECTION */}
-<section className="relative text-white flex flex-col items-center px-6 py-20 text-center">
+  <div className="relative min-h-[80vh]">
+    <AnimatedBackground />
+
+    <section className="relative z-10 text-white flex flex-col items-center px-6 py-20 text-center">
   <div className="relative z-10 flex flex-col items-center">
     <h2 className="font-geist text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
       Discover projects, complete quests, campaigns{" "}
@@ -185,15 +191,21 @@ export default function Home() {
     </div>
   </div>
 </section>
+</div>
 </motion.section>
 
 <motion.section
+  className="relative overflow-hidden"
   initial={{ opacity: 0, y: 100 }}
   whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, amount: 0.2 }} // 20% of the section must be visible
+  viewport={{ once: true, amount: 0.2 }}
   transition={{ duration: 1.5 }}
 >
-<section className="flex flex-col sm:flex-row text-white items-center justify-center px-4 sm:px-0 py-12 sm:py-20">
+  <div className="relative w-full min-h-[70vh]">
+    <AnimatedBackground/>
+
+    <section className="relative z-10 flex flex-col sm:flex-row text-white items-center justify-center px-4 sm:px-0 py-12 sm:py-20">
+
 
   {/* Left half image */}
   <div className="flex-1 flex items-center justify-center relative mb-6 sm:mb-0 order-1 sm:order-0">
@@ -234,14 +246,19 @@ export default function Home() {
   </div>
 
 </section>
+</div>
 </motion.section>
 
 <motion.section
+  className="relative overflow-hidden"
   initial={{ opacity: 0, y: 100 }}
   whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, amount: 0.2 }} // 20% of the section must be visible
+  viewport={{ once: true, amount: 0.2 }}
   transition={{ duration: 1.5 }}
 >
+  {/* Animated background behind everything */}
+  <AnimatedBackground />
+
 <section className="relative text-white py-16 sm:py-24 px-4 sm:px-6 overflow-hidden">
   <div className="relative z-10">
 
@@ -332,13 +349,16 @@ export default function Home() {
 
 <motion.section
   initial={{ opacity: 0, y: 100 }}
+  className="relative overflow-hidden"
   whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, amount: 0.2 }} // 20% of the section must be visible
+  viewport={{ once: true, amount: 0.2 }}
   transition={{ duration: 1.5 }}
 >
+    <AnimatedBackground />
 <section className="text-white py-20 lg:py-28 px-4 lg:px-6 relative overflow-hidden">
   <div className="relative z-10 max-w-7xl mx-auto">
 
+    {/* Mobile image: shown only on <lg */}
     <img
       src="/built-for-section.png"
       alt="Built For Mobile"
@@ -486,7 +506,6 @@ export default function Home() {
   </div>
 </section>
 </motion.section>
-</div>
     </>
   );
 }
