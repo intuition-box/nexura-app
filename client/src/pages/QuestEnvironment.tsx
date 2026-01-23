@@ -319,7 +319,7 @@ export default function QuestEnvironment() {
             <span className="text-sm text-green-400 font-semibold">Completed</span>
           )}
           {!claimed && pending && (
-            <span className="text-sm text-white font-semibold">Pending</span>
+            <span className="text-sm text-white font-semibold">Pending Verification</span>
           )}
 
           {isRetry && !claimed && (
