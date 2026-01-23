@@ -206,56 +206,58 @@ export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const { id, action, validatedBy }: { id: string; action: string; validatedBy: string } = req.body;
 
-		const taskToBeVerified = await submission.findById(id);
+		const submissionToBeVerified = await submission.findById(id);
 
-		if (!taskToBeVerified) {
+		if (!submissionToBeVerified) {
 			res.status(NOT_FOUND).json({ error: "task does not exist" });
 			return
 		}
 
 		let model;
 
-		if (taskToBeVerified.page === "quest") {
-			model = await miniQuestCompleted.findOne({ _id: taskToBeVerified.questCompleted, status: { $in: ["pending", "retry"] } });
+		if (submissionToBeVerified.page === "quest") {
+			model = await miniQuestCompleted.findOne({ _id: submissionToBeVerified.questCompleted, status: { $in: ["pending", "retry"] } });
 			if (!model) {
 				res.status(NOT_FOUND).json({ error: "mini quest already completed or is invalid" });
 				return
 			}
 
 			if (action !== "accept") {
-				taskToBeVerified.status = "retry";
-				taskToBeVerified.validatedBy = validatedBy;
+				submissionToBeVerified.status = "retry";
+				submissionToBeVerified.validatedBy = validatedBy;
 				model.status = "retry";
 			} else {
-				taskToBeVerified.status = "done";
-				taskToBeVerified.validatedBy = validatedBy;
+				submissionToBeVerified.status = "done";
+				submissionToBeVerified.validatedBy = validatedBy;
 				model.status = "done";
+				model.done = true
 			}
 
 		} else {
-			model = await campaignQuestCompleted.findOne({ _id: taskToBeVerified.questCompleted, status: { $in: ["pending", "retry"] } });
+			model = await campaignQuestCompleted.findOne({ _id: submissionToBeVerified.questCompleted, status: { $in: ["pending", "retry"] } });
 			if (!model) {
 				res.status(NOT_FOUND).json({ error: "campaign quest already completed or is invalid" });
 				return
 			}
 
 			if (action !== "accept") {
-				taskToBeVerified.status = "retry";
-				taskToBeVerified.validatedBy = validatedBy;
+				submissionToBeVerified.status = "retry";
+				submissionToBeVerified.validatedBy = validatedBy;
 				model.status = "retry";
 			} else {
-				taskToBeVerified.status = "done";
-				taskToBeVerified.validatedBy = validatedBy;
+				submissionToBeVerified.status = "done";
+				submissionToBeVerified.validatedBy = validatedBy;
 				model.status = "done";
+				model.done = true;
 			}
 		}
 
-		await taskToBeVerified.save();
+		await submissionToBeVerified.save();
 		await model.save();
 
-		res.status(OK).json({ message: "task marked" });
+		res.status(OK).json({ message: "submission marked" });
 	} catch (error) {
 		logger.error(error);
-		res.status(INTERNAL_SERVER_ERROR).json({ error: "error marking task" });
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error marking submission" });
 	}
 }
