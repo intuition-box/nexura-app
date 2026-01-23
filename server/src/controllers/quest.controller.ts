@@ -186,16 +186,16 @@ export const fetchCampaignQuests = async (
 
 		const campaignQuests: any[] = [];
 
-		for (const quest of quests) {
-			const questCompleted = campaignQuestsCompleted.find(
+		for (const campaign_quest of quests) {
+			const campaign_questCompleted = campaignQuestsCompleted.find(
 				(completedCampaignQuest) =>
-					completedCampaignQuest.campaignQuest?.toString() === quest._id.toString()
+					completedCampaignQuest.campaignQuest?.toString() === campaign_quest._id.toString()
 			);
 
-			const mergedCampaignQuest: Record<any, unknown> = quest.toJSON();
+			const mergedCampaignQuest: Record<any, unknown> = campaign_quest.toJSON();
 
-			mergedCampaignQuest.done = questCompleted ? questCompleted.done : false;
-			mergedCampaignQuest.status = questCompleted ? questCompleted.status : "";
+			mergedCampaignQuest.done = campaign_questCompleted ? campaign_questCompleted.done : false;
+			mergedCampaignQuest.status = campaign_questCompleted ? campaign_questCompleted.status : "";
 
 			campaignQuests.push(mergedCampaignQuest);
 		}
