@@ -184,7 +184,7 @@ export const referralInfo = async (req: GlobalRequest, res: GlobalResponse) => {
       }
     }
 
-    res.status(OK).json({ message: "referral info fetched!", referralCode: userFetched.referral!.code, usersReferred });
+    res.status(OK).json({ message: "referral info fetched!", refRewardClaimed: userFetched.refRewardClaimed, usersReferred });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching referral info" });
