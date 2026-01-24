@@ -372,7 +372,7 @@ export default function Profile() {
                   : 0;
 
             const isCurrent = idx === currentLevelIndex;
-            const isMinted = mintedLevels.includes(idx);
+            const isMinted = mintedLevels.includes(idx - 1);
             const isAchieved = xpValue >= lvl.xp;
 
             const showMint = isAchieved && !isMinted;
