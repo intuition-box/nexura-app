@@ -47,7 +47,6 @@ export default function QuestEnvironment() {
   const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
   const [retryQuests, setRetryQuests] = useState<string[]>([]);
   const [pendingQuests, setPendingQuests] = useState<string[]>([]);
-  const [questCompleted, setQuestCompleted] = useState<boolean>(false);
   const [failedQuests, setFailedQuests] = useState<string[]>([]);
   const completedQuestsCount = miniQuests.filter(
     (q) => q.done || claimedQuests.includes(q._id)
@@ -69,10 +68,10 @@ export default function QuestEnvironment() {
         title: t,
         questNumber: quest_no,
         sub_title: st,
-        questCompleted: comp
+        questCompleted
       } = await apiRequestV2("GET", `/api/quest/fetch-mini-quests?id=${questId}`);
 
-      setCompleted(comp);
+      setCompleted(questCompleted);
       // setMiniQuestsCompleted();
       setMiniQuests(quests);
       setTotalXP(totalXp);
@@ -107,7 +106,7 @@ export default function QuestEnvironment() {
     try {
       await apiRequestV2("POST", `/api/quest/claim-quest?id=${questId}`);
 
-      setQuestCompleted(true);
+      setCompleted(true);
       // window.location.reload();
     } catch (error: any) {
       console.error(error);
@@ -432,13 +431,13 @@ export default function QuestEnvironment() {
                 onClick={() => claimQuestReward()}
                 disabled={!miniQuestsCompleted || completed}
                 className={`w-full font-semibold rounded-xl py-3 mt-6 
-                  ${miniQuestsCompleted || !completed || claimedQuests.length === miniQuests.length || !questCompleted
+                  ${miniQuestsCompleted || !completed || claimedQuests.length === miniQuests.length
                     ? "bg-purple-600 hover:bg-purple-700 text-white"
                     : "bg-gray-600 cursor-not-allowed text-gray-300"
                   }`
                 }
               >
-                {!completed || !questCompleted ? "Claim Rewards" : "Completed"}
+                {!completed ? "Claim Rewards" : "Completed"}
               </Button>
             </div>
           </div>
