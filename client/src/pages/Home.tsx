@@ -1,4 +1,4 @@
-import HomeBackground from "../components/HomeBackground"
+import AnimatedBackground from "../components/AnimatedBackground"
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import React from "react";
@@ -6,22 +6,30 @@ import React from "react";
 export default function Home() {
   return (
     <>
+    <div className="relative w-full min-h-screen overflow-x-hidden">
+
+    <AnimatedBackground className="absolute inset-0 z-0" />
+
+
     {/* HERO SECTION */}
-<div className="relative text-white overflow-hidden">
 
-  {/* Mobile Gradient / Desktop Video wrapper */}
-  <div className="relative w-full">
+  <div className="relative w-full min-h-screen text-white overflow-hidden">
 
-<div className="relative w-full h-screen overflow-hidden">
-  <video
-    src="/nexura-logo-mov.mp4"
-    autoPlay
-    loop
-    muted
-    playsInline
-    className="absolute top-0 left-0 w-full h-full object-cover opacity-20"
-  />
-</div>
+  {/* Background Video */}
+  <div className="absolute inset-0">
+    <video
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="absolute inset-0 w-full h-full object-cover"
+    >
+      <source src="/nexura-logo-mov.mp4" type="video/mp4" />
+    </video>
+
+    {/* Overlay — NOT opacity on video */}
+    <div className="absolute inset-0 bg-black/60" />
+  </div>
 
     {/* Top Left Logo */}
     <img
@@ -111,89 +119,93 @@ export default function Home() {
   </a>
 </div>
     </div>
-  </div>
 
   {/* Top & bottom fade overlay */}
   <div className="absolute inset-0 pointer-events-none">
     <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-black/100 to-black/0" />
     <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black/100 to-black/0" />
   </div>
-
+  </div> {/* END HERO SECTION */}
 
 <motion.section
+  className="relative overflow-hidden"
   initial={{ opacity: 0, y: 100 }}
   whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, amount: 0.2 }} // 20% of the section must be visible
+  viewport={{ once: true, amount: 0.2 }}
   transition={{ duration: 1.5 }}
 >
-  {/* DISCOVER SECTION */}
-<section className="relative text-white flex flex-col items-center px-6 py-20 text-center">
-  <div className="relative z-10 flex flex-col items-center">
+  <section className="relative z-10 text-white flex flex-col items-center px-6 py-12 text-center">
+
+    {/* Heading */}
     <h2 className="font-geist text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
       Discover projects, complete quests, campaigns{" "}
       <span className="text-purple-500 font-extrabold">and earn rewards</span>
     </h2>
 
-    <p className="font-geist text-base md:text-lg lg:text-xl text-gray-300 max-w-2xl">
+    {/* Subheading */}
+    <p className="font-geist text-base md:text-lg lg:text-xl text-gray-300 max-w-2xl mb-12">
       NEXURA connects users and builders through interactive quests and campaigns
     </p>
 
     {/* Cards Container */}
-<div className="mt-16 w-full flex flex-col sm:flex-row sm:justify-center sm:space-x-6 space-y-6 sm:space-y-0 overflow-x-auto pb-4 items-center">
-  
-  {/* Card 1 */}
-  <motion.div
-    className="flex-shrink-0 w-[90%] sm:w-[350px] bg-[#24242F] rounded-[24px] p-6 cursor-pointer"
-    whileHover={{ scale: 1.05 }}
-    transition={{ type: "spring", stiffness: 200, damping: 20 }}
-  >
-    <h3 className="text-white font-geist text-xl font-extrabold pt-1 pb-4">
-      Explore The Ecosystem
-    </h3>
-    <p className="text-gray-300 font-geist text-sm">
-      Discover projects, claims, and activities across the Intuition network.
-    </p>
-  </motion.div>
+    <div className="w-full flex flex-col sm:flex-row sm:justify-center sm:space-x-6 space-y-6 sm:space-y-0 items-center">
 
-  {/* Card 2 */}
-  <motion.div
-    className="flex-shrink-0 w-[90%] sm:w-[350px] bg-[#24242F] rounded-[24px] p-6 cursor-pointer"
-    whileHover={{ scale: 1.05 }}
-    transition={{ type: "spring", stiffness: 200, damping: 20 }}
-  >
-    <h3 className="text-white font-geist text-xl font-extrabold pt-1 pb-4">
-      Complete Quests
-    </h3>
-    <p className="text-gray-300 font-geist text-sm">
-      Take part in guided missions that help you learn, test products, verify claims, and support builders.
-    </p>
-  </motion.div>
+      {/* Card 1 */}
+      <motion.div
+        className="flex-1 max-w-sm bg-[#24242F] rounded-[24px] p-6 cursor-pointer"
+        whileHover={{ scale: 1.05 }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+      >
+        <h3 className="text-white font-geist text-xl font-extrabold mb-2">
+          Explore The Ecosystem
+        </h3>
+        <p className="text-gray-300 font-geist text-sm">
+          Discover projects, claims, and activities across the Intuition network.
+        </p>
+      </motion.div>
 
-  {/* Card 3 */}
-  <motion.div
-    className="flex-shrink-0 w-[90%] sm:w-[350px] bg-[#24242F] rounded-[24px] p-6 cursor-pointer"
-    whileHover={{ scale: 1.05 }}
-    transition={{ type: "spring", stiffness: 200, damping: 20 }}
-  >
-    <h3 className="text-white font-geist text-xl font-extrabold pt-1 pb-4">
-      Earn Rewards
-    </h3>
-    <p className="text-gray-300 font-geist text-sm">
-      Every action earns XP, TRUST and badges that builds your reputation. The more you engage, the higher you climb.
-    </p>
-  </motion.div>
+      {/* Card 2 */}
+      <motion.div
+        className="flex-1 max-w-sm bg-[#24242F] rounded-[24px] p-6 cursor-pointer"
+        whileHover={{ scale: 1.05 }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+      >
+        <h3 className="text-white font-geist text-xl font-extrabold mb-2">
+          Complete Quests
+        </h3>
+        <p className="text-gray-300 font-geist text-sm">
+          Take part in guided missions that help you learn, test products, verify claims, and support builders.
+        </p>
+      </motion.div>
+
+      {/* Card 3 */}
+      <motion.div
+        className="flex-1 max-w-sm bg-[#24242F] rounded-[24px] p-6 cursor-pointer"
+        whileHover={{ scale: 1.05 }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+      >
+        <h3 className="text-white font-geist text-xl font-extrabold mb-2">
+          Earn Rewards
+        </h3>
+        <p className="text-gray-300 font-geist text-sm">
+          Every action earns XP, TRUST and badges that builds your reputation. The more you engage, the higher you climb.
+        </p>
+      </motion.div>
+
     </div>
-  </div>
-</section>
+  </section>
 </motion.section>
 
+
 <motion.section
+  className="relative overflow-hidden"
   initial={{ opacity: 0, y: 100 }}
   whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, amount: 0.2 }} // 20% of the section must be visible
+  viewport={{ once: true, amount: 0.2 }}
   transition={{ duration: 1.5 }}
 >
-<section className="flex flex-col sm:flex-row text-white items-center justify-center px-4 sm:px-0 py-12 sm:py-20">
+    <section className="relative z-10 flex flex-col sm:flex-row text-white items-center justify-center px-4 sm:px-0 py-12 sm:py-20">
+
 
   {/* Left half image */}
   <div className="flex-1 flex items-center justify-center relative mb-6 sm:mb-0 order-1 sm:order-0">
@@ -236,10 +248,12 @@ export default function Home() {
 </section>
 </motion.section>
 
+
 <motion.section
+  className="relative overflow-hidden"
   initial={{ opacity: 0, y: 100 }}
   whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, amount: 0.2 }} // 20% of the section must be visible
+  viewport={{ once: true, amount: 0.2 }}
   transition={{ duration: 1.5 }}
 >
 <section className="relative text-white py-16 sm:py-24 px-4 sm:px-6 overflow-hidden">
@@ -332,10 +346,12 @@ export default function Home() {
 
 <motion.section
   initial={{ opacity: 0, y: 100 }}
+  className="relative overflow-hidden"
   whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, amount: 0.2 }} // 20% of the section must be visible
+  viewport={{ once: true, amount: 0.2 }}
   transition={{ duration: 1.5 }}
 >
+
 <section className="text-white py-20 lg:py-28 px-4 lg:px-6 relative overflow-hidden">
   <div className="relative z-10 max-w-7xl mx-auto">
 
@@ -487,6 +503,7 @@ export default function Home() {
   </div>
 </section>
 </motion.section>
+
 </div>
     </>
   );
