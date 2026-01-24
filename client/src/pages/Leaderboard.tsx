@@ -6,8 +6,8 @@ import AnimatedBackground from "../components/AnimatedBackground";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
-import { apiRequestV2 } from "../lib/queryClient"; 
-import { useAuth } from "../lib/auth"; 
+import { apiRequestV2 } from "../lib/queryClient";
+import { useAuth } from "../lib/auth";
 import gold from "/nexura-gold.png";
 import silver from "/nexura-silver.png";
 import bronze from "/nexura-bronze.png";
@@ -97,11 +97,11 @@ export default function Leaderboard() {
   //       let bottomVisible = true;
 
   //       entries.forEach((entry) => {
-  //         if (entry.target === topSentinel) {
-  //           topVisible = entry.isIntersecting;
+  //         if (entry?.target === topSentinel) {
+  //           topVisible = entry?.isIntersecting;
   //         }
-  //         if (entry.target === bottomSentinel) {
-  //           bottomVisible = entry.isIntersecting;
+  //         if (entry?.target === bottomSentinel) {
+  //           bottomVisible = entry?.isIntersecting;
   //         }
   //       });
 
@@ -129,8 +129,8 @@ export default function Leaderboard() {
   return (
     // <div className="min-h-screen bg-black text-white p-6 relative">
     <div className="min-h-screen bg-black text-white py-8 relative">
-  <AnimatedBackground />
-  <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 space-y-6 relative z-10">
+      <AnimatedBackground />
+      <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 space-y-6 relative z-10">
 
         {/* <header className="flex items-center justify-between"> */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -168,8 +168,8 @@ export default function Leaderboard() {
             <div className="flex justify-center items-end gap-3 sm:gap-5 relative">
               {[1, 0, 2].map((userIndex, idx) => {
                 const user = list[userIndex];
-                const name = user.display_name || user.username || "Anonymous";
-                const xp = user.xp;
+                const name = user?.display_name || user?.username || "Anonymous";
+                const xp = user?.xp;
 
                 // const heights = [130, 200, 110];
                 const heights = [90, 140, 80];
@@ -196,7 +196,7 @@ export default function Leaderboard() {
 
                 return (
                   <div
-                    key={user._id}
+                    key={user?._id}
                     className="flex flex-col items-center text-center relative animate-bounce-slow"
                     style={{ animationDelay: bounceDelay }}
                   >
@@ -206,7 +206,7 @@ export default function Leaderboard() {
 
                       <AvatarImage
                         src={
-                          user.avatar ||
+                          user?.avatar ||
                           `https://api.dicebear.com/7.x/identicon/png?seed=${encodeURIComponent(
                             name
                           )}`
@@ -331,8 +331,8 @@ export default function Leaderboard() {
           {list.map((entry, idx) => {
             if (idx < 3) return null; // skip podium
 
-            const name = entry.display_name || entry.username || "Anonymous";
-            const isCurrentUser = entry._id === currentUserId;
+            const name = entry?.display_name || entry?.username || "Anonymous";
+            const isCurrentUser = entry?._id === currentUserId;
             const rank = idx + 1;
 
             const accents = [
@@ -414,8 +414,8 @@ export default function Leaderboard() {
 
                       {/* Avatar */}
                       <Avatar className="w-12 h-12">
-                        {entry.avatar ? (
-                          <AvatarImage src={entry.avatar} />
+                        {entry?.avatar ? (
+                          <AvatarImage src={entry?.avatar} />
                         ) : (
                           <AvatarFallback className="bg-white/10 text-white">{name.charAt(0)}</AvatarFallback>
                         )}
@@ -429,11 +429,11 @@ export default function Leaderboard() {
 
                         <div className="mt-1 flex items-center gap-3 text-sm">
                           <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-400/20">
-                            {entry.questsCompleted || 0} quests
+                            {entry?.questsCompleted || 0} quests
                           </span>
 
                           <span className="px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-400/20">
-                            {entry.campaignsCompleted || 0} campaigns
+                            {entry?.campaignsCompleted || 0} campaigns
                           </span>
                         </div>
                       </div>
@@ -442,7 +442,7 @@ export default function Leaderboard() {
                     <div className="flex items-center gap-1">
                       <img src={xpIcon} alt="XP" className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span className={`text-xl font-bold ${isCurrentUser ? "text-[#f5c542]" : accent.text}`}>
-                        {entry.xp}
+                        {entry?.xp || 0}
                       </span>
                     </div>
                   </div>
@@ -455,4 +455,4 @@ export default function Leaderboard() {
       </div>
     </div>
   );
-}
+};
