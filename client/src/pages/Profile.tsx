@@ -222,13 +222,20 @@ export default function Profile() {
         return;
       }
 
-      if (levelIndex - 1 !== currentLevelIndex) return;        // can't mint future level
+      if (levelIndex - 1 > currentLevelIndex) {
+        toast({ title: "Error", description: "Cannot mint future level", variant: "destructive" });
+        return;
+      } // can't mint future level
+
       if (mintedLevels.includes(levelIndex)) {
         toast({ title: "Error", description: "Cannot mint Nexon twice", variant: "destructive" });
         return;
       }
 
-      if (xpValue < LEVELS[levelIndex - 1].xp) return;         // not achieved yet
+      if (xpValue < LEVELS[levelIndex - 1].xp) {
+        toast({ title: "Error", description: "xp not enough to mint nexon", variant: "destructive" });
+        return;
+      } // not achieved yet
 
       await mintNexon(levelIndex, user._id);
 
