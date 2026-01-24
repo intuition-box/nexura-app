@@ -119,7 +119,7 @@ export default function Profile() {
       setUser(profile);
       setMintedLevels(profile.badges);
     })();
-  }, [user]);
+  }, []);
 
   // Wallet → default display name
   const userData = useMemo(() => {
@@ -216,21 +216,29 @@ export default function Profile() {
 
   // STRICT MINT LOGIC
   const handleMint = async (levelIndex: number) => {
-    if (!user) {
-      toast({ title: "Error", description: "Please log in to continue", variant: "destructive" });
-      return;
+    try {
+      if (!user) {
+        toast({ title: "Error", description: "Please log in to continue", variant: "destructive" });
+        return;
+      }
+
+      if (levelIndex - 1 !== currentLevelIndex) return;        // can't mint future level
+      if (mintedLevels.includes(levelIndex)) {
+        toast({ title: "Error", description: "Cannot mint Nexon twice", variant: "destructive" });
+        return;
+      }
+
+      if (xpValue < LEVELS[levelIndex - 1].xp) return;         // not achieved yet
+
+      await mintNexon(levelIndex, user._id);
+
+      await apiRequestV2("PATCH", "/api/user/update-badge", { level: levelIndex });
+      setMintedLevels([...mintedLevels, levelIndex]);
+
+      toast({ title: "Nexon Minted", description: "Nexon minted successfully" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
-
-    if (levelIndex !== currentLevelIndex) return;        // can't mint future level
-    if (mintedLevels.includes(levelIndex)) return;       // can't mint twice
-    if (xpValue < LEVELS[levelIndex].xp) return;         // not achieved yet
-
-    await mintNexon(levelIndex, user._id);
-
-    await apiRequestV2("PATCH", "/api/user/update-badge", { level: levelIndex });
-    setMintedLevels(prev => [...prev, levelIndex]);
-
-    toast({ title: "Nexon Minted", description: "Nexon minted successfully" });
   };
 
   const totalMinted = mintedLevels.length;

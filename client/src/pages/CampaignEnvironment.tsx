@@ -71,8 +71,9 @@ export default function CampaignEnvironment() {
       const safeQuests = (res.campaignQuests || []).map((q: any) => ({
         _id: q._id,
         quest: q.quest,
+        status: q.status,
         reward: q.reward ?? 0,
-        tag: q.tag ?? "like", // default to "like" if missing
+        tag: q.tag ?? "other", // default to "other" if missing
         link: q.link ?? "#",
         done: q.done ?? false,
       }));
@@ -91,8 +92,6 @@ export default function CampaignEnvironment() {
 
     })();
   }, [claimedQuests, userId]);
-
-  console.log({ visitedQuests })
 
   useEffect(() => {
     if (!userId || !campaignId) return;
