@@ -73,7 +73,7 @@ export default function ReferralsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold">Referrals</h1>
           <p className="text-sm text-white/80 mt-1">
-            Invite your friends to Nexura and earn up to ${refReward} $TRUST
+            Invite your friends to Nexura and earn up to {refReward} $TRUST
           </p>
         </div>
 
