@@ -9,12 +9,11 @@ import {
 	updateDiscord,
 } from "@/controllers/app.controller";
 import { discordCallback, xCallback, disconnectX, disconnectDiscord, } from "@/controllers/auth.controller";
-import { signInLimiter } from "@/middlewares/ratelimiter";
 
 const router = Router();
 
 router
-  .get("/", signInLimiter, home)
+  .get("/", home)
   .post("/check-x", authenticateUser, checkXTask)
   .post("/check-discord", authenticateUser, checkDiscordTask)
   .get("/save-cv", authenticateUser, saveCv)

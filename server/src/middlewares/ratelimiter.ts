@@ -14,8 +14,6 @@ export const signInLimiter = rateLimit({
       return req.socket.remoteAddress || "";
     }
 
-    console.log(`ip address: ${req.ip}`);
-
     return ipKeyGenerator(req.ip);
   },
   standardHeaders: true, // Return rate limit info in RateLimit-* headers
