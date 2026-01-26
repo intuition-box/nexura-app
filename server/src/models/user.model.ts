@@ -12,8 +12,8 @@ const userSchema = new Schema({
 		unique: true
 	},
 	profilePic: {
-    type: String,
-    default: "",
+		type: String,
+		default: "",
 	},
 	socialProfiles: {
 		x: {
@@ -26,6 +26,9 @@ const userSchema = new Schema({
 			},
 			id: {
 				type: String,
+			},
+			disconnectedAt: {
+				type: Date,
 			}
 		},
 		discord: {
@@ -38,6 +41,9 @@ const userSchema = new Schema({
 			},
 			id: {
 				type: String,
+			},
+			disconnectedAt: {
+				type: Date,
 			}
 		},
 	},

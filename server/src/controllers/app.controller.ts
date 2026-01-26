@@ -574,9 +574,37 @@ export const updateX = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
+    const now = new Date();
+
     const xAlreadyUsed = await user.findOne({ "socialProfiles.x.id": x_id });
     if (xAlreadyUsed && xAlreadyUsed._id !== userToUpdate._id) {
-      res.status(BAD_REQUEST).json({ error: "x account already connected to another user" });
+      if (xAlreadyUsed.socialProfiles?.x?.connected) {
+        res.status(BAD_REQUEST).json({ error: "x account already connected to another user" });
+        return;
+      }
+
+      const disconnectedAt = xAlreadyUsed.socialProfiles?.x?.disconnectedAt;
+      if (disconnectedAt) {
+        if (now < disconnectedAt) {
+          res.status(BAD_REQUEST).json({ error: "x account disconnected recently, try again after 3 days. Try connecting another account" });
+          return;
+        }
+      }
+
+      const userToken = await token.findOne({ userId: x_id });
+      if (!userToken) {
+        res.status(BAD_REQUEST).json({ error: "no access token or refresh token found, please connect x again" });
+        return;
+      }
+
+      xAlreadyUsed!.socialProfiles!.x = { connected: false, id: "", username: "" };
+
+      userToUpdate!.socialProfiles!.x = { connected: true, id: x_id, username };
+
+      await userToUpdate.save();
+      await xAlreadyUsed.save();
+
+      res.status(OK).json({ message: "connected!", user: userToUpdate });
       return;
     }
 
@@ -615,11 +643,34 @@ export const updateDiscord = async (req: GlobalRequest, res: GlobalResponse) => 
       return;
     }
 
+    const now = new Date();
+
     const discordAlreadyUsed = await user.findOne({ "socialProfiles.discord.id": discord_id });
     if (discordAlreadyUsed && discordAlreadyUsed._id !== userToUpdate._id) {
-      res.status(BAD_REQUEST).json({ error: "discord account already connected to another user" });
+      if (discordAlreadyUsed.socialProfiles?.discord?.connected) {
+        res.status(BAD_REQUEST).json({ error: "discord account already connected to another user" });
+        return;
+      }
+
+      const disconnectedAt = discordAlreadyUsed.socialProfiles?.discord?.disconnectedAt;
+      if (disconnectedAt) {
+        if (now < disconnectedAt) {
+          res.status(BAD_REQUEST).json({ error: "discord account disconnected recently, try again after 3 days. Try connecting another account" });
+          return;
+        }
+      }
+
+      discordAlreadyUsed!.socialProfiles!.discord = { connected: false, id: "", username: "" };
+
+      userToUpdate!.socialProfiles!.discord = { connected: true, id: discord_id, username };
+
+      await userToUpdate.save();
+      await discordAlreadyUsed.save();
+
+      res.status(OK).json({ message: "connected!", user: userToUpdate });
       return;
     }
+
 
     userToUpdate.socialProfiles ??= {};
 
