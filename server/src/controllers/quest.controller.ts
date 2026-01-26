@@ -27,6 +27,7 @@ import {
 	updateLevel
 } from "@/utils/utils";
 import mongoose from "mongoose";
+import { bannedUser } from "@/models/bannedUser.model";
 
 // todo: add ecosystem completed to eco quests
 export const fetchEcosystemDapps = async (
@@ -320,6 +321,12 @@ export const performCampaignQuest = async (
 	try {
 		const { id, campaignId } = req.body;
 
+		const userBanned = await bannedUser.findOne({ userId: req.id });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
+			return;
+		}
+
 		const campaignQuestk = await campaignQuest.findById(id);
 		if (!campaignQuestk) {
 			res
@@ -384,6 +391,12 @@ export const claimMiniQuest = async (req: GlobalRequest, res: GlobalResponse) =>
 	try {
 		const { questId, id } = req.body;
 
+		const userBanned = await bannedUser.findOne({ userId: req.id });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
+			return;
+		}
+
 		const mini_quest = await miniQuest.findById(id);
 		if (!mini_quest) {
 			res.status(NOT_FOUND).json({ error: "mini quest id is invalid" });
@@ -423,6 +436,12 @@ export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		if (!id) {
 			res.status(BAD_REQUEST).json({ error: "send quest id" });
+			return;
+		}
+
+		const userBanned = await bannedUser.findOne({ userId: req.id });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
 			return;
 		}
 
@@ -507,6 +526,12 @@ export const claimEcosystemQuest = async (
 
 		const userId = req.id;
 
+		const userBanned = await bannedUser.findOne({ userId });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
+			return;
+		}
+
 		const ecosystemQuestUser = await user.findById(userId);
 		if (!ecosystemQuestUser) {
 			res
@@ -575,6 +600,12 @@ export const setTimer = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const id = req.query.id;
 
+		const userBanned = await bannedUser.findOne({ userId: req.id });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
+			return;
+		}
+
 		const questForEcosystem = await ecosystemQuest.findById(id);
 		if (!questForEcosystem) {
 			res
@@ -614,13 +645,21 @@ export const setTimer = async (req: GlobalRequest, res: GlobalResponse) => {
 // for quests requiring input submission for validation before quest completion
 export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
+		const userId = req.id;
+
 		const { submissionLink, questId, page, id, tag } = req.body;
 		if (!submissionLink || !questId || !page || !id || !tag) {
 			res.status(BAD_REQUEST).json({ error: "send required details" });
 			return;
 		}
 
-		const userExists = await user.findById(req.id);
+		const userBanned = await bannedUser.findOne({ userId });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
+			return;
+		}
+
+		const userExists = await user.findById(userId);
 		if (!userExists) {
 			res.status(NOT_FOUND).json({ error: "id is invalid or does not exists" });
 			return;
@@ -628,7 +667,7 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		let notComplete;
 
-		const submissionExists = await submission.findOne({ miniQuestId: id, user: userExists._id, page });
+		const submissionExists = await submission.findOne({ miniQuestId: id, user: userId, page });
 		if (submissionExists) {
 			res.status(BAD_REQUEST).json({ error: "quest already submitted" });
 			return;
@@ -642,17 +681,17 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 				res.status(BAD_REQUEST).json({ error: "mini quest id is invalid" });
 				return;
 			}
-			notComplete = await miniQuestCompleted.create({ miniQuest: id, quest: questId, user: userExists._id });
+			notComplete = await miniQuestCompleted.create({ miniQuest: id, quest: questId, user: userId });
 		} else {
 			questExists = await campaignQuest.findById(id);
 			if (!questExists) {
 				res.status(BAD_REQUEST).json({ error: "campaign quest id is invalid" });
 				return;
 			}
-			notComplete = await campaignQuestCompleted.create({ campaign: questId, campaignQuest: id, user: userExists._id });
+			notComplete = await campaignQuestCompleted.create({ campaign: questId, campaignQuest: id, user: userId });
 		}
 
-		await submission.create({ submissionLink, taskType: tag, username: userExists.username, miniQuestId: id, user: userExists._id, page, questCompleted: notComplete._id });
+		await submission.create({ submissionLink, taskType: tag, username: userExists.username, miniQuestId: id, user: userId, page, questCompleted: notComplete._id });
 
 		res.status(OK).json({ message: "quest submitted" });
 	} catch (error) {

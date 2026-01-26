@@ -8,6 +8,8 @@ import { getRefreshToken, JWT, validateQuestData } from "@/utils/utils";
 import { sendEmailToAdmin } from "@/utils/sendMail";
 import { campaignQuestCompleted, miniQuestCompleted } from "@/models/questsCompleted.models";
 import { submission } from "@/models/submission.model";
+import { user } from "@/models/user.model";
+import { bannedUser } from "@/models/bannedUser.model";
 
 export const createQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
@@ -34,6 +36,25 @@ export const createQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error creating quest" });
 	}
 };
+
+export const banUser = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const { userId }: { userId: string } = req.body;
+
+		const userExists = await user.findById(userId);
+		if (!userExists) {
+			res.status(NOT_FOUND).json({ error: "user does not exist" });
+			return;
+		}
+
+		await submission.deleteMany({ user: userId });
+		await bannedUser.create({ userId, walletAddress: userExists.address });
+
+		res.status(OK).json({ message: "user banned" });
+	} catch (error) {
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error banning user" });
+	}
+}
 
 export const getAdmins = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {

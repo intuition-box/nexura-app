@@ -16,6 +16,7 @@ import {
 	UNAUTHORIZED,
 } from "@/utils/status.utils";
 import { validateCampaignData, updateLevel } from "@/utils/utils";
+import { bannedUser } from "@/models/bannedUser.model";
 
 interface IReward {
 	xp: number;
@@ -182,10 +183,16 @@ export const joinCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const id = req.query.id;
 
-		  if (!id || !mongoose.Types.ObjectId.isValid(id as string)) {
-      return res.status(BAD_REQUEST).json({
-        error: "Invalid campaign ID",
-      });
+		const userBanned = await bannedUser.findOne({ userId: req.id });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
+			return;
+		}
+
+		if (!id || !mongoose.Types.ObjectId.isValid(id as string)) {
+			return res.status(BAD_REQUEST).json({
+				error: "Invalid campaign ID",
+			});
     }
 
 		const userId = req.id;
@@ -242,17 +249,16 @@ export const updateCampaign = async (
 
 		const { id } = req.body;
 		if (!mongoose.Types.ObjectId.isValid(id)) {
-  return res.status(400).json({ error: "Invalid campaign ID" });
-}
+			return res.status(400).json({ error: "Invalid campaign ID" });
+		}
 
 		const campaignUpdateData: Record<string, unknown> = {};
 
 		if (!mongoose.Types.ObjectId.isValid(id)) {
-  return res.status(BAD_REQUEST).json({
-    error: "Invalid campaign ID",
-  });
-}
-
+			return res.status(BAD_REQUEST).json({
+				error: "Invalid campaign ID",
+			});
+		}
 
 		for (const field of ["description", "title", "ends_at", "reward"]) {
 			const value = req.body[field];
@@ -322,6 +328,12 @@ export const claimCampaignRewards = async (
 ) => {
 	try {
 		const campaignId = req.query.id as string;
+
+		const userBanned = await bannedUser.findOne({ userId: req.id });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
+			return;
+		}
 
 		const userToReward = await user.findById(req.id);
 		if (!userToReward) {

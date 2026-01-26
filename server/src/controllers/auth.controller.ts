@@ -7,6 +7,7 @@ import {
 	INTERNAL_SERVER_ERROR,
 	NOT_FOUND,
 	OK,
+	UNAUTHORIZED,
 } from "@/utils/status.utils";
 import {
 	DISCORD_CLIENT_ID,
@@ -30,6 +31,8 @@ import { referredUsers } from "@/models/referrer.model";
 import axios from "axios";
 import { cvModel } from "@/models/cv.models";
 import { token } from "@/models/tokens.model";
+import { bannedUser } from "@/models/bannedUser.model";
+import { REDIS } from "@/utils/redis.utils";
 
 export const discordCallback = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
@@ -207,6 +210,8 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 		const { address, referrer }: { address: string; referrer?: string } =
 			req.body;
 
+		const ipAddress = req.ip?.replace("::ffff:", "");
+
 		if (!address) {
 			res
 				.status(BAD_REQUEST)
@@ -217,8 +222,20 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 		const slicedAddress = address.slice(0, 4) + "..." + address.slice(-4);
 		console.log({ slicedAddress, referrer });
 
+		const userBanned = await bannedUser.findOne({ walletAddress: address });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
+			return;
+		}
+
 		const userExists = await user.findOne({ address });
 		if (!userExists) {
+
+			const ipAddressExists = await REDIS.get(`ip:${ipAddress}`);
+			if (ipAddressExists) {
+				res.status(UNAUTHORIZED).json({ error: "account already exists with ip address" });
+				return;
+			}
 
 			const referrerCode = cryptoRandomString({
 				length: 8,
@@ -255,6 +272,8 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 				secure: true,
 				maxAge: 30 * 24 * 60 * 60,
 			});
+
+			await REDIS.set({ key: `ip:${ipAddress}`, data: { ipAddress } });
 
 			res.status(CREATED).json({ message: "user created!", accessToken, user: newUser });
 			return;
