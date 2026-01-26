@@ -1,9 +1,14 @@
 import AnimatedBackground from "../components/AnimatedBackground"
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import React from "react";
+import { useEffect } from "react";
+import { apiRequestV2 } from "../lib/queryClient";
 
 export default function Home() {
+  useEffect(() => {
+    (async () => await apiRequestV2("/api/"))()
+  })
+
   return (
     <>
     <div className="relative w-full min-h-screen overflow-x-hidden">
