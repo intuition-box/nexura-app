@@ -164,7 +164,10 @@ export const disconnectX = async (req: GlobalRequest, res: GlobalResponse) => {
 		});
 
 		await token.deleteOne({ userId: xId });
-		userToBeLoggedOut!.socialProfiles!.x = { id: undefined, connected: false, username: undefined };
+
+		userToBeLoggedOut!.socialProfiles!.x!.connected = false;
+		userToBeLoggedOut!.socialProfiles!.x!.disconnectedAt = new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000); // set date to 3 days from now
+
 		await userToBeLoggedOut.save();
 
 		res.status(OK).json({ message: "user logged out of x" });
@@ -187,7 +190,8 @@ export const disconnectDiscord = async (req: GlobalRequest, res: GlobalResponse)
 			return
 		}
 
-		userToBeLoggedOut!.socialProfiles!.discord = { id: undefined, connected: false, username: "" };
+		userToBeLoggedOut!.socialProfiles!.discord!.connected = false;
+		userToBeLoggedOut!.socialProfiles!.discord!.disconnectedAt = new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000); // set date to 3 days from now
 		await userToBeLoggedOut.save();
 
 		res.status(OK).json({ message: "user logged out of discord" });
