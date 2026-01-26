@@ -6,7 +6,7 @@ import { apiRequestV2 } from "../lib/queryClient";
 
 export default function Home() {
   useEffect(() => {
-    (async () => await apiRequestV2("/api/"))()
+    (async () => await apiRequestV2("GET", "/api/"))()
   })
 
   return (
