@@ -9,6 +9,7 @@ import {
 import { signIn } from "@/controllers/auth.controller";
 import { authenticateUser } from "@/middlewares/auth.middleware";
 import { upload } from "@/config/multer";
+import { signInLimiter } from "@/middlewares/ratelimiter";
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router
 	.patch("/update-badge", authenticateUser, updateBadge)
 	.get("/referral-info", authenticateUser, referralInfo)
 	// .post("/sign-up", signUp)
-	.post("/sign-in", signIn)
+	.post("/sign-in", signInLimiter, signIn)
 	.patch("/update", authenticateUser, upload.single("profilePic"), updateUser);
 
 export default router;
