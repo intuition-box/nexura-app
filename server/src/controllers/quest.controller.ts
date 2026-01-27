@@ -587,7 +587,7 @@ export const claimEcosystemQuest = async (
 		await ecosystemQuestToClaim.save();
 		await ecosystemQuestUser.save();
 
-		res.status(OK).json({ message: "error claiming ecosystem quest" });
+		res.status(OK).json({ message: "ecosystem quest claimed" });
 	} catch (error) {
 		logger.error(error);
 		res
