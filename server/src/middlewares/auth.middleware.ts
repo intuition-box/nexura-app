@@ -4,8 +4,8 @@ import { JWT } from "@/utils/utils";
 import multer from "multer";
 
 type decodedDataType = {
-  status: "project" | "user" | "admin";
-  id: string;
+	status: "project" | "user" | "admin";
+	id: string;
 };
 
 const fileSize = 5 * (1024 ** 2); // 5 MB
@@ -16,7 +16,7 @@ export const upload = multer({
 });
 
 export const authenticateProject = async (req: GlobalRequest, res: GlobalResponse, next: GlobalNextFunction) => {
-  try {
+	try {
 		const authHeader = req.headers.authorization;
 		if (!authHeader?.startsWith("Bearer ")) {
 			res.status(401).json({
@@ -26,10 +26,10 @@ export const authenticateProject = async (req: GlobalRequest, res: GlobalRespons
 		}
 
 		const { id, status } = await JWT.verify(authHeader.split(" ")[1]!) as decodedDataType;
-    if (status != "project") {
-      res.status(UNAUTHORIZED).json({ error: "only authenticated projects can use this route" });
-      return;
-    }
+		if (status != "project") {
+			res.status(UNAUTHORIZED).json({ error: "only authenticated projects can use this route" });
+			return;
+		}
 
 		req.id = id as string;
 
@@ -37,16 +37,16 @@ export const authenticateProject = async (req: GlobalRequest, res: GlobalRespons
 	} catch (error: any) {
 		logger.error(error);
 		if (error.trim() === "jwt expired") {
-			res.status(400).json({ error: "Token has expired" });
+			res.status(400).json({ error: "Token has expired, kindly re-login" });
 			return
 		}
 
-		res.status(500).json({ error: "Invalid authentication token" });
-	}  
+		res.status(500).json({ error: "Invalid authentication token, kindly re-login." });
+	}
 }
 
 export const authenticateUser = async (req: GlobalRequest, res: GlobalResponse, next: GlobalNextFunction) => {
-  try {
+	try {
 		const authHeader = req.headers.authorization;
 		if (!authHeader?.startsWith("Bearer ")) {
 			res.status(401).json({
@@ -56,9 +56,9 @@ export const authenticateUser = async (req: GlobalRequest, res: GlobalResponse, 
 		}
 
 		const { id, status } = await JWT.verify(authHeader.split(" ")[1]!) as decodedDataType;
-    if (status != "user") {
-      res.status(UNAUTHORIZED).json({ error: "only authenticated users can use this route" });
-      return;
+		if (status != "user") {
+			res.status(UNAUTHORIZED).json({ error: "only authenticated users can use this route" });
+			return;
 		}
 
 		req.id = id as string;
@@ -67,11 +67,11 @@ export const authenticateUser = async (req: GlobalRequest, res: GlobalResponse, 
 	} catch (error: any) {
 		logger.error(error);
 		if (error.trim() === "jwt expired") {
-			res.status(400).json({ error: "Token has expired, kindly login again" });
+			res.status(400).json({ error: "Token has expired, kindly re-login, kindly login again" });
 			return
 		}
 
-		res.status(500).json({ error: "Invalid authentication token" });
+		res.status(500).json({ error: "Invalid authentication token, kindly re-login." });
 	}
 }
 
@@ -96,7 +96,7 @@ export const authenticateUser2 = async (req: GlobalRequest, res: GlobalResponse,
 }
 
 export const authenticateAdmin = async (req: GlobalRequest, res: GlobalResponse, next: GlobalNextFunction) => {
-  try {
+	try {
 		const authHeader = req.headers.authorization;
 		if (!authHeader?.startsWith("Bearer ")) {
 			res.status(401).json({
@@ -106,19 +106,19 @@ export const authenticateAdmin = async (req: GlobalRequest, res: GlobalResponse,
 		}
 
 		const { status } = await JWT.verify(authHeader.split(" ")[1]!) as decodedDataType;
-    if (status != "admin") {
-      res.status(UNAUTHORIZED).json({ error: "only admins can use this route" });
-      return;
-    }
+		if (status != "admin") {
+			res.status(UNAUTHORIZED).json({ error: "only admins can use this route" });
+			return;
+		}
 
 		next();
 	} catch (error: any) {
 		logger.error(error);
 		if (error.trim() === "jwt expired") {
-			res.status(400).json({ error: "Token has expired, kindly login again" });
+			res.status(400).json({ error: "Token has expired, kindly re-login, kindly login again" });
 			return
 		}
 
-		res.status(500).json({ error: "Invalid authentication token" });
+		res.status(500).json({ error: "Invalid authentication token, kindly re-login." });
 	}
 }
