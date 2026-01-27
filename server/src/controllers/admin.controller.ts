@@ -223,6 +223,36 @@ export const getTasks = async (req: GlobalRequest, res: GlobalResponse) => {
 	}
 };
 
+export const getBannedUsers = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const bannedUsers = await bannedUser.find();
+
+		res.status(OK).json({ message: "banned users fetched", bannedUsers });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
+	}
+};
+
+export const unBanUser = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const { userId }: { userId: string } = req.body;
+
+		const bannedUserExists = await bannedUser.findById(userId);
+		if (!bannedUserExists) {
+			res.status(BAD_REQUEST).json({ error: "banned user does not exist" });
+			return;
+		}
+
+		await bannedUser.findByIdAndDelete(userId);
+
+		res.status(OK).json({ message: "user unbanned" });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
+	}
+};
+
 export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const { id, action, validatedBy }: { id: string; action: string; validatedBy: string } = req.body;
