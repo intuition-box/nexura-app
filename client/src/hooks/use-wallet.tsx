@@ -103,7 +103,7 @@ export function useWallet() {
           const referrer = localStorage.getItem("ref");
 
           const checkedData = await apiRequestV2("POST", "/api/user/sign-in", { address, referrer });
-          // console.log("hehe", checkedData);
+          console.log("hehe", checkedData);
           if (checkedData.user) {
             localStorage.setItem("user_profile", JSON.stringify(checkedData.user));
             localStorage.setItem("nexura:token", checkedData.accessToken);
@@ -111,7 +111,9 @@ export function useWallet() {
             console.log("✅ Backend authentication successful");
           } else {
             // Backend auth failed but wallet is still connected locally
+            toast({ title: "Error", description: "error signing in", variant: "destructive" });
             console.warn("⚠️ Backend auth failed, wallet connected locally only");
+            return null;
           }
         }
       } catch (e: any) {
@@ -174,6 +176,7 @@ export function useWallet() {
       localStorage.removeItem(STORAGE_KEY);
       
       localStorage.removeItem("nexura:token");
+      localStorage.removeItem("user_profile");
     } catch (e) { /* ignore */ }
     try { emitSessionChange(); } catch (e) { /* ignore */ }
     setState({ isConnected: false, isConnecting: false, address: null, chainId: null });
