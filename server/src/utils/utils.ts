@@ -193,7 +193,7 @@ export const validateUserSignUpData = (reqData: any) => {
 
 export const JWT = {
 	sign: (data: any) => {
-		return jwt.sign(data, JWT_SECRET, { expiresIn: "1d" });
+		return jwt.sign(data, JWT_SECRET, { expiresIn: "7d" });
 	},
 
 	verify: (jwtToken: string) => {
