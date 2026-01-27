@@ -265,26 +265,19 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
 
     // set shares to be from 0.02
     const query = `
-      query GetTriple($id: String!, $address: String!) {
+      query GetTriple($id: String!) {
         triple(term_id: $id) {
           positions (where:  {
             shares:  {
               _gte: 20000000000000000
             }
-            account_id:  {
-              _eq: $address
-            }
           }) {
             account_id
-            shares
           }
 
           counter_positions (where:  {
             shares:  {
               _gte: 20000000000000000
-            }
-            account_id:  {
-              _eq: $address
             }
           }) {
             account_id
@@ -295,9 +288,9 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
 
     const client = new GraphQLClient(GRAPHQL_API_URL);
 
-    const response = await client.request(query, { id: termId, address: userToCheck.address });
+    const response = await client.request(query, { id: termId });
 
-    const { triple } = response;
+    const { triple } = response.data;
 
     if (!triple) {
       res.status(NOT_FOUND).json({ error: "term id is invaid" });
@@ -307,7 +300,10 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
     const supportClaims = triple.positions;
     const opposeClaims = triple.counter_positions;
 
-    if (supportClaims.length === 0 && opposeClaims.length === 0) {
+    const supportFound = supportClaims.find((s: { account_id: string }) => s.account_id.toLowerCase() === userToCheck.address.toLowerCase());
+    const opposeFound = opposeClaims.find((s: { account_id: string }) => s.account_id.toLowerCase() === userToCheck.address.toLowerCase());
+
+    if (!supportFound && !opposeFound) {
       res.status(BAD_REQUEST).json({ error: "user has not supported or opposed a claim" });
       return;
     }
