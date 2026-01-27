@@ -165,6 +165,10 @@ export default function CampaignEnvironment() {
       return;
     }
 
+    if (!user?.socialProfiles.x.connected) {
+      throw new Error("x not connected yet, go to profile to connect.");
+    }
+
     try {
       await apiRequestV2("POST", "/api/quest/submit-quest", {
         questId: campaignId,
