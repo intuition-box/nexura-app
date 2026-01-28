@@ -47,7 +47,7 @@ export const banUser = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
 		}
 
-		await submission.deleteMany({ user: userId });
+		await submission.updateMany({ user: userId }, { status: "banned" });
 		await bannedUser.create({ userId, walletAddress: userExists.address });
 
 		res.status(OK).json({ message: "user banned" });
@@ -223,9 +223,46 @@ export const getTasks = async (req: GlobalRequest, res: GlobalResponse) => {
 	}
 };
 
+export const getBannedUsers = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const bannedUsers = await bannedUser.find();
+
+		res.status(OK).json({ message: "banned users fetched", bannedUsers });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
+	}
+};
+
+export const unBanUser = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const { userId }: { userId: string } = req.body;
+
+		const bannedUserExists = await bannedUser.findById(userId);
+		if (!bannedUserExists) {
+			res.status(BAD_REQUEST).json({ error: "banned user does not exist" });
+			return;
+		}
+
+		await bannedUser.findByIdAndDelete(userId);
+		await submission.updateMany({ user: bannedUserExists.userId }, { status: "pending" });
+
+		res.status(OK).json({ message: "user unbanned" });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
+	}
+};
+
 export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const { id, action, validatedBy }: { id: string; action: string; validatedBy: string } = req.body;
+		const { id, action }: { id: string; action: string } = req.body;
+
+		const adminExists = await admin.findById(req.id);
+		if (!adminExists) {
+			res.status(BAD_REQUEST).json({ error: "id associated with admin is invalid" });
+			return;
+		}
 
 		const submissionToBeVerified = await submission.findById(id);
 
@@ -253,11 +290,11 @@ export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		if (action !== "accept") {
 			submissionToBeVerified.status = "retry";
-			submissionToBeVerified.validatedBy = validatedBy;
+			submissionToBeVerified.validatedBy = adminExists.username;
 			model.status = "retry";
 		} else {
 			submissionToBeVerified.status = "done";
-			submissionToBeVerified.validatedBy = validatedBy;
+			submissionToBeVerified.validatedBy = adminExists.username;
 			model.status = "done";
 			model.done = true;
 		}

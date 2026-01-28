@@ -7,7 +7,7 @@ const submissionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "retry", "done"],
+    enum: ["pending", "retry", "done", "banned"],
     default: "pending"
   },
   page: {

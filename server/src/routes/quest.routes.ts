@@ -9,7 +9,7 @@ import {
 	createMiniQuest,
 	fetchMiniQuests,
 } from "@/controllers/quest.controller";
-import { updateSubmission } from "@/controllers/app.controller";
+import { updateSubmission, validatePortalTask } from "@/controllers/app.controller";
 import {
 	authenticateUser,
 	authenticateUser2,
@@ -22,6 +22,7 @@ router
 	.post("/set-timer", authenticateUser, setTimer)
 	// .post("/create-quest", authenticateUser, createQuest)
 	.post("/create-mini-quest", authenticateUser, createMiniQuest)
+	.post("/check-portal-task", authenticateUser, validatePortalTask)
 	.get("/fetch-mini-quests", authenticateUser2, fetchMiniQuests)
 	.post("/claim-mini-quest", authenticateUser, claimMiniQuest)
 	.post("/update-submission", authenticateUser, updateSubmission)

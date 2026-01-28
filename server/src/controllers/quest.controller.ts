@@ -340,21 +340,24 @@ export const performCampaignQuest = async (
 			campaignQuest: id,
 		});
 		if (!campaignDone) {
-			// todo: validate quest to be sure user performed it
-			await campaignQuestCompleted.create({
-				done: true,
-				user: req.id,
-				campaignQuest: id,
-				campaign: campaignId
-			});
+			res.status(NOT_FOUND).json({ error: "mini quest has not been validated" });
+			return
+		}
 
-			res.status(OK).json({ message: "campaign quest done!" });
+		if (campaignDone.status !== "pending") {
+			res.status(BAD_REQUEST).json({ error: "quest needs to be marked as pending before it can be caimed" });
 			return;
 		}
 
-		res
-			.status(FORBIDDEN)
-			.json({ error: "already performed this campaign quest" });
+		if (campaignDone.done === true) {
+			res.status(FORBIDDEN).json({ error: "quest already claimed" });
+			return;
+		}
+
+		campaignDone.done = true;
+		campaignDone.status = "done";
+
+		res.status(OK).json({ message: "quest done" });
 
 		// if (!campaignDone) {
 		// 	res.status(FORBIDDEN).json({ message: "submit campaign task to proceed" });
@@ -417,13 +420,24 @@ export const claimMiniQuest = async (req: GlobalRequest, res: GlobalResponse) =>
 
 		const miniQuestExists = await miniQuestCompleted.findOne({ miniQuest: id, user: req.id });
 		if (!miniQuestExists) {
-			await miniQuestCompleted.create({ done: true, miniQuest: id, quest: questId, user: req.id });
-
-			res.status(OK).json({ message: "mini quest claimed" });
+			res.status(NOT_FOUND).json({ error: "mini quest has not been validated" });
 			return
 		}
 
-		res.status(FORBIDDEN).json({ error: "quest already claimed" });
+		if (miniQuestExists.status !== "pending") {
+			res.status(BAD_REQUEST).json({ error: "quest needs to be marked as pending befre it can be caimed" });
+			return;
+		}
+
+		if (miniQuestExists.done === true) {
+			res.status(FORBIDDEN).json({ error: "quest already claimed" });
+			return;
+		}
+
+		miniQuestExists.done = true;
+		miniQuestExists.status = "done";
+
+		res.status(OK).json({ message: "quest done" });
 	} catch (error) {
 		logger.error(error);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error claiming mini quest" });
@@ -587,7 +601,7 @@ export const claimEcosystemQuest = async (
 		await ecosystemQuestToClaim.save();
 		await ecosystemQuestUser.save();
 
-		res.status(OK).json({ message: "error claiming ecosystem quest" });
+		res.status(OK).json({ message: "ecosystem quest claimed" });
 	} catch (error) {
 		logger.error(error);
 		res
@@ -665,6 +679,11 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
 		}
 
+		if (!userExists.socialProfiles?.x) {
+			res.status(BAD_REQUEST).json({ error: "user x profile not linked" });
+			return;
+		}
+
 		let notComplete;
 
 		const submissionExists = await submission.findOne({ miniQuestId: id, user: userId, page });
@@ -691,7 +710,7 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 			notComplete = await campaignQuestCompleted.create({ campaign: questId, campaignQuest: id, user: userId });
 		}
 
-		await submission.create({ submissionLink, taskType: tag, username: userExists.username, miniQuestId: id, user: userId, page, questCompleted: notComplete._id });
+		await submission.create({ submissionLink, taskType: tag, username: userExists.socialProfiles?.x?.username, miniQuestId: id, user: userId, page, questCompleted: notComplete._id });
 
 		res.status(OK).json({ message: "quest submitted" });
 	} catch (error) {

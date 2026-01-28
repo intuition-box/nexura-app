@@ -15,7 +15,7 @@ type Quest = {
   _id: string;
   quest: string;
   reward: number;
-  tag: "like" | "follow" | "join" | "repost" | "comment";
+  tag: "like" | "follow" | "join" | "repost" | "comment" | "portal";
   link: string;
   status: string;
   done: boolean;
@@ -226,6 +226,8 @@ export default function CampaignEnvironment() {
             if (!success) {
               throw new Error(`Kindly ${quest.tag} the discord channel`);
             }
+          } else if (quest.tag === "portal") {
+            await apiRequestV2("POST", "/api/quest/check-portal-task", { termId: id, id: quest._id, questId: campaignId, page: "campaign" });
           }
         }
       } catch (error: any) {

@@ -11,7 +11,7 @@ const intuitionMainnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ["https://rpc.intuition.systems"],
+      http: ["https://intuition.calderachain.xyz/http"],
     },
   },
   blockExplorers: {
