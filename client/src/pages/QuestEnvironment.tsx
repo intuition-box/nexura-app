@@ -405,13 +405,12 @@ export default function QuestEnvironment() {
         </div>
 
 
-
         {/* Main Quest Card */}
         <Card className="rounded-2xl bg-white/5 border-white/10 overflow-hidden shadow-xl">
           <div className="grid grid-cols-1 md:grid-cols-2">
             <div className="h-48 md:h-full">
               <img
-                src="/campaign.png"
+                src="/quest.png"
                 alt="Quest"
                 className="w-full h-full object-cover"
               />
