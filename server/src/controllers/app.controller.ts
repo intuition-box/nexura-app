@@ -305,12 +305,12 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
 
     if (page !== "campaign") {
       const miniQuestExists = await miniQuestCompleted.findOne({ miniQuest: id, quest: questId, user: userToCheck._id });
-      
+
       if (!miniQuestExists) {
         if (!supportFound && !opposeFound) {
           await miniQuestCompleted.create({ miniQuest: id, quest: questId, done: false, status: "retry", user: userToCheck._id });
         } else {
-          await miniQuestCompleted.create({ miniQuest: id, quest: questId, done: false, status: "pending", user: userToCheck._id });
+          await miniQuestCompleted.create({ miniQuest: id, quest: questId, done: true, status: "done", user: userToCheck._id });
 
           res.status(OK).json({ message: "task completed" });
           return;
@@ -320,8 +320,8 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
           miniQuestExists.done = false;
           miniQuestExists.status = "retry";
         } else {
-          miniQuestExists!.done = false;
-          miniQuestExists!.status = "pending";
+          miniQuestExists!.done = true;
+          miniQuestExists!.status = "done";
 
           await miniQuestExists.save();
 
@@ -341,7 +341,7 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
         if (!supportFound && !opposeFound) {
           await campaignQuestCompleted.create({ campaignQuest: id, quest: questId, done: false, status: "retry", user: userToCheck._id });
         } else {
-          await campaignQuestCompleted.create({ campaignQuest: id, quest: questId, done: false, status: "pending", user: userToCheck._id });
+          await campaignQuestCompleted.create({ campaignQuest: id, quest: questId, done: true, status: "done", user: userToCheck._id });
 
           res.status(OK).json({ message: "task completed" });
           return;
@@ -351,8 +351,8 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
           campaignQuestExists.done = false;
           campaignQuestExists.status = "retry";
         } else {
-          campaignQuestExists!.done = false;
-          campaignQuestExists!.status = "pending";
+          campaignQuestExists!.done = true;
+          campaignQuestExists!.status = "done";
 
           await campaignQuestExists.save();
 
