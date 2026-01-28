@@ -47,7 +47,7 @@ export const banUser = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
 		}
 
-		await submission.deleteMany({ user: userId });
+		await submission.updateMany({ user: userId }, { status: "banned" });
 		await bannedUser.create({ userId, walletAddress: userExists.address });
 
 		res.status(OK).json({ message: "user banned" });
@@ -245,6 +245,7 @@ export const unBanUser = async (req: GlobalRequest, res: GlobalResponse) => {
 		}
 
 		await bannedUser.findByIdAndDelete(userId);
+		await submission.updateMany({ user: bannedUserExists.userId }, { status: "pending" });
 
 		res.status(OK).json({ message: "user unbanned" });
 	} catch (error) {
@@ -255,7 +256,13 @@ export const unBanUser = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const { id, action, validatedBy }: { id: string; action: string; validatedBy: string } = req.body;
+		const { id, action }: { id: string; action: string } = req.body;
+
+		const adminExists = await admin.findById(req.id);
+		if (!adminExists) {
+			res.status(BAD_REQUEST).json({ error: "id associated with admin is invalid" });
+			return;
+		}
 
 		const submissionToBeVerified = await submission.findById(id);
 
@@ -283,11 +290,11 @@ export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		if (action !== "accept") {
 			submissionToBeVerified.status = "retry";
-			submissionToBeVerified.validatedBy = validatedBy;
+			submissionToBeVerified.validatedBy = adminExists.username;
 			model.status = "retry";
 		} else {
 			submissionToBeVerified.status = "done";
-			submissionToBeVerified.validatedBy = validatedBy;
+			submissionToBeVerified.validatedBy = adminExists.username;
 			model.status = "done";
 			model.done = true;
 		}
