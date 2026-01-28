@@ -189,6 +189,7 @@ export default function QuestEnvironment() {
       // window.location.reload();
     } catch (error: any) {
       console.error(error);
+      setMiniQuests(prev => prev.map(q => q._id === miniQuest._id ? { ...q, status: "retry" } : q));
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
