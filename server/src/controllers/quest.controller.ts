@@ -679,6 +679,11 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
 		}
 
+		if (!userExists.socialProfiles?.x) {
+			res.status(BAD_REQUEST).json({ error: "user x profile not linked" });
+			return;
+		}
+
 		let notComplete;
 
 		const submissionExists = await submission.findOne({ miniQuestId: id, user: userId, page });
@@ -705,7 +710,7 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 			notComplete = await campaignQuestCompleted.create({ campaign: questId, campaignQuest: id, user: userId });
 		}
 
-		await submission.create({ submissionLink, taskType: tag, username: userExists.username, miniQuestId: id, user: userId, page, questCompleted: notComplete._id });
+		await submission.create({ submissionLink, taskType: tag, username: userExists.socialProfiles?.x?.username, miniQuestId: id, user: userId, page, questCompleted: notComplete._id });
 
 		res.status(OK).json({ message: "quest submitted" });
 	} catch (error) {
