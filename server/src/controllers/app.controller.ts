@@ -249,7 +249,7 @@ export const updateBadge = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const validatePortalTask =  async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { termId }: { termId: string } = req.body;
+    const { termId, id, questId, page }: { page: string; termId: string; id: string; questId: string } = req.body;
 
     const userBanned = await bannedUser.findOne({ userId: req.id });
     if (userBanned) {
@@ -303,12 +303,68 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
     const supportFound = supportClaims.find((s: { account_id: string }) => s.account_id.toLowerCase() === userToCheck.address.toLowerCase());
     const opposeFound = opposeClaims.find((s: { account_id: string }) => s.account_id.toLowerCase() === userToCheck.address.toLowerCase());
 
-    if (!supportFound && !opposeFound) {
+    if (page !== "campaign") {
+      const miniQuestExists = await miniQuestCompleted.findOne({ miniQuest: id, quest: questId, user: userToCheck._id });
+      
+      if (!miniQuestExists) {
+        if (!supportFound && !opposeFound) {
+          await miniQuestCompleted.create({ miniQuest: id, quest: questId, done: false, status: "retry", user: userToCheck._id });
+        } else {
+          await miniQuestCompleted.create({ miniQuest: id, quest: questId, done: false, status: "pending", user: userToCheck._id });
+
+          res.status(OK).json({ message: "task completed" });
+          return;
+        }
+      } else {
+        if (!supportFound && !opposeFound) {
+          miniQuestExists.done = false;
+          miniQuestExists.status = "retry";
+        } else {
+          miniQuestExists!.done = false;
+          miniQuestExists!.status = "pending";
+
+          await miniQuestExists.save();
+
+          res.status(OK).json({ message: "task completed" });
+          return;
+        }
+
+        await miniQuestExists!.save();
+      }
+
       res.status(BAD_REQUEST).json({ error: "user has not supported or opposed a claim" });
       return;
-    }
+    } else {
+      const campaignQuestExists = await campaignQuestCompleted.findOne({ campaignQuest: id, quest: questId, user: userToCheck._id });
 
-    res.status(OK).json({ message: "task validated", success: true });
+      if (!campaignQuestExists) {
+        if (!supportFound && !opposeFound) {
+          await campaignQuestCompleted.create({ campaignQuest: id, quest: questId, done: false, status: "retry", user: userToCheck._id });
+        } else {
+          await campaignQuestCompleted.create({ campaignQuest: id, quest: questId, done: false, status: "pending", user: userToCheck._id });
+
+          res.status(OK).json({ message: "task completed" });
+          return;
+        }
+      } else {
+        if (!supportFound && !opposeFound) {
+          campaignQuestExists.done = false;
+          campaignQuestExists.status = "retry";
+        } else {
+          campaignQuestExists!.done = false;
+          campaignQuestExists!.status = "pending";
+
+          await campaignQuestExists.save();
+
+          res.status(OK).json({ message: "task completed" });
+          return;
+        }
+
+        await campaignQuestExists!.save();
+      }
+
+      res.status(BAD_REQUEST).json({ error: "user has not supported or opposed a claim" });
+    }
   } catch (error) {
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error validating portal task" });
   }
