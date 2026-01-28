@@ -263,13 +263,13 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
       return;
     }
 
-    // set shares to be from 0.02
+    // set shares to be from 0.01
     const query = `
       query GetTriple($id: String!) {
         triple(term_id: $id) {
           positions (where:  {
             shares:  {
-              _gte: 20000000000000000
+              _gte: 10000000000000000
             }
           }) {
             account_id
@@ -277,14 +277,14 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
 
           counter_positions (where:  {
             shares:  {
-              _gte: 20000000000000000
+              _gte: 10000000000000000
             }
           }) {
             account_id
           }
         }
       }
-    `; // user needs to atleast support or oppose with 1 trust;
+    `; // user needs to atleast support or oppose with 0.5 - 1 trust;
 
     const client = new GraphQLClient(GRAPHQL_API_URL);
 

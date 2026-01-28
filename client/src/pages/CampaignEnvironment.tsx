@@ -260,8 +260,9 @@ export default function CampaignEnvironment() {
       console.error(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
 
-      if (!failedQuests.includes(quest._id)) {
-        setFailedQuests((prev) => [...prev, quest._id]);
+      if (!retryQuests.includes(quest._id)) {
+        setRetryQuests((prev) => [...prev, quest._id]);
+        setQuests(prev => prev.map(q => q._id === quest._id ? { ...q, status: "retry" } : q));
       }
     };
   };
