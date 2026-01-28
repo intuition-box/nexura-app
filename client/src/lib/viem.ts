@@ -11,7 +11,6 @@ export const getPublicClient = () => {
 
   if (!provider) {
     console.error("No Ethereum provider found");
-    alert("No injected wallet found. Install MetaMask or another Ethereum wallet.");
     return null;
   }
 
@@ -32,7 +31,6 @@ export const getWalletClient = () => {
 
   if (!provider) {
     console.error("No Ethereum provider found");
-    alert("No injected wallet found. Install MetaMask or another Ethereum wallet.");
     return null;
   }
 
