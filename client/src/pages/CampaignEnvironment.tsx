@@ -273,6 +273,10 @@ export default function CampaignEnvironment() {
   // Claim campaign reward
   const claimCampaignReward = async () => {
     try {
+      if (!questsCompleted) {
+        throw new Error("Kindly complete quests to claim reward");
+      }
+
       if (trustClaimed < 4000) {
         await claimCampaignOnchainReward({ campaignAddress, userId });
       }
