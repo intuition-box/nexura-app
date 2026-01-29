@@ -335,13 +335,13 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
       res.status(BAD_REQUEST).json({ error: "user has not supported or opposed a claim" });
       return;
     } else {
-      const campaignQuestExists = await campaignQuestCompleted.findOne({ campaignQuest: id, quest: questId, user: userToCheck._id });
+      const campaignQuestExists = await campaignQuestCompleted.findOne({ campaignQuest: id, campaign: questId, user: userToCheck._id });
 
       if (!campaignQuestExists) {
         if (!supportFound && !opposeFound) {
-          await campaignQuestCompleted.create({ campaignQuest: id, quest: questId, done: false, status: "retry", user: userToCheck._id });
+          await campaignQuestCompleted.create({ campaignQuest: id, campaign: questId, done: false, status: "retry", user: userToCheck._id });
         } else {
-          await campaignQuestCompleted.create({ campaignQuest: id, quest: questId, done: true, status: "done", user: userToCheck._id });
+          await campaignQuestCompleted.create({ campaignQuest: id, campaign: questId, done: true, status: "done", user: userToCheck._id });
 
           res.status(OK).json({ message: "task completed" });
           return;
