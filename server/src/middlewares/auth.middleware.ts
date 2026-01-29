@@ -1,4 +1,5 @@
 import logger from "@/config/logger";
+import { admin } from "@/models/admin.model";
 import { UNAUTHORIZED } from "@/utils/status.utils";
 import { JWT } from "@/utils/utils";
 import multer from "multer";
@@ -105,8 +106,10 @@ export const authenticateAdmin = async (req: GlobalRequest, res: GlobalResponse,
 			return;
 		}
 
-		const { status, id } = await JWT.verify(authHeader.split(" ")[1]!) as decodedDataType;
-		if (status != "admin") {
+		const { id } = await JWT.verify(authHeader.split(" ")[1]!) as decodedDataType;
+
+		const isAdmin = await admin.findById(id);
+		if (!isAdmin) {
 			res.status(UNAUTHORIZED).json({ error: "only admins can use this route" });
 			return;
 		}
