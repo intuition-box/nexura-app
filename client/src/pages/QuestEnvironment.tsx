@@ -161,7 +161,7 @@ export default function QuestEnvironment() {
             throw new Error("discord not connected yet, go to profile to connect");
           }
 
-          const { success } = await apiRequestV2("POST", "/api/check-discord", { channelId: id, tag: miniQuest.tag });
+          const { success } = await apiRequestV2("POST", "/api/check-discord", { questId, id: miniQuest._id, channelId: id, tag: miniQuest.tag });
           if (!success) {
             // toast({ title: "Error", description: `Kindly ${miniQuest.tag} the discord channel`, variant: "destructive"});
             throw new Error(`Kindly ${miniQuest.tag} the discord channel`);
@@ -286,6 +286,7 @@ export default function QuestEnvironment() {
     const isRetry = quest.status === "retry";
     const isSubmitProof = ["comment", "follow"].includes(quest.tag);
     const isExpanded = expandedQuestId === quest._id;
+    const isPortalTask = quest.tag === "portal";
 
     return (
       <div
@@ -294,6 +295,11 @@ export default function QuestEnvironment() {
       >
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <p className="font-medium text-sm md:text-base">{quest.text}</p>
+          {isPortalTask && !claimed &&
+            <p className="text-sm text-white/70">
+              ⚠️ A minimum of 1 TRUST is required to either oppose or support a proposal before the task can be claimed.
+            </p>
+          }
 
           {!visited && !claimed && (
             <button

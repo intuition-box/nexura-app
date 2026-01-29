@@ -231,7 +231,7 @@ export default function CampaignEnvironment() {
               throw new Error("discord not connected yet, go to profile to connect");
             }
 
-            const { success } = await apiRequestV2("POST", "/api/check-discord", { channelId: id, tag: quest.tag });
+            const { success } = await apiRequestV2("POST", "/api/check-discord", { campaignId, id: quest._id, channelId: id, tag: quest.tag });
             if (!success) {
               throw new Error(`Kindly ${quest.tag} the discord channel`);
             }
@@ -375,6 +375,7 @@ export default function CampaignEnvironment() {
               const pending = quest.status === "pending" || pendingQuests.includes(quest._id);
               const failed = failedQuests.includes(quest._id);
               const retry = quest.status === "retry";
+              const isPortalTask = quest.tag === "portal";
               const isExpanded = expandedQuestId === quest._id;
 
               let buttonText = "Start Quest";
@@ -391,6 +392,11 @@ export default function CampaignEnvironment() {
                         {claimed ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Play className="w-4 h-4" />}
                       </div>
                       <span className="text-sm sm:text-base font-medium">{quest.quest}</span>
+                      {isPortalTask && !claimed &&
+                        <p className="text-sm text-white/70">
+                          ⚠️ A minimum of 1 TRUST is required to either oppose or support a proposal before the task can be claimed.
+                        </p>
+                      }
                     </div>
 
                     <div className="flex gap-2 w-full sm:w-auto">
