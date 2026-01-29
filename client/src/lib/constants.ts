@@ -54,6 +54,378 @@ export const NEXONS: Record<number, { address: `0x${string}`, metadata: string }
 	}
 };
 
+export const CAMPAIGN_ABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokensToAdd",
+				"type": "uint256"
+			}
+		],
+		"name": "addReward",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "userId",
+				"type": "string"
+			}
+		],
+		"name": "AllowCampaignRewardClaim",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_nameOfCampaign",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "_authorizedAddress",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "AlreadyClaimedCampaignReward",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "AlreadyJoinedCampaign",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "CampaignCanOnlyBeCreatedOnce",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "CampaignHasEnded",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "CampaignHasNotBeenStarted",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "CampaignIsAlreadyClosed",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "CannotCloseAnEndedCampaign",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "userId",
+				"type": "string"
+			}
+		],
+		"name": "claimReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "closeCampaign",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "CompleteCampaignToClaimReward",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_totalReward",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_rewardTokens",
+				"type": "uint256"
+			}
+		],
+		"name": "createCampaign",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "FailedToRefundReward",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "userId",
+				"type": "string"
+			}
+		],
+		"name": "joinCampaign",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "OnlyTheAuthorizedAddressCanCallThis",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "OnlyTheCampaignCreatorCanCallThis",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "RewardClaimFailed",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "RewardHasBeenExhausted",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "SendTheRequiredAmount",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "TokensToAddCannotBeZero",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "TotalRewardOrRewardTokenCannotBeZero",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "UserCanAlreadyClaimReward",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "message",
+				"type": "string"
+			}
+		],
+		"name": "CampaignClosed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "message",
+				"type": "string"
+			}
+		],
+		"name": "CampaignCreated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "message",
+				"type": "string"
+			}
+		],
+		"name": "CampaignJoined",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "message",
+				"type": "string"
+			}
+		],
+		"name": "RewardsClaimed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "message",
+				"type": "string"
+			}
+		],
+		"name": "UpdatedTokenRewards",
+		"type": "event"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
+	},
+	{
+		"inputs": [],
+		"name": "campaignCreator",
+		"outputs": [
+			{
+				"internalType": "address payable",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "canClaim",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "claimed",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "joined",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "nameOfCampaign",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "rewardsClaimed",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "rewardTokens",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalReward",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
 export const NEXONS_ABI = [
 	{
 		"inputs": [

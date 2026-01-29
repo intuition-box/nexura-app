@@ -1,6 +1,6 @@
 import chain from "./chain";
 import { getWalletClient } from "./viem";
-import { network, NEXONS, NEXONS_ABI } from "./constants";
+import { network, NEXONS, NEXONS_ABI, CAMPAIGN_ABI } from "./constants";
 import { ethers } from "ethers";
 import { parseAbi, type Address } from "viem";
 
@@ -20,19 +20,38 @@ export const claimCampaignOnchainReward = async ({ campaignAddress, userId }: { 
 
     const mainnet = network === "mainnet";
 
-    await walletClient.switchChain({ id: mainnet ? 1155 : 13579 });
-
-    const account = await walletClient.getAddresses();
-
-    await walletClient.writeContract({
-      address: campaignAddress as Address,
-      abi: parseAbi(["function claimReward(string memory userId)"]),
-      functionName: "claimReward",
-      args: [userId],
-      account: account[0],
-      chain
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: mainnet ? "0x483" : "0x350b" }]
     });
+
+    const provider = new ethers.BrowserProvider((window as any).ethereum);
+
+    const signer = await provider.getSigner();
+
+    const contract = new ethers.Contract(
+      campaignAddress,
+      CAMPAIGN_ABI,
+      signer
+    );
+
+    const tx = await contract.claimReward(userId);
+
+    await tx.wait();
+
+    return tx.hash;
   } catch (error: any) {
+    if (error.code === 4902) {
+      throw new Error("Kindly click the Intuition Mainnet button on the navbar, to add the intuition mainnet network and switch")
+    }
+
+    if (error.data) {
+      const iface = new ethers.Interface(CAMPAIGN_ABI);
+      const decoded = iface.parseError(error.data);
+
+      throw new Error(decoded?.name); // e.g. AlreadyClaimed, CompleteCampaignToClaimRewards
+    }
+
     console.error(error);
     throw new Error(error.message);
   }
@@ -75,20 +94,7 @@ export const mintNexon = async (level: number, userId: string) => {
       params: [{ chainId: mainnet ? "0x483" : "0x350b" }]
     });
 
-    // await walletClient.switchChain({ id: mainnet ? 1155 : 13579 });
-
-    // const account = await walletClient.getAddresses();
-
     const { address, metadata } = NEXONS[level];
-
-    // // await walletClient.writeContract({
-    // //   address,
-    // //   abi: parseAbi(["function mint(string memory metadataURI, string memory userId)"]),
-    // //   functionName: "mint",
-    // //   args: [metadata, userId],
-    // //   account: account[0],
-    // //   chain
-    // // });
 
     const provider = new ethers.BrowserProvider((window as any).ethereum);
 
