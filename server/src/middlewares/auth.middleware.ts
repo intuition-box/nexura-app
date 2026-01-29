@@ -1,6 +1,8 @@
 import logger from "@/config/logger";
 import { admin } from "@/models/admin.model";
-import { UNAUTHORIZED } from "@/utils/status.utils";
+import { bannedUser } from "@/models/bannedUser.model";
+import { user } from "@/models/user.model";
+import { BAD_REQUEST, UNAUTHORIZED } from "@/utils/status.utils";
 import { JWT } from "@/utils/utils";
 import multer from "multer";
 
@@ -63,6 +65,18 @@ export const authenticateUser = async (req: GlobalRequest, res: GlobalResponse, 
 		}
 
 		req.id = id as string;
+
+		const userExists = await user.findById(id);
+		if (!userExists) {
+			res.status(BAD_REQUEST).json({ error: "id associated with user is invalid" });
+			return;
+		}
+
+		const userBanned = await bannedUser.findOne({ userId: id });
+		if (userBanned) {
+			res.status(BAD_REQUEST).json({ error: "user is banned" });
+			return;
+		}
 
 		next();
 	} catch (error: any) {

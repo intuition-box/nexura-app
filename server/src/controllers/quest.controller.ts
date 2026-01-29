@@ -324,12 +324,6 @@ export const performCampaignQuest = async (
 	try {
 		const { id, campaignId } = req.body;
 
-		const userBanned = await bannedUser.findOne({ userId: req.id });
-		if (userBanned) {
-			res.status(BAD_REQUEST).json({ error: "user is banned" });
-			return;
-		}
-
 		const campaignQuestk = await campaignQuest.findById(id);
 		if (!campaignQuestk) {
 			res
@@ -397,12 +391,6 @@ export const claimMiniQuest = async (req: GlobalRequest, res: GlobalResponse) =>
 	try {
 		const { questId, id } = req.body;
 
-		const userBanned = await bannedUser.findOne({ userId: req.id });
-		if (userBanned) {
-			res.status(BAD_REQUEST).json({ error: "user is banned" });
-			return;
-		}
-
 		const mini_quest = await miniQuest.findById(id);
 		if (!mini_quest) {
 			res.status(NOT_FOUND).json({ error: "mini quest id is invalid" });
@@ -453,12 +441,6 @@ export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		if (!id) {
 			res.status(BAD_REQUEST).json({ error: "send quest id" });
-			return;
-		}
-
-		const userBanned = await bannedUser.findOne({ userId: req.id });
-		if (userBanned) {
-			res.status(BAD_REQUEST).json({ error: "user is banned" });
 			return;
 		}
 
@@ -543,12 +525,6 @@ export const claimEcosystemQuest = async (
 
 		const userId = req.id;
 
-		const userBanned = await bannedUser.findOne({ userId });
-		if (userBanned) {
-			res.status(BAD_REQUEST).json({ error: "user is banned" });
-			return;
-		}
-
 		const ecosystemQuestUser = await user.findById(userId);
 		if (!ecosystemQuestUser) {
 			res
@@ -617,12 +593,6 @@ export const setTimer = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const id = req.query.id;
 
-		const userBanned = await bannedUser.findOne({ userId: req.id });
-		if (userBanned) {
-			res.status(BAD_REQUEST).json({ error: "user is banned" });
-			return;
-		}
-
 		const questForEcosystem = await ecosystemQuest.findById(id);
 		if (!questForEcosystem) {
 			res
@@ -667,12 +637,6 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 		const { submissionLink, questId, page, id, tag } = req.body;
 		if (!submissionLink || !questId || !page || !id || !tag) {
 			res.status(BAD_REQUEST).json({ error: "send required details" });
-			return;
-		}
-
-		const userBanned = await bannedUser.findOne({ userId });
-		if (userBanned) {
-			res.status(BAD_REQUEST).json({ error: "user is banned" });
 			return;
 		}
 

@@ -183,12 +183,6 @@ export const joinCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const id = req.query.id;
 
-		const userBanned = await bannedUser.findOne({ userId: req.id });
-		if (userBanned) {
-			res.status(BAD_REQUEST).json({ error: "user is banned" });
-			return;
-		}
-
 		if (!id || !mongoose.Types.ObjectId.isValid(id as string)) {
 			return res.status(BAD_REQUEST).json({
 				error: "Invalid campaign ID",
@@ -328,12 +322,6 @@ export const claimCampaignRewards = async (
 ) => {
 	try {
 		const campaignId = req.query.id as string;
-
-		const userBanned = await bannedUser.findOne({ userId: req.id });
-		if (userBanned) {
-			res.status(BAD_REQUEST).json({ error: "user is banned" });
-			return;
-		}
 
 		const userToReward = await user.findById(req.id);
 		if (!userToReward) {
