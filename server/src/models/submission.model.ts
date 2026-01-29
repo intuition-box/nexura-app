@@ -14,6 +14,9 @@ const submissionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  address: {
+    type: String,
+  },
   taskType: {
     type: String,
     required: true,
