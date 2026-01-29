@@ -356,6 +356,8 @@ export const performCampaignQuest = async (
 		campaignDone.done = true;
 		campaignDone.status = "done";
 
+		await campaignDone.save();
+
 		res.status(OK).json({ message: "quest done" });
 
 		// if (!campaignDone) {
