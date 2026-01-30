@@ -203,7 +203,7 @@ export const fetchCampaignQuests = async (
 
 		const joined = completedCampaign ? true : false;
 
-		const campaignQuestsMarkedAsDone = campaignQuestsCompleted.filter((c_q: { status: string }) => c_q.status === "done");
+		const campaignQuestsMarkedAsDone = campaignQuestsCompleted.filter((c_q: { done: boolean }) => c_q.done === true);
 
 		if (currentCampaign.noOfQuests === campaignQuestsMarkedAsDone.length && !completedCampaign?.questsCompleted) {
 			if (currentCampaign.trustClaimed < 4000) {
