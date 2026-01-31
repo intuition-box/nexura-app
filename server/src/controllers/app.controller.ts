@@ -29,6 +29,7 @@ import {
 import { bannedUser } from "@/models/bannedUser.model";
 import { GRAPHQL_API_URL } from "@/utils/constants";
 import { GraphQLClient } from "graphql-request";
+import { checksumAddress } from "viem";
 
 export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 	res.send("hi!");
@@ -241,17 +242,23 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
 
     // set shares to be from 0.01
     const query = `
-      query GetTriple($id: String!) {
+      query GetTriple($id: String!, $address: String!) {
         triple(term_id: $id) {
           positions (where:  {
+            account_id:  {
+              _eq: $address
+            }
             shares:  {
               _gte: 10000000000000000
             }
           }) {
             account_id
           }
-
+      
           counter_positions (where:  {
+            account_id:  {
+              _eq: $address
+            }
             shares:  {
               _gte: 10000000000000000
             }
@@ -264,7 +271,9 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
 
     const client = new GraphQLClient(GRAPHQL_API_URL);
 
-    const response = await client.request(query, { id: termId });
+    const formattedAddress = checksumAddress(userToCheck.address as `0x${string}`);
+
+    const response = await client.request(query, { id: termId, address: formattedAddress });
 
     const { triple } = response;
 
@@ -273,11 +282,8 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
       return
     }
 
-    const supportClaims = triple.positions;
-    const opposeClaims = triple.counter_positions;
-
-    const supportFound = supportClaims.find((s: { account_id: string }) => s.account_id.toLowerCase() === userToCheck.address.toLowerCase());
-    const opposeFound = opposeClaims.find((s: { account_id: string }) => s.account_id.toLowerCase() === userToCheck.address.toLowerCase());
+    const supportFound = triple.positions.length;
+    const opposeFound = triple.counter_positions.length;
 
     if (page !== "campaign") {
       const miniQuestExists = await miniQuestCompleted.findOne({ miniQuest: id, quest: questId, user: userToCheck._id });
