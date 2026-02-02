@@ -214,7 +214,7 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const getTasks = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const pendingTasks = await submission.find().lean();
+		const pendingTasks = await submission.find().lean().sort({ createdAt: 1 });
 		
 		res.status(OK).json({ message: "submitted tasks fetched", pendingTasks });
 	} catch (error) {
