@@ -75,7 +75,7 @@ export default function ReferralsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold">Referrals</h1>
           <p className="text-sm text-white/80 mt-1">
-            Invite your friends to Nexura and earn up to {refReward} $TRUST
+            Invite your friends to Nexura and earn exciting rewards
           </p>
         </div>
 
@@ -84,7 +84,7 @@ export default function ReferralsPage() {
           {[
             { icon: InviteIcon, title: "Send invitation", desc: "Send your referral links to friends!" },
             { icon: RegisterIcon, title: "Registration", desc: "They register using your referral links" },
-            { icon: EarnIcon, title: "Earn", desc: `Earn up to ${refReward} TRUST after they complete a quest` }
+            // { icon: EarnIcon, title: "Earn", desc: `Earn up to ${refReward} TRUST after they complete a quest` }
           ].map(({ icon: Icon, title, desc }, idx) => (
             <div key={title} className="flex flex-col items-center text-center space-y-2 relative animate-slide-up">
               <div className="w-14 h-14 rounded-full flex items-center justify-center bg-purple-600/25">
@@ -106,7 +106,7 @@ export default function ReferralsPage() {
           {[
             { icon: InviteIcon, title: "Send invitation", desc: "Send your referral links to friends!" },
             { icon: RegisterIcon, title: "Registration", desc: "They register using your referral links" },
-            { icon: EarnIcon, title: "Earn", desc: `Earn up to ${refReward} TRUST after they complete a quest` }
+            // { icon: EarnIcon, title: "Earn", desc: `Earn up to ${refReward} TRUST after they complete a quest` }
           ].map(({ icon: Icon, title, desc }) => (
             <div key={title} className="flex flex-col items-center text-center space-y-4 animate-slide-up">
               <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center bg-purple-600/25">
@@ -137,7 +137,7 @@ export default function ReferralsPage() {
           {[
             { icon: UsersIcon, label: "Total Referrals", value: totalReferrerls },
             { icon: ActiveIcon, label: "Active", value: activeUsers },
-            { icon: TrustIcon, label: "Trust Earned", value: trustEarned }
+            // { icon: TrustIcon, label: "Trust Earned", value: trustEarned }
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex justify-between items-center bg-white/5 rounded-2xl p-4 w-full animate-slide-up">
               <div>
@@ -175,7 +175,7 @@ export default function ReferralsPage() {
 
           {/* SIDE */}
           <div className="space-y-6">
-            <Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-4">
+            {/*<Card className="bg-white/5 border border-white/10 rounded-2xl px-6 py-6 space-y-4">
               <p className="text-sm font-medium text-white">Milestone Progress</p>
               <p className="text-sm text-white">Reward: +{refReward} Trust</p>
               <Progress value={progressBar} />
@@ -186,7 +186,7 @@ export default function ReferralsPage() {
               >
                 {rewardClaimed ? "Claimed" : "Claim Reward"}
               </Button>
-            </Card>
+            </Card> */}
 
             <Card className="w-full bg-white/5 rounded-2xl p-6 space-y-3 animate-slide-up">
               <p className="text-sm font-medium">Important Rule</p>

@@ -97,7 +97,7 @@ const userSchema = new Schema({
 	},
 	refRewardClaimed: {
 		type: Boolean,
-		defult: false
+		default: false
 	},
 	status: {
 		type: String,
@@ -108,5 +108,7 @@ const userSchema = new Schema({
 		ref: "campaign",
 	}],
 }, { timestamps: true });
+
+userSchema.index({ xp: -1 });
 
 export const user = mongoose.model("users", userSchema);

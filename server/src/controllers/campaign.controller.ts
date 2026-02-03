@@ -41,16 +41,16 @@ export const fetchCampaigns = async (
 	res: GlobalResponse
 ) => {
 	try {
-		const campaigns = await campaign.find();
+		const campaigns = await campaign.find().lean();
 
-		const joinedCampaigns = await campaignCompleted.find({ user: req.id });
+		const joinedCampaigns = await campaignCompleted.find({ user: req.id }).lean();
 
 		const mergedCampaigns: any[] = [];
 
 		for (const c of campaigns) {
 			const joined = joinedCampaigns.find((j) => j.campaign?.toString() === c._id.toString());
 
-			const mergedJoinedCampaign: Record<any, unknown> = c.toJSON();
+			const mergedJoinedCampaign: Record<any, unknown> = c;
 
 			mergedJoinedCampaign.joined = joined ? true : false;
 
@@ -152,11 +152,9 @@ export const addCampaignAddress = async (
 			req.body;
 
 			if (!mongoose.Types.ObjectId.isValid(id)) {
-  return res.status(BAD_REQUEST).json({
-    error: "Invalid campaign ID",
-  });
-}
-
+				res.status(BAD_REQUEST).json({ error: "Invalid campaign ID" });
+				return;
+			}
 
 		const foundCampaign = await campaign.findById(id);
 		if (!foundCampaign) {

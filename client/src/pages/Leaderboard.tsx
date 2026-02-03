@@ -62,8 +62,8 @@ export default function Leaderboard() {
   useEffect(() => {
     const timer = setTimeout(async () => {
       try {
-        const { leaderboardInfo: { leaderboardByXp } } = await apiRequestV2("GET", "/api/leaderboard");
-        setList(leaderboardByXp.length > 0 ? leaderboardByXp : MOCK_LEADERBOARD);
+        const { leaderboardInfo, rank } = await apiRequestV2("GET", "/api/leaderboard");
+        setList(leaderboardInfo.length > 0 ? leaderboardInfo : MOCK_LEADERBOARD);
       } catch (err: any) {
         setError(err.message || "Failed to load leaderboard");
       } finally {
@@ -124,7 +124,6 @@ export default function Leaderboard() {
   //     resizeObserver.disconnect();
   //   };
   // }, [list]);
-
 
   return (
     // <div className="min-h-screen bg-black text-white p-6 relative">

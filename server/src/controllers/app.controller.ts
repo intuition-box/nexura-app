@@ -3,7 +3,7 @@ import { cvModel } from "@/models/cv.models";
 import { firstMessage } from "@/models/msg.model";
 import { referredUsers } from "@/models/referrer.model";
 import { token } from "@/models/tokens.model";
-import { campaignQuest, miniQuest } from "@/models/quests.model";
+import { campaignQuest, miniQuest, quest } from "@/models/quests.model";
 import { user } from "@/models/user.model";
 import { performIntuitionOnchainAction } from "@/utils/account";
 import { BOT_TOKEN, THIRD_PARTY_API_KEY, X_API_BEARER_TOKEN } from "@/utils/env.utils";
@@ -25,11 +25,13 @@ import { submission } from "@/models/submission.model";
 import {
 	campaignQuestCompleted,
 	miniQuestCompleted,
+  questCompleted
 } from "@/models/questsCompleted.models";
 import { bannedUser } from "@/models/bannedUser.model";
 import { GRAPHQL_API_URL } from "@/utils/constants";
 import { GraphQLClient } from "graphql-request";
 import { checksumAddress } from "viem";
+import { campaign, campaignCompleted } from "@/models/campaign.model";
 
 export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 	res.send("hi!");
@@ -134,17 +136,33 @@ export const updateSubmission = async (req: GlobalRequest, res: GlobalResponse) 
 
 export const getLeaderboard = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const userData = await user.find();
+    const top200 = await user
+      .find()
+      .sort({ xp: -1, trustClaimed: -1 })
+      .limit(200)
+      .select("username xp profilePic _id level questsCompleted campaignsCompleted")
+      .lean();
 
-    const leaderboardByXp = userData.sort((a, b) => b.xp - a.xp).slice(0, 20);
-    const leaderboardByTrustTokens = userData.sort((a, b) => b.trustEarned - a.trustEarned).slice(0, 20);
+    let rank: number | null = null;
 
-    const leaderboardInfo = {
-      leaderboardByXp,
-      leaderboardByTrustTokens
+    const me = await user.findById(req.id).lean();
+
+    if (!me) {
+      rank = null;
+    } else {
+      rank =
+        (await user.countDocuments({
+          $or: [
+            { xp: { $gt: me.xp } },
+            {
+              xp: me.xp,
+              updatedAt: { $lt: me.updatedAt },
+            },
+          ],
+        })) + 1;
     }
 
-    res.status(OK).json({ message: "leaderboard info fetched", leaderboardInfo });
+    res.status(OK).json({ message: "leaderboard info fetched", leaderboardInfo: top200, rank });
   } catch(error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching leaderboard data" })
@@ -177,7 +195,7 @@ export const referralInfo = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
-    const usersReferred = await referredUsers.find({ user: id });
+    const usersReferred = await referredUsers.find({ user: id }).lean();
     const activeUsers = usersReferred.filter((user: { status: string }) => user.status === "Active");
     if (activeUsers.length >= 10) {
       if (!userFetched.refRewardClaimed && !userFetched.referralAllowed) {
@@ -349,6 +367,88 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
     }
   } catch (error) {
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error validating portal task" });
+  }
+}
+
+export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const userFound = await user.find().select("updatedAt createdAt refRewardClaimed badges status").lean();
+    const totalReferrals = await referredUsers.countDocuments();
+
+    const totalCampaigns = await campaign.countDocuments();
+    const totalQuests = await quest.countDocuments({ category: "weekly" });
+
+    const totalQuestsCompleted = await questCompleted.countDocuments({
+      done: true,
+    });
+
+    const totalCampaignsCompletedFound = await campaignCompleted.find().select("campaignCompleted questsCompleted").lean();
+
+    const totalCampaignsCompleted = totalCampaignsCompletedFound.filter(c => c.campaignCompleted === true).length;
+
+    const joinRatio = (totalCampaignsCompleted / totalCampaignsCompletedFound.length) * 100;
+
+    const totalUsers = userFound.length;
+
+    const now = new Date();
+
+    const users24h = userFound.filter((u) => {
+
+      const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      return u.createdAt >= last24Hours;
+    }).length;
+
+    const referralRewardsClaimed = userFound.filter((u: { refRewardClaimed?: boolean | null }) => {
+      return u.refRewardClaimed === true;
+    }).length;
+
+    const nexonsMinted = userFound.filter((u: { badges: number[] }) => {
+      return u.badges.length > 0;
+    }).length;
+
+    const totalTrustDistributed = (totalCampaignsCompleted * 16) + (referralRewardsClaimed * 16.2); // fix this later
+
+    const totalQuestClaims = totalQuestsCompleted * 3;
+
+    const totalCampaignClaims = totalCampaignsCompleted * 2;
+
+    const totalOnchainClaims = totalQuestClaims + totalCampaignClaims;
+
+    const totalOnchainInteractions = totalOnchainClaims + referralRewardsClaimed + nexonsMinted;
+
+    const users7d = userFound.filter((u) => {
+
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      return u.createdAt >= last7Days;
+    }).length;
+
+    const users30d = userFound.filter((u) => {
+
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      return u.createdAt >= last30Days;
+    }).length;
+
+    const activeUsersWeekly = userFound.filter((u: { updatedAt: Date, status: string }) => {
+
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      return u.status === "Active" && u.updatedAt >= last7Days;
+    }).length;
+
+    const activeUsersMonthly = userFound.filter((u: { updatedAt: Date, status: string }) => {
+
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      return u.status === "Active" && u.updatedAt >= last30Days;
+    }).length;
+
+    res.status(OK).json({ message: "analytics data fetched", analytics: { totalOnchainInteractions, totalOnchainClaims, totalCampaigns, user: { totalUsers, activeUsersWeekly, activeUsersMonthly, users24h, users7d, users30d }, totalReferrals, totalQuests, totalQuestsCompleted, totalCampaignsCompleted, joinRatio, totalTrustDistributed } });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching analytics data" });
   }
 }
 

@@ -4,6 +4,7 @@ import {
 	checkXTask,
 	checkDiscordTask,
 	home,
+  getAnalytics,
 	saveCv,
 	updateX,
 	updateDiscord,
@@ -14,6 +15,7 @@ const router = Router();
 
 router
   .get("/", home)
+  .get("/get-analytics", getAnalytics)
   .post("/check-x", authenticateUser, checkXTask)
   .post("/check-discord", authenticateUser, checkDiscordTask)
   .get("/save-cv", authenticateUser, saveCv)

@@ -41,7 +41,7 @@ export const banUser = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const { userId }: { userId: string } = req.body;
 
-		const userExists = await user.findById(userId);
+		const userExists = await user.findById(userId).lean();
 		if (!userExists) {
 			res.status(NOT_FOUND).json({ error: "user does not exist" });
 			return;
@@ -58,7 +58,7 @@ export const banUser = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const getAdmins = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const admins = await admin.find();
+		const admins = await admin.find().lean();
 
 		res.status(OK).json({ message: "admins fetched", admins });
 	} catch (error) {
@@ -214,7 +214,7 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const getTasks = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const pendingTasks = await submission.find();
+		const pendingTasks = await submission.find().lean().sort({ createdAt: 1 });
 		
 		res.status(OK).json({ message: "submitted tasks fetched", pendingTasks });
 	} catch (error) {
@@ -225,7 +225,7 @@ export const getTasks = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const getBannedUsers = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const bannedUsers = await bannedUser.find();
+		const bannedUsers = await bannedUser.find().lean();
 
 		res.status(OK).json({ message: "banned users fetched", bannedUsers });
 	} catch (error) {
@@ -238,7 +238,7 @@ export const unBanUser = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const { userId }: { userId: string } = req.body;
 
-		const bannedUserExists = await bannedUser.findById(userId);
+		const bannedUserExists = await bannedUser.findById(userId).lean();
 		if (!bannedUserExists) {
 			res.status(BAD_REQUEST).json({ error: "banned user does not exist" });
 			return;

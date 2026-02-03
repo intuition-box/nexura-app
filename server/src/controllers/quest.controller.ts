@@ -35,10 +35,10 @@ export const fetchEcosystemDapps = async (
 	res: GlobalResponse
 ) => {
 	try {
-		const ecosystemQuests = await ecosystemQuest.find();
+		const ecosystemQuests = await ecosystemQuest.find().lean();
 		const ecosystemQuestsCompleted = await ecosystemQuestCompleted.find({
 			user: req.id,
-		});
+		}).lean();
 
 		const mergedEcosystemQuests: any[] = [];
 
@@ -48,7 +48,7 @@ export const fetchEcosystemDapps = async (
 					completedEcoQuest.ecosystemQuest?.toString() === ecoQuest._id.toString()
 			);
 
-			const mergedEcoQuest: Record<any, unknown> = ecoQuest.toJSON();
+			const mergedEcoQuest: Record<any, unknown> = ecoQuest;
 
 			mergedEcoQuest.done = ecoQuestCompleted ? ecoQuestCompleted.done : false;
 
@@ -64,10 +64,10 @@ export const fetchEcosystemDapps = async (
 
 export const fetchQuests = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const allQuests = await quest.find();
+		const allQuests = await quest.find().lean();
 		const completedQuests = await questCompleted.find({
 			user: new mongoose.Types.ObjectId(req.id),
-		});
+		}).lean();
 
 		const oneTimeQuestsInDB = allQuests.filter(
 			(quest) => quest.category === "one-time"
@@ -80,7 +80,7 @@ export const fetchQuests = async (req: GlobalRequest, res: GlobalResponse) => {
 				(completedQuest) => completedQuest.quest?.toString() === oneTimeQuest._id.toString()
 			);
 
-			const mergedQuest: Record<any, unknown> = oneTimeQuest.toJSON();
+			const mergedQuest: Record<any, unknown> = oneTimeQuest;
 
 			mergedQuest.done = oneTimeQuestCompleted ? oneTimeQuestCompleted.done : false;
 
@@ -98,7 +98,7 @@ export const fetchQuests = async (req: GlobalRequest, res: GlobalResponse) => {
 				(completedQuest) => completedQuest.quest?.toString() === weeklyQuest._id.toString()
 			);
 
-			const mergedQuest: Record<any, unknown> = weeklyQuest.toJSON();
+			const mergedQuest: Record<any, unknown> = weeklyQuest;
 
 			mergedQuest.done = weeklyQuestCompleted ? weeklyQuestCompleted.done : false;
 
@@ -118,13 +118,13 @@ export const fetchMiniQuests = async (req: GlobalRequest, res: GlobalResponse) =
 	try {
 		const id = req.query.id as string;
 		
-		const mainQuest = await quest.findById(id);
+		const mainQuest = await quest.findById(id).lean();
 		if (!mainQuest) {
 			res.status(BAD_REQUEST).json({ error: "quest doesn't exist or in invalid" });
 			return;
 		}
 
-		const miniQuestsInDB = await miniQuest.find({ quest: id });
+		const miniQuestsInDB = await miniQuest.find({ quest: id }).lean();
 
 		const miniQuestsCompleted = await miniQuestCompleted.find({
 			quest: id,
@@ -138,7 +138,7 @@ export const fetchMiniQuests = async (req: GlobalRequest, res: GlobalResponse) =
 				(completedQuest) => completedQuest.miniQuest?.toString() === miniquest._id.toString()
 			);
 
-			const mergedQuest: Record<any, unknown> = miniquest.toJSON();
+			const mergedQuest: Record<any, unknown> = miniquest;
 
 			mergedQuest.done = miniquestCompleted ? miniquestCompleted.done : false;
 			mergedQuest.status = miniquestCompleted ? miniquestCompleted.status : "";
@@ -165,7 +165,7 @@ export const fetchCampaignQuests = async (
 		const id = req.query.id as string;
 		const userId = req.id!;
 
-		const currentCampaign = await campaign.findById(id);
+		const currentCampaign = await campaign.findById(id).lean();
 		if (!currentCampaign) {
 			res
 				.status(NOT_FOUND)
@@ -173,12 +173,12 @@ export const fetchCampaignQuests = async (
 			return;
 		}
 
-		const quests = await campaignQuest.find({ campaign: id });
+		const quests = await campaignQuest.find({ campaign: id }).lean();
 
 		const campaignQuestsCompleted = await campaignQuestCompleted.find({
 			user: userId,
 			campaign: id,
-		});
+		}).lean();
 
 		const completedCampaign = await campaignCompleted.findOne({
 			user: userId,
@@ -193,7 +193,7 @@ export const fetchCampaignQuests = async (
 					completedCampaignQuest.campaignQuest?.toString() === campaign_quest._id.toString()
 			);
 
-			const mergedCampaignQuest: Record<any, unknown> = campaign_quest.toJSON();
+			const mergedCampaignQuest: Record<any, unknown> = campaign_quest;
 
 			mergedCampaignQuest.done = campaign_questCompleted ? campaign_questCompleted.done : false;
 			mergedCampaignQuest.status = campaign_questCompleted ? campaign_questCompleted.status : "";
@@ -326,7 +326,7 @@ export const performCampaignQuest = async (
 	try {
 		const { id, campaignId } = req.body;
 
-		const campaignQuestk = await campaignQuest.findById(id);
+		const campaignQuestk = await campaignQuest.findById(id).lean();
 		if (!campaignQuestk) {
 			res
 				.status(NOT_FOUND)
@@ -395,19 +395,19 @@ export const claimMiniQuest = async (req: GlobalRequest, res: GlobalResponse) =>
 	try {
 		const { questId, id } = req.body;
 
-		const mini_quest = await miniQuest.findById(id);
+		const mini_quest = await miniQuest.findById(id).lean();
 		if (!mini_quest) {
 			res.status(NOT_FOUND).json({ error: "mini quest id is invalid" });
 			return;
 		}
 
-		const mainQuest = await quest.findById(questId);
+		const mainQuest = await quest.findById(questId).lean();
 		if (!mainQuest) {
 			res.status(NOT_FOUND).json({ error: "quest is invalid/doesn't exist" });
 			return;
 		}
 
-		const claimer = await user.findById(req.id);
+		const claimer = await user.findById(req.id).lean();
 		if (!claimer) {
 			res.status(NOT_FOUND).json({ error: "invalid user or user dos not exist" });
 			return;
@@ -448,7 +448,7 @@ export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
 		}
 
-		const questFound = await quest.findById(id);
+		const questFound = await quest.findById(id).lean();
 		if (!questFound) {
 			res
 				.status(NOT_FOUND)
@@ -537,7 +537,7 @@ export const claimEcosystemQuest = async (
 			return;
 		}
 
-		const ecosystemQuestFound = await ecosystemQuest.findById(id);
+		const ecosystemQuestFound = await ecosystemQuest.findById(id).lean();
 		if (!ecosystemQuestFound) {
 			res
 				.status(NOT_FOUND)
@@ -597,7 +597,7 @@ export const setTimer = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const id = req.query.id;
 
-		const questForEcosystem = await ecosystemQuest.findById(id);
+		const questForEcosystem = await ecosystemQuest.findById(id).lean();
 		if (!questForEcosystem) {
 			res
 				.status(NOT_FOUND)
@@ -644,7 +644,7 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
 		}
 
-		const userExists = await user.findById(userId);
+		const userExists = await user.findById(userId).lean();
 		if (!userExists) {
 			res.status(NOT_FOUND).json({ error: "id is invalid or does not exists" });
 			return;
@@ -657,7 +657,7 @@ export const submitQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		let notComplete;
 
-		const submissionExists = await submission.findOne({ miniQuestId: id, user: userId, page });
+		const submissionExists = await submission.findOne({ miniQuestId: id, user: userId, page }).lean();
 		if (submissionExists) {
 			res.status(BAD_REQUEST).json({ error: "quest already submitted" });
 			return;
