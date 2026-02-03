@@ -75,7 +75,7 @@ export default function ReferralsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold">Referrals</h1>
           <p className="text-sm text-white/80 mt-1">
-            Invite your friends to Nexura and earn exciting rewards
+            Invite your friends to Nexura
           </p>
         </div>
 
@@ -188,7 +188,7 @@ export default function ReferralsPage() {
               </Button>
             </Card> */}
 
-            <Card className="w-full bg-white/5 rounded-2xl p-6 space-y-3 animate-slide-up">
+            {/* <Card className="w-full bg-white/5 rounded-2xl p-6 space-y-3 animate-slide-up">
               <p className="text-sm font-medium">Important Rule</p>
               <p className="text-xs text-white/80">
                 Referrals are only counted as <span className="font-medium">“active”</span> after they complete their <span className="font-medium">first quest or campaign</span>.
@@ -196,7 +196,7 @@ export default function ReferralsPage() {
               <p className="text-xs text-white/80">
                 You can refer as many people as you want, but only a maximum of <span className="font-medium">10 active referrals</span> will qualify for referral rewards.
               </p>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </div>
