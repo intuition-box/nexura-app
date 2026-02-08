@@ -32,6 +32,8 @@ import { GRAPHQL_API_URL } from "@/utils/constants";
 import { GraphQLClient } from "graphql-request";
 import { checksumAddress } from "viem";
 import { campaign, campaignCompleted } from "@/models/campaign.model";
+import { dailySignIn } from "@/models/dailySignIn.model";
+import { startOfDayUTC } from "@/utils/utils";
 
 export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 	res.send("hi!");
@@ -56,7 +58,7 @@ export const updateUser = async (req: GlobalRequest, res: GlobalResponse) => {
     }
 
     if (userToUpdate.username !== username) {
-      const usernameExists = await user.findOne({ username });
+      const usernameExists = await user.findOne({ username }).lean();
       if (usernameExists) {
         res.status(BAD_REQUEST).json({ error: "username already taken" });
         return;
@@ -171,14 +173,20 @@ export const getLeaderboard = async (req: GlobalRequest, res: GlobalResponse) =>
 
 export const fetchUser = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const userFetched = await user.findById(req.id);
+    const userFetched = await user.findById(req.id).lean();
 
     if (!userFetched) {
       res.status(BAD_REQUEST).json({ error: "invalid user id" });
       return;
     }
 
-    res.status(OK).json({ message: "user fetched!", user: userFetched });
+    const date = new Date();
+
+    const onlyDate = date.toISOString().split("T")[0];
+
+    const openDailySignIn = onlyDate === userFetched.lastSignInDate ? false : true;
+
+    res.status(OK).json({ message: "user fetched!", user: userFetched, openDailySignIn });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching user data" });
@@ -449,6 +457,67 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching analytics data" });
+  }
+}
+
+export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const userId = req.id;
+
+    const today = startOfDayUTC();
+
+    const yesterday = new Date(today);
+
+    yesterday.setUTCDate(today.getUTCDate() - 1);
+
+    const userExists = await user.findById(userId);
+    if (!userExists) {
+      res.status(NOT_FOUND).json({ message: "User not found" });
+      return;
+    }
+
+    const onlyDate = today.toISOString().split("T")[0];
+    const yesterdayDate = yesterday.toISOString().split("T")[0];
+
+    const dailySignInExists = await dailySignIn.findOne({ user: req.id });
+    if (!dailySignInExists) {
+      await dailySignIn.create({ user: req.id, date: onlyDate });
+
+      userExists.lastSignInDate = onlyDate;
+      userExists.xp += 5;
+      userExists.streak += 1;
+
+      await userExists.save();
+
+      res.status(OK).json({ message: "performed daily sign in" });
+      return;
+    }
+
+    if (onlyDate === dailySignInExists.date) {
+      res.status(BAD_REQUEST).json({ error: "Already signed in today" });
+      return;
+    }
+
+    // 🔥 Streak logic
+    if (dailySignInExists.date === yesterdayDate) {
+      userExists.xp += 5;
+      userExists.streak += 1;
+    } else {
+      userExists.streak = 1;
+      userExists.xp += 5;
+    }
+
+    dailySignInExists.date = onlyDate as string;
+
+    userExists.lastSignInDate = onlyDate;
+
+    await userExists.save();
+    await dailySignInExists.save();
+
+    res.json({ message: "Daily sign-in successful", done: true });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error claiming daily quest" })
   }
 }
 
