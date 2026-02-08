@@ -79,6 +79,13 @@ const userSchema = new Schema({
 			default: 0,
 		},
 	},
+	lastSignInDate: {
+		type: String
+	},
+	streak: {
+		type: Number,
+		default: 0
+	},
 	questsCompleted: {
 		type: Number,
 		default: 0,
