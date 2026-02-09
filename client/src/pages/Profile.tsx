@@ -345,8 +345,8 @@ export default function Profile() {
             { title: "Quests Completed", value: userData?.questsCompleted ?? 0, label: "Completed" },
             { title: "Total Rewards", value: `${userData?.trust ?? 0} TRUST`, label: "Earned" },
             { title: "Nexons", value: totalMinted, label: "Minted" },
-            { title: "Current Streak", value: userData?.streak ?? 0, label: "Days" },
-            { title: "Longest Streak", value: userData?.longestStreak ?? 0, label: "Days" },
+            { title: "Check-in Streak", value: `🔥 ${userData?.streak ?? 0}`, label: "Days" },
+            { title: "Longest Streak", value: `🏆 ${userData?.longestStreak ?? 0}`, label: "Days" },
           ].map((stat) => (
             <Card key={stat.title} className="glass glass-hover rounded-3xl flex flex-col h-full">
               <CardHeader className="pb-3">
