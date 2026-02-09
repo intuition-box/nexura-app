@@ -217,17 +217,18 @@ export default function DailyCheckInModal({ open, onOpenChange, onCheckInSuccess
                     ${isCheckedIn && isToday ? "bg-purple-500/15" : ""}
                   `}
                 >
-                  {/* Flame for today */}
+                  {/* Icon for today: flame before check-in, checkmark after */}
                   {isToday && (
                     <div className={`absolute inset-0 flex items-center justify-center ${justClaimed ? "animate-bounce" : ""}`}>
                       <div className="absolute inset-0 bg-gradient-to-b from-purple-500/20 to-transparent rounded-lg" />
-                      <Flame
-                        className={`w-4 h-4 drop-shadow-[0_0_8px_rgba(147,51,234,0.6)] transition-all duration-300 ${
-                          alreadyCheckedIn ? "text-purple-400" : "text-purple-400/50 animate-pulse"
-                        }`}
-                      />
-                      {alreadyCheckedIn && (
-                        <Check className="w-2.5 h-2.5 text-white absolute bottom-0.5 right-0.5" />
+                      {alreadyCheckedIn ? (
+                        <Check
+                          className="w-4 h-4 text-purple-400 drop-shadow-[0_0_8px_rgba(147,51,234,0.6)] transition-all duration-300"
+                        />
+                      ) : (
+                        <Flame
+                          className="w-4 h-4 text-purple-400/50 animate-pulse drop-shadow-[0_0_8px_rgba(147,51,234,0.6)] transition-all duration-300"
+                        />
                       )}
                     </div>
                   )}
