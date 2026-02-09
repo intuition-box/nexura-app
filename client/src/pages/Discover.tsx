@@ -21,7 +21,6 @@ import AnimatedBackground from "../components/AnimatedBackground";
 import intuitionPortal from "@assets/intuitionPortal.jpg";
 import intuitionBets from "@assets/intuitionBets.jpg";
 import intuRank from "@assets/intuRank.jpg";
-import tribeMeme from "@assets/tribeMeme.jpg";
 import tnsLogo from "@assets/tnsLogo.jpg";
 import { DEV_CAMPAIGNS } from "../pages/Campaigns";
 
@@ -112,7 +111,7 @@ export default function Discover() {
     { name: "Intuition Portal", logo: intuitionPortal, category: "Portal" },
     // { name: "Intuition Bets", logo: intuitionBets, category: "Prediction Market" },
     { name: "IntuRank", logo: intuRank, category: "DeFi" },
-    { name: "Tribe Meme", logo: tribeMeme, category: "Gaming" },
+    { name: "Sofia", logo: "/Sofia.jpg", category: "Extension" },
     { name: "Trust Name Service", logo: tnsLogo, category: "Domain" },
     // { name: "TrustSwap", logo: trustSwapLogo, category: "DeFi" },
   ];
