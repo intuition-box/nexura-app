@@ -266,7 +266,7 @@ export default function DailyCheckInModal({ open, onOpenChange, onCheckInSuccess
                 ? "Checking in..."
                 : alreadyCheckedIn
                   ? "Checked In"
-                  : "Check In  (+10 XP)"}
+                  : "Check In  (+20 XP)"}
           </button>
         </div>
       </DialogContent>
