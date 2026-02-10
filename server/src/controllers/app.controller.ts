@@ -486,6 +486,11 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
       userExists.lastSignInDate = onlyDate;
       userExists.xp += 5;
       userExists.streak += 1;
+      
+      // Update longest streak if current streak is higher
+      if (userExists.streak > (userExists.longestStreak || 0)) {
+        userExists.longestStreak = userExists.streak;
+      }
 
       await userExists.save();
 
@@ -502,6 +507,11 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
     if (dailySignInExists.date === yesterdayDate) {
       userExists.xp += 5;
       userExists.streak += 1;
+      
+      // Update longest streak if current streak is higher
+      if (userExists.streak > (userExists.longestStreak || 0)) {
+        userExists.longestStreak = userExists.streak;
+      }
     } else {
       userExists.streak = 1;
       userExists.xp += 5;

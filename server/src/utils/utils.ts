@@ -8,67 +8,79 @@ export const padNumber = (numberToBePadded: number) => {
 	return numberToBePadded.toString().padStart(3, "0");
 }
 
+export const startOfDayUTC = (date = new Date()): Date => {
+	return new Date(Date.UTC(
+		date.getUTCFullYear(),
+		date.getUTCMonth(),
+		date.getUTCDate()
+	));
+};
+
 async function updateLevel (xp: number, badges: number[], userId: string) {
 	let address: `0x${string}` | undefined = undefined;
 	let level: string = "1";
 
-	if (xp > 1000 && xp < 3000) {
-		level = "1";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
+	try {
+		if (xp >= 1000 && xp < 3000) {
+			level = "1";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
+		} else if (xp >= 3000 && xp < 6000) {
+			level = "2";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
+		} else if (xp >= 6000 && xp < 10000) {
+			level = "3";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
+		} else if (xp >= 10000 && xp < 15000) {
+			level = "4";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
+		} else if (xp >= 15000 && xp < 20000) {
+			level = "5";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
+		} else if (xp >= 20000 && xp < 30000) {
+			level = "6";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
+		} else if (xp >= 30000 && xp < 40000) {
+			level = "7";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
+		} else if (xp >= 40000 && xp < 50000) {
+			level = "8";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
+		} else if (xp >= 50000 && xp < 65000) {
+			level = "9";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
+		} else if (xp >= 65000) {
+			level = "10";
+			if (!badges.includes(parseInt(level))) {
+				address = NexonsAddress[level]
+			}
 		}
-	} else if (xp > 3000 && xp < 6000) {
-		level = "2";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
-		}
-	} else if (xp > 6000 && xp < 10000) {
-		level = "3";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
-		}
-	} else if (xp > 10000 && xp < 15000) {
-		level = "4";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
-		}
-	} else if (xp > 15000 && xp < 20000) {
-		level = "5";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
-		}
-	} else if (xp > 20000 && xp < 30000) {
-		level = "6";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
-		}
-	} else if (xp > 30000 && xp < 40000) {
-		level = "7";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
-		}
-	} else if (xp > 40000 && xp < 50000) {
-		level = "8";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
-		}
-	} else if (xp > 50000 && xp < 65000) {
-		level = "9";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
-		}
-	} else if (xp >= 65000) {
-		level = "10";
-		if (!badges.includes(parseInt(level))) {
-			address = NexonsAddress[level]
-		}
-	}
 
-	if (address) {
-		await performIntuitionOnchainAction({ action: "allow-mint", level, userId });
-	}
+		if (address) {
+			await performIntuitionOnchainAction({ action: "allow-mint", level, userId });
+		}
 
-	return level;
+		return level;
+	} catch (error) {
+		return level;
+	}
 }
 
 export { updateLevel };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
@@ -13,7 +13,9 @@ import { Link, useLocation } from "wouter";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../lib/auth";
 import { useWallet } from "../hooks/use-wallet";
+import { apiRequest } from "../lib/queryClient";
 import SignUpPopup from "./SignUpPopup";
+import DailyCheckInModal from "./DailyCheckInModal";
 import { getIntuitionNetworkParams } from "../lib/utils";
 import { network } from "../lib/constants";
 
@@ -42,6 +44,79 @@ function getLevelByXp(currentXp: number) {
   }
   return { ...LEVELS[0], index: 1 };
 }
+
+const DailySignInBadge = () => {
+  const [isClaimed, setIsClaimed] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [countdown, setCountdown] = useState<string>("");
+
+  useEffect(() => {
+    const checkDailyStatus = async () => {
+      try {
+        const response = await apiRequest("GET", "/api/user/profile");
+        const data = await response.json();
+        const today = new Date().toISOString().split("T")[0];
+        const lastSignIn = data.user?.lastSignInDate;
+        setIsClaimed(today === lastSignIn);
+      } catch {
+        setIsClaimed(false);
+      }
+    };
+    checkDailyStatus();
+  }, []);
+
+  useEffect(() => {
+    if (isClaimed) {
+      const updateCountdown = () => {
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+        tomorrow.setUTCHours(0, 0, 0, 0);
+        const timeLeft = tomorrow.getTime() - now.getTime();
+        if (timeLeft <= 0) {
+          setIsClaimed(false);
+          setCountdown("");
+          return;
+        }
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        setCountdown(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      };
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isClaimed]);
+
+  const handleCheckInSuccess = () => {
+    setIsClaimed(true);
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setModalOpen(true)}
+        className={`flex items-center gap-2 glass glass-hover px-3 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all cursor-pointer ${isClaimed ? "opacity-60" : ""}`}
+        title={isClaimed ? `Next check-in available in ${countdown}` : "Click to check in daily"}
+      >
+        <img
+          src="/daily.png"
+          alt="Daily Check In"
+          className={`w-4 h-4 ${isClaimed ? "grayscale" : ""}`}
+        />
+        <span className="text-xs sm:text-sm font-medium text-white hidden sm:inline">
+          {isClaimed ? (countdown || "Claimed") : "Daily Check In"}
+        </span>
+      </button>
+      <DailyCheckInModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onCheckInSuccess={handleCheckInSuccess}
+      />
+    </>
+  );
+};
 
 export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
   const { address, isConnected: walletConnected, connectWallet, disconnect } = useWallet();
@@ -142,6 +217,7 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
   return (
     <div className="flex items-center gap-4">
       {walletConnected && <NetworkBadge />}
+      {hasServerProfile && <DailySignInBadge />}
       {showLevelInHeader && <LevelBadge />}
 
       {hasServerProfile ? (

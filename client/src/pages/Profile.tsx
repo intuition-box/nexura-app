@@ -338,21 +338,24 @@ export default function Profile() {
         </Card>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6 mt-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mt-6">
           {[
             { title: "Total XP", value: xpValue, label: "XP earned" },
             { title: "Current Level", value: `${levelName}`, label: "" },
             { title: "Quests Completed", value: userData?.questsCompleted ?? 0, label: "Completed" },
+            { title: "Campaigns Completed", value: userData?.campaignsCompleted ?? 0, label: "Completed" },
             { title: "Total Rewards", value: `${userData?.trust ?? 0} TRUST`, label: "Earned" },
             { title: "Nexons", value: totalMinted, label: "Minted" },
+            { title: "Check-in Streak", value: userData?.streak ?? 0, label: "Days" },
+            { title: "Longest Streak", value: userData?.longestStreak ?? 0, label: "Days" },
           ].map((stat) => (
-            <Card key={stat.title} className="glass glass-hover rounded-3xl flex flex-col h-full">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-bold text-white">{stat.title}</CardTitle>
+            <Card key={stat.title} className="glass glass-hover rounded-2xl sm:rounded-3xl flex flex-col h-full">
+              <CardHeader className="px-3 pt-3 pb-1 sm:px-4 sm:pt-4 sm:pb-2">
+                <CardTitle className="text-[11px] sm:text-xs font-semibold text-white/60 uppercase tracking-wide">{stat.title}</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col justify-between">
-                <div className="text-2xl font-bold text-white">{stat.value}</div>
-                {stat.label && <p className="text-xs text-white/60 mt-1">{stat.label}</p>}
+              <CardContent className="px-3 pb-3 sm:px-4 sm:pb-4 flex flex-col justify-between">
+                <div className="text-xl sm:text-2xl font-bold text-white">{stat.value}</div>
+                {stat.label && <p className="text-[10px] sm:text-xs text-white/40 mt-0.5">{stat.label}</p>}
               </CardContent>
             </Card>
           ))}

@@ -86,6 +86,10 @@ const userSchema = new Schema({
 		type: Number,
 		default: 0
 	},
+	longestStreak: {
+		type: Number,
+		default: 0
+	},
 	questsCompleted: {
 		type: Number,
 		default: 0,
