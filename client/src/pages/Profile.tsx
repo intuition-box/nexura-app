@@ -133,6 +133,8 @@ export default function Profile() {
       campaignsCompleted: 0,
       dateJoined: "Recently",
       trust: 0,
+      streak: 0,
+      longestStreak: 0,
       badges: [],
       socialProfiles: { x: "", discord: "" },
     };
@@ -157,6 +159,8 @@ export default function Profile() {
       dateJoined: user.dateJoined ?? user.created_at ?? "Recently",
       trust: user.trustEarned,
       badges: user.badges ?? [],
+      streak: user.streak ?? 0,
+      longestStreak: user.longestStreak ?? 0,
       socialProfiles: {
         x: user.socialProfiles?.x ?? "",
         discord: user.socialProfiles?.discord ?? "",

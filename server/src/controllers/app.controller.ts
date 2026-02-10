@@ -484,7 +484,7 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
       await dailySignIn.create({ user: req.id, date: onlyDate });
 
       userExists.lastSignInDate = onlyDate;
-      userExists.xp += 5;
+      userExists.xp += 20;
       userExists.streak += 1;
       
       // Update longest streak if current streak is higher
@@ -505,7 +505,7 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
 
     // 🔥 Streak logic
     if (dailySignInExists.date === yesterdayDate) {
-      userExists.xp += 5;
+      userExists.xp += 20;
       userExists.streak += 1;
       
       // Update longest streak if current streak is higher
@@ -514,7 +514,7 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
       }
     } else {
       userExists.streak = 1;
-      userExists.xp += 5;
+      userExists.xp += 20;
     }
 
     dailySignInExists.date = onlyDate as string;
