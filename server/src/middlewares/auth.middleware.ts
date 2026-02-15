@@ -126,7 +126,7 @@ export const authenticateAdmin = async (req: GlobalRequest, res: GlobalResponse,
 
     req.id = id;
 
-    req.status = isAdmin.status;
+    req.role = isAdmin.role;
 
 		next();
 	} catch (error: any) {

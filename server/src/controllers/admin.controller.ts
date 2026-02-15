@@ -70,7 +70,7 @@ export const getAdmins = async (req: GlobalRequest, res: GlobalResponse) => {
 export const removeAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
 
-    if (req.status !== "superadmin") {
+    if (req.role !== "superadmin") {
       res.status(UNAUTHORIZED).json({ error: "only superadmin can remove admins" });
       return;
     }
@@ -99,12 +99,12 @@ export const removeAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 export const addAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
 
-    if (req.status !== "superadmin") {
+    if (req.role !== "superadmin") {
       res.status(UNAUTHORIZED).json({ error: "only superadmin can add admins" });
       return;
     }
 
-    const { email, status }: { email: string, status: "superadmin" | "admin" } = req.body;
+    const { email, role }: { email: string, role: "superadmin" | "admin" } = req.body;
 		if (!email) {
 			res.status(BAD_REQUEST).json({ error: "send admin email" });
 			return;
@@ -120,7 +120,7 @@ export const addAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 				.padStart(6, "0");
 
 			newAdmin.code = code;
-      newAdmin.status = status;
+      newAdmin.role = role;
 
 			await sendEmailToAdmin(email, code);
 
