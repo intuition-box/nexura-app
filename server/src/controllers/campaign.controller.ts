@@ -15,8 +15,8 @@ import {
 	FORBIDDEN,
 	UNAUTHORIZED,
 } from "@/utils/status.utils";
-import { validateCampaignData, updateLevel } from "@/utils/utils";
-import { bannedUser } from "@/models/bannedUser.model";
+import { validateCampaignData, updateLevel, checkPayment } from "@/utils/utils";
+import { campaignQuest } from "@/models/quests.model";
 
 interface IReward {
 	xp: number;
@@ -76,11 +76,30 @@ export const createCampaign = async (
 
 		const projectUserId = req.id;
 
+		const txHash = req.body.txHash;
+		if (!txHash) {
+			res.status(BAD_REQUEST).json({ error: "transaction hash is required" });
+			return;
+		}
+
+		const campaignNo = await checkPayment(txHash);
+		if (!campaignNo) {
+			res
+				.status(FORBIDDEN)
+				.json({ error: "kindly pay the require amount (1000 TRUST) to proceed" });
+			return;
+		}
+
 		const campaignCreator = await project.findById(projectUserId);
 		if (!campaignCreator) {
 			res
 				.status(NOT_FOUND)
 				.json({ error: "id associated with user is invalid" });
+			return;
+		}
+
+		if (campaignCreator.campaignsCreated >= campaignNo) {
+			res.status(FORBIDDEN).json({ error: "kindly pay the required amount (1000 TRUST) to proceed" });
 			return;
 		}
 
@@ -130,6 +149,22 @@ export const createCampaign = async (
 
 		campaignCreator.campaignsCreated += 1;
 		campaignCreator.xpAllocated = 0;
+
+		const campaignQuestsFromBody = req.body.campaignQuests as Record<string, any>[];
+
+		const manyData: any[] = [];
+
+		if (campaignQuestsFromBody.length > 0) {
+			for (const quest of campaignQuestsFromBody) {
+				quest.campaign = newCampaign._id;
+
+				manyData.push(quest);
+			}
+
+			await campaignQuest.insertMany(manyData);
+		}
+
+		newCampaign.noOfQuests = campaignQuestsFromBody.length;
 
 		await newCampaign.save();
 		await campaignCreator.save();

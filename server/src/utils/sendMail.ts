@@ -5,7 +5,7 @@ import hbs, {
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import logger from "@/config/logger";
-import { EMAIL_USER, EMAIL_PASSWORD, ADMIN_URL } from "./env.utils";
+import { EMAIL_USER, EMAIL_PASSWORD, ADMIN_URL, CLIENT_URL } from "./env.utils";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -41,7 +41,39 @@ export const sendEmailToAdmin = async (email: string, code: string) => {
       },
     } as MailOptions);
   } catch (error: any) {
-    logger.error(`Error sending admin email: ${error.message}`);
-    throw new Error("Error sending Admin mail");
+    throw new Error(error.message);
+  }
+};
+
+export const resetEmail = async (email: string, link: string) => {
+  try {
+    await transporter.sendMail({
+      from: EMAIL_USER,
+      to: email,
+      subject: "Reset Password",
+      template: "reset",
+      context: {
+        link
+      },
+    } as MailOptions);
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};
+
+export const addProjectAdminEmail = async (email: string, code: string) => {
+  try {
+    await transporter.sendMail({
+      from: EMAIL_USER,
+      to: email,
+      subject: "Project admin setup",
+      template: "admin-setup",
+      context: {
+        url: `${CLIENT_URL}/studio/register`,
+        code
+      },
+    } as MailOptions);
+  } catch (error: any) {
+    throw new Error(error.message);
   }
 };

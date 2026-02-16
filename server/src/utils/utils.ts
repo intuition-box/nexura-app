@@ -3,9 +3,17 @@ import { z } from "zod";
 import { JWT_SECRET, REFRESH_SECRET } from "./env.utils";
 import { performIntuitionOnchainAction } from "./account";
 import { NexonsAddress } from "./constants";
+import { ethers } from "ethers";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 export const padNumber = (numberToBePadded: number) => {
 	return numberToBePadded.toString().padStart(3, "0");
+}
+
+export const hashPassword = async (password: string) => {
+	const salt = await bcrypt.genSalt(12);
+	return await bcrypt.hash(password, salt);
 }
 
 export const startOfDayUTC = (date = new Date()): Date => {
@@ -94,9 +102,18 @@ export const validateCampaignData = (reqData: any) => {
 		ends_at: z.string().trim(),
 		reward: z.object({
 			xp: z.number(),
-			// trust: z.number()
+			trust: z.number().optional().default(0),
+			pool: z.number()
 		}),
-		totaltrustAvailable: z.number().optional(),
+		totalTrustAvailable: z.number().optional(),
+		campaignQuests: z.array(
+			z.object({
+				link: z.string().optional(),
+				quest: z.string(),
+				tag: z.enum(["like", "follow-x", "repost-x", "join-discord", "portal", "message-discord", "portal", "comment-x", "other"]),
+				category: z.enum(["twitter", "discord", "reddit", "instagram", "facebook", "other"]),
+			})
+		),
 		contractAddress: z.string().optional(),
 	});
 
@@ -182,11 +199,34 @@ export const validateProjectData = (reqData: any) => {
 	const projectSchema = z.object({
 		name: z.string().trim(),
 		email: z.email().trim(),
-		description: z.string().trim(),
-		// password: z.string().trim(),
+    description: z.string().trim(),
+		address: z.string().trim(),
+		password: z.string().trim().length(8),
 	});
 
 	const parseData = projectSchema.safeParse(reqData);
+
+	return parseData;
+};
+
+export const generateOTP = () => {
+	const code = crypto
+		.randomInt(0, 1000000000)
+		.toString()
+		.padStart(6, "0")
+    .slice(0, 6);
+
+	return code;
+};
+
+export const validateProjectAdminData = (reqData: any) => {
+	const projectAdminSchema = z.object({
+		email: z.email().trim(),
+    password: z.string().trim(),
+		code: z.string().trim().length(6),
+	});
+
+	const parseData = projectAdminSchema.safeParse(reqData);
 
 	return parseData;
 };
@@ -203,9 +243,16 @@ export const validateUserSignUpData = (reqData: any) => {
 	return parseData;
 };
 
+export const getMissingFields = (error: z.ZodError<Record<any, any>>) => {
+  const emptyFieldsArray = Object.keys(z.treeifyError(error).properties!);
+  const emptyFields = emptyFieldsArray.join(", ");
+  return emptyFields;
+};
+
 export const JWT = {
-	sign: (data: any) => {
-		return jwt.sign(data, JWT_SECRET, { expiresIn: "7d" });
+  sign: (id: any, expiresInParam?: StringValue) => {
+    const expiresIn = expiresInParam ?? "7d";
+		return jwt.sign({ id }, "JWT_SECRET", { expiresIn });
 	},
 
 	verify: (jwtToken: string) => {
@@ -225,3 +272,31 @@ export const JWT = {
 export const getRefreshToken = (id: any) => {
 	return jwt.sign({ id }, REFRESH_SECRET, { expiresIn: "30d" });
 };
+
+export const checkPayment = async (txHash: string) => {
+	const provider = new ethers.JsonRpcProvider("https://rpc.intuition.systems");
+
+	const feeInterface = new ethers.Interface(["event FeePaid(uint256 totalCampaigns)"]); // Replace with your event interface
+
+	const receipt = await provider.getTransactionReceipt(txHash);
+	if (!receipt || receipt.status !== 1) {
+		throw new Error("Transaction failed");
+	}
+
+	const FEE_CONTRACT = "0xcontractAddress";
+
+	let totalCampaigns: number = 0;
+
+	// Check logs
+	for (const log of receipt.logs) {
+		if (log.address.toLowerCase() !== FEE_CONTRACT.toLowerCase()) continue;
+
+    const parsed = feeInterface.parseLog(log);
+
+		if (parsed?.name === "FeePaid") {
+			totalCampaigns = parsed.args.totalCampaigns ?? 0;
+		}
+	}
+
+	return totalCampaigns;
+}

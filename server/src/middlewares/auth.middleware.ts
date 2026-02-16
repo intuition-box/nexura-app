@@ -58,11 +58,7 @@ export const authenticateUser = async (req: GlobalRequest, res: GlobalResponse, 
 			return;
 		}
 
-		const { id, status } = await JWT.verify(authHeader.split(" ")[1]!) as decodedDataType;
-		if (status != "user") {
-			res.status(UNAUTHORIZED).json({ error: "only authenticated users can use this route" });
-			return;
-		}
+		const { id } = await JWT.verify(authHeader.split(" ")[1]!) as decodedDataType;
 
 		req.id = id as string;
 
@@ -128,7 +124,9 @@ export const authenticateAdmin = async (req: GlobalRequest, res: GlobalResponse,
 			return;
 		}
 
-		req.id = id;
+    req.id = id;
+
+    req.role = isAdmin.role;
 
 		next();
 	} catch (error: any) {

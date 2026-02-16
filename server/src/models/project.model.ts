@@ -9,15 +9,22 @@ const projectSchema = new Schema({
   address: {
     type: String,
     required: true,
+    unique: true
   },
-  // email: {
-  //   type: String,
-  //   required: true
-  // },
-  // password: {
-  //   type: String,
-  //   required: true
-  // },
+  xUsername: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
   logo: {
     type: String,
     required: true
@@ -37,3 +44,22 @@ const projectSchema = new Schema({
 }, { timestamps: true });
 
 export const project = mongoose.model("projects", projectSchema);
+
+const projectAdminSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  project: {
+    type: Schema.Types.ObjectId,
+    ref: 'projects',
+    required: true
+  }
+}, { timestamps: true });
+
+export const projectAdmin = mongoose.model("project-admins", projectAdminSchema);

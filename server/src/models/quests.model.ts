@@ -70,6 +70,7 @@ const campaignQuestSchema = new Schema({
 	},
 	link: {
 		type: String,
+		required: true
 	},
 	campaign: {
 		type: mongoose.Schema.Types.ObjectId,
