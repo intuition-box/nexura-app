@@ -4,7 +4,7 @@ import { quest } from "@/models/quests.model";
 import { admin } from "@/models/admin.model";
 import crypto from "crypto";
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, UNAUTHORIZED } from "@/utils/status.utils";
-import { getRefreshToken, JWT, validateQuestData } from "@/utils/utils";
+import { generateOTP, getRefreshToken, JWT, validateQuestData } from "@/utils/utils";
 import { sendEmailToAdmin } from "@/utils/sendMail";
 import { campaignQuestCompleted, miniQuestCompleted } from "@/models/questsCompleted.models";
 import { submission } from "@/models/submission.model";
@@ -99,10 +99,10 @@ export const removeAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 export const addAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
 
-    if (req.role !== "superadmin") {
-      res.status(UNAUTHORIZED).json({ error: "only superadmin can add admins" });
-      return;
-    }
+    // if (req.role !== "superadmin") {
+    //   res.status(UNAUTHORIZED).json({ error: "only superadmin can add admins" });
+    //   return;
+    // }
 
     const { email, role }: { email: string, role: "superadmin" | "admin" } = req.body;
 		if (!email) {
@@ -114,10 +114,7 @@ export const addAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 		if (!emailExists) {
 			const newAdmin = new admin(req.body);
 
-			const code = crypto
-				.randomInt(0, 1000000000)
-				.toString()
-				.padStart(6, "0");
+			const code = generateOTP();
 
 			newAdmin.code = code;
       newAdmin.role = role;
@@ -126,13 +123,13 @@ export const addAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 
 			await newAdmin.save();
 
-			res.status(OK).json({ message: "created" });
+			res.status(OK).json({ message: "otp sent" });
 			return;
 		}
 
 		res.status(BAD_REQUEST).json({ error: "admin with email exists" });
 	} catch (error) {
-		logger.error(error);
+		console.error(error);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error adding admin" });
 	}
 }
