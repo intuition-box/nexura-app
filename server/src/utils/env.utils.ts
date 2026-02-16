@@ -10,6 +10,8 @@ export const network = process.env.NETWORK as "testnet" | "mainnet" | undefined;
 export const JWT_SECRET = process.env.JWT_SECRET as string;
 export const REFRESH_SECRET = process.env.REFRESH_SECRET as string;
 
+export const CLIENT_URL = process.env.CLIENT_URL as string;
+
 export const COOLIFY_REDIS = process.env.COOLIFY_REDIS as string;
 export const REDIS_URI = process.env.REDIS_URI as string;
 export const REDIS_PASSWORD = process.env.REDIS_PASSWORD as string;
