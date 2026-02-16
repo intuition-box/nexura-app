@@ -99,10 +99,10 @@ export const removeAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 export const addAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
 
-    // if (req.role !== "superadmin") {
-    //   res.status(UNAUTHORIZED).json({ error: "only superadmin can add admins" });
-    //   return;
-    // }
+    if (req.role !== "superadmin") {
+      res.status(UNAUTHORIZED).json({ error: "only superadmin can add admins" });
+      return;
+    }
 
     const { email, role }: { email: string, role: "superadmin" | "admin" } = req.body;
 		if (!email) {
