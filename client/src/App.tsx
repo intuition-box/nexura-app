@@ -47,6 +47,8 @@ import StudioDashboard from "./pages/studio/StudioDashboard.tsx"
 import CampaignsTab from "./components/admin/CampaignsTab.tsx";
 import { getStoredAccessToken, apiRequest } from './lib/config'
 import CreateNewCampaigns from "./components/admin/CreateNewCampaign.tsx";
+import MyCampaign from "./components/admin/MyCampaign.tsx"
+import AdminManagement from "./components/admin/AdminManagement.tsx";
 
 function Router() {
    const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -97,6 +99,9 @@ function Router() {
 </Route>
 <Route path="/studio-dashboard/create-new-campaign" component={CreateNewCampaigns} />
 <Route path="/studio-dashboard/campaigns-tab" component={CampaignsTab} />
+<Route path="/studio-dashboard/admin-management" component={AdminManagement} />
+<Route path="/studio-dashboard/my-campaign" component={MyCampaign} />
+
 
       {/* <Route path="/studio" component={StudioIndex} />
       <Route path="/studio/register" component={ProjectRegistration} /> */}

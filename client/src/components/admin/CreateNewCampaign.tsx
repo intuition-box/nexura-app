@@ -19,6 +19,23 @@ import {
   Eye,
 } from "lucide-react";
 
+interface Campaign {
+  id: string;
+  title: string;
+  name: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  rewardPool?: string;
+  participants?: string;
+  xpRewards?: string;
+  coverImage?: string;
+  tasks: any[];
+  isDraft: boolean;
+  createdAt: string;
+}
+
+
 export default function CreateNewCampaigns() {
   const [, setLocation] = useLocation();
 
@@ -40,6 +57,31 @@ const [editingIndex, setEditingIndex] = useState<number | null>(null);
 const [error, setError] = useState("");
 const [showPublishModal, setShowPublishModal] = useState(false);
 const [showSuccessModal, setShowSuccessModal] = useState(false);
+const [campaignName, setCampaignName] = useState("");
+const [campaignTitle, setCampaignTitle] = useState("");
+
+const [startDate, setStartDate] = useState("");
+const [startTime, setStartTime] = useState("");
+const [endDate, setEndDate] = useState("");
+const [endTime, setEndTime] = useState("");
+const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+const [coverImage, setCoverImage] = useState<File | null>(null); // raw file
+const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null); // for <img>
+
+
+const [rewardPool, setRewardPool] = useState("");
+const [participants, setParticipants] = useState("");
+const [xpRewards, setXpRewards] = useState("");
+const [publishedCampaign, setPublishedCampaign] = useState<any | null>(null);
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-GB");
+};
+
+
 const handlePublish = () => {
   const newCampaign = {
     name: campaignName,
@@ -59,31 +101,51 @@ const handlePublish = () => {
   setShowSuccessModal(true);
 };
 
+const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setCoverImage(file); // Save the File
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    setImagePreview(reader.result as string); // Base64 string for preview
+  };
+  reader.readAsDataURL(file);
+};
+
+
+const convertToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 
 
 
 const handleSaveTask = () => {
-  // Check for empty fields
-  if (!newTask.type) return setError("Please select a task type.");
-  if (!newTask.platform) return setError("Please select a platform.");
-  if (!newTask.handleOrUrl) return setError("Please provide a handle or URL.");
-  if (!newTask.description) return setError("Please provide a task description.");
+  if (!newTask.type || !newTask.platform || !newTask.handleOrUrl || !newTask.description) {
+    return setError("All fields are required.");
+  }
 
-  // Add new task (push to array)
-  setTasks([...tasks, newTask]);
+  if (editingIndex !== null) {
+    const updatedTasks = [...tasks];
+    updatedTasks[editingIndex] = newTask;
+    setTasks(updatedTasks);
+    setEditingIndex(null);
+  } else {
+    setTasks([...tasks, newTask]);
+  }
 
-  // Reset modal state
-  setNewTask({
-    type: "",
-    platform: "",
-    handleOrUrl: "",
-    description: "",
-    evidence: "",
-    validation: "Manual Validation",
-  });
+  setNewTask({ type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation" });
   setShowModal(false);
-  setError(""); // clear error
+  setError("");
 };
+
 
 
 
@@ -98,16 +160,48 @@ useEffect(() => {
   localStorage.setItem("tasks", JSON.stringify(tasks));
 }, [tasks]);
 
+const handleCoverImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  setCoverImage(file); // keep the file
 
-    setTimeout(() => {
-      setLoading(false);
-      setLocation("/studio-dashboard");
-    }, 1000);
+  const reader = new FileReader();
+  reader.onload = () => setCoverImagePreview(reader.result as string); // preview
+  reader.readAsDataURL(file);
+};
+
+
+
+const handleSubmit = (e) => {
+  e.preventDefault();
+  setLoading(true);
+
+  // Build your payload
+  const payload = {
+    campaignName,
+    campaignTitle,
+    coverImage,
+    startDate,
+    startTime,
+    endDate,
+    endTime,
+    rewardPool,
+    participants,
+    xpRewards,
   };
+
+  console.log("Form Data:", payload);
+
+///// backend 
+  setTimeout(() => setLoading(false), 1000);
+};
+
+const isActive =
+  publishedCampaign &&
+  new Date(publishedCampaign.endDate) > new Date();
+
+
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -122,7 +216,6 @@ useEffect(() => {
     if (tab === "adminManagement") setLocation("/studio-dashboard");
   }}
 />
-
 
 
         <div className="flex-1 flex flex-col overflow-hidden backdrop-blur-xl">
@@ -213,10 +306,12 @@ useEffect(() => {
                         Campaign Name
                       </label>
                       <Input
-                        placeholder="Enter campaign name..."
-                        className="bg-white/5 border-white/10"
-                        required
-                      />
+  placeholder="Enter campaign name..."
+  className="bg-white/5 border-white/10"
+  required
+  value={campaignName}
+  onChange={(e) => setCampaignName(e.target.value)}
+/>
                     </div>
 
                     {/* Campaign Title */}
@@ -224,11 +319,13 @@ useEffect(() => {
                       <label className="block mb-2 text-sm font-medium">
                         Campaign Title
                       </label>
-                      <Input
-                        placeholder="Enter campaign title..."
-                        className="bg-white/5 border-white/10"
-                        required
-                      />
+<Input
+  placeholder="Enter campaign title..."
+  className="bg-white/5 border-white/10"
+  required
+  value={campaignTitle}
+  onChange={(e) => setCampaignTitle(e.target.value)}
+/>
                       <p className="text-xs text-white/50 mt-2">
                         Keep it clear and practical.
                       </p>
@@ -241,7 +338,12 @@ useEffect(() => {
                           <Calendar className="w-4 h-4" />
                           Start Date
                         </label>
-                        <Input type="date" className="bg-white/5 border-white/10" />
+                        <Input
+  type="date"
+  className="bg-white/5 border-white/10"
+  value={startDate}
+  onChange={(e) => setStartDate(e.target.value)}
+/>
                       </div>
 
                       <div>
@@ -249,7 +351,12 @@ useEffect(() => {
                           <Clock className="w-4 h-4" />
                           Start Time
                         </label>
-                        <Input type="time" className="bg-white/5 border-white/10" />
+                        <Input
+  type="time"
+  className="bg-white/5 border-white/10"
+  value={startTime}
+  onChange={(e) => setStartTime(e.target.value)}
+/>
                       </div>
 
                       <div>
@@ -257,7 +364,12 @@ useEffect(() => {
                           <Calendar className="w-4 h-4" />
                           End Date
                         </label>
-                        <Input type="date" className="bg-white/5 border-white/10" />
+                        <Input
+  type="date"
+  className="bg-white/5 border-white/10"
+  value={endDate}
+  onChange={(e) => setEndDate(e.target.value)}
+/>
                       </div>
 
                       <div>
@@ -265,7 +377,12 @@ useEffect(() => {
                           <Clock className="w-4 h-4" />
                           End Time
                         </label>
-                        <Input type="time" className="bg-white/5 border-white/10" />
+                        <Input
+  type="time"
+  className="bg-white/5 border-white/10"
+  value={endTime}
+  onChange={(e) => setEndTime(e.target.value)}
+/>
                       </div>
                       <p className="text-xs text-white/50 -mt-2">
                         Set the duration of the campaign in UTC. 
@@ -278,22 +395,38 @@ useEffect(() => {
                         <ImageIcon className="w-4 h-4" />
                         Cover Image
                       </label>
-<div className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-900 hover:border-purple-400 transition cursor-pointer">
-  <div className="flex flex-col items-center justify-center text-center gap-2">
+<div
+  className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-900 hover:border-purple-400 transition cursor-pointer"
+  onClick={() => document.getElementById("coverInput").click()}
+>
+<label className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-800 hover:border-purple-400 transition cursor-pointer block">
+  <input
+  type="file"
+  accept="image/*"
+  onChange={handleCoverImage}
+  className="hidden"
+/>
+
+
+  {coverImagePreview ? (
+  <div className="flex flex-col items-center gap-3">
     <img
-      src="/upload-icon.png"
-      alt="Upload icon"
-      className="w-16 h-16"
+      src={coverImagePreview} // ✅ Base64 preview string
+      alt="Preview"
+      className="w-32 h-32 object-cover rounded-xl"
     />
-
-    <p className="font-medium text-white">
-      Click to upload or drag and drop
-    </p>
-
-    <p className="text-sm text-white/50">
-      SVG, PNG, JPG or GIF (max. 10MB)
-    </p>
+    <p className="text-sm text-white/60">Click to change image</p>
   </div>
+) : (
+  <div className="flex flex-col items-center justify-center text-center gap-2">
+    <img src="/upload-icon.png" alt="Upload icon" className="w-16 h-16" />
+    <p className="font-medium text-white">Click to upload or drag and drop</p>
+    <p className="text-sm text-white/50">SVG, PNG, JPG or GIF (max. 10MB)</p>
+  </div>
+)}
+</label>
+
+
 </div>
 
                     </div>
@@ -312,14 +445,14 @@ useEffect(() => {
     </span>
 
     <Input
-      type="number"
-      className="bg-white/5 border-white/10 pl-20"
-      placeholder="0"
-    />
+  type="number"
+  className="bg-white/5 border-white/10 pl-20"
+  placeholder="0"
+  value={rewardPool}
+  onChange={(e) => setRewardPool(e.target.value)}
+/>
   </div>
 </div>
-
-
 
                       <div className="relative">
   <label className="block mb-2 text-sm font-medium">
@@ -335,23 +468,26 @@ useEffect(() => {
     />
 
     <Input
-      type="number"
-      placeholder="Enter number of participants"
-      className="bg-white/5 border-white/10 pl-10" // add padding-left for icon
-    />
+  type="number"
+  placeholder="Enter number of participants"
+  className="bg-white/5 border-white/10 pl-10"
+  value={participants}
+  onChange={(e) => setParticipants(e.target.value)}
+/>
   </div>
 </div>
-
 
                       <div>
   <label className="block mb-2 text-sm font-medium">
     XP Rewards
   </label>
   <Input
-    type="number"
-    placeholder="200 XP per participant"
-    className="bg-white/5 border-white/10"
-  />
+  type="number"
+  placeholder="200 XP per participant"
+  className="bg-white/5 border-white/10"
+  value={xpRewards}
+  onChange={(e) => setXpRewards(e.target.value)}
+/>
 </div>
                     </div>
 
@@ -403,10 +539,22 @@ useEffect(() => {
 
 {/* TASKS TAB */}
 {activeTab === "tasks" && (
-  <>
+  <div className="relative">
+
+    {/* Small Add Task Button - Top Right */}
+    <button
+      onClick={() => setShowModal(true)}
+      className="absolute -top-10 right-0 px-3 py-1 bg-purple-800 text-purple-300 hover:bg-purple-700 rounded-lg text-sm font-semibold flex items-center gap-2 transition"
+    >
+      <span className="flex items-center justify-center w-3 h-3 pb-1 bg-purple-400 text-purple-900 rounded-full text-xs font-bold">
+        +
+      </span>
+      Add Task
+    </button>
+
     {tasks.length === 0 ? (
       <div
-        className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-900 hover:border-purple-400 transition cursor-pointer"
+        className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-900 hover:border-purple-400 transition cursor-pointer mt-8"
         onClick={() => setShowModal(true)}
       >
         <div className="flex flex-col items-center justify-center text-center gap-2">
@@ -427,204 +575,204 @@ useEffect(() => {
         </div>
       </div>
     ) : (
-      <div className="space-y-4">
-  {tasks.map((task, index) => (
-    <div
-      key={index}
-      className="flex items-center justify-between gap-4 rounded-lg border-2 border-purple-500 px-4 py-3 bg-white/5"
-    >
-      <div className="flex items-center justify-center w-8 h-8 bg-gray-600 rounded-full text-white font-semibold">
-        {index + 1}
-      </div>
-      {/* Show task type as description */}
-      <p className="flex-1 text-white">{task.type}</p>
-      <div className="flex items-center gap-2">
-        {/* Edit Button */}
-        <button
-          className="px-3 py-1 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition"
-          onClick={() => {
-            setNewTask(task); // load selected task into modal
-            setShowModal(true); // show modal
-            // optionally, store index if you want to replace task on save
-            setEditingIndex(index);
-          }}
-        >
-          Edit
-        </button>
-
-        {/* Delete Button */}
-        <button
-          className="px-3 py-1 bg-gray-800 rounded-lg text-white hover:bg-gray-700 transition"
-          onClick={() => {
-            const updatedTasks = tasks.filter((_, i) => i !== index);
-            setTasks(updatedTasks);
-          }}
-        >
-          <img src="/delete.png" alt="Delete" className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  ))}
-</div>
-    )}
-
-    {/* ===== MODAL ===== */}
-    {showModal && (
-      <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-        <div className="bg-gray-900 w-[650px] p-6 rounded-2xl relative shadow-xl">
-
-          {/* Close Button */}
-          <button
-            onClick={() => setShowModal(false)}
-            className="absolute top-3 right-4 text-white text-xl"
+      <div className="space-y-4 mt-8">
+        {tasks.map((task, index) => (
+          <div
+            key={index}
+            className="flex items-center justify-between gap-4 rounded-lg border-2 border-purple-500 px-4 py-3 bg-white/5"
           >
-            ×
-          </button>
-
-          <h2 className="text-xl font-semibold text-white mb-6">
-            Add New Task
-          </h2>
-
-          {/* TOP SECTION */}
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            {/* Task Type */}
-            <div>
-              <label className="text-sm text-white/70 mb-2 block">Task Type</label>
-              <select
-                className="w-full p-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-purple-500"
-                value={newTask.type}
-                onChange={(e) => setNewTask({ ...newTask, type: e.target.value })}
-              >
-                <option value="">Select task</option>
-                <option value="Comment on our X post">Comment on X</option>
-                <option value="Follow us on X">Follow on X</option>
-                <option value="Join Us On Discord">Join Discord</option>
-                <option value="Check Out the Portal Claims">Portal Claims</option>
-                <option value="others">Others</option>
-              </select>
+            <div className="flex items-center justify-center w-8 h-8 bg-gray-600 rounded-full text-white font-semibold">
+              {index + 1}
             </div>
 
-            {/* Platform */}
-            <div>
-              <label className="text-sm text-white/70 mb-2 block">Platform</label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setNewTask({ ...newTask, platform: "Twitter" })}
-                  className={`flex-1 border py-2 rounded-lg transition ${
-                    newTask.platform === "Twitter"
-                      ? "bg-purple-500 text-white border-purple-500"
-                      : "bg-gray-800 border-gray-700 text-white hover:border-purple-500"
-                  }`}
-                >
-                  Twitter
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNewTask({ ...newTask, platform: "Discord" })}
-                  className={`flex-1 border py-2 rounded-lg transition ${
-                    newTask.platform === "Discord"
-                      ? "bg-purple-500 text-white border-purple-500"
-                      : "bg-gray-800 border-gray-700 text-white hover:border-purple-500"
-                  }`}
-                >
-                  Discord
-                </button>
-              </div>
+            <p className="flex-1 text-white">{task.type}</p>
+
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition"
+                onClick={() => {
+                  setNewTask(task);
+                  setShowModal(true);
+                  setEditingIndex(index);
+                }}
+              >
+                Edit
+              </button>
+
+              <button
+                className="px-3 py-1 bg-gray-800 rounded-lg text-white hover:bg-gray-700 transition"
+                onClick={() => {
+                  const updatedTasks = tasks.filter((_, i) => i !== index);
+                  setTasks(updatedTasks);
+                }}
+              >
+                <img src="/delete.png" alt="Delete" className="w-4 h-4" />
+              </button>
             </div>
           </div>
-
-{/* TASK DETAILS CARD (Merged) */}
-<div className="bg-gray-800 p-5 rounded-xl mb-6 border border-gray-700">
-
-  {/* Handle or URL */}
-  <div className="mb-4">
-    <label className="text-sm text-white/70 mb-2 block">Handle or URL</label>
-    <input
-      type="text"
-      placeholder="..."
-      value={newTask.handleOrUrl}
-      onChange={(e) =>
-        setNewTask({ ...newTask, handleOrUrl: e.target.value })
-      }
-      className="w-full p-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:border-purple-500"
-    />
-  </div>
-
-  {/* Task Description */}
-  <div className="mb-4">
-    <label className="text-sm text-white/70 mb-2 block">Task Description</label>
-    <input
-      type="text"
-      placeholder="..."
-      value={newTask.description}
-      onChange={(e) =>
-        setNewTask({ ...newTask, description: e.target.value })
-      }
-      className="w-full p-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:border-purple-500"
-    />
-  </div>
-
-  {/* Evidence + Validation */}
-  <div className="grid grid-cols-2 gap-6">
-    {/* Evidence Upload */}
-    <div>
-      <label className="text-sm text-white/70 mb-2 block">Evidence Upload Management</label>
-      <select
-        className="w-full p-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-purple-500"
-        value={newTask.evidence}
-        onChange={(e) =>
-          setNewTask({ ...newTask, evidence: e.target.value })
-        }
-      >
-        <option value="">Select option</option>
-      </select>
-    </div>
-
-    {/* Validation Type */}
-    <div>
-      <label className="text-sm text-white/70 mb-2 block">Validation Type</label>
-      <div className="relative">
-        <input
-          type="text"
-          value={newTask.validation}
-          readOnly
-          className="w-full p-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-purple-500 pr-10"
-        />
-        <img
-          src="/purple-check.png"
-          alt="Verified"
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5"
-        />
+        ))}
       </div>
-    </div>
+    )}
   </div>
-
-</div>
-
-{error && (
-  <p className="text-red-500 text-sm mb-2">{error}</p>
 )}
-          {/* ACTION BUTTONS */}
-          <div className="flex justify-between">
-            <button
-              onClick={() => setShowModal(false)}
-              className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition"
-            >
-              Cancel
-            </button>
 
-<button
-  onClick={handleSaveTask}
-  className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold transition"
->
-  Save Task
-</button>
+
+{/* ===== MODAL ===== */}
+{showModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
+    <div className="bg-purple-950 w-[650px] p-6 rounded-2xl relative shadow-xl">
+
+      {/* Close Button */}
+      <button
+        onClick={() => setShowModal(false)}
+        className="absolute top-3 right-4 text-white text-xl"
+      >
+        ×
+      </button>
+
+      <h2 className="text-xl font-semibold text-white mb-6">
+        Add New Task
+      </h2>
+
+      {/* TOP SECTION */}
+      <div className="grid grid-cols-2 gap-6 mb-6">
+        {/* Task Type */}
+        <div>
+          <label className="text-sm text-white/70 mb-2 block">Task Type</label>
+          <select
+            className="w-full p-2 rounded-lg bg-purple-900 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            value={newTask.type}
+            onChange={(e) => setNewTask({ ...newTask, type: e.target.value })}
+          >
+            <option value="">Select task</option>
+            <option value="Comment on our X post">Comment on X</option>
+            <option value="Follow us on X">Follow on X</option>
+            <option value="Join Us On Discord">Join Discord</option>
+            <option value="Check Out the Portal Claims">Portal Claims</option>
+            <option value="others">Others</option>
+          </select>
+        </div>
+
+        {/* Platform */}
+        <div>
+          <label className="text-sm text-white/70 mb-2 block">Platform</label>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setNewTask({ ...newTask, platform: "Twitter" })}
+              className={`flex-1 border py-2 rounded-lg transition ${
+                newTask.platform === "Twitter"
+                  ? "bg-purple-500 text-white border-purple-500"
+                  : "bg-purple-900 border-purple-800 text-white hover:border-purple-500"
+              }`}
+            >
+              Twitter
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewTask({ ...newTask, platform: "Discord" })}
+              className={`flex-1 border py-2 rounded-lg transition ${
+                newTask.platform === "Discord"
+                  ? "bg-purple-500 text-white border-purple-500"
+                  : "bg-purple-900 border-purple-800 text-white hover:border-purple-500"
+              }`}
+            >
+              Discord
+            </button>
           </div>
         </div>
       </div>
-    )}
-  </>
+
+      {/* TASK DETAILS CARD */}
+      <div className="bg-purple-900 p-5 rounded-xl mb-6 border border-purple-800">
+
+        {/* Handle or URL */}
+        <div className="mb-4">
+          <label className="text-sm text-white/70 mb-2 block">Handle or URL</label>
+          <input
+            type="text"
+            placeholder="..."
+            value={newTask.handleOrUrl}
+            onChange={(e) =>
+              setNewTask({ ...newTask, handleOrUrl: e.target.value })
+            }
+            className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+          />
+        </div>
+
+        {/* Task Description */}
+        <div className="mb-4">
+          <label className="text-sm text-white/70 mb-2 block">Task Description</label>
+          <input
+            type="text"
+            placeholder="..."
+            value={newTask.description}
+            onChange={(e) =>
+              setNewTask({ ...newTask, description: e.target.value })
+            }
+            className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+          />
+        </div>
+
+        {/* Evidence + Validation */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* Evidence Upload */}
+          <div>
+            <label className="text-sm text-white/70 mb-2 block">Evidence Upload Management</label>
+            <select
+              className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+              value={newTask.evidence}
+              onChange={(e) =>
+                setNewTask({ ...newTask, evidence: e.target.value })
+              }
+            >
+              <option value="">Select option</option>
+            </select>
+          </div>
+
+          {/* Validation Type */}
+          <div>
+            <label className="text-sm text-white/70 mb-2 block">Validation Type</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={newTask.validation}
+                readOnly
+                className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500 pr-10"
+              />
+              <img
+                src="/purple-check.png"
+                alt="Verified"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5"
+              />
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {error && (
+        <p className="text-red-500 text-sm mb-2">{error}</p>
+      )}
+
+      {/* ACTION BUTTONS */}
+      <div className="flex justify-between">
+        <button
+          onClick={() => setShowModal(false)}
+          className="px-5 py-2 rounded-lg bg-purple-800 hover:bg-purple-700 text-white transition"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleSaveTask}
+          className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold transition"
+        >
+          Save Task
+        </button>
+      </div>
+    </div>
+  </div>
 )}
 
 
@@ -636,130 +784,128 @@ useEffect(() => {
     <div className="flex gap-6 rounded-lg border-2 border-purple-500 p-6 bg-white/5">
       {/* Left side: image */}
       <div className="w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
-        <img
-          src="/campaign.jpg"
-          alt="Campaign Cover"
-          className="w-full h-full object-cover"
-        />
+        {coverImage ? (
+          <img
+  src={coverImagePreview || undefined}
+  alt="Campaign Cover"
+  className="w-full h-full object-cover"
+/>
+
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-700 text-white">
+            No Image
+          </div>
+        )}
       </div>
 
       {/* Right side: title and description */}
       <div className="flex-1 flex flex-col justify-between">
         <div>
           <h3 className="text-xl font-semibold text-white">
-            Tasting Noodles
+            {campaignTitle || campaignName || "Untitled Campaign"}
           </h3>
           <p className="text-white/70 mt-1">
-            The noodles tasting onboarding, spicy and hot
+            {campaignName || "No description provided"}
           </p>
-          <p className="text-white/60 mt-2">
-            Project: @indomie_shawarmaproject
-          </p>
+          {/* Optional: you can include a project/handle here if needed */}
         </div>
 
         {/* Bottom info as blocks */}
-<div className="flex mt-4 text-white/80 border border-white/10 rounded-lg overflow-hidden">
-  {/* Duration */}
-  <div className="flex-1 flex flex-col items-center p-4 border-r border-white/10">
-    <div className="flex items-center gap-2">
-      <img src="/duration.png" alt="Duration Icon" className="w-5 h-5" />
-      <span className="font-semibold">Duration</span>
-    </div>
-    <span className="text-white mt-1">Feb 12 – Feb 28, 2026</span>
-  </div>
+        <div className="flex mt-4 text-white/80 border border-white/10 rounded-lg overflow-hidden">
+          {/* Duration */}
+          <div className="flex-1 flex flex-col items-center p-4 border-r border-white/10">
+            <div className="flex items-center gap-2">
+              <img src="/duration.png" alt="Duration Icon" className="w-5 h-5" />
+              <span className="font-semibold">Duration</span>
+            </div>
+            <span className="text-white mt-1">
+  {startDate && endDate
+    ? `${formatDate(startDate)} ${startTime} – ${formatDate(endDate)} ${endTime}`
+    : "Not set"}
+</span>
+          </div>
 
-  {/* Reward Pool */}
-  <div className="flex-1 flex flex-col items-center p-4 border-r border-white/10">
-    <div className="flex items-center gap-2">
-      <img src="/reward-pool.png" alt="Reward Pool Icon" className="w-5 h-5" />
-      <span className="font-semibold">Reward Pool</span>
-    </div>
-    <span className="text-white mt-1">10,000 TRUST</span>
-  </div>
+          {/* Reward Pool */}
+          <div className="flex-1 flex flex-col items-center p-4 border-r border-white/10">
+            <div className="flex items-center gap-2">
+              <img src="/reward-pool.png" alt="Reward Pool Icon" className="w-5 h-5" />
+              <span className="font-semibold">Reward Pool</span>
+            </div>
+            <span className="text-white mt-1">{xpRewards || "N/A"}</span>
+          </div>
 
-  {/* Target Users */}
-  <div className="flex-1 flex flex-col items-center p-4">
-    <div className="flex items-center gap-2">
-      <img src="/target-users.png" alt="Target Users Icon" className="w-5 h-5" />
-      <span className="font-semibold">Target Users</span>
-    </div>
-    <span className="text-white mt-1">Max 10,000 Participants</span>
-  </div>
-</div>
-
+          {/* Target Users / Participants */}
+          <div className="flex-1 flex flex-col items-center p-4">
+            <div className="flex items-center gap-2">
+              <img src="/target-users.png" alt="Target Users Icon" className="w-5 h-5" />
+              <span className="font-semibold">Target Users</span>
+            </div>
+            <span className="text-white mt-1">{participants || "N/A"}</span>
+          </div>
+        </div>
       </div>
     </div>
 
     {/* Task Overview */}
-<div className="flex items-center justify-between mt-6">
-  <h3 className="text-xl font-semibold">Task Overview</h3>
-  <button className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
-    Manage Tasks
-  </button>
-</div>
-
+    <div className="flex items-center justify-between mt-6">
+      <h3 className="text-xl font-semibold">Task Overview</h3>
+      <button className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
+        Manage Tasks
+      </button>
+    </div>
 
     {tasks.length > 0 && (
-  <div className="relative mt-2 space-y-4">
-    {tasks.map((task, index) => (
-      <div
-        key={index}
-        className="flex items-center justify-between gap-4 rounded-lg border-2 border-purple-500 px-4 py-3 bg-white/5"
-      >
-        <div className="flex items-center justify-center w-8 h-8 bg-gray-600 rounded-full text-white font-semibold">
-          {index + 1}
-        </div>
-
-        {/* Show task type as description */}
-        <p className="flex-1 text-white">{task.type}</p>
-
-        <div className="flex items-center gap-2">
-          {/* View button (optional functionality) */}
- <button
-            className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
-            onClick={() => {
-              if (task.handleOrUrl) {
-                window.open(task.handleOrUrl, "_blank");
-              }
-            }}
+      <div className="relative mt-2 space-y-4">
+        {tasks.map((task, index) => (
+          <div
+            key={index}
+            className="flex items-center justify-between gap-4 rounded-lg border-2 border-purple-500 px-4 py-3 bg-white/5"
           >
-            View
-          </button>
+            <div className="flex items-center justify-center w-8 h-8 bg-gray-600 rounded-full text-white font-semibold">
+              {index + 1}
+            </div>
 
-          {/* Edit button */}
-          <button
-            className="px-3 py-1 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition"
-            onClick={() => {
-              setNewTask(task); // load task into modal
-              setShowModal(true);
-              setEditingIndex(index); // track which task to update
-            }}
-          >
-            Edit
-          </button>
-        </div>
-      </div>
-    ))}
+            {/* Show task type as description */}
+            <p className="flex-1 text-white">{task.type}</p>
+
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
+                onClick={() => {
+  if (!task.handleOrUrl) return;
+
+  let url = task.handleOrUrl.trim();
+
+  // If it doesn't start with http, prepend https
+  if (!/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+
+  window.open(url, "_blank");
+}}
+              >
+                View
+              </button>
+
+              <button
+                className="px-3 py-1 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition"
+                onClick={() => {
+                  setNewTask(task);
+                  setShowModal(true);
+                  setEditingIndex(index);
+                }}
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        ))}
 
 
     {/* Task counter at bottom-right */}
-    <span className="absolute -bottom-8 right-2 text-white/60 text-sm mt-2">
-      {[
-        "Like and repost on this Twitter post",
-        "Join Our Discord Server",
-        "Follow our official X account",
-        "Turn on post notifications",
-        "Comment your wallet addresses on our latest announcements",
-        "Like and comment on this Twitter post",
-      ].length}/{[
-        "Like and repost on this Twitter post",
-        "Join Our Discord Server",
-        "Follow our official X account",
-        "Turn on post notifications",
-        "Comment your wallet addresses on our latest announcements",
-        "Like and comment on this Twitter post",
-      ].length}
-    </span>
+<span className="absolute -bottom-8 right-2 text-white/60 text-sm mt-2">
+  {tasks.length}/{tasks.length}
+</span>
   </div>
 )}
 
@@ -833,28 +979,55 @@ useEffect(() => {
 
 <button
   className="mt-4 w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
-  onClick={() => {
-    // Example campaign data from modal
-    const newCampaign: Campaign = {
-      title: "Activate your Studio Hub",
-      name: "Studio Hub Activation",
-      startDate: new Date().toLocaleDateString(),
-      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toLocaleDateString(),
-      rewardPool: "1000", // TRUST
-      isDraft: false,
-    };
+  onClick={async () => {
+  // Validate minimum requirements
+  if (!campaignTitle || !campaignName) {
+    alert("Campaign details are incomplete.");
+    return;
+  }
 
-    // Save to localStorage
-    const savedCampaigns = JSON.parse(localStorage.getItem("campaigns") || "[]");
-    localStorage.setItem("campaigns", JSON.stringify([...savedCampaigns, newCampaign]));
+  if (tasks.length === 0) {
+    alert("You must add at least one task.");
+    return;
+  }
 
-    // Update state so Active tab reflects it immediately
-    setCampaigns((prev) => [...prev, newCampaign]);
+  // Combine date + time properly
+  const combinedStart = `${startDate}T${startTime}`;
+  const combinedEnd = `${endDate}T${endTime}`;
 
-    // Close modal and show success
-    setShowPublishModal(false);
-    setShowSuccessModal(true);
-  }}
+  let imageBase64 = "";
+
+  if (coverImage instanceof File) {
+    imageBase64 = await convertToBase64(coverImage);
+  }
+
+  const newCampaign: Campaign = {
+    id: crypto.randomUUID(),
+    title: campaignTitle,
+    name: campaignName,
+    description: campaignName,
+    startDate: combinedStart,
+    endDate: combinedEnd,
+    rewardPool,
+    participants,
+    xpRewards,
+    coverImage: imageBase64,
+    tasks,
+    isDraft: false,
+    createdAt: new Date().toISOString(),
+  };
+
+  // Save to storage
+  const savedCampaigns = JSON.parse(localStorage.getItem("campaigns") || "[]");
+  localStorage.setItem("campaigns", JSON.stringify([...savedCampaigns, newCampaign]));
+
+  // Set snapshot for success modal
+  setPublishedCampaign(newCampaign);
+
+  // Close publish modal & show success
+  setShowPublishModal(false);
+  setShowSuccessModal(true);
+}}
 >
   Pay 1000 TRUST
 </button>
@@ -916,52 +1089,56 @@ useEffect(() => {
           <div className="flex gap-4">
 
             {/* Left Image */}
-            <div className="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden">
-              <img
-                src="/campaign.jpg"
-                alt="Campaign Cover"
-                className="w-full h-full object-cover"
-              />
-            </div>
+<div className="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden">
+  <img
+    src={publishedCampaign?.coverImage || "/campaign.jpg"}
+    alt="Campaign Cover"
+    className="w-full h-full object-cover"
+  />
+</div>
 
-            {/* Right Content */}
-            <div className="flex-1 flex flex-col justify-between">
+{/* Right Content */}
+<div className="flex-1 flex flex-col justify-between">
 
-              <div>
-                <h3 className="text-lg font-semibold text-white">
-                  Tasting Noodles
-                </h3>
-                <p className="text-white/70 text-sm mt-1">
-                  The noodles tasting onboarding, spicy and hot
-                </p>
-                <p className="text-white/60 text-sm mt-2">
-                  Project: @indomie_shawarmaproject
-                </p>
-              </div>
+  <div>
+    <h3 className="text-lg font-semibold text-white">
+      {publishedCampaign?.title}
+    </h3>
 
-              {/* Bottom Info Blocks */}
-              <div className="flex mt-4 text-white/80 border border-white/10 rounded-lg overflow-hidden">
+    <p className="text-white/70 text-sm mt-1">
+      {publishedCampaign?.description}
+    </p>
 
-                <div className="flex-1 flex flex-col items-center p-3 border-r border-white/10">
-                  <span className="text-xs font-semibold uppercase tracking-wide">
-                    Total Reward Pool
-                  </span>
-                  <span className="text-white mt-1 text-sm font-semibold">
-                    50,000 TRUST
-                  </span>
-                </div>
+    <p className="text-white/60 text-sm mt-2">
+      Project: @{publishedCampaign?.name}
+    </p>
+  </div>
 
-                <div className="flex-1 flex flex-col items-center p-3">
-                  <span className="text-xs font-semibold uppercase tracking-wide">
-                    Status
-                  </span>
-                  <span className="text-green-400 mt-1 text-sm font-semibold">
-                    READY
-                  </span>
-                </div>
+  {/* Bottom Info Blocks */}
+  <div className="flex mt-4 text-white/80 border border-white/10 rounded-lg overflow-hidden">
 
-              </div>
-            </div>
+    <div className="flex-1 flex flex-col items-center p-3 border-r border-white/10">
+      <span className="text-xs font-semibold uppercase tracking-wide">
+        Total Reward Pool
+      </span>
+      <span className="text-white mt-1 text-sm font-semibold">
+        {publishedCampaign?.rewardPool} TRUST
+      </span>
+    </div>
+
+    <div className="flex-1 flex flex-col items-center p-3">
+      <span className="text-xs font-semibold uppercase tracking-wide">
+        Status
+      </span>
+      <span className={`mt-1 text-sm font-semibold ${
+  isActive ? "text-green-400" : "text-red-400"
+}`}>
+  {isActive ? "ACTIVE" : "COMPLETED"}
+</span>
+    </div>
+
+  </div>
+</div>
           </div>
         </div>
 

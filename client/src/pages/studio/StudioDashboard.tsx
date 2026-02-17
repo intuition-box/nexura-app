@@ -35,14 +35,6 @@ interface StudioDashboardProps {
   onLogout: () => void;
 }
 
-type Admin = {
-  _id: string;
-  username: string;
-  email: string;
-  role: string;
-  lastActivity: string;
-  status: "active" | "inactive";
-}
 
 type BannedUser = {
   _id: string;
@@ -206,7 +198,6 @@ const fetchBannedUsers = async () => {
   activeTab={activeTab}
   setActiveTab={setActiveTab}
 />
-
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">

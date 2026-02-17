@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import AnimatedBackground from "../../components/AnimatedBackground";
 import { Card, CardTitle, CardDescription } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
@@ -9,6 +9,47 @@ import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
 
 export default function TheHub() {
+  const [hubName, setHubName] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
+const handleImageChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    setImageFile(file);
+    setImagePreview(reader.result); // Base64 string
+  };
+  reader.readAsDataURL(file);
+};
+
+
+const handleSubmit = () => {
+  if (!hubName.trim()) {
+    alert("Hub name is required");
+    return;
+  }
+
+  if (!imageFile) {
+    alert("Project logo is required");
+    return;
+  }
+
+  const hubData = {
+    hubName,
+    description,
+    imagePreview,
+  };
+
+  localStorage.setItem("hubData", JSON.stringify(hubData));
+
+  window.location.href = "/connect-twitter";
+};
+
+
   return (
     <div className="min-h-screen bg-black text-white p-4 sm:p-6 relative">
       <AnimatedBackground />
@@ -55,6 +96,7 @@ export default function TheHub() {
 
 
             <Card className="relative bg-gray-800 border border-purple-500 rounded-2xl p-6 overflow-hidden">
+
   {/* Blurred content */}
   <div className="flex flex-col items-center justify-center text-center gap-3 blur-sm select-none">
     <img
@@ -79,26 +121,29 @@ export default function TheHub() {
     </span>
   </div>
 </Card>
-
           </div>
 
           {/* Name */}
           <div className="space-y-2">
             <CardTitle className="text-lg">Hub Name</CardTitle>
             <Input
-              placeholder="Enter your hub name..."
-              className="bg-gray-800 border-purple-500 text-white"
-            />
+  value={hubName}
+  onChange={(e) => setHubName(e.target.value)}
+  placeholder="Enter your hub name..."
+  className="bg-gray-800 border-purple-500 text-white"
+/>
           </div>
 
           {/* Description */}
           <div className="space-y-2 relative">
             <CardTitle className="text-lg">Description</CardTitle>
             <Textarea
-              placeholder="Describe your project or community"
-              maxLength={200}
-              className="bg-gray-800 border-purple-500 text-white resize-none h-32"
-            />
+  value={description}
+  onChange={(e) => setDescription(e.target.value)}
+  placeholder="Describe your project or community"
+  maxLength={200}
+  className="bg-gray-800 border-purple-500 text-white resize-none h-32"
+/>
             <span className="absolute bottom-2 right-3 text-xs text-white/40">
               200
             </span>
@@ -108,35 +153,50 @@ export default function TheHub() {
 <div className="space-y-3 w-full">
   <CardTitle className="text-lg text-center">Project Logo</CardTitle>
 
-  <div className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-800 hover:border-purple-400 transition cursor-pointer">
-    <div className="flex flex-col items-center justify-center text-center gap-2 text-white/60">
-      <img
-        src="/upload-icon.png"
-        alt="Upload icon"
-        className="w-16 h-16"
-      />
+  <label className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-800 hover:border-purple-400 transition cursor-pointer block">
+    <input
+      type="file"
+      accept="image/*"
+      onChange={handleImageChange}
+      className="hidden"
+    />
 
-      <p className="font-medium text-white">
-        Click to upload or drag and drop
-      </p>
-
-      <p className="text-sm text-white/50">
-        SVG, PNG, JPG or GIF (max. 10MB)
-      </p>
-    </div>
-  </div>
+    {imagePreview ? (
+      <div className="flex flex-col items-center gap-3">
+        <img
+          src={imagePreview}
+          alt="Preview"
+          className="w-32 h-32 object-cover rounded-xl"
+        />
+        <p className="text-sm text-white/60">Click to change image</p>
+      </div>
+    ) : (
+      <div className="flex flex-col items-center justify-center text-center gap-2 text-white/60">
+        <img
+          src="/upload-icon.png"
+          alt="Upload icon"
+          className="w-16 h-16"
+        />
+        <p className="font-medium text-white">
+          Click to upload or drag and drop
+        </p>
+        <p className="text-sm text-white/50">
+          SVG, PNG, JPG or GIF (max. 10MB)
+        </p>
+      </div>
+    )}
+  </label>
 </div>
 
           {/* Action */}
 <div className="pt-4">
-  <Link href="/connect-twitter">
-    <Button className="w-full bg-purple-500 hover:bg-purple-600">
-      Save & Continue
-    </Button>
-  </Link>
+<Button
+  className="w-full bg-purple-500 hover:bg-purple-600"
+  onClick={handleSubmit}
+>
+  Save & Continue
+</Button>
 </div>
-
-
         </Card>
       </div>
     </div>
