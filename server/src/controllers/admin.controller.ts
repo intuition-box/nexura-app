@@ -170,15 +170,10 @@ export const adminLogin = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const { password, confirmPassword, email, code, username }: { username: string; password: string; confirmPassword: string; code: string; email: string } = req.body;
+		const { password, email, code, username }: { username: string; password: string; code: string; email: string } = req.body;
 
-		if (!password || !confirmPassword || !email || !username || !code) {
+		if (!password || !email || !username || !code) {
 			res.status(BAD_REQUEST).json({ error: "send the required details" });
-			return;
-		}
-
-		if (password !== confirmPassword) {
-			res.status(BAD_REQUEST).json({ error: "passwords do not match" });
 			return;
 		}
 
@@ -223,7 +218,8 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 };
 
 export const getTasks = async (req: GlobalRequest, res: GlobalResponse) => {
-	try {
+  try {
+
 		const pendingTasks = await submission.find().lean().sort({ createdAt: 1 });
 		
 		res.status(OK).json({ message: "submitted tasks fetched", pendingTasks });
