@@ -9,6 +9,7 @@ declare global {
     adminName?: string;
     project?: string;
     token?: string;
+    campaignCreator?: any;
   }
 
   type Unit =
