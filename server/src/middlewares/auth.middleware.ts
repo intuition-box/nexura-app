@@ -39,6 +39,7 @@ export const authenticateProject = async (req: GlobalRequest, res: GlobalRespons
 
     req.id = id as string;
     req.adminName = projectExists.name;
+	req.campaignCreator = projectExists;
 
 		next();
 	} catch (error: any) {
