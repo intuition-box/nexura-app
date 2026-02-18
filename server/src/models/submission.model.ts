@@ -38,8 +38,14 @@ const submissionSchema = new mongoose.Schema({
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "user"
-  }
+    ref: "users",
+    required: true
+  },
+  project: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "projects",
+    required: true
+  },
 }, { timestamps: true });
 
 export const submission = mongoose.model("submissions", submissionSchema);
