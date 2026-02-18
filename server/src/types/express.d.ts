@@ -5,9 +5,12 @@ import nodemailer from "nodemailer";
 declare global {
 	interface GlobalRequest extends Request {
     id?: string;
-		role?: string;
+    role?: string;
+    adminName?: string;
+    project?: string;
+    token?: string;
   }
-	
+
   type Unit =
       | "Years"
       | "Year"
