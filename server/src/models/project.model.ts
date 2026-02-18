@@ -55,6 +55,10 @@ const projectAdminSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  name: {
+    type: String,
+    required: true,
+  },
   project: {
     type: Schema.Types.ObjectId,
     ref: 'projects',
