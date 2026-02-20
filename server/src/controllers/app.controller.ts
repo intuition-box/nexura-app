@@ -33,7 +33,7 @@ import { GraphQLClient } from "graphql-request";
 import { checksumAddress } from "viem";
 import { campaign, campaignCompleted } from "@/models/campaign.model";
 import { dailySignIn } from "@/models/dailySignIn.model";
-import { startOfDayUTC } from "@/utils/utils";
+import { startOfDayUTC, updateLevel } from "@/utils/utils";
 
 export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 	res.send("hi!");
@@ -169,7 +169,16 @@ export const getLeaderboard = async (req: GlobalRequest, res: GlobalResponse) =>
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching leaderboard data" })
   }
-}  
+}
+
+export const getClaims = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching claims" });
+  }
+}
 
 export const fetchUser = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
@@ -516,6 +525,10 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
       userExists.streak = 1;
       userExists.xp += 20;
     }
+
+    const level = await updateLevel(userExists.xp, userExists.badges, userExists._id.toString());
+
+		userExists.level = level;
 
     dailySignInExists.date = onlyDate as string;
 
