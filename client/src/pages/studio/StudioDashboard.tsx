@@ -60,7 +60,7 @@ const [campaignTasks, setCampaignTasks] = useState<TASKS[]>([]);
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const res = await apiRequest<{ message?: string; pendingTasks?: TASKS[] }>({ endpoint: "/api/admin/get-campaigns", method: "GET" });
+      const res = await apiRequest<{ message?: string; pendingTasks?: TASKS[] }>({ endpoint: "/api/admin/get-quests", method: "GET" });
       const pendingTasks = res?.pendingTasks ?? [];
 
       const pendingcampaignTasks = pendingTasks.filter((task) => task.page === "campaign");
@@ -342,10 +342,7 @@ const fetchBannedUsers = async () => {
       <Button
         variant="outline"
         className="border-[#8a3ffc] text-[#8a3ffc] hover:bg-[#8a3ffc] hover:text-white gap-2"
-        onClick={() => {
-          // Open your "Create Campaign" modal or navigate
-          console.log("Open Create Campaign Modal");
-        }}
+        onClick={() => setLocation("/studio-dashboard/create-new-campaign")}
       >
         <img
           src="/campaign-icon.png"

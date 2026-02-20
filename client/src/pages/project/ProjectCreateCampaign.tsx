@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "../../components/ui/button";
+import { projectApiRequest } from "../../lib/projectApi";
 
 type Task = { id: string; title: string; description?: string };
 
@@ -107,10 +108,26 @@ export default function ProjectCreateCampaign() {
       rewards: { points: typeof rewardPoints === 'number' ? rewardPoints : 0, referralEnabled },
     };
 
-    // For now just log and navigate back to campaigns list. Backend wiring can be added later.
-    // TODO: call POST /projects/:projectId/campaigns when endpoint exists.
-    // eslint-disable-next-line no-console
-    console.log('campaign submit', payload);
+    try {
+      const fd = new FormData();
+      fd.append("title", payload.name);
+      fd.append("description", payload.description);
+      fd.append("nameOfProject", projectId);
+      if (payload.starts_at) fd.append("starts_at", payload.starts_at);
+      if (payload.ends_at) fd.append("ends_at", payload.ends_at);
+      fd.append("reward", JSON.stringify({ xp: payload.rewards.points, pool: 0 }));
+      fd.append("campaignQuests", JSON.stringify(
+        payload.tasks.map((t) => ({ title: t.title, description: t.description ?? "", url: "", reward: { xp: payload.rewards.points } }))
+      ));
+      fd.append("txHash", "");
+      await projectApiRequest({
+        method: "POST",
+        endpoint: "/project/create-campaign",
+        formData: fd,
+      });
+    } catch (err) {
+      console.error("Failed to create campaign:", err);
+    }
     setLocation(`/project/${projectId}/campaigns`);
   }
 

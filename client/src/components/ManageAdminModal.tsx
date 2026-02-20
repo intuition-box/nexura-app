@@ -33,20 +33,15 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>((role || "Admin").toLowerCase().replace(" ", "_"));
 
+  // TODO: server needs POST /api/admin/update-role and POST /api/admin/demote-admin routes.
   const handleUpdateRole = async () => {
     setLoading(true);
     try {
       await apiRequest<{ message?: string }>({
-        endpoint: "/api/admin/manage-admin",
+        endpoint: "/api/admin/update-role",
         method: "POST",
-        data: {
-          action: "update_role",
-          adminName: name,
-          newRole: selectedRole
-        }
+        data: { adminName: name, newRole: selectedRole },
       });
-
-      console.log("Updated role for", name, "to", selectedRole);
       onSuccess?.();
       setOpen(false);
     } catch (error) {
@@ -60,15 +55,10 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
     setLoading(true);
     try {
       await apiRequest<{ message?: string }>({
-        endpoint: "/api/admin/manage-admin",
+        endpoint: "/api/admin/demote-admin",
         method: "POST",
-        data: {
-          action: "demote",
-          adminName: name
-        }
+        data: { adminName: name },
       });
-
-      console.log("Demoted admin:", name);
       onSuccess?.();
       setOpen(false);
     } catch (error) {
@@ -82,19 +72,14 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
     setLoading(true);
     try {
       await apiRequest<{ message?: string }>({
-        endpoint: "/api/admin/manage-admin",
+        endpoint: "/api/admin/remove-admin",
         method: "POST",
-        data: {
-          action: "revoke",
-          adminName: name
-        }
+        data: { adminName: name },
       });
-
-      console.log("Revoked admin access for:", name);
       onSuccess?.();
       setOpen(false);
     } catch (error) {
-      console.error("Failed to revoke admin:", error);
+      console.error("Failed to revoke admin access:", error);
     } finally {
       setLoading(false);
     }

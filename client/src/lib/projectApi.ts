@@ -1,4 +1,6 @@
-const PROJECT_API_URL = (import.meta.env.VITE_API_URL ?? "") as string;
+import { BACKEND_URL } from "./constants";
+
+const PROJECT_API_URL = (BACKEND_URL ?? "") as string;
 
 function getApiUrl(path: string) {
   return `${PROJECT_API_URL}${path}`;
