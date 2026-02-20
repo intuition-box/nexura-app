@@ -26,11 +26,9 @@ import { Zap, Calendar, Shield, LayoutDashboard, Search, Bell, Plus, RefreshCw, 
 import { StatsOverview } from "../../components/admin/StatsOverview";
 import CampaignSubmissions from "../../components/admin/CampaignSubmissions";
 import { TASKS } from "../../types/admin";
-import AdminManagement from "../../components/admin/AdminManagement";
-import { DUMMY_TASKS } from "../../components/admin/CampaignSubmissions";
+import AdminManagement, { AdminType as Admin } from "../../components/admin/AdminManagement";
 import CampaignsTab from "../../components/admin/CampaignsTab.tsx";
 import CreateNewCampaigns from "../../components/admin/CreateNewCampaign.tsx";
-
 interface StudioDashboardProps {
   onLogout: () => void;
 }
@@ -50,7 +48,7 @@ export default function StudioDashboard({ onLogout }: StudioDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("campaignSubmissions");
   const [viewedSubmissions, setViewedSubmissions] = useState<Set<string>>(new Set());
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-const [campaignTasks, setCampaignTasks] = useState<TASKS[]>(DUMMY_TASKS);
+const [campaignTasks, setCampaignTasks] = useState<TASKS[]>([]);
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(false);
   const [adminsLoading, setAdminsLoading] = useState(false);

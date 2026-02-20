@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import React from "react"
-// import { Card } from "../../components/ui/card";
 import { Card, CardTitle, CardDescription, CardFooter } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Link } from "wouter";
 import StudioSidebar from "../../pages/studio/StudioSidebar";
 import AnimatedBackground from "../AnimatedBackground";
+import { projectApiRequest } from "../../lib/projectApi";
+import { useToast } from "../../hooks/use-toast";
 import {
   Calendar,
   Clock,
@@ -40,10 +41,13 @@ export default function CreateNewCampaigns() {
   const [, setLocation] = useLocation();
 
   const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [campaignId, setCampaignId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [showTasks, setShowTasks] = useState(false)
   const [showModal, setShowModal] = useState(false);
   const [validationType, setValidationType] = useState("manual");
+  const { toast } = useToast();
   const [tasks, setTasks] = useState([]); 
   const [newTask, setNewTask] = useState({
   type: "",
@@ -74,6 +78,7 @@ const [rewardPool, setRewardPool] = useState("");
 const [participants, setParticipants] = useState("");
 const [xpRewards, setXpRewards] = useState("");
 const [publishedCampaign, setPublishedCampaign] = useState<any | null>(null);
+const [txHash, setTxHash] = useState("");
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "";
@@ -82,23 +87,44 @@ const formatDate = (dateStr: string) => {
 };
 
 
-const handlePublish = () => {
-  const newCampaign = {
-    name: campaignName,
-    title: campaignTitle,
-    startDate,
-    endDate,
-    rewardPool,
-    participants,
-    tasks,
-    coverImage,
-    isDraft: false,
-  };
+const buildCampaignFormData = (isDraft: boolean): FormData => {
+  const fd = new FormData();
+  fd.append("title", campaignTitle);
+  fd.append("description", campaignName);
+  fd.append("nameOfProject", campaignName);
+  fd.append("starts_at", startDate && startTime ? `${startDate}T${startTime}` : startDate);
+  fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
+  fd.append("reward", JSON.stringify({ xp: Number(xpRewards) || 0, pool: Number(rewardPool) || 0 }));
+  if (coverImage instanceof File) fd.append("coverImage", coverImage);
+  if (isDraft) fd.append("isDraft", "true");
+  return fd;
+};
 
-  const savedCampaigns = JSON.parse(localStorage.getItem("campaigns") || "[]");
-  localStorage.setItem("campaigns", JSON.stringify([...savedCampaigns, newCampaign]));
-
-  setShowSuccessModal(true);
+const handleSaveDraft = async (thenNavigate?: string) => {
+  if (!campaignTitle) {
+    toast({ title: "Missing title", description: "Please enter a campaign title.", variant: "destructive" });
+    return;
+  }
+  setSaveLoading(true);
+  try {
+    const fd = buildCampaignFormData(true);
+    const params: Record<string, string> = {};
+    if (campaignId) params.id = campaignId;
+    const res = await projectApiRequest<{ campaignId?: string; message?: string }>({
+      method: "PATCH",
+      endpoint: "/project/save-campaign",
+      formData: fd,
+      params,
+    });
+    if (res.campaignId) setCampaignId(res.campaignId);
+    toast({ title: "Campaign saved!", description: "Draft saved successfully." });
+    if (thenNavigate) setActiveTab(thenNavigate);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to save campaign.";
+    toast({ title: "Save failed", description: msg, variant: "destructive" });
+  } finally {
+    setSaveLoading(false);
+  }
 };
 
 const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,18 +174,6 @@ const handleSaveTask = () => {
 
 
 
-
-// On component mount, load tasks from localStorage
-useEffect(() => {
-  const savedTasks = localStorage.getItem("tasks");
-  if (savedTasks) setTasks(JSON.parse(savedTasks));
-}, []);
-
-// Save tasks to localStorage whenever tasks change
-useEffect(() => {
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-}, [tasks]);
-
 const handleCoverImage = (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -173,28 +187,9 @@ const handleCoverImage = (e: React.ChangeEvent<HTMLInputElement>) => {
 
 
 
-const handleSubmit = (e) => {
+const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();
-  setLoading(true);
-
-  // Build your payload
-  const payload = {
-    campaignName,
-    campaignTitle,
-    coverImage,
-    startDate,
-    startTime,
-    endDate,
-    endTime,
-    rewardPool,
-    participants,
-    xpRewards,
-  };
-
-  console.log("Form Data:", payload);
-
-///// backend 
-  setTimeout(() => setLoading(false), 1000);
+  handleSaveDraft("tasks");
 };
 
 const isActive =
@@ -519,16 +514,18 @@ const isActive =
                           type="button"
                           variant="outline"
                           className="border-white/20 text-white hover:bg-white/5"
+                          onClick={() => handleSaveDraft()}
+                          disabled={saveLoading}
                         >
-                          Save
+                          {saveLoading ? "Saving..." : "Save"}
                         </Button>
 
                         <Button
                           type="submit"
                           className="bg-purple-600 hover:bg-purple-700"
-                          disabled={loading}
+                          disabled={loading || saveLoading}
                         >
-                          {loading ? "Saving..." : "Save & Next"}
+                          {loading || saveLoading ? "Saving..." : "Save & Next"}
                         </Button>
                       </div>
                     </div>
@@ -876,7 +873,6 @@ const isActive =
 
   let url = task.handleOrUrl.trim();
 
-  // If it doesn't start with http, prepend https
   if (!/^https?:\/\//i.test(url)) {
     url = `https://${url}`;
   }
@@ -912,18 +908,21 @@ const isActive =
 {/* Footer Buttons */}
 <div className="flex items-center justify-between mt-8">
   {/* Back button on the left */}
-  <button className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition">
-    Back
-  </button>
+    <button className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition" onClick={() => setActiveTab("tasks")}>Back</button>
 
   {/* Right buttons */}
   <div className="flex items-center gap-2 mt-4">
-    <button className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
-      Save
+    <button
+      className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
+      onClick={() => handleSaveDraft()}
+      disabled={saveLoading}
+    >
+      {saveLoading ? "Saving..." : "Save Draft"}
     </button>
 <button
   onClick={() => setShowPublishModal(true)}
-  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
+  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={loading || saveLoading}
 >
   Publish Campaign
 </button>
@@ -970,66 +969,77 @@ const isActive =
 
         {/* Subscription Card */}
         <div className="bg-gray-800 p-5 rounded-xl border border-gray-700 mb-6">
-          <h3 className="text-lg font-semibold text-white">
-            Yearly Subscription
-          </h3>
-          <p className="text-white/70 mt-1">
-            1000 TRUST / year
-          </p>
+          <h3 className="text-lg font-semibold text-white">Yearly Subscription</h3>
+          <p className="text-white/70 mt-1">1000 TRUST / year</p>
+
+          {/* Transaction Hash */}
+          <div className="mt-4">
+            <label className="block text-sm text-white/70 mb-2">Transaction Hash (fee payment)</label>
+            <input
+              type="text"
+              placeholder="0x..."
+              value={txHash}
+              onChange={(e) => setTxHash(e.target.value)}
+              className="w-full p-2 rounded-lg bg-gray-900 text-white border border-gray-600 focus:outline-none focus:border-purple-500 text-sm"
+            />
+          </div>
 
 <button
   className="mt-4 w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
   onClick={async () => {
-  // Validate minimum requirements
-  if (!campaignTitle || !campaignName) {
-    alert("Campaign details are incomplete.");
-    return;
-  }
+    if (!campaignTitle || !campaignName) {
+      toast({ title: "Incomplete details", description: "Please fill in campaign name and title.", variant: "destructive" });
+      return;
+    }
+    if (tasks.length === 0) {
+      toast({ title: "No tasks", description: "Please add at least one task.", variant: "destructive" });
+      return;
+    }
+    if (!txHash.trim()) {
+      toast({ title: "Missing tx hash", description: "Please enter the transaction hash for the fee payment.", variant: "destructive" });
+      return;
+    }
 
-  if (tasks.length === 0) {
-    alert("You must add at least one task.");
-    return;
-  }
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append("title", campaignTitle);
+      fd.append("description", campaignName);
+      fd.append("nameOfProject", campaignName);
+      fd.append("starts_at", startDate && startTime ? `${startDate}T${startTime}` : startDate);
+      fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
+      fd.append("reward", JSON.stringify({ xp: Number(xpRewards) || 0, pool: Number(rewardPool) || 0 }));
+      fd.append("txHash", txHash);
+      fd.append("campaignQuests", JSON.stringify(
+        tasks.map((t: any) => ({
+          title: t.type,
+          description: t.description,
+          url: t.handleOrUrl,
+          reward: { xp: Number(xpRewards) || 0 },
+        }))
+      ));
+      if (coverImage instanceof File) fd.append("coverImage", coverImage);
 
-  // Combine date + time properly
-  const combinedStart = `${startDate}T${startTime}`;
-  const combinedEnd = `${endDate}T${endTime}`;
+      await projectApiRequest({
+        method: "POST",
+        endpoint: "/project/create-campaign",
+        formData: fd,
+      });
 
-  let imageBase64 = "";
-
-  if (coverImage instanceof File) {
-    imageBase64 = await convertToBase64(coverImage);
-  }
-
-  const newCampaign: Campaign = {
-    id: crypto.randomUUID(),
-    title: campaignTitle,
-    name: campaignName,
-    description: campaignName,
-    startDate: combinedStart,
-    endDate: combinedEnd,
-    rewardPool,
-    participants,
-    xpRewards,
-    coverImage: imageBase64,
-    tasks,
-    isDraft: false,
-    createdAt: new Date().toISOString(),
-  };
-
-  // Save to storage
-  const savedCampaigns = JSON.parse(localStorage.getItem("campaigns") || "[]");
-  localStorage.setItem("campaigns", JSON.stringify([...savedCampaigns, newCampaign]));
-
-  // Set snapshot for success modal
-  setPublishedCampaign(newCampaign);
-
-  // Close publish modal & show success
-  setShowPublishModal(false);
-  setShowSuccessModal(true);
-}}
+      toast({ title: "Campaign published!", description: "Your campaign is now live." });
+      setPublishedCampaign({ title: campaignTitle, name: campaignName, rewardPool, coverImage: coverImagePreview ?? undefined });
+      setShowPublishModal(false);
+      setShowSuccessModal(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to publish campaign.";
+      toast({ title: "Publish failed", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }}
+  disabled={loading}
 >
-  Pay 1000 TRUST
+  {loading ? <><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin mr-2 align-middle" />Publishing...</> : "Confirm & Publish (1000 TRUST)"}
 </button>
         </div>
 
@@ -1145,8 +1155,8 @@ const isActive =
         {/* Launch Button */}
 <Button
   onClick={() => {
-    setActiveTab("campaignsTab"); // highlight sidebar tab
-    setLocation("/studio-dashboard/campaigns-tab"); // update URL
+    setShowSuccessModal(false);
+    setLocation("/studio-dashboard/campaigns-tab");
   }}
   className="mt-6 w-full flex items-center justify-center gap-3 px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition"
 >

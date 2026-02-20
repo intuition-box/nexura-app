@@ -46,6 +46,7 @@ import ConnectedTwitter from "./pages/studio/ConnectedTwitter.tsx"
 import StudioDashboard from "./pages/studio/StudioDashboard.tsx"
 import CampaignsTab from "./components/admin/CampaignsTab.tsx";
 import { getStoredAccessToken, apiRequest } from './lib/config'
+import { clearProjectSession, getStoredProjectToken, projectApiRequest } from './lib/projectApi'
 import CreateNewCampaigns from "./components/admin/CreateNewCampaign.tsx";
 import MyCampaign from "./components/admin/MyCampaign.tsx"
 import AdminManagement from "./components/admin/AdminManagement.tsx";
@@ -54,9 +55,15 @@ function Router() {
    const [isAuthenticated, setIsAuthenticated] = useState(false)
    
     const handleLogout = () => {
-    localStorage.removeItem('nexura-admin:token')
-    localStorage.removeItem('nexura-admin:info')
-    setIsAuthenticated(false)
+    // Clear admin session
+    localStorage.removeItem('nexura-admin:token');
+    localStorage.removeItem('nexura-admin:info');
+    // Clear project session and call server logout if project is signed in
+    if (getStoredProjectToken()) {
+      projectApiRequest({ method: 'POST', endpoint: '/project/logout' }).catch(() => {});
+    }
+    clearProjectSession();
+    setIsAuthenticated(false);
   }
 
   return (

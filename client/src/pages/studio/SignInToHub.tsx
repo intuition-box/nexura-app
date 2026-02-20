@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import AnimatedBackground from "../../components/AnimatedBackground";
-import { Card, CardTitle, CardDescription, CardFooter } from "../../components/ui/card";
+import { Card, CardTitle, CardFooter } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
+import { projectApiRequest, storeProjectSession } from "../../lib/projectApi";
+import { useToast } from "../../hooks/use-toast";
 
 export default function SignInToHub() {
   const [email, setEmail] = useState("");
@@ -12,56 +14,67 @@ export default function SignInToHub() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  // Modal state
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
 
-function handleSignIn() {
-  if (!email || !password) {
-    alert("Please fill all fields");
-    return;
-  }
-
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|outlook\.com)$/;
-  if (!emailRegex.test(email)) {
-    alert("Email must be a valid Gmail, Yahoo, or Outlook address");
-    return;
-  }
-
-  setLoading(true);
-
-  setTimeout(() => {
-    alert(`Logged in successfully as ${email} (placeholder)`);
-    setLoading(false);
-
-    // Redirect to studio-dashboard
-    setLocation("/studio-dashboard");
-  }, 1000);
-}
-
-
-  function handleResetPassword() {
-    if (!resetEmail) {
-      alert("Please enter your email");
+  async function handleSignIn() {
+    if (!email || !password) {
+      toast({ title: "Missing fields", description: "Please fill in all fields.", variant: "destructive" });
       return;
     }
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|outlook\.com)$/;
-    if (!emailRegex.test(resetEmail)) {
-      alert("Email must be a valid Gmail, Yahoo, or Outlook address");
+    setLoading(true);
+    try {
+      const res = await projectApiRequest<{ message?: string; accessToken?: string; token?: string; project?: Record<string, unknown> }>({
+        method: "POST",
+        endpoint: "/project/sign-in",
+        data: { email, password, role: "project" },
+      });
+
+      const token = (res.token ?? res.accessToken) as string | undefined;
+      if (!token) throw new Error("No access token received");
+
+      storeProjectSession(token, { email, ...(res.project ?? {}) });
+      toast({ title: "Signed in!", description: "Welcome back to Nexura Studio." });
+      setLocation("/studio-dashboard");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Invalid credentials.";
+      toast({ title: "Sign in failed", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!resetEmail) {
+      toast({ title: "Missing email", description: "Please enter your email.", variant: "destructive" });
       return;
     }
 
     setResetLoading(true);
-    setTimeout(() => {
-      alert(`Reset instructions sent to ${resetEmail} (placeholder)`);
-      setResetLoading(false);
+    try {
+      await projectApiRequest({
+        method: "POST",
+        endpoint: "/project/forgot-password",
+        data: { email: resetEmail, role: "project" },
+      });
+      toast({ title: "Email sent!", description: `Password reset instructions sent to ${resetEmail}.` });
       setShowResetModal(false);
       setResetEmail("");
-    }, 1000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send reset email.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setResetLoading(false);
+    }
   }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSignIn();
+  };
 
   return (
     <div className="min-h-screen bg-black text-white overflow-auto p-4 sm:p-6 relative">
@@ -88,6 +101,7 @@ function handleSignIn() {
               placeholder="Enter email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={handleKeyDown}
               className="mt-2 w-full bg-gray-800 text-white border-purple-500"
             />
           </div>
@@ -110,6 +124,7 @@ function handleSignIn() {
                 placeholder="*   *   *   *   *   *   *   *"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="w-full bg-gray-800 text-white border-purple-500 pr-10"
               />
               <button

@@ -1,10 +1,21 @@
 "use client";
 
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { Layers } from "lucide-react";
 import SignUpPopup from "../components/BuilderPopup";
+import { isProjectSignedIn } from "../lib/projectApi";
 
-  export default function NexuraStudio() {
+export default function NexuraStudio() {
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (isProjectSignedIn()) {
+      setLocation("/studio-dashboard");
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-black text-white overflow-auto p-4 sm:p-6 relative">
       <AnimatedBackground />
@@ -41,3 +52,4 @@ import SignUpPopup from "../components/BuilderPopup";
     </div>
   );
 }
+

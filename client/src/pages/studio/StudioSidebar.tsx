@@ -3,6 +3,7 @@ import { Zap, Shield, Users } from "lucide-react";
 import { useLocation } from "wouter";
 import AnimatedBackground from "../../components/AnimatedBackground";
 import { useEffect, useState } from "react";
+import { getStoredProjectInfo } from "../../lib/projectApi";
 
 type TabType = "campaignSubmissions" | "adminManagement" | "campaignsTab";
 
@@ -24,19 +25,14 @@ export default function StudioSidebar({
 
   // State to hold project info
   const [projectLogo, setProjectLogo] = useState("/default-project-logo.png");
-  const [projectHandle, setProjectHandle] = useState("@unknown");
+  const [projectHandle, setProjectHandle] = useState("@project");
 
   useEffect(() => {
-    // Try to get Twitter data from localStorage
-    const twitterData = localStorage.getItem("twitterData");
-    if (twitterData) {
-      const parsed = JSON.parse(twitterData);
-      setProjectHandle(parsed.handle || "@unknown");
-
-      // Use uploaded logo if available, fallback to X avatar
-      if (parsed.avatar) {
-        setProjectLogo(parsed.avatar);
-      }
+    const info = getStoredProjectInfo();
+    if (info) {
+      const name = (info.name ?? info.email ?? "project") as string;
+      setProjectHandle(name.startsWith("@") ? name : `@${name}`);
+      if (info.logo) setProjectLogo(info.logo as string);
     }
   }, []);
 
