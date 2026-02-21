@@ -74,7 +74,7 @@ export default function AdminManagement() {
   </div>
 
   {/* Three Horizontal Cards */}
-  <div className="flex gap-6">
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
     {/* Card 1 */}
     <div className="flex-1 bg-white/10 backdrop-blur-md rounded-lg p-4 flex items-start gap-4 border-2 border-white">
       <img src="/admin.png" alt="Icon 1" className="w-10 h-10 object-contain" />
@@ -103,12 +103,12 @@ export default function AdminManagement() {
     </div>
   </div>
 
-<div className="flex items-center justify-between mb-6">
+<div className="flex items-center justify-between mb-6 flex-wrap gap-3">
   {/* Title */}
   <h2 className="text-2xl font-bold text-white">Manage Admins</h2>
 
   {/* Search Bar */}
-  <div className="relative w-64">
+  <div className="relative w-full sm:w-64">
     <input
       type="text"
       placeholder="Search"
@@ -128,7 +128,7 @@ export default function AdminManagement() {
 </div>
 
         {
-          <Card className="bg-white/5 border-white/10 backdrop-blur-[125px] overflow-hidden">
+          <Card className="bg-white/5 border-white/10 backdrop-blur-[125px] overflow-hidden overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-white/10 hover:bg-white/5">

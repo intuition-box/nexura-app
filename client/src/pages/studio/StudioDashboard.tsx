@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../../components/ui/dialog";
-import { Zap, Calendar, Shield, LayoutDashboard, Search, Bell, Plus, RefreshCw, Check, X, Eye, Clock, CheckCircle2, XCircle, Menu, ChevronDown, Users, FileText } from "lucide-react";
+import { Zap, Calendar, Shield, LayoutDashboard, Search, Bell, Plus, RefreshCw, Check, X, Eye, Clock, CheckCircle2, XCircle, ChevronDown, Users, FileText } from "lucide-react";
 import { StatsOverview } from "../../components/admin/StatsOverview";
 import CampaignSubmissions from "../../components/admin/CampaignSubmissions";
 import { TASKS } from "../../types/admin";
@@ -48,7 +48,6 @@ export default function StudioDashboard({ onLogout }: StudioDashboardProps) {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<TabType>("campaignSubmissions");
   const [viewedSubmissions, setViewedSubmissions] = useState<Set<string>>(new Set());
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 const [campaignTasks, setCampaignTasks] = useState<TASKS[]>([]);
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(false);
@@ -131,12 +130,6 @@ const [campaignTasks, setCampaignTasks] = useState<TASKS[]>([]);
     }
   };
 
-  const sidebarItems = [
-    { title: "Campaign Tasks", icon: Zap, id: "campaignSubmissions" as TabType },
-    { title: "Campaigns", icon: Users, id: "campaignsTab" as TabType },
-    { title: "Admin Management", icon: Shield, id: "adminManagement" as TabType },
-  ];
-
 const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
 const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
 
@@ -197,117 +190,6 @@ const fetchBannedUsers = async () => {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
             <AnimatedBackground/>
-          {/* Mobile Header with Hamburger */}
-          <div className="md:hidden border-b border-white/10 px-4 py-3 flex items-center justify-between">
-            <button
-              onClick={() => setMobileNavOpen(true)}
-              className="p-2 -ml-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <img src="/nexura-logo.png" alt="Nexura" className="h-6 w-auto" />
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/5 h-9 w-9">
-                <Bell className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Mobile Sliding Nav Overlay */}
-          {mobileNavOpen && (
-            <div
-              className="fixed inset-0 z-50 md:hidden"
-              onClick={() => setMobileNavOpen(false)}
-            >
-              {/* Backdrop */}
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-
-              {/* Sliding Panel */}
-              <div
-                className="absolute top-0 left-0 h-full w-72 bg-[#0a0a15]/95 backdrop-blur-xl border-r border-white/10 shadow-2xl animate-slide-in-left"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Nav Header */}
-                <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                  <img src="/nexura-logo.png" alt="Nexura" className="h-7 w-auto" />
-                  <button
-                    onClick={() => setMobileNavOpen(false)}
-                    className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Nav Items */}
-                <nav className="p-3 space-y-1">
-                  {sidebarItems.map((item) => (
-  <button
-    key={item.id}
-    onClick={() => {
-      setActiveTab(item.id);
-      setLocation(
-        item.id === "campaignsTab"
-          ? "/studio-dashboard/campaigns-tab"
-          : `/studio-dashboard/${item.id}`
-      );
-    }}
-    className={cn(
-      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-      activeTab === item.id
-        ? "text-[#8a3ffc] bg-[#8a3ffc]/10 border border-[#8a3ffc]/30"
-        : "text-white/70 hover:bg-white/5 hover:text-white"
-    )}
-  >
-    <item.icon
-      className={cn(
-        "w-5 h-5",
-        activeTab === item.id ? "text-[#8a3ffc]" : "text-white/50"
-      )}
-    />
-    {item.title}
-  </button>
-))}
-                </nav>
-
-                {/* Actions */}
-                <div className="px-4 py-3">
-                  <AddAdminModal>
-                    <Button
-                      variant="outline"
-                      className="w-full border-[#8a3ffc] text-[#8a3ffc] hover:bg-[#8a3ffc] hover:text-white gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Admin
-                    </Button>
-                  </AddAdminModal>
-                </div>
-
-                {/* User Info & Logout */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#8a3ffc] to-[#6366f1] flex items-center justify-center text-white font-bold">
-                      A
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-white">Administrator</span>
-                      <span className="text-xs text-white/50">Online</span>
-                    </div>
-                  </div>
-<Button
-  variant="ghost"
-  onClick={() => {
-    setMobileNavOpen(false);
-    onLogout();
-    setLocation("/studio");
-  }}
-  className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 justify-start gap-2"
->
-  Logout
-</Button>
-                </div>
-              </div>
-            </div>
-          )}
 
           <header className="hidden md:flex h-16 border-b border-white/10 items-center justify-between px-6 backdrop-blur-sm bg-black/30">
   <div className="flex items-center gap-4 flex-1">
@@ -367,7 +249,7 @@ const fetchBannedUsers = async () => {
 </header>
 
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 relative bg-black/20">
+          <main className="flex-1 overflow-y-auto pt-20 pb-28 px-4 md:pt-8 md:pb-8 md:px-8 relative bg-black/20">
             <div className="max-w-7xl mx-auto">
               {activeTab !== "adminManagement" && activeTab !== "campaignsTab" && (
                 <StatsOverview key={activeTab} tasks={activeTab === "campaignSubmissions" ? campaignTasks : []} />

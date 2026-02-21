@@ -6,7 +6,7 @@ import { Link, useLocation } from "wouter";
 import StudioSidebar from "../../pages/studio/StudioSidebar";
 import { projectApiRequest } from "../../lib/projectApi";
 import { useToast } from "../../hooks/use-toast";
-import { RefreshCw, Trash2, XCircle, Loader2, Pencil } from "lucide-react";
+import { RefreshCw, Trash2, XCircle, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -136,7 +136,7 @@ export default function CampaignsTab() {
     const isActive = !draft && new Date(campaign.ends_at) > now;
 
     return (
-      <Card className="w-72 bg-gray-900 text-white rounded-2xl overflow-hidden shadow-lg flex flex-col">
+      <Card className="w-full bg-gray-900 text-white rounded-2xl overflow-hidden shadow-lg flex flex-col">
         {campaign.projectCoverImage ? (
           <img src={campaign.projectCoverImage} alt={campaign.title} className="w-full h-40 object-cover" />
         ) : (
@@ -157,19 +157,10 @@ export default function CampaignsTab() {
           <div className="flex gap-2 mt-2 flex-wrap">
             <button
               className="flex-1 px-3 py-2 text-sm bg-purple-600 rounded-lg hover:bg-purple-700 transition"
-              onClick={() => setLocation(`/studio-dashboard/my-campaign?id=${campaign._id}`)}
+              onClick={() => setLocation(`/studio-dashboard/create-new-campaign?edit=${campaign._id}`)}
             >
               View Details
             </button>
-            {draft && (
-              <button
-                title="Edit draft"
-                className="px-3 py-2 text-sm bg-purple-600/20 text-purple-400 rounded-lg hover:bg-purple-600/30 transition"
-                onClick={() => setLocation(`/studio-dashboard/create-new-campaign?edit=${campaign._id}`)}
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-            )}
             {isActive && (
               <button
                 title="Close campaign"
@@ -234,12 +225,12 @@ export default function CampaignsTab() {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-white/20 gap-6 pb-2">
+        <div className="flex border-b border-white/20 gap-4 pb-2 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`font-medium transition-colors ${
+              className={`font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? "border-b-2 border-purple-500 text-white"
                   : "text-white/60 hover:text-white"
