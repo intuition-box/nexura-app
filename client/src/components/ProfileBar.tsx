@@ -16,8 +16,7 @@ import { useWallet } from "../hooks/use-wallet";
 import { apiRequest } from "../lib/queryClient";
 import SignUpPopup from "./SignUpPopup";
 import DailyCheckInModal from "./DailyCheckInModal";
-import { getIntuitionNetworkParams } from "../lib/utils";
-import { network } from "../lib/constants";
+import NetworkButton from "./NetworkButton";
 
 interface ProfileBarProps {
   userId?: string;
@@ -132,9 +131,6 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const isMainnet = network === "mainnet";
-  const chainId = isMainnet ? "0x483" : "0x350b";
-
   const handleLogout = () => {
     signOut();
     try { localStorage.removeItem("nexura:wallet"); } catch { }
@@ -142,59 +138,6 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
     setLocation("/discover");
     toast({ title: "Signed out", description: "Your session was cleared." });
   };
-
-  const switchNetwork = async () => {
-    await window.ethereum.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId }]
-    });
-  }
-
-  const handleAddAndSwitchNetwork = async () => {
-    if (!window.ethereum) {
-      toast({ title: "Wallet not found", description: "Please install MetaMask or another Web3 wallet", variant: "destructive" });
-      return;
-    }
-
-    try {
-      await switchNetwork();
-
-      toast({ title: "Network switched!", description: "Network switched!" });
-    } catch (error: any) {
-      console.error('Failed to switch:', error);
-      if (error.code === 4001) {
-        toast({ title: "Request cancelled", description: "You cancelled the request", variant: "destructive" });
-      } else if (error.code === 4902) {
-        const params = getIntuitionNetworkParams(!isMainnet, chainId);
-
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params
-        });
-
-        await switchNetwork();
-
-        toast({ title: "Network added!", description: `Intuition ${isMainnet ? "Mainnet" : "Testnet"} has been added to your wallet` });
-      }
-      else {
-        toast({ title: "Failed to add and switch network", description: error.message || "Please try again", variant: "destructive" });
-      }
-    }
-  };
-
-  const NetworkBadge = () => (
-    <button
-      onClick={handleAddAndSwitchNetwork}
-      className="flex items-center gap-2 glass glass-hover px-3 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all cursor-pointer"
-      title={`Add Intuition ${isMainnet ? "Mainnet" : "Testnet"} to wallet`}
-    >
-      {/* <img src="/claim1.jpg" alt="" className="w-8 h-auto rounded-full" /> */}
-      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-      <span className="text-xs sm:text-sm font-medium text-white hidden sm:inline">
-        Intuition {isMainnet ? "Mainnet" : "Testnet"}
-      </span>
-    </button>
-  );
 
   const LevelBadge = () => (
     <Link href="/profile">
@@ -216,7 +159,7 @@ export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
 
   return (
     <div className="flex items-center gap-4">
-      {walletConnected && <NetworkBadge />}
+      {walletConnected && <NetworkButton />}
       {hasServerProfile && <DailySignInBadge />}
       {showLevelInHeader && <LevelBadge />}
 

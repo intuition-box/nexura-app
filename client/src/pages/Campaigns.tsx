@@ -279,11 +279,15 @@ export default function Campaigns() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-auto p-4 sm:p-6 relative">
+    <div className="min-h-screen bg-black text-white overflow-auto p-6 relative">
       <AnimatedBackground />
       <div className="max-w-4xl sm:max-w-6xl mx-auto space-y-6 sm:space-y-8 relative z-10">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Campaigns</h1>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+            <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">Campaigns</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent mb-2">Campaigns</h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
             Complete unique tasks and earn rewards in the Nexura ecosystem.
           </p>

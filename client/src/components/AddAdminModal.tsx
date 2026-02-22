@@ -60,7 +60,7 @@ export function AddAdminModal({ children, onSuccess }: AddAdminModalProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="sm:max-w-[425px] bg-[#0a0a0a]/90 backdrop-blur-xl border-white/10 text-white shadow-2xl">
+      <DialogContent className="sm:max-w-[425px] bg-[#0d0d14] backdrop-blur-xl border border-purple-500/20 text-white shadow-[0_0_60px_rgba(131,58,253,0.2)] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <div className="p-2 rounded-full bg-[#8a3ffc]/20">
@@ -89,22 +89,23 @@ export function AddAdminModal({ children, onSuccess }: AddAdminModalProps) {
           </div>
         </form>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2 pt-1">
           <DialogClose asChild>
-            <Button
-              variant="ghost"
-              className="text-white/70 hover:text-white hover:bg-white/5"
+            <button
+              type="button"
+              className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all"
             >
               Cancel
-            </Button>
+            </button>
           </DialogClose>
-          <Button
+          <button
+            type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-gradient-to-r from-[#8a3ffc] to-[#522696] text-white rounded-md hover:opacity-90 transition-opacity shadow-[0px_0px_15px_rgba(138,63,252,0.4)]"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
           >
             {loading ? "Sending Invitation..." : "Send Invitation"}
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

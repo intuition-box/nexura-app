@@ -1,6 +1,10 @@
 
 export const network = (import.meta as any).env?.VITE_NETWORK;
 
+// Placeholder — replace with real addresses before mainnet launch
+export const TRUST_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
+export const STUDIO_FEE_CONTRACT  = "0x0000000000000000000000000000000000000000" as `0x${string}`;
+
 export const BACKEND_URL = (import.meta as any).env?.VITE_BACKEND_URL;
 
 export const url = (import.meta as any).env?.VITE_CLIENT_URL || "https://nexura-app.vercel.app";

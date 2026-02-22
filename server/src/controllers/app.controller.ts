@@ -462,7 +462,21 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
       return u.status === "Active" && u.updatedAt >= last30Days;
     }).length;
 
-    res.status(OK).json({ message: "analytics data fetched", analytics: { totalOnchainInteractions, totalOnchainClaims, totalCampaigns, user: { totalUsers, activeUsersWeekly, activeUsersMonthly, users24h, users7d, users30d }, totalReferrals, totalQuests, totalQuestsCompleted, totalCampaignsCompleted, joinRatio, totalTrustDistributed } });
+    // Per-day new user counts for the last 7 days (index 0 = oldest, index 6 = today)
+    const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const usersByDay = Array.from({ length: 7 }, (_, i) => {
+      const dayStart = new Date(now);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      dayStart.setUTCDate(dayStart.getUTCDate() - (6 - i));
+      const dayEnd = new Date(dayStart);
+      dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+      const count = userFound.filter((u) => u.createdAt >= dayStart && u.createdAt < dayEnd).length;
+      const dayName = DAY_NAMES[dayStart.getUTCDay()];
+      return { day: dayName, count };
+    });
+    const tomorrowName = DAY_NAMES[new Date(now.getTime() + 24 * 60 * 60 * 1000).getUTCDay()];
+
+    res.status(OK).json({ message: "analytics data fetched", analytics: { totalOnchainInteractions, totalOnchainClaims, totalCampaigns, user: { totalUsers, activeUsersWeekly, activeUsersMonthly, users24h, users7d, users30d }, totalReferrals, totalQuests, totalQuestsCompleted, totalCampaignsCompleted, joinRatio, totalTrustDistributed, usersByDay, tomorrowName } });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching analytics data" });

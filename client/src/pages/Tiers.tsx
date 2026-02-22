@@ -83,7 +83,7 @@ export default function Tiers() {
     return (
       <div className="min-h-screen bg-background overflow-auto p-6">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-foreground">Nexura Tiers</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">Nexura Tiers</h1>
           <p className="mt-4 text-muted-foreground">No tier data available.</p>
         </div>
       </div>
@@ -106,9 +106,13 @@ export default function Tiers() {
       <AnimatedBackground />
       <div className="max-w-4xl mx-auto space-y-8 relative z-10">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-foreground">Nexura Tiers</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+<div className="space-y-1">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+              <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">Tiers</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">Nexura Tiers</h1>
+            <p className="text-sm text-white/50">
             Advance through five distinct tiers of mastery in the Nexura ecosystem.
           </p>
         </div>

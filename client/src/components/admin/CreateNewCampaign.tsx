@@ -10,6 +10,7 @@ import { Link } from "wouter";
 import StudioSidebar from "../../pages/studio/StudioSidebar";
 import AnimatedBackground from "../AnimatedBackground";
 import { projectApiRequest } from "../../lib/projectApi";
+import { payStudioHubFee } from "../../lib/performOnchainAction";
 import { useToast } from "../../hooks/use-toast";
 import {
   Calendar,
@@ -81,7 +82,8 @@ const [rewardPool, setRewardPool] = useState("");
 const [participants, setParticipants] = useState("");
 const [xpRewards, setXpRewards] = useState("");
 const [publishedCampaign, setPublishedCampaign] = useState<any | null>(null);
-const [txHash, setTxHash] = useState("");
+const [paymentTxHash, setPaymentTxHash] = useState("");
+const [paymentLoading, setPaymentLoading] = useState(false);
 const [isEditMode, setIsEditMode] = useState(false);
 
 // Pre-fill from existing draft when ?edit=<id> is in the URL
@@ -708,13 +710,13 @@ const isActive =
 
 {/* ===== MODAL ===== */}
 {showModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-    <div className="bg-purple-950 w-[650px] p-6 rounded-2xl relative shadow-xl">
+  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+    <div className="bg-[#0d0d14] w-full max-w-xl border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
       {/* Close Button */}
       <button
         onClick={() => setShowModal(false)}
-        className="absolute top-3 right-4 text-white text-xl"
+        className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-lg leading-none"
       >
         ×
       </button>
@@ -729,7 +731,7 @@ const isActive =
         <div>
           <label className="text-sm text-white/70 mb-2 block">Task Type</label>
           <select
-            className="w-full p-2 rounded-lg bg-purple-900 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            className="w-full p-2 rounded-lg bg-[#0d0d14] text-white border border-white/10 focus:outline-none focus:border-purple-500 [&>option]:bg-[#0d0d14]"
             value={newTask.type}
             onChange={(e) => {
               const type = e.target.value;
@@ -794,7 +796,7 @@ const isActive =
       </div>
 
       {/* TASK DETAILS CARD */}
-      <div className="bg-purple-900 p-5 rounded-xl mb-6 border border-purple-800">
+      <div className="bg-white/5 p-5 rounded-xl mb-6 border border-white/10">
 
         {/* Handle or URL */}
         <div className="mb-4">
@@ -808,7 +810,7 @@ const isActive =
             onChange={(e) =>
               setNewTask({ ...newTask, handleOrUrl: e.target.value })
             }
-            className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500"
           />
         </div>
 
@@ -822,7 +824,7 @@ const isActive =
             onChange={(e) =>
               setNewTask({ ...newTask, description: e.target.value })
             }
-            className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500"
           />
         </div>
 
@@ -885,7 +887,7 @@ const isActive =
             <div>
               <label className="text-sm text-white/70 mb-2 block">Evidence Upload Management</label>
               <select
-                className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+                className="w-full p-2 rounded-lg bg-[#0d0d14] text-white border border-white/10 focus:outline-none focus:border-purple-500 [&>option]:bg-[#0d0d14]"
                 value={newTask.evidence}
                 onChange={(e) =>
                   setNewTask({ ...newTask, evidence: e.target.value })
@@ -904,7 +906,7 @@ const isActive =
                   type="text"
                   value={newTask.validation}
                   readOnly
-                  className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500 pr-10"
+                  className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500 pr-10"
                 />
                 <img
                   src="/purple-check.png"
@@ -923,17 +925,17 @@ const isActive =
       )}
 
       {/* ACTION BUTTONS */}
-      <div className="flex justify-between">
+      <div className="flex justify-end gap-3 mt-2">
         <button
           onClick={() => setShowModal(false)}
-          className="px-5 py-2 rounded-lg bg-purple-800 hover:bg-purple-700 text-white transition"
+          className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all"
         >
           Cancel
         </button>
 
         <button
           onClick={handleSaveTask}
-          className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold transition"
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
         >
           Save Task
         </button>
@@ -1117,13 +1119,13 @@ const isActive =
   {/* PUBLISH MODAL */}
   {/* ========================= */}
   {showPublishModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-      <div className="bg-gray-900 w-[500px] p-6 rounded-2xl relative shadow-xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-[#0d0d14] w-full max-w-md border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
         {/* Close Icon */}
         <button
           onClick={() => setShowPublishModal(false)}
-          className="absolute top-3 right-4 text-white text-xl"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-lg leading-none"
         >
           ×
         </button>
@@ -1148,25 +1150,54 @@ const isActive =
         </div>
 
         {/* Subscription Card */}
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 mb-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
           <div className="flex justify-between items-center mb-2">
             <span className="text-white font-semibold text-sm">Studio Hub Activation</span>
             <span className="text-purple-400 font-bold text-sm">1000 TRUST</span>
           </div>
           <p className="text-white/60 text-xs mb-3">
-            Send 1000 TRUST to the fee contract, then paste the transaction hash below.
+            A one-time fee of 1000 TRUST is required to publish your campaign.
           </p>
-          <input
-            type="text"
-            placeholder="Paste transaction hash (0x...)"
-            value={txHash}
-            onChange={(e) => setTxHash(e.target.value)}
-            className="w-full bg-gray-700 text-white text-xs rounded-lg px-3 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none"
-          />
+
+          {paymentTxHash ? (
+            <div className="flex items-center gap-2 bg-green-900/40 border border-green-600/50 rounded-lg px-3 py-2">
+              <svg className="w-4 h-4 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <div className="min-w-0">
+                <p className="text-green-400 text-xs font-semibold">Payment confirmed</p>
+                <p className="text-white/40 text-[10px] truncate">{paymentTxHash}</p>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={paymentLoading}
+              onClick={async () => {
+                setPaymentLoading(true);
+                try {
+                  const hash = await payStudioHubFee();
+                  setPaymentTxHash(hash);
+                  toast({ title: "Payment successful", description: "1000 TRUST sent. You can now publish your campaign." });
+                } catch (err: any) {
+                  toast({ title: "Payment failed", description: err.message ?? "Transaction was rejected.", variant: "destructive" });
+                } finally {
+                  setPaymentLoading(false);
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg px-4 py-2 transition"
+            >
+              {paymentLoading ? (
+                <><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Waiting for wallet…</>
+              ) : (
+                <>Pay 1000 TRUST</>
+              )}
+            </button>
+          )}
         </div>
 
 <button
-  className="mt-4 w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
+  className="mt-4 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
   onClick={async () => {
     if (!campaignTitle || !campaignName) {
       toast({ title: "Incomplete details", description: "Please fill in campaign name and title.", variant: "destructive" });
@@ -1176,8 +1207,8 @@ const isActive =
       toast({ title: "No tasks", description: "Please add at least one task.", variant: "destructive" });
       return;
     }
-    if (!txHash.trim()) {
-      toast({ title: "Missing tx hash", description: "Please enter the transaction hash for the fee payment.", variant: "destructive" });
+    if (!paymentTxHash.trim()) {
+      toast({ title: "Payment required", description: "Please complete the 1000 TRUST payment before publishing.", variant: "destructive" });
       return;
     }
 
@@ -1190,7 +1221,7 @@ const isActive =
       fd.append("starts_at", startDate && startTime ? `${startDate}T${startTime}` : startDate);
       fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
       fd.append("reward", JSON.stringify({ xp: Number(xpRewards) || 0, pool: Number(rewardPool) || 0 }));
-      fd.append("txHash", txHash);
+      fd.append("txHash", paymentTxHash);
       fd.append("campaignQuests", JSON.stringify(
         tasks.map((t: any) => ({
           title: t.type,
@@ -1218,15 +1249,15 @@ const isActive =
       setLoading(false);
     }
   }}
-  disabled={loading}
+  disabled={loading || !paymentTxHash}
 >
-  {loading ? <span className="flex items-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Publishing...</span> : "Confirm & Publish (1000 TRUST)"}
+  {loading ? <span className="flex items-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Publishing...</span> : "Confirm & Publish"}
 </button>
 
         {/* Cancel Button */}
         <button
           onClick={() => setShowPublishModal(false)}
-          className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition"
+          className="mt-2 w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all"
         >
           Cancel
         </button>
@@ -1239,13 +1270,13 @@ const isActive =
   {/* SUCCESS MODAL */}
   {/* ========================= */}
   {showSuccessModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-      <div className="bg-gray-900 w-[600px] p-6 rounded-2xl relative shadow-xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-[#0d0d14] w-full max-w-xl border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
         {/* Close Icon */}
         <button
           onClick={() => setShowSuccessModal(false)}
-          className="absolute top-3 right-4 text-white text-xl"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-lg leading-none"
         >
           ×
         </button>
@@ -1270,7 +1301,7 @@ const isActive =
         </div>
 
         {/* Campaign Snapshot Card */}
-        <div className="bg-white/5 backdrop-blur-md rounded-xl border border-purple-500 p-5">
+        <div className="bg-white/5 backdrop-blur-md rounded-xl border border-purple-500/30 p-5">
 
           <h3 className="text-sm font-semibold text-white/80 mb-4">
             CAMPAIGN SNAPSHOT
@@ -1338,7 +1369,7 @@ const isActive =
     setShowSuccessModal(false);
     setLocation("/studio-dashboard/campaigns-tab");
   }}
-  className="mt-6 w-full flex items-center justify-center gap-3 px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition"
+  className="mt-6 w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
 >
   <span>Launch Campaign Now</span>
 

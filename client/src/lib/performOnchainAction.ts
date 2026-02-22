@@ -1,8 +1,58 @@
 import chain from "./chain";
 import { getWalletClient } from "./viem";
-import { network, NEXONS, NEXONS_ABI, CAMPAIGN_ABI } from "./constants";
+import { network, NEXONS, NEXONS_ABI, CAMPAIGN_ABI, TRUST_TOKEN_ADDRESS, STUDIO_FEE_CONTRACT } from "./constants";
 import { ethers } from "ethers";
 import { parseAbi, type Address } from "viem";
+import { getIntuitionNetworkParams } from "./utils";
+
+const ERC20_TRANSFER_ABI = [
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function decimals() view returns (uint8)",
+];
+
+const MAINNET_CHAIN_ID = "0x483"; // Intuition Mainnet (1155)
+
+const ensureMainnet = async () => {
+  // Fast path: switch if chain is already in wallet
+  try {
+    await (window as any).ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: MAINNET_CHAIN_ID }],
+    });
+    return;
+  } catch (err: any) {
+    if (err.code === 4001) throw err; // user rejected — bubble up
+    // Any other error → try adding the chain
+  }
+
+  // Add (+ auto-switch) for wallets that don't know the chain yet
+  const params = getIntuitionNetworkParams(false, MAINNET_CHAIN_ID);
+  await (window as any).ethereum.request({ method: "wallet_addEthereumChain", params });
+};
+
+export const payStudioHubFee = async (): Promise<string> => {
+  try {
+    if (!window.ethereum) throw new Error("No injected wallet found. Install MetaMask or another Ethereum wallet.");
+
+    await ensureMainnet();
+
+    const provider = new ethers.BrowserProvider((window as any).ethereum);
+    const signer = await provider.getSigner();
+
+    const tokenContract = new ethers.Contract(TRUST_TOKEN_ADDRESS, ERC20_TRANSFER_ABI, signer);
+
+    const decimals: number = await tokenContract.decimals();
+    const amount = ethers.parseUnits("1000", decimals);
+
+    const tx = await tokenContract.transfer(STUDIO_FEE_CONTRACT, amount);
+    await tx.wait();
+
+    return tx.hash as string;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error.message ?? "Payment failed.");
+  }
+};
 
 export const createCampaignOnchain = async () => {
   try {
