@@ -1,16 +1,63 @@
 import { OTP } from '@/models/otp.model';
-import { project, projectAdmin } from '@/models/project.model';
-import { addProjectAdminEmail } from '@/utils/sendMail';
+import { hub, hubAdmin } from '@/models/hub.model';
+import { addHubAdminEmail } from '@/utils/sendMail';
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR, CREATED, OK, NO_CONTENT, NOT_FOUND } from '@/utils/status.utils';
-import { generateOTP, getMissingFields, validateCampaignData, validateCampaignQuestData, validateSaveCampaignData } from '@/utils/utils';
+import { generateOTP, validateHubData, getMissingFields, validateCampaignData, validateCampaignQuestData, validateSaveCampaignData } from '@/utils/utils';
 import logger from '@/config/logger';
 import { submission } from '@/models/submission.model';
 import { miniQuestCompleted, campaignQuestCompleted } from '@/models/questsCompleted.models';
 import { campaign } from '@/models/campaign.model';
-import { campaignQuest, quest } from '@/models/quests.model';
+import { campaignQuest } from '@/models/quests.model';
 import { uploadImg } from "@/utils/img.utils";
 
-export const addProjectAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
+export const createHub = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+    const { error } = validateHubData(req.body);
+		if (error) {
+      const emptyFields = getMissingFields(error);
+
+			res
+				.status(BAD_REQUEST)
+				.json({ error: `these field(s) are required: ${emptyFields}` });
+			return;
+    }
+
+    const name = req.body.name.toLowerCase().trim();
+
+    const nameExists = await hub.exists({ name });
+    if (nameExists) {
+      res.status(BAD_REQUEST).json({ error: "name is already in use" });
+      return;
+    }
+
+    const projectLogoAsFile = req.file?.buffer;
+		if (!projectLogoAsFile) {
+			res.status(BAD_REQUEST).json({ error: "hub logo is required" });
+			return;
+    }
+
+    const projectLogo = await uploadImg({ file: projectLogoAsFile, filename: req.file?.originalname, folder: "hub-logos" });
+
+    req.body.logo = projectLogo;
+    req.body.name = name;
+    req.body.superAdmin = req.id;
+
+    const createdProject = await hub.create(req.body);
+
+    req.admin.hub = createdProject._id;
+
+    await req.admin.save();
+
+		res.status(CREATED).json({ message: "hub created!" });
+	} catch (error) {
+		logger.error(error);
+		res
+			.status(INTERNAL_SERVER_ERROR)
+			.json({ error: "Error creating hub" });
+	}
+};
+
+export const addHubAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { email } = req.body;
 		if (!email) {
@@ -18,70 +65,77 @@ export const addProjectAdmin = async (req: GlobalRequest, res: GlobalResponse) =
 			return;
     }
 
+    if (!req.admin.hub) {
+      res.status(BAD_REQUEST).json({ error: "create a hub to continue" });
+      return;
+    }
+
     const code = generateOTP();
 
-    await OTP.create({ email, code, projectId: req.id });
+    await OTP.create({ email, code, hubId: req.admin.hub });
 
-    await addProjectAdminEmail(email, code);
+    await addHubAdminEmail(email, code);
 
     res.status(OK).json({ message: "otp sent" });
   } catch (error) {
     logger.error(error);
-    res.status(INTERNAL_SERVER_ERROR).json({ error: 'Failed to add project admin' });
+    res.status(INTERNAL_SERVER_ERROR).json({ error: 'Failed to add hub admin' });
   }
 };
 
-export const updateProject = async (req: GlobalRequest, res: GlobalResponse) => {
+export const updateHub = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const logoBuffer = req.file?.buffer;
 
     const { name, logo } = req.body;
 
-    if (logoBuffer) {
-      req.body.logo = await uploadImg({ file: logoBuffer, filename: req.file?.originalname, folder: "project-logo" });
+    if (logoBuffer && logo) {
+      // remove previous logo
+      req.body.logo = await uploadImg({ file: logoBuffer, filename: req.file?.originalname, folder: "hub-logo" });
+    } else if (logoBuffer && !logo) {
+      req.body.logo = await uploadImg({ file: logoBuffer, filename: req.file?.originalname, folder: "hub-logo" });
     }
 
-    const nameExists = await project.exists({
+    const nameExists = await hub.exists({
       name,
-      _id: { $ne: req.id }
+      _id: { $ne: req.admin.hub }
     });
-    
+
     if (nameExists) {
-      res.status(400).json({ error: "Project name already exists" });
+      res.status(400).json({ error: "hub name already exists" });
       return;
     }
-    
-    const updatedProject = await project.findByIdAndUpdate(req.id, req.body, { new: true });
-    res.status(OK).json(updatedProject);
+
+    const updatedHub = await hub.findByIdAndUpdate(req.admin.hub, req.body, { new: true });
+    res.status(OK).json(updatedHub);
   } catch (error) {
     logger.error(error);
-    res.status(INTERNAL_SERVER_ERROR).json({ error: 'Failed to update project' });
+    res.status(INTERNAL_SERVER_ERROR).json({ error: 'Failed to update hub' });
   }
 };
 
-export const deleteProject = async (req: GlobalRequest, res: GlobalResponse) => {
+export const deleteHub = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { id } = req;
 
-    await project.findByIdAndDelete(id);
+    await hub.findByIdAndDelete(req.admin.hub);
 
     res.status(NO_CONTENT).send();
   } catch (error) {
     logger.error(error)
-    res.status(INTERNAL_SERVER_ERROR).json({ error: 'Failed to delete project' });
+    res.status(INTERNAL_SERVER_ERROR).json({ error: 'Failed to delete hub' });
   }
 };
 
-export const removeProjectAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
+export const removeHubAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { id } = req.query as { id: string };
     if (!id) {
       res.status(BAD_REQUEST).json({ error: "admin id is required" });
       return;
     }
-    
-    await projectAdmin.findByIdAndDelete(id);
-    
+
+    await hubAdmin.findByIdAndDelete(id);
+
     res.status(NO_CONTENT).send();
   } catch (error) {
     logger.error(error);
@@ -92,7 +146,7 @@ export const removeProjectAdmin = async (req: GlobalRequest, res: GlobalResponse
 export const validateCampaignSubmissions = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { submissionId, action }: { submissionId: string; action: "reject" | "accept" } = req.body;
-    
+
     const userSubmission = await submission.findById(submissionId);
     if (!userSubmission) {
       res.status(BAD_REQUEST).json({ error: "submission not found" });
@@ -125,7 +179,7 @@ export const validateCampaignSubmissions = async (req: GlobalRequest, res: Globa
       userSubmission.validatedBy = req.adminName;
       model.status = "retry";
     }
-    
+
     await userSubmission.save();
     await model.save();
 
@@ -138,8 +192,8 @@ export const validateCampaignSubmissions = async (req: GlobalRequest, res: Globa
 
 export const getCampaignSubmissions = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    // Return all submissions tied to this project (studio campaigns only)
-    const pendingTasks = await submission.find({ project: req.id }).lean().sort({ createdAt: 1 });
+    // Return all submissions tied to this hub (studio campaigns only)
+    const pendingTasks = await submission.find({ hub: req.admin.hub }).lean().sort({ createdAt: 1 });
     res.status(OK).json({ message: "submissions fetched", pendingTasks });
   } catch (error) {
     logger.error(error);
@@ -195,9 +249,9 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
     }
 
     const coverImageBuffer = req.file?.buffer;
-    const { projectCoverImage } = req.body;
+    const { hubCoverImage } = req.body;
 
-    if (projectCoverImage && coverImageBuffer) {
+    if (hubCoverImage && coverImageBuffer) {
       // remove previous cover image
       req.body.coverImage = await uploadImg({
         file: coverImageBuffer,
@@ -205,7 +259,7 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
         folder: "cover-images",
         maxSize: 2 * 1024 ** 2
       });
-    } else if (coverImageBuffer && !projectCoverImage) {
+    } else if (coverImageBuffer && !hubCoverImage) {
       req.body.coverImage = await uploadImg({
         file: coverImageBuffer,
         filename: req.file?.originalname,
@@ -219,7 +273,7 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
       // Fill in defaults for required model fields not yet provided in a draft
       const [campaignCount, projectDoc] = await Promise.all([
         campaign.countDocuments({ creator: req.id }),
-        project.findById(req.id).lean(),
+        hub.findById(req.admin.hub).lean(),
       ]);
       const reward = req.body.reward ?? {};
       const body = {
