@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const adminSchema = new mongoose.Schema({
+const adminschema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
@@ -15,8 +15,7 @@ const adminSchema = new mongoose.Schema({
     enum: ["superadmin", "admin"]
   },
   password: {
-    type: String,
-    required: true
+    type: String
   },
   verified: {
     type: Boolean,
@@ -27,4 +26,4 @@ const adminSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-export const admin = mongoose.model("admin", adminSchema);
+export const admin = mongoose.model("admin", adminschema);

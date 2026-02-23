@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import AnimatedBackground from "../../components/AnimatedBackground";
-import { Card, CardTitle, CardFooter } from "../../components/ui/card";
+import { Card, CardTitle, CardDescription, CardFooter } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
-import { projectApiRequest, storeProjectSession } from "../../lib/projectApi";
-import { useToast } from "../../hooks/use-toast";
 
 export default function SignInToHub() {
   const [email, setEmail] = useState("");
@@ -14,67 +12,56 @@ export default function SignInToHub() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
 
+  // Modal state
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
 
-  async function handleSignIn() {
-    if (!email || !password) {
-      toast({ title: "Missing fields", description: "Please fill in all fields.", variant: "destructive" });
+function handleSignIn() {
+  if (!email || !password) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|outlook\.com)$/;
+  if (!emailRegex.test(email)) {
+    alert("Email must be a valid Gmail, Yahoo, or Outlook address");
+    return;
+  }
+
+  setLoading(true);
+
+  setTimeout(() => {
+    alert(`Logged in successfully as ${email} (placeholder)`);
+    setLoading(false);
+
+    // Redirect to studio-dashboard
+    setLocation("/studio-dashboard");
+  }, 1000);
+}
+
+
+  function handleResetPassword() {
+    if (!resetEmail) {
+      alert("Please enter your email");
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await projectApiRequest<{ message?: string; accessToken?: string; token?: string; project?: Record<string, unknown> }>({
-        method: "POST",
-        endpoint: "/project/sign-in",
-        data: { email, password, role: "project" },
-      });
-
-      const token = (res.token ?? res.accessToken) as string | undefined;
-      if (!token) throw new Error("No access token received");
-
-      storeProjectSession(token, { email, ...(res.project ?? {}) });
-      toast({ title: "Signed in!", description: "Welcome back to Nexura Studio." });
-      setLocation("/studio-dashboard");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Invalid credentials.";
-      toast({ title: "Sign in failed", description: msg, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResetPassword() {
-    if (!resetEmail) {
-      toast({ title: "Missing email", description: "Please enter your email.", variant: "destructive" });
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|outlook\.com)$/;
+    if (!emailRegex.test(resetEmail)) {
+      alert("Email must be a valid Gmail, Yahoo, or Outlook address");
       return;
     }
 
     setResetLoading(true);
-    try {
-      await projectApiRequest({
-        method: "POST",
-        endpoint: "/project/forgot-password",
-        data: { email: resetEmail, role: "project" },
-      });
-      toast({ title: "Email sent!", description: `Password reset instructions sent to ${resetEmail}.` });
+    setTimeout(() => {
+      alert(`Reset instructions sent to ${resetEmail} (placeholder)`);
+      setResetLoading(false);
       setShowResetModal(false);
       setResetEmail("");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send reset email.";
-      toast({ title: "Error", description: msg, variant: "destructive" });
-    } finally {
-      setResetLoading(false);
-    }
+    }, 1000);
   }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSignIn();
-  };
 
   return (
     <div className="min-h-screen bg-black text-white overflow-auto p-4 sm:p-6 relative">
@@ -101,7 +88,6 @@ export default function SignInToHub() {
               placeholder="Enter email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={handleKeyDown}
               className="mt-2 w-full bg-gray-800 text-white border-purple-500"
             />
           </div>
@@ -124,7 +110,6 @@ export default function SignInToHub() {
                 placeholder="*   *   *   *   *   *   *   *"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={handleKeyDown}
                 className="w-full bg-gray-800 text-white border-purple-500 pr-10"
               />
               <button
@@ -153,44 +138,43 @@ export default function SignInToHub() {
 
       {/* Reset Password Modal */}
       {showResetModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0d0d14] border border-purple-500/20 rounded-2xl p-7 w-full max-w-md space-y-6 animate-modal-pop shadow-[0_0_60px_rgba(131,58,253,0.2)]">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <Card className="bg-gray-900 border-2 border-purple-500 rounded-3xl p-6 w-full max-w-md space-y-6">
             <div className="space-y-2 text-center">
-              <h2 className="text-xl font-bold text-white">Reset Password</h2>
-              <p className="text-white/50 text-sm">
+              <h2 className="text-2xl font-bold text-white">Reset Password</h2>
+              <p className="text-white/60 text-sm">
                 Enter your email address and we’ll send you an email with instructions to reset your password.
               </p>
             </div>
 
             <div>
-              <label className="text-white/60 text-sm block mb-2">Email Address</label>
+              <CardTitle className="text-white text-sm">Email Address</CardTitle>
               <Input
                 type="email"
                 placeholder="Enter your email address"
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
-                className="w-full bg-white/5 text-white border-white/10 focus:border-purple-500 placeholder:text-white/30 mt-0"
+                className="mt-2 w-full bg-gray-800 text-white border-purple-500"
               />
             </div>
 
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all"
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                className="bg-gray-700 hover:bg-gray-600"
                 onClick={() => setShowResetModal(false)}
               >
                 Cancel
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
                 onClick={handleResetPassword}
+                className="bg-purple-500 hover:bg-purple-600"
                 disabled={resetLoading}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
               >
                 {resetLoading ? "Sending..." : "Reset Password"}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

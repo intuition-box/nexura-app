@@ -8,13 +8,12 @@ export default function Community() {
       <AnimatedBackground />
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-            <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">Community</span>
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Users className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent mb-4">Community</h1>
-          <p className="text-sm text-white/50">
+          <h1 className="text-3xl font-bold text-white mb-4">Community</h1>
+          <p className="text-lg text-white/60 max-w-2xl mx-auto">
             Connect with other questers, share experiences, and build the future of trust together.
           </p>
         </div>

@@ -46,25 +46,17 @@ import ConnectedTwitter from "./pages/studio/ConnectedTwitter.tsx"
 import StudioDashboard from "./pages/studio/StudioDashboard.tsx"
 import CampaignsTab from "./components/admin/CampaignsTab.tsx";
 import { getStoredAccessToken, apiRequest } from './lib/config'
-import { clearProjectSession, getStoredProjectToken, projectApiRequest } from './lib/projectApi'
 import CreateNewCampaigns from "./components/admin/CreateNewCampaign.tsx";
 import MyCampaign from "./components/admin/MyCampaign.tsx"
 import AdminManagement from "./components/admin/AdminManagement.tsx";
-import AdminSignUp from "./pages/studio/AdminSignUp.tsx";
 
 function Router() {
    const [isAuthenticated, setIsAuthenticated] = useState(false)
    
     const handleLogout = () => {
-    // Clear admin session
-    localStorage.removeItem('nexura-admin:token');
-    localStorage.removeItem('nexura-admin:info');
-    // Clear project session and call server logout if project is signed in
-    if (getStoredProjectToken()) {
-      projectApiRequest({ method: 'POST', endpoint: '/project/logout' }).catch(() => {});
-    }
-    clearProjectSession();
-    setIsAuthenticated(false);
+    localStorage.removeItem('nexura-admin:token')
+    localStorage.removeItem('nexura-admin:info')
+    setIsAuthenticated(false)
   }
 
   return (
@@ -111,8 +103,8 @@ function Router() {
 <Route path="/studio-dashboard/my-campaign" component={MyCampaign} />
 
 
-      <Route path="/studio/register" component={AdminSignUp} />
-      {/* <Route path="/studio" component={StudioIndex} /> */}
+      {/* <Route path="/studio" component={StudioIndex} />
+      <Route path="/studio/register" component={ProjectRegistration} /> */}
       <Route path="/project/:projectId/*" component={ProjectDashboard} />
       <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
       {/* Referral */}

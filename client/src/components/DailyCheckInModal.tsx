@@ -130,7 +130,7 @@ export default function DailyCheckInModal({ open, onOpenChange, onCheckInSuccess
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0d0d14] backdrop-blur-2xl border border-purple-500/20 shadow-[0_0_60px_rgba(131,58,253,0.2)] rounded-2xl max-w-sm p-0 overflow-hidden">
+      <DialogContent className="bg-purple-950/40 backdrop-blur-2xl border border-purple-500/15 shadow-[0_0_40px_rgba(147,51,234,0.15)] rounded-3xl max-w-sm p-0 overflow-hidden">
         {/* Header */}
         <div className="px-5 pt-5 pb-1">
           <DialogHeader>
@@ -254,10 +254,10 @@ export default function DailyCheckInModal({ open, onOpenChange, onCheckInSuccess
           <button
             onClick={handleCheckIn}
             disabled={alreadyCheckedIn || isLoading || isFetching}
-            className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 ${
+            className={`w-full py-2.5 rounded-xl font-semibold text-xs transition-all duration-300 ${
               alreadyCheckedIn
-                ? "bg-white/5 border border-white/10 text-white/40 cursor-default"
-                : "bg-gradient-to-r from-purple-600 to-purple-800 text-white hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                ? "glass border border-white/10 text-white/40 cursor-default"
+                : "glass glass-hover border border-white/20 text-white hover:border-white/30 active:scale-[0.98]"
             }`}
           >
             {isFetching

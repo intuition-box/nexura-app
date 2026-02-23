@@ -59,7 +59,6 @@ export default function CampaignEnvironment() {
   const [campaignNumber, setCampaignNumber] = useState("000");
   const [reward, setReward] = useState<{ trustTokens: number; xp: number }>({ trustTokens: 0, xp: 0 });
   const [campaignAddress, setCampaignAddress] = useState("");
-  const [campaignProject, setCampaignProject] = useState("");
 
   const [questsCompleted, setQuestsCompleted] = useState(false);
   const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
@@ -99,7 +98,6 @@ export default function CampaignEnvironment() {
       setReward(res.reward || { trustTokens: 0, xp: 0 });
       setTrustClaimed(res.trustClaimed || 0);
       setQuestsCompleted(res.campaignCompleted?.questsCompleted || false);
-      setCampaignProject(res.project?.toString() || "");
 
     })();
   }, [claimedQuests, userId]);
@@ -187,7 +185,6 @@ export default function CampaignEnvironment() {
         submissionLink: link,
         page: "campaign",
         tag: quest.tag,
-        project: campaignProject,
       });
 
       toast({

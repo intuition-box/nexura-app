@@ -43,12 +43,8 @@ export default function Rewards() {
       <AnimatedBackground />
       <div className="max-w-6xl mx-auto space-y-8 relative z-10">
         {/* Header */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-            <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">Rewards</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent mb-2">Your earnings on Nexura</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Your earnings on Nexura</h1>
           <div className="text-2xl font-bold text-foreground">Coming Soon</div>
         </div>
 

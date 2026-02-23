@@ -68,7 +68,7 @@ export default function MyCampaign() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 md:ml-[18rem] p-4 md:p-6 space-y-6 pt-16 md:pt-6 pb-24 md:pb-6">
+      <div className="flex-1 md:ml-[18rem] p-6 space-y-6">
 
 {/* Top Row: Campaign Title + Buttons */}
 <div className="flex justify-between items-center pr-4 mb-6 border-b border-purple-500/50 pb-3">
