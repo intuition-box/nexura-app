@@ -27,7 +27,7 @@ export default function Achievements() {
     return (
       <div className="min-h-screen bg-background overflow-auto p-6">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Levels</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent mb-2">Levels</h1>
           <p className="text-muted-foreground">No achievement data available.</p>
         </div>
       </div>
@@ -42,8 +42,12 @@ export default function Achievements() {
       <AnimatedBackground />
       <div className="max-w-6xl mx-auto space-y-8 relative z-10">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Levels</h1>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+            <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">Achievements</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent mb-2">Levels</h1>
           <p className="text-muted-foreground">
             Complete campaigns and quests on Nexura to level up on Intuition Ecosystem — and celebrate your onchain achievements.
           </p>

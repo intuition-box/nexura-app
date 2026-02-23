@@ -33,7 +33,7 @@ import { GraphQLClient } from "graphql-request";
 import { checksumAddress } from "viem";
 import { campaign, campaignCompleted } from "@/models/campaign.model";
 import { dailySignIn } from "@/models/dailySignIn.model";
-import { startOfDayUTC } from "@/utils/utils";
+import { startOfDayUTC, updateLevel } from "@/utils/utils";
 
 export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 	res.send("hi!");
@@ -81,6 +81,190 @@ export const updateUser = async (req: GlobalRequest, res: GlobalResponse) => {
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating user" });
   }
 }
+
+export const getClaims = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    
+    const { offset, filter } = req.query as { offset?: number, filter?: string }
+    
+    const appUser = await user.findById(req.id);
+    
+    // 1️⃣ Fetch all vaults (slice for pagination)
+    const vaultQuery = `query GetExploreTriples($where: triple_term_bool_exp, $orderBy: [triple_term_order_by!], $limit: Int, $offset: Int, $userPositionAddress: String) {
+      triple_terms(where: $where, order_by: $orderBy, limit: $limit, offset: $offset) {
+        term_id
+        counter_term_id
+        total_assets
+        total_market_cap
+        total_position_count
+        term {
+          id
+          total_market_cap
+          total_assets
+          vaults(order_by: {curve_id: asc}) {
+            curve_id
+            current_share_price
+            total_shares
+            total_assets
+            position_count
+            market_cap
+            userPosition: positions(
+            limit: 1
+            where: {account_id: {_eq: $userPositionAddress}}
+            ) {
+              shares
+              account_id
+            }
+          }
+          positions_aggregate {
+            aggregate {
+              count
+            }
+          }
+          triple {
+            term_id
+            counter_term_id
+            created_at
+            subject_id
+            predicate_id
+            object_id
+            subject {
+              term_id
+              wallet_id
+              label
+              image
+              cached_image {
+                ...CachedImageFields
+              }
+              data
+              type
+              value {
+                ...AtomValueLight
+              }
+            }
+            predicate {
+              term_id
+              wallet_id
+              label
+              image
+              cached_image {
+                ...CachedImageFields
+              }
+              data
+              type
+              value {
+                ...AtomValueLight
+              }
+            }
+            object {
+              term_id
+              wallet_id
+              label
+              image
+              cached_image {
+                ...CachedImageFields
+              }
+              data
+              type
+              value {
+                ...AtomValue
+              }
+            }
+            creator {
+              id
+              label
+              image
+              cached_image {
+                ...CachedImageFields
+              }
+            }
+          }
+        }
+        counter_term {
+          id
+          total_market_cap
+          total_assets
+          vaults(order_by: {curve_id: asc}) {
+            curve_id
+            current_share_price
+            total_shares
+            total_assets
+            position_count
+            market_cap
+            userPosition: positions(
+            limit: 1
+            where: {account_id: {_eq: $userPositionAddress}}
+            ) {
+              shares
+              account_id
+            }
+          }
+          positions_aggregate {
+            aggregate {
+              count
+            }
+          }
+        }
+      }
+    }
+
+    fragment CachedImageFields on cached_images_cached_image {
+      url
+      safe
+    }
+
+    fragment AtomValueLight on atom_values {
+      person {
+        name
+        image
+        cached_image {
+          ...CachedImageFields
+        }
+        url
+      }
+      thing {
+        name
+        image
+        cached_image {
+          ...CachedImageFields
+        }
+        url
+      }
+      organization {
+        name
+        image
+        url
+      }
+      account {
+        id
+        label
+        image
+        cached_image {
+          ...CachedImageFields
+        }
+      }
+    }
+    
+    
+    fragment AtomValue on atom_values {
+      ...AtomValueLight
+      json_object {
+      description: data(path: \"description\")
+      }
+    }
+    `;
+
+    const client = new GraphQLClient(GRAPHQL_API_URL);
+
+    // default filter - { total_market_cap: "desc" }
+    const response = await client.request(vaultQuery, { where: {}, orderBy: [filter],limit: 50, offset, userPositionAddress: appUser?.address ?? "..." });
+
+    res.json({ message: "fetched", claims: response.triple_terms });
+  } catch (e) {
+    logger.error(e);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Failed to fetch claims" });
+  }
+};
 
 export const updateSubmission = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
@@ -169,7 +353,7 @@ export const getLeaderboard = async (req: GlobalRequest, res: GlobalResponse) =>
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching leaderboard data" })
   }
-}  
+}
 
 export const fetchUser = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
@@ -453,7 +637,21 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
       return u.status === "Active" && u.updatedAt >= last30Days;
     }).length;
 
-    res.status(OK).json({ message: "analytics data fetched", analytics: { totalOnchainInteractions, totalOnchainClaims, totalCampaigns, user: { totalUsers, activeUsersWeekly, activeUsersMonthly, users24h, users7d, users30d }, totalReferrals, totalQuests, totalQuestsCompleted, totalCampaignsCompleted, joinRatio, totalTrustDistributed } });
+    // Per-day new user counts for the last 7 days (index 0 = oldest, index 6 = today)
+    const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const usersByDay = Array.from({ length: 7 }, (_, i) => {
+      const dayStart = new Date(now);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      dayStart.setUTCDate(dayStart.getUTCDate() - (6 - i));
+      const dayEnd = new Date(dayStart);
+      dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+      const count = userFound.filter((u) => u.createdAt >= dayStart && u.createdAt < dayEnd).length;
+      const dayName = DAY_NAMES[dayStart.getUTCDay()];
+      return { day: dayName, count };
+    });
+    const tomorrowName = DAY_NAMES[new Date(now.getTime() + 24 * 60 * 60 * 1000).getUTCDay()];
+
+    res.status(OK).json({ message: "analytics data fetched", analytics: { totalOnchainInteractions, totalOnchainClaims, totalCampaigns, user: { totalUsers, activeUsersWeekly, activeUsersMonthly, users24h, users7d, users30d }, totalReferrals, totalQuests, totalQuestsCompleted, totalCampaignsCompleted, joinRatio, totalTrustDistributed, usersByDay, tomorrowName } });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching analytics data" });
@@ -516,6 +714,10 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
       userExists.streak = 1;
       userExists.xp += 20;
     }
+
+    const level = await updateLevel(userExists.xp, userExists.badges, userExists._id.toString());
+
+		userExists.level = level;
 
     dailySignInExists.date = onlyDate as string;
 

@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import React from "react"
-// import { Card } from "../../components/ui/card";
 import { Card, CardTitle, CardDescription, CardFooter } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Link } from "wouter";
 import StudioSidebar from "../../pages/studio/StudioSidebar";
 import AnimatedBackground from "../AnimatedBackground";
+import { projectApiRequest } from "../../lib/projectApi";
+import { payStudioHubFee } from "../../lib/performOnchainAction";
+import { useToast } from "../../hooks/use-toast";
 import {
   Calendar,
   Clock,
@@ -40,11 +42,16 @@ export default function CreateNewCampaigns() {
   const [, setLocation] = useLocation();
 
   const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [campaignId, setCampaignId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [showTasks, setShowTasks] = useState(false)
   const [showModal, setShowModal] = useState(false);
   const [validationType, setValidationType] = useState("manual");
-  const [tasks, setTasks] = useState([]); 
+  const { toast } = useToast();
+  type Task = { type: string; platform: string; handleOrUrl: string; description: string; evidence: string; validation: string; verificationMode: string; };
+
+const [tasks, setTasks] = useState<Task[]>([]); 
   const [newTask, setNewTask] = useState({
   type: "",
   platform: "",
@@ -52,6 +59,7 @@ export default function CreateNewCampaigns() {
   description: "",
   evidence: "",
   validation: "Manual Validation",
+  verificationMode: "",
 });
 const [editingIndex, setEditingIndex] = useState<number | null>(null);
 const [error, setError] = useState("");
@@ -74,7 +82,81 @@ const [rewardPool, setRewardPool] = useState("");
 const [participants, setParticipants] = useState("");
 const [xpRewards, setXpRewards] = useState("");
 const [publishedCampaign, setPublishedCampaign] = useState<any | null>(null);
+const [paymentTxHash, setPaymentTxHash] = useState("");
+const [paymentLoading, setPaymentLoading] = useState(false);
+const [isEditMode, setIsEditMode] = useState(false);
 
+// Pre-fill from existing draft when ?edit=<id> is in the URL
+const parseDateTime = (isoStr: string) => {
+  if (!isoStr) return { date: "", time: "" };
+  const idx = isoStr.indexOf("T");
+  if (idx === -1) return { date: isoStr, time: "" };
+  return { date: isoStr.slice(0, idx), time: isoStr.slice(idx + 1, idx + 6) };
+};
+
+useEffect(() => {
+  const editId = new URLSearchParams(window.location.search).get("edit");
+  if (!editId) return;
+  (async () => {
+    try {
+      const res = await projectApiRequest<{ projectCampaigns?: any[] }>({
+        method: "GET",
+        endpoint: "/project/get-campaigns",
+      });
+      const found = (res.projectCampaigns ?? []).find((c: any) => c._id === editId);
+      if (!found) return;
+      setCampaignId(editId);
+      setIsEditMode(true);
+      setCampaignTitle(found.title ?? "");
+      setCampaignName(found.description ?? found.nameOfProject ?? "");
+      const s = parseDateTime(found.starts_at ?? "");
+      const e = parseDateTime(found.ends_at ?? "");
+      setStartDate(s.date);
+      setStartTime(s.time);
+      setEndDate(e.date);
+      setEndTime(e.time);
+      setRewardPool(String(found.reward?.pool ?? ""));
+      setXpRewards(String(found.reward?.xp ?? ""));
+      if (found.projectCoverImage) setCoverImagePreview(found.projectCoverImage);
+      // Pre-fill tasks from saved quests
+      try {
+        const qRes = await projectApiRequest<{ campaignQuests?: any[] }>({
+          method: "GET",
+          endpoint: "/project/get-campaign",
+          params: { id: editId },
+        });
+        const tagToType = (tag: string) => {
+          if (tag === "comment") return "Comment on our X post";
+          if (tag === "follow") return "Follow us on X";
+          if (tag === "join") return "Join Us On Discord";
+          if (tag === "portal") return "Check Out the Portal Claims";
+          return "others";
+        };
+        const catToPlatform = (cat: string) => {
+          if (cat === "twitter") return "Twitter";
+          if (cat === "discord") return "Discord";
+          return "";
+        };
+        const tagToValidation = (tag: string) => {
+          if (tag === "join") return "Discord Auth";
+          if (tag === "portal") return "Auto Verified";
+          return "Manual Validation";
+        };
+        if (qRes.campaignQuests) {
+          setTasks(qRes.campaignQuests.map((q: any) => ({
+            type: tagToType(q.tag),
+            platform: catToPlatform(q.category),
+            handleOrUrl: q.link ?? "",
+            description: q.quest ?? "",
+            evidence: "",
+            validation: tagToValidation(q.tag),
+            verificationMode: q.verificationMode ?? "",
+          })));
+        }
+      } catch { /* ignore */ }
+    } catch { /* ignore – user will fill in manually */ }
+  })();
+}, []);
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "";
   const date = new Date(dateStr);
@@ -82,23 +164,66 @@ const formatDate = (dateStr: string) => {
 };
 
 
-const handlePublish = () => {
-  const newCampaign = {
-    name: campaignName,
-    title: campaignTitle,
-    startDate,
-    endDate,
-    rewardPool,
-    participants,
-    tasks,
-    coverImage,
-    isDraft: false,
-  };
+const typeToTag = (type: string) => {
+  if (type === "Comment on our X post") return "comment";
+  if (type === "Follow us on X") return "follow";
+  if (type === "Join Us On Discord") return "join";
+  if (type === "Check Out the Portal Claims") return "portal";
+  return "other";
+};
+const platformToCategory = (platform: string) => {
+  if (platform === "Twitter") return "twitter";
+  if (platform === "Discord") return "discord";
+  return "other";
+};
 
-  const savedCampaigns = JSON.parse(localStorage.getItem("campaigns") || "[]");
-  localStorage.setItem("campaigns", JSON.stringify([...savedCampaigns, newCampaign]));
+const buildCampaignFormData = (isDraft: boolean): FormData => {
+  const fd = new FormData();
+  fd.append("title", campaignTitle);
+  fd.append("description", campaignName);
+  fd.append("nameOfProject", campaignName);
+  fd.append("starts_at", startDate && startTime ? `${startDate}T${startTime}` : startDate);
+  fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
+  fd.append("reward", JSON.stringify({ xp: Number(xpRewards) || 0, pool: Number(rewardPool) || 0 }));
+  if (coverImage instanceof File) fd.append("coverImage", coverImage);
+  if (isDraft) fd.append("isDraft", "true");
+  fd.append("campaignQuests", JSON.stringify(
+    tasks.map(t => ({
+      quest: t.description || t.type,
+      link: t.handleOrUrl || "https://nexura.io",
+      tag: typeToTag(t.type),
+      category: platformToCategory(t.platform),
+      verificationMode: t.verificationMode || "",
+    }))
+  ));
+  return fd;
+};
 
-  setShowSuccessModal(true);
+const handleSaveDraft = async (thenNavigate?: string) => {
+  if (!campaignTitle) {
+    toast({ title: "Missing title", description: "Please enter a campaign title.", variant: "destructive" });
+    return;
+  }
+  setSaveLoading(true);
+  try {
+    const fd = buildCampaignFormData(true);
+    const params: Record<string, string> = {};
+    if (campaignId) params.id = campaignId;
+    const res = await projectApiRequest<{ campaignId?: string; message?: string }>({
+      method: "PATCH",
+      endpoint: "/project/save-campaign",
+      formData: fd,
+      params,
+    });
+    if (res.campaignId) setCampaignId(res.campaignId);
+    toast({ title: "Campaign saved!", description: "Draft saved successfully." });
+    if (thenNavigate) setActiveTab(thenNavigate);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to save campaign.";
+    toast({ title: "Save failed", description: msg, variant: "destructive" });
+  } finally {
+    setSaveLoading(false);
+  }
 };
 
 const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,7 +253,8 @@ const convertToBase64 = (file: File): Promise<string> => {
 
 
 const handleSaveTask = () => {
-  if (!newTask.type || !newTask.platform || !newTask.handleOrUrl || !newTask.description) {
+  const requiresPlatform = newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others";
+  if (!newTask.type || (requiresPlatform && !newTask.platform) || !newTask.handleOrUrl || !newTask.description) {
     return setError("All fields are required.");
   }
 
@@ -141,24 +267,12 @@ const handleSaveTask = () => {
     setTasks([...tasks, newTask]);
   }
 
-  setNewTask({ type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation" });
+  setNewTask({ type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation", verificationMode: "" });
   setShowModal(false);
   setError("");
 };
 
 
-
-
-// On component mount, load tasks from localStorage
-useEffect(() => {
-  const savedTasks = localStorage.getItem("tasks");
-  if (savedTasks) setTasks(JSON.parse(savedTasks));
-}, []);
-
-// Save tasks to localStorage whenever tasks change
-useEffect(() => {
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-}, [tasks]);
 
 const handleCoverImage = (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
@@ -173,28 +287,9 @@ const handleCoverImage = (e: React.ChangeEvent<HTMLInputElement>) => {
 
 
 
-const handleSubmit = (e) => {
+const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();
-  setLoading(true);
-
-  // Build your payload
-  const payload = {
-    campaignName,
-    campaignTitle,
-    coverImage,
-    startDate,
-    startTime,
-    endDate,
-    endTime,
-    rewardPool,
-    participants,
-    xpRewards,
-  };
-
-  console.log("Form Data:", payload);
-
-///// backend 
-  setTimeout(() => setLoading(false), 1000);
+  handleSaveDraft("tasks");
 };
 
 const isActive =
@@ -219,14 +314,16 @@ const isActive =
 
 
         <div className="flex-1 flex flex-col overflow-hidden backdrop-blur-xl">
-          <main className="flex-1 overflow-y-auto p-8 text-white">
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 pt-16 md:pt-8 pb-24 md:pb-8 text-white">
             <div className="max-w-5xl mx-auto space-y-8">
 
               {/* Title */}
               <div>
-                <h1 className="text-3xl font-bold">Create New Campaign</h1>
+                <h1 className="text-3xl font-bold">{isEditMode ? "Edit Campaign" : "Create New Campaign"}</h1>
                 <p className="text-white/60 mt-2">
-                  Launch your next campaign and grow your community with tailored rewards.
+                  {isEditMode
+                    ? "Update your draft campaign details, tasks, and duration."
+                    : "Launch your next campaign and grow your community with tailored rewards."}
                 </p>
               </div>
 
@@ -395,39 +492,31 @@ const isActive =
                         <ImageIcon className="w-4 h-4" />
                         Cover Image
                       </label>
-<div
-  className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-900 hover:border-purple-400 transition cursor-pointer"
-  onClick={() => document.getElementById("coverInput").click()}
->
 <label className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-800 hover:border-purple-400 transition cursor-pointer block">
   <input
-  type="file"
-  accept="image/*"
-  onChange={handleCoverImage}
-  className="hidden"
-/>
-
-
+    id="coverInput"
+    type="file"
+    accept="image/*"
+    onChange={handleCoverImage}
+    className="hidden"
+  />
   {coverImagePreview ? (
-  <div className="flex flex-col items-center gap-3">
-    <img
-      src={coverImagePreview} // ✅ Base64 preview string
-      alt="Preview"
-      className="w-32 h-32 object-cover rounded-xl"
-    />
-    <p className="text-sm text-white/60">Click to change image</p>
-  </div>
-) : (
-  <div className="flex flex-col items-center justify-center text-center gap-2">
-    <img src="/upload-icon.png" alt="Upload icon" className="w-16 h-16" />
-    <p className="font-medium text-white">Click to upload or drag and drop</p>
-    <p className="text-sm text-white/50">SVG, PNG, JPG or GIF (max. 10MB)</p>
-  </div>
-)}
+    <div className="flex flex-col items-center gap-3">
+      <img
+        src={coverImagePreview}
+        alt="Preview"
+        className="w-32 h-32 object-cover rounded-xl"
+      />
+      <p className="text-sm text-white/60">Click to change image</p>
+    </div>
+  ) : (
+    <div className="flex flex-col items-center justify-center text-center gap-2">
+      <img src="/upload-icon.png" alt="Upload icon" className="w-16 h-16" />
+      <p className="font-medium text-white">Click to upload or drag and drop</p>
+      <p className="text-sm text-white/50">SVG, PNG, JPG or GIF (max. 10MB)</p>
+    </div>
+  )}
 </label>
-
-
-</div>
 
                     </div>
 
@@ -519,16 +608,18 @@ const isActive =
                           type="button"
                           variant="outline"
                           className="border-white/20 text-white hover:bg-white/5"
+                          onClick={() => handleSaveDraft()}
+                          disabled={saveLoading}
                         >
-                          Save
+                          {saveLoading ? "Saving..." : "Save"}
                         </Button>
 
                         <Button
                           type="submit"
                           className="bg-purple-600 hover:bg-purple-700"
-                          disabled={loading}
+                          disabled={loading || saveLoading}
                         >
-                          {loading ? "Saving..." : "Save & Next"}
+                          {loading || saveLoading ? "Saving..." : "Save & Next"}
                         </Button>
                       </div>
                     </div>
@@ -585,7 +676,7 @@ const isActive =
               {index + 1}
             </div>
 
-            <p className="flex-1 text-white">{task.type}</p>
+            <p className="flex-1 text-white">{task.type === "others" ? task.description : task.type}</p>
 
             <div className="flex items-center gap-2">
               <button
@@ -619,13 +710,13 @@ const isActive =
 
 {/* ===== MODAL ===== */}
 {showModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-    <div className="bg-purple-950 w-[650px] p-6 rounded-2xl relative shadow-xl">
+  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+    <div className="bg-[#0d0d14] w-full max-w-xl border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
       {/* Close Button */}
       <button
         onClick={() => setShowModal(false)}
-        className="absolute top-3 right-4 text-white text-xl"
+        className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-lg leading-none"
       >
         ×
       </button>
@@ -640,9 +731,23 @@ const isActive =
         <div>
           <label className="text-sm text-white/70 mb-2 block">Task Type</label>
           <select
-            className="w-full p-2 rounded-lg bg-purple-900 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            className="w-full p-2 rounded-lg bg-[#0d0d14] text-white border border-white/10 focus:outline-none focus:border-purple-500 [&>option]:bg-[#0d0d14]"
             value={newTask.type}
-            onChange={(e) => setNewTask({ ...newTask, type: e.target.value })}
+            onChange={(e) => {
+              const type = e.target.value;
+              const isDiscord = type === "Join Us On Discord";
+              const isTwitter = type === "Comment on our X post" || type === "Follow us on X";
+              const isPortal = type === "Check Out the Portal Claims";
+              const isOther = type === "others";
+              setNewTask({
+                ...newTask,
+                type,
+                platform: isDiscord ? "Discord" : isTwitter ? "Twitter" : (isPortal || isOther) ? "" : newTask.platform,
+                evidence: isDiscord || isPortal ? "" : newTask.evidence,
+                validation: isDiscord ? "Discord Auth" : isPortal ? "Auto Verified" : (newTask.validation === "Discord Auth" || newTask.validation === "Auto Verified" ? "Manual Validation" : newTask.validation),
+                verificationMode: "",
+              });
+            }}
           >
             <option value="">Select task</option>
             <option value="Comment on our X post">Comment on X</option>
@@ -654,12 +759,13 @@ const isActive =
         </div>
 
         {/* Platform */}
+        {newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && (
         <div>
           <label className="text-sm text-white/70 mb-2 block">Platform</label>
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setNewTask({ ...newTask, platform: "Twitter" })}
+              onClick={() => setNewTask({ ...newTask, platform: "Twitter", validation: newTask.validation === "Discord Auth" ? "Manual Validation" : newTask.validation })}
               className={`flex-1 border py-2 rounded-lg transition ${
                 newTask.platform === "Twitter"
                   ? "bg-purple-500 text-white border-purple-500"
@@ -670,7 +776,12 @@ const isActive =
             </button>
             <button
               type="button"
-              onClick={() => setNewTask({ ...newTask, platform: "Discord" })}
+              onClick={() => setNewTask({
+                ...newTask,
+                platform: "Discord",
+                evidence: "",
+                validation: "Discord Auth",
+              })}
               className={`flex-1 border py-2 rounded-lg transition ${
                 newTask.platform === "Discord"
                   ? "bg-purple-500 text-white border-purple-500"
@@ -681,22 +792,25 @@ const isActive =
             </button>
           </div>
         </div>
+        )}
       </div>
 
       {/* TASK DETAILS CARD */}
-      <div className="bg-purple-900 p-5 rounded-xl mb-6 border border-purple-800">
+      <div className="bg-white/5 p-5 rounded-xl mb-6 border border-white/10">
 
         {/* Handle or URL */}
         <div className="mb-4">
-          <label className="text-sm text-white/70 mb-2 block">Handle or URL</label>
+          <label className="text-sm text-white/70 mb-2 block">
+            {newTask.platform === "Discord" ? "Discord Invite Link" : newTask.type === "Follow us on X" ? "Twitter Username" : "Handle or URL"}
+          </label>
           <input
             type="text"
-            placeholder="..."
+            placeholder={newTask.platform === "Discord" ? "https://discord.gg/..." : newTask.type === "Follow us on X" ? "@username" : "..."}
             value={newTask.handleOrUrl}
             onChange={(e) =>
               setNewTask({ ...newTask, handleOrUrl: e.target.value })
             }
-            className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500"
           />
         </div>
 
@@ -710,44 +824,99 @@ const isActive =
             onChange={(e) =>
               setNewTask({ ...newTask, description: e.target.value })
             }
-            className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500"
           />
         </div>
 
         {/* Evidence + Validation */}
-        <div className="grid grid-cols-2 gap-6">
-          {/* Evidence Upload */}
-          <div>
-            <label className="text-sm text-white/70 mb-2 block">Evidence Upload Management</label>
-            <select
-              className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
-              value={newTask.evidence}
-              onChange={(e) =>
-                setNewTask({ ...newTask, evidence: e.target.value })
-              }
-            >
-              <option value="">Select option</option>
-            </select>
-          </div>
-
-          {/* Validation Type */}
-          <div>
-            <label className="text-sm text-white/70 mb-2 block">Validation Type</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={newTask.validation}
-                readOnly
-                className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500 pr-10"
-              />
-              <img
-                src="/purple-check.png"
-                alt="Verified"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5"
-              />
+        {newTask.platform === "Discord" || newTask.type === "Join Us On Discord" ? (
+          <div className="flex items-center gap-3 rounded-lg bg-indigo-900/50 border border-indigo-500/50 px-4 py-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-indigo-400 flex-shrink-0">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+            </svg>
+            <div>
+              <p className="text-sm text-indigo-300 font-medium">Verified via Discord Auth</p>
+              <p className="text-xs text-white/50 mt-0.5">Users must connect their Discord account. Verification is automatic.</p>
             </div>
           </div>
-        </div>
+        ) : newTask.type === "Check Out the Portal Claims" ? (
+          <div className="flex items-center gap-3 rounded-lg bg-purple-900/50 border border-purple-500/50 px-4 py-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-purple-400 flex-shrink-0">
+              <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="text-sm text-purple-300 font-medium">Auto-verified via Portal</p>
+              <p className="text-xs text-white/50 mt-0.5">Completion is verified automatically after the user completes the task.</p>
+            </div>
+          </div>
+        ) : newTask.type === "others" ? (
+          <div>
+            <label className="text-sm text-white/70 mb-2 block">Verification Mode</label>
+            <div className="flex gap-3">
+              {([
+                { value: "image_upload", label: "📷 Image Upload", hint: "User uploads a screenshot" },
+                { value: "submit_link", label: "🔗 Submit Link", hint: "User submits a URL" },
+                { value: "auto", label: "⚡ Auto (link click)", hint: "Verified when link is clicked" },
+              ] as { value: string; label: string; hint: string }[]).map(({ value, label, hint }) => (
+                <button
+                  key={value}
+                  type="button"
+                  title={hint}
+                  onClick={() => setNewTask({ ...newTask, verificationMode: value, evidence: value !== "auto" ? value : "", validation: value === "auto" ? "Auto Verified" : "Manual Validation" })}
+                  className={`flex-1 border py-2 px-2 rounded-lg text-xs transition ${
+                    newTask.verificationMode === value
+                      ? "bg-purple-500 text-white border-purple-500"
+                      : "bg-purple-950 border-purple-800 text-white/70 hover:border-purple-500"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {newTask.verificationMode && (
+              <p className="text-xs text-white/40 mt-2">
+                {newTask.verificationMode === "image_upload" && "Users will upload a screenshot as proof."}
+                {newTask.verificationMode === "submit_link" && "Users will submit a link to prove completion."}
+                {newTask.verificationMode === "auto" && "Task is marked complete as soon as the user clicks the link."}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-6">
+            {/* Evidence Upload */}
+            <div>
+              <label className="text-sm text-white/70 mb-2 block">Evidence Upload Management</label>
+              <select
+                className="w-full p-2 rounded-lg bg-[#0d0d14] text-white border border-white/10 focus:outline-none focus:border-purple-500 [&>option]:bg-[#0d0d14]"
+                value={newTask.evidence}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, evidence: e.target.value })
+                }
+              >
+                <option value="">Select option</option>
+                <option value="submit_link">Submit Link</option>
+              </select>
+            </div>
+
+            {/* Validation Type */}
+            <div>
+              <label className="text-sm text-white/70 mb-2 block">Validation Type</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={newTask.validation}
+                  readOnly
+                  className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500 pr-10"
+                />
+                <img
+                  src="/purple-check.png"
+                  alt="Verified"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -756,17 +925,17 @@ const isActive =
       )}
 
       {/* ACTION BUTTONS */}
-      <div className="flex justify-between">
+      <div className="flex justify-end gap-3 mt-2">
         <button
           onClick={() => setShowModal(false)}
-          className="px-5 py-2 rounded-lg bg-purple-800 hover:bg-purple-700 text-white transition"
+          className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all"
         >
           Cancel
         </button>
 
         <button
           onClick={handleSaveTask}
-          className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold transition"
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
         >
           Save Task
         </button>
@@ -865,8 +1034,12 @@ const isActive =
               {index + 1}
             </div>
 
-            {/* Show task type as description */}
-            <p className="flex-1 text-white">{task.type}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-white">{task.type === "others" ? task.description : task.type}</p>
+              {task.type === "others" && task.description && (
+                <p className="text-xs text-white/50 truncate">{task.verificationMode === "image_upload" ? "📷 Image proof" : task.verificationMode === "submit_link" ? "🔗 Link submission" : task.verificationMode === "auto" ? "⚡ Auto" : ""}</p>
+              )}
+            </div>
 
             <div className="flex items-center gap-2">
               <button
@@ -876,7 +1049,6 @@ const isActive =
 
   let url = task.handleOrUrl.trim();
 
-  // If it doesn't start with http, prepend https
   if (!/^https?:\/\//i.test(url)) {
     url = `https://${url}`;
   }
@@ -897,6 +1069,13 @@ const isActive =
               >
                 Edit
               </button>
+
+              <button
+                className="px-3 py-1 bg-gray-800 rounded-lg text-white hover:bg-red-800 transition"
+                onClick={() => setTasks(tasks.filter((_, i) => i !== index))}
+              >
+                <img src="/delete.png" alt="Delete" className="w-4 h-4" />
+              </button>
             </div>
           </div>
         ))}
@@ -912,18 +1091,21 @@ const isActive =
 {/* Footer Buttons */}
 <div className="flex items-center justify-between mt-8">
   {/* Back button on the left */}
-  <button className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition">
-    Back
-  </button>
+    <button className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition" onClick={() => setActiveTab("tasks")}>Back</button>
 
   {/* Right buttons */}
   <div className="flex items-center gap-2 mt-4">
-    <button className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
-      Save
+    <button
+      className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
+      onClick={() => handleSaveDraft()}
+      disabled={saveLoading}
+    >
+      {saveLoading ? "Saving..." : "Save Draft"}
     </button>
 <button
   onClick={() => setShowPublishModal(true)}
-  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
+  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={loading || saveLoading}
 >
   Publish Campaign
 </button>
@@ -933,18 +1115,17 @@ const isActive =
   
     )}
 
-<>
   {/* ========================= */}
   {/* PUBLISH MODAL */}
   {/* ========================= */}
   {showPublishModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-      <div className="bg-gray-900 w-[500px] p-6 rounded-2xl relative shadow-xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-[#0d0d14] w-full max-w-md border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
         {/* Close Icon */}
         <button
           onClick={() => setShowPublishModal(false)}
-          className="absolute top-3 right-4 text-white text-xl"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-lg leading-none"
         >
           ×
         </button>
@@ -969,74 +1150,114 @@ const isActive =
         </div>
 
         {/* Subscription Card */}
-        <div className="bg-gray-800 p-5 rounded-xl border border-gray-700 mb-6">
-          <h3 className="text-lg font-semibold text-white">
-            Yearly Subscription
-          </h3>
-          <p className="text-white/70 mt-1">
-            1000 TRUST / year
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-white font-semibold text-sm">Studio Hub Activation</span>
+            <span className="text-purple-400 font-bold text-sm">1000 TRUST</span>
+          </div>
+          <p className="text-white/60 text-xs mb-3">
+            A one-time fee of 1000 TRUST is required to publish your campaign.
           </p>
 
-<button
-  className="mt-4 w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
-  onClick={async () => {
-  // Validate minimum requirements
-  if (!campaignTitle || !campaignName) {
-    alert("Campaign details are incomplete.");
-    return;
-  }
-
-  if (tasks.length === 0) {
-    alert("You must add at least one task.");
-    return;
-  }
-
-  // Combine date + time properly
-  const combinedStart = `${startDate}T${startTime}`;
-  const combinedEnd = `${endDate}T${endTime}`;
-
-  let imageBase64 = "";
-
-  if (coverImage instanceof File) {
-    imageBase64 = await convertToBase64(coverImage);
-  }
-
-  const newCampaign: Campaign = {
-    id: crypto.randomUUID(),
-    title: campaignTitle,
-    name: campaignName,
-    description: campaignName,
-    startDate: combinedStart,
-    endDate: combinedEnd,
-    rewardPool,
-    participants,
-    xpRewards,
-    coverImage: imageBase64,
-    tasks,
-    isDraft: false,
-    createdAt: new Date().toISOString(),
-  };
-
-  // Save to storage
-  const savedCampaigns = JSON.parse(localStorage.getItem("campaigns") || "[]");
-  localStorage.setItem("campaigns", JSON.stringify([...savedCampaigns, newCampaign]));
-
-  // Set snapshot for success modal
-  setPublishedCampaign(newCampaign);
-
-  // Close publish modal & show success
-  setShowPublishModal(false);
-  setShowSuccessModal(true);
-}}
->
-  Pay 1000 TRUST
-</button>
+          {paymentTxHash ? (
+            <div className="flex items-center gap-2 bg-green-900/40 border border-green-600/50 rounded-lg px-3 py-2">
+              <svg className="w-4 h-4 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <div className="min-w-0">
+                <p className="text-green-400 text-xs font-semibold">Payment confirmed</p>
+                <p className="text-white/40 text-[10px] truncate">{paymentTxHash}</p>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={paymentLoading}
+              onClick={async () => {
+                setPaymentLoading(true);
+                try {
+                  const hash = await payStudioHubFee();
+                  setPaymentTxHash(hash);
+                  toast({ title: "Payment successful", description: "1000 TRUST sent. You can now publish your campaign." });
+                } catch (err: any) {
+                  toast({ title: "Payment failed", description: err.message ?? "Transaction was rejected.", variant: "destructive" });
+                } finally {
+                  setPaymentLoading(false);
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg px-4 py-2 transition"
+            >
+              {paymentLoading ? (
+                <><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Waiting for wallet…</>
+              ) : (
+                <>Pay 1000 TRUST</>
+              )}
+            </button>
+          )}
         </div>
+
+<button
+  className="mt-4 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+  onClick={async () => {
+    if (!campaignTitle || !campaignName) {
+      toast({ title: "Incomplete details", description: "Please fill in campaign name and title.", variant: "destructive" });
+      return;
+    }
+    if (tasks.length === 0) {
+      toast({ title: "No tasks", description: "Please add at least one task.", variant: "destructive" });
+      return;
+    }
+    if (!paymentTxHash.trim()) {
+      toast({ title: "Payment required", description: "Please complete the 1000 TRUST payment before publishing.", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append("title", campaignTitle);
+      fd.append("description", campaignName);
+      fd.append("nameOfProject", campaignName);
+      fd.append("starts_at", startDate && startTime ? `${startDate}T${startTime}` : startDate);
+      fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
+      fd.append("reward", JSON.stringify({ xp: Number(xpRewards) || 0, pool: Number(rewardPool) || 0 }));
+      fd.append("txHash", paymentTxHash);
+      fd.append("campaignQuests", JSON.stringify(
+        tasks.map((t: any) => ({
+          title: t.type,
+          description: t.description,
+          url: t.handleOrUrl,
+          reward: { xp: Number(xpRewards) || 0 },
+        }))
+      ));
+      if (coverImage instanceof File) fd.append("coverImage", coverImage);
+
+      await projectApiRequest({
+        method: "POST",
+        endpoint: "/project/create-campaign",
+        formData: fd,
+      });
+
+      toast({ title: "Campaign published!", description: "Your campaign is now live." });
+      setPublishedCampaign({ title: campaignTitle, name: campaignName, rewardPool, coverImage: coverImagePreview ?? undefined });
+      setShowPublishModal(false);
+      setShowSuccessModal(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to publish campaign.";
+      toast({ title: "Publish failed", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }}
+  disabled={loading || !paymentTxHash}
+>
+  {loading ? <span className="flex items-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Publishing...</span> : "Confirm & Publish"}
+</button>
 
         {/* Cancel Button */}
         <button
           onClick={() => setShowPublishModal(false)}
-          className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition"
+          className="mt-2 w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all"
         >
           Cancel
         </button>
@@ -1049,13 +1270,13 @@ const isActive =
   {/* SUCCESS MODAL */}
   {/* ========================= */}
   {showSuccessModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-      <div className="bg-gray-900 w-[600px] p-6 rounded-2xl relative shadow-xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-[#0d0d14] w-full max-w-xl border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
         {/* Close Icon */}
         <button
           onClick={() => setShowSuccessModal(false)}
-          className="absolute top-3 right-4 text-white text-xl"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-lg leading-none"
         >
           ×
         </button>
@@ -1080,7 +1301,7 @@ const isActive =
         </div>
 
         {/* Campaign Snapshot Card */}
-        <div className="bg-white/5 backdrop-blur-md rounded-xl border border-purple-500 p-5">
+        <div className="bg-white/5 backdrop-blur-md rounded-xl border border-purple-500/30 p-5">
 
           <h3 className="text-sm font-semibold text-white/80 mb-4">
             CAMPAIGN SNAPSHOT
@@ -1145,10 +1366,10 @@ const isActive =
         {/* Launch Button */}
 <Button
   onClick={() => {
-    setActiveTab("campaignsTab"); // highlight sidebar tab
-    setLocation("/studio-dashboard/campaigns-tab"); // update URL
+    setShowSuccessModal(false);
+    setLocation("/studio-dashboard/campaigns-tab");
   }}
-  className="mt-6 w-full flex items-center justify-center gap-3 px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition"
+  className="mt-6 w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
 >
   <span>Launch Campaign Now</span>
 
@@ -1171,8 +1392,6 @@ const isActive =
       </div>
     </div>
   )}
-</>
-
 
         </div>
         </main>

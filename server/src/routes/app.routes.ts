@@ -1,4 +1,5 @@
-import { authenticateUser } from "@/middlewares/auth.middleware";
+import { authenticateUser, authenticateUser2 } from "@/middlewares/auth.middleware";
+import { rateLimiter } from "@/middlewares/ratelimiter";
 import { Router } from "express";
 import {
 	checkXTask,
@@ -7,7 +8,8 @@ import {
   getAnalytics,
 	saveCv,
 	updateX,
-	updateDiscord,
+  updateDiscord,
+	getClaims
 } from "@/controllers/app.controller";
 import { discordCallback, xCallback, disconnectX, disconnectDiscord, } from "@/controllers/auth.controller";
 
@@ -15,6 +17,7 @@ const router = Router();
 
 router
   .get("/", home)
+  .get("/get-claims", rateLimiter, authenticateUser2, getClaims)
   .get("/get-analytics", getAnalytics)
   .post("/check-x", authenticateUser, checkXTask)
   .post("/check-discord", authenticateUser, checkDiscordTask)

@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { home, getLeaderboard } from "@/controllers/app.controller";
-import { fetchCampaigns } from "@/controllers/campaign.controller";
+import { fetchCampaigns, fetchProjectCampaigns } from "@/controllers/campaign.controller";
 import adminRoutes from "./admin.routes.ts";
 import campaignRoutes from "./campaign.routes.ts";
-import projectRoutes from "./project.routes.ts";
+import projectRoutes from "./hub.routes.ts";
 import questRoutes from "./quest.routes.ts";
 import userRoutes from "./user.routes.ts";
 import appRoutes from "./app.routes.ts";
@@ -20,10 +20,10 @@ router
 	.use("/admin", adminRoutes)
 	.get("/ecosystem-quests", authenticateUser2, fetchEcosystemDapps)
 	.get("/quests", authenticateUser2, fetchQuests)
-	.get("/campaigns", authenticateUser2, fetchCampaigns)
+  .get("/campaigns", authenticateUser2, fetchCampaigns)
 	.use("/campaign", campaignRoutes)
 	.get("/leaderboard", authenticateUser2, getLeaderboard)
-	.use("/project", projectRoutes)
+  .use("/project", projectRoutes)
 	.use("/quest", questRoutes)
 	.use("/user", userRoutes);
 

@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useLocation } from "wouter";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { ManageAdminModal } from "../../components/ManageAdminModal";
 import { AddAdminModal } from "../../components/AddAdminModal";
 import { getStoredAdminInfo } from "../../lib/config";
+import { projectApiRequest } from "../../lib/projectApi";
+import { useToast } from "../../hooks/use-toast";
 import StudioSidebar from "../../pages/studio/StudioSidebar";
 
 export type AdminType = {
@@ -20,36 +23,24 @@ export type AdminType = {
 
 export default function AdminManagement() {
   const [admins, setAdmins] = useState<AdminType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const currentAdmin = getStoredAdminInfo();
 
-  // Frontend-only fetch simulation
-  useEffect(() => {
-    setTimeout(() => {
-      setAdmins([
-        { _id: "1", username: "alice", email: "alice@example.com", role: "Admin", lastActivity: "2026-02-17 10:00" },
-        { _id: "2", username: "bob", email: "bob@example.com", role: "Moderator", lastActivity: "2026-02-16 14:30" },
-      ]);
-      setLoading(false);
-    }, 500);
-  }, []);
-
-  // Frontend-only "add admin"
-  const handleAddAdmin = (newAdmin: AdminType) => {
-    setAdmins((prev) => [newAdmin, ...prev]);
-  };
-
-  // Frontend-only "manage admin" (role update)
-  const handleUpdateAdmin = (id: string, updatedRole: AdminType["role"]) => {
-    setAdmins((prev) =>
-      prev.map((admin) => (admin._id === id ? { ...admin, role: updatedRole } : admin))
-    );
-  };
-
-  // Frontend-only "remove admin"
-  const handleRemoveAdmin = (id: string) => {
-    setAdmins((prev) => prev.filter((admin) => admin._id !== id));
+  const handleRemoveAdmin = async (id: string) => {
+    setRemovingId(id);
+    try {
+      await projectApiRequest({ method: "DELETE", endpoint: "/project/remove-admin", params: { id } });
+      setAdmins((prev) => prev.filter((a) => a._id !== id));
+      toast({ title: "Admin removed", description: "The admin has been removed from your hub." });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to remove admin.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setRemovingId(null);
+    }
   };
 
   return (
@@ -58,19 +49,19 @@ export default function AdminManagement() {
       <StudioSidebar
         activeTab="adminManagement"
         setActiveTab={(tab) => {
-          if (tab === "dashboard") setLocation("/studio-dashboard");
+          if (tab === "campaignSubmissions") setLocation("/studio-dashboard");
           if (tab === "adminManagement") setLocation("/studio-dashboard/admin-management");
         }}
       />
 
       {/* Main content */}
-<div className="flex-1 p-6 space-y-6">
+<div className="flex-1 p-4 md:p-6 space-y-6 pt-16 md:pt-6 pb-24 md:pb-6">
   {/* Header: Title + Add Admin button */}
   <div className="flex items-center justify-between">
     <h2 className="text-2xl font-bold text-white">Admin Management</h2>
     <AddAdminModal
-      onSuccess={(admin) => {
-        handleAddAdmin(admin);
+      onSuccess={() => {
+        toast({ title: "Invite sent!", description: "The admin will receive an OTP to sign up." });
       }}
     >
       <Button
@@ -83,13 +74,13 @@ export default function AdminManagement() {
   </div>
 
   {/* Three Horizontal Cards */}
-  <div className="flex gap-6">
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
     {/* Card 1 */}
     <div className="flex-1 bg-white/10 backdrop-blur-md rounded-lg p-4 flex items-start gap-4 border-2 border-white">
       <img src="/admin.png" alt="Icon 1" className="w-10 h-10 object-contain" />
       <div className="flex flex-col">
         <h4 className="text-lg font-semibold text-white">Total Admins</h4>
-        <p className="text-white/70 text-xl">5</p>
+        <p className="text-white/70 text-xl">{admins.length}</p>
       </div>
     </div>
 
@@ -98,7 +89,7 @@ export default function AdminManagement() {
       <img src="/approved.png" alt="Icon 2" className="w-10 h-10 object-contain" />
       <div className="flex flex-col">
         <h4 className="text-lg font-semibold text-white">Active Admins</h4>
-        <p className="text-white/70 text-xl">3</p>
+        <p className="text-white/70 text-xl">{admins.length}</p>
       </div>
     </div>
 
@@ -107,17 +98,17 @@ export default function AdminManagement() {
       <img src="/total-pending.png" alt="Icon 3" className="w-10 h-10 object-contain" />
       <div className="flex flex-col">
         <h4 className="text-lg font-semibold text-white">Pending Invites</h4>
-        <p className="text-white/70 text-xl">5</p>
+        <p className="text-white/70 text-xl">—</p>
       </div>
     </div>
   </div>
 
-<div className="flex items-center justify-between mb-6">
+<div className="flex items-center justify-between mb-6 flex-wrap gap-3">
   {/* Title */}
   <h2 className="text-2xl font-bold text-white">Manage Admins</h2>
 
   {/* Search Bar */}
-  <div className="relative w-64">
+  <div className="relative w-full sm:w-64">
     <input
       type="text"
       placeholder="Search"
@@ -136,13 +127,8 @@ export default function AdminManagement() {
   </div>
 </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-white/60">
-            <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-            Loading administrators...
-          </div>
-        ) : (
-          <Card className="bg-white/5 border-white/10 backdrop-blur-[125px] overflow-hidden">
+        {
+          <Card className="bg-white/5 border-white/10 backdrop-blur-[125px] overflow-hidden overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-white/10 hover:bg-white/5">
@@ -168,25 +154,32 @@ export default function AdminManagement() {
                           <ManageAdminModal
                             name={admin.username}
                             role={admin.role}
-                            onSuccess={(updatedRole) => handleUpdateAdmin(admin._id, updatedRole)}
-                            onRemove={() => handleRemoveAdmin(admin._id)}
+                            onSuccess={() => handleRemoveAdmin(admin._id)}
                           >
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-white/20 text-white hover:bg-white/10"
+                              className="border-white/20 text-white hover:bg-white/10 disabled:opacity-50"
+                              disabled={removingId === admin._id}
                             >
-                              Manage
+                              {removingId === admin._id
+                                ? <><Loader2 className="w-3 h-3 animate-spin mr-1" />Removing...</>
+                                : "Manage"}
                             </Button>
                           </ManageAdminModal>
                         )}
                       </TableCell>
                     </TableRow>
                   ))}
+                {admins.length === 0 && !currentAdmin && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-white/40 py-10">No administrators found.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
-        )}
+        }
       </div>
     </div>
   );

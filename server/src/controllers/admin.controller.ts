@@ -9,6 +9,7 @@ import { campaignQuestCompleted, miniQuestCompleted } from "@/models/questsCompl
 import { submission } from "@/models/submission.model";
 import { user } from "@/models/user.model";
 import { bannedUser } from "@/models/bannedUser.model";
+import { REDIS } from "@/utils/redis.utils";
 
 export const createQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
@@ -56,15 +57,30 @@ export const banUser = async (req: GlobalRequest, res: GlobalResponse) => {
 }
 
 export const getAdmins = async (req: GlobalRequest, res: GlobalResponse) => {
-	try {
-		const admins = await admin.find().lean();
+  try {
+    const admins = await admin.find().lean();
 
-		res.status(OK).json({ message: "admins fetched", admins });
-	} catch (error) {
-		logger.error(error);
-		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching admins" });
-	}
-}
+    res.status(OK).json({ message: "admins fetched", admins });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching admins" });
+  }
+};
+
+export const adminLogout = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { token } = req;
+
+    await REDIS.set({ key: `logout:${token}`, data: { token }, ttl: 7 * 24 * 60 * 60 });
+
+    res.clearCookie("refreshToken");
+
+    res.status(OK).json({ message: "admin logged out" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error logging out admin" });
+  }
+};
 
 export const removeAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
@@ -80,7 +96,7 @@ export const removeAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
     }
 
-		const adminExists = await admin.findOne({ email });
+		const adminExists = await admin.exists({ email });
 		if (!adminExists) {
 			res.status(NOT_FOUND).json({ error: "admin does not exist" });
 			return;
@@ -197,7 +213,7 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 		semiAdmin.code = "";
 
     await semiAdmin.save();
-		
+
     const id = semiAdmin._id.toString();
 
 		const accessToken = JWT.sign(id);

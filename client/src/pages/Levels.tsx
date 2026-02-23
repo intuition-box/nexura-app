@@ -77,7 +77,7 @@ export default function Levels() {
       <div className="min-h-screen bg-black text-white p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold">Levels</h1>
+            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">Levels</h1>
             <div className="text-right">
               <div className="text-lg font-bold">You: L{userLevel} ({userXp} XP)</div>
             </div>

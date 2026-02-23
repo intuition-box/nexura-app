@@ -2,34 +2,44 @@
 
 import { ResponsivePie } from "@nivo/pie";
 
-export default function DesktopCards({ usersJoined, tasksCompleted }) {
+interface DesktopCardsProps {
+  usersJoined: number;
+  tasksCompleted: number;
+  totalQuests: number;
+  totalCampaigns: number;
+  totalTrustDistributed: number;
+  totalOnchainInteractions: number;
+  totalOnchainClaims: number;
+}
+
+export default function DesktopCards({
+  usersJoined,
+  tasksCompleted,
+  totalQuests,
+  totalCampaigns,
+  totalTrustDistributed,
+  totalOnchainInteractions,
+  totalOnchainClaims,
+}: DesktopCardsProps) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-4">
 
       {/* TOTAL QUESTS CREATED */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 flex flex-col justify-between border-2 border-purple-500"
-        style={{ width: '350px', height: '195px' }}
-      >
-        <h2 className="text-purple-500 font-bold text-lg">
-          TOTAL QUESTS CREATED
+      <div className="glass glass-hover shimmer-once rounded-2xl p-5 flex flex-col justify-between border border-purple-500/40 hover:border-purple-400/70 transition-all duration-300 group" style={{ minHeight: '160px' }}>
+        <h2 className="text-purple-400 font-bold text-base tracking-widest uppercase">
+          Total Quests Created
         </h2>
-        <p className="text-4xl font-semibold text-purple-500 mt-4">1</p>
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-white/70 text-sm">
-            VERIFIED ECOSYSTEM TASKS
+        <p className="text-4xl font-bold text-purple-300 mt-4 group-hover:text-white transition-colors duration-300">{totalQuests}</p>
+        <div className="flex justify-between items-center mt-3">
+          <span className="text-white/50 text-xs uppercase tracking-wider">
+            Verified Ecosystem Tasks
           </span>
-          <div className="flex items-center text-center">
-            <img src="/quest-icon.png" alt="Quest Icon" className="w-8 h-8 mb-2" />
-          </div>
+          <img src="/quest-icon.png" alt="Quest Icon" className="w-7 h-7 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
       </div>
 
       {/* Join vs Completion Ratio */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 flex flex-col items-center border-2 border-purple-500 row-span-4"
-        style={{ width: '350px', height: '400px' }}
-      >
+      <div className="glass glass-hover rounded-2xl p-5 flex flex-col items-center border border-purple-500/40 hover:border-purple-400/70 transition-all duration-300 row-span-4" style={{ minHeight: '380px' }}>
         <h2 className="text-white font-bold text-center text-lg mb-4">
           Join vs Completion Ratio
         </h2>
@@ -77,17 +87,14 @@ export default function DesktopCards({ usersJoined, tasksCompleted }) {
       </div>
 
       {/* TOTAL $TRUST DISTRIBUTED */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 border-2 border-purple-500"
-        style={{ width: '380px', height: '125px' }}
-      >
+      <div className="glass glass-hover shimmer-once rounded-2xl p-5 border border-purple-500/40 hover:border-purple-400/70 transition-all duration-300" style={{ minHeight: '110px' }}>
         <div className="grid grid-cols-2 h-full">
           <div className="flex flex-col justify-center">
             <h2 className="text-white font-bold text-sm tracking-wide whitespace-nowrap">
               TOTAL $TRUST DISTRIBUTED
             </h2>
             <div className="flex items-center mt-2 gap-3">
-              <p className="text-3xl font-semibold text-white">4000</p>
+              <p className="text-3xl font-semibold text-white">{totalTrustDistributed.toLocaleString()}</p>
               <img src="/trust-icon.png" alt="Trust Icon" className="w-16 h-8 object-contain" />
             </div>
           </div>
@@ -98,32 +105,25 @@ export default function DesktopCards({ usersJoined, tasksCompleted }) {
       </div>
 
       {/* TOTAL CAMPAIGNS CREATED */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 flex flex-col justify-between border-2 border-purple-500"
-        style={{ width: '350px', height: '195px' }}
-      >
-        <h2 className="text-purple-500 font-bold text-lg">TOTAL CAMPAIGNS CREATED</h2>
-        <p className="text-4xl font-semibold text-purple-500 mt-4">1</p>
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-white/70 text-sm">
-            VERIFIED ECOSYSTEM CAMPAIGNS
-          </span>
-          <div className="flex items-center">
-            <img src="/quest-icon.png" alt="Quest Icon" className="w-8 h-8" />
-          </div>
+      <div className="glass glass-hover shimmer-once rounded-2xl p-5 flex flex-col justify-between border border-purple-500/40 hover:border-purple-400/70 transition-all duration-300 group" style={{ minHeight: '160px' }}>
+        <h2 className="text-purple-400 font-bold text-base tracking-widest uppercase">Total Campaigns Created</h2>
+        <p className="text-4xl font-bold text-purple-300 mt-4 group-hover:text-white transition-colors duration-300">{totalCampaigns}</p>
+        <div className="flex justify-between items-center mt-3">
+          <span className="text-white/50 text-xs uppercase tracking-wider">Verified Ecosystem Campaigns</span>
+          <img src="/quest-icon.png" alt="Quest Icon" className="w-7 h-7 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
       </div>
 
       {/* On-Chain Activity */}
       <div
-        className="rounded-2xl p-4 flex flex-col items-center justify-center -mt-16"
-        style={{ width: '380px', height: '265px', backgroundColor: '#833AFD' }}
+        className="rounded-2xl p-5 flex flex-col items-center justify-center row-span-3"
+        style={{ minHeight: '240px', background: 'linear-gradient(135deg, #833AFD 0%, #6028c7 100%)', boxShadow: '0 8px 32px rgba(131,58,253,0.45)' }}
       >
         <h2 className="text-white font-bold text-lg mb-4 text-center">On-Chain Activity</h2>
         <div className="flex items-center mb-6 gap-3">
           <img src="/rate-icon.png" alt="Rate Icon" className="w-24 h-24" />
           <div className="flex flex-col">
-            <p className="text-white font-bold text-2xl">1500</p>
+            <p className="text-white font-bold text-2xl">{totalOnchainInteractions.toLocaleString()}</p>
             <p className="text-white text-sm">INTERACTIONS</p>
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function DesktopCards({ usersJoined, tasksCompleted }) {
           <p className="flex items-start text-white">
             <span className="text-lg mr-8 mt-4">Total On-Chain Claims</span>
             <span className="flex flex-col text-right">
-              <span className="text-5xl font-bold leading-none">500</span>
+              <span className="text-5xl font-bold leading-none">{totalOnchainClaims.toLocaleString()}</span>
               <span className="text-xs">INTERACTED</span>
             </span>
           </p>

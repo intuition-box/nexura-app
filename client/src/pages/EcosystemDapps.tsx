@@ -198,12 +198,16 @@ export default function EcosystemDapps() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-auto p-4 sm:p-6 relative" data-testid="ecosystem-dapps-page">
+    <div className="min-h-screen bg-black text-white overflow-auto p-6 relative" data-testid="ecosystem-dapps-page">
       <AnimatedBackground />
-      <div className="max-w-7xl mx-auto px-6 sm:px-4 md:px-6 space-y-8 relative z-10">
+      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Ecosystem Dapps</h1>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+            <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">Ecosystem Dapps</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent mb-2">Ecosystem Dapps</h1>
           <p className="text-muted-foreground">
             Explore popular dapps in the ecosystem and complete one-time quests to earn rewards.
           </p>

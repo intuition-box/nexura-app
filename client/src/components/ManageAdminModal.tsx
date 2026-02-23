@@ -33,20 +33,15 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>((role || "Admin").toLowerCase().replace(" ", "_"));
 
+  // TODO: server needs POST /api/admin/update-role and POST /api/admin/demote-admin routes.
   const handleUpdateRole = async () => {
     setLoading(true);
     try {
       await apiRequest<{ message?: string }>({
-        endpoint: "/api/admin/manage-admin",
+        endpoint: "/api/admin/update-role",
         method: "POST",
-        data: {
-          action: "update_role",
-          adminName: name,
-          newRole: selectedRole
-        }
+        data: { adminName: name, newRole: selectedRole },
       });
-
-      console.log("Updated role for", name, "to", selectedRole);
       onSuccess?.();
       setOpen(false);
     } catch (error) {
@@ -60,15 +55,10 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
     setLoading(true);
     try {
       await apiRequest<{ message?: string }>({
-        endpoint: "/api/admin/manage-admin",
+        endpoint: "/api/admin/demote-admin",
         method: "POST",
-        data: {
-          action: "demote",
-          adminName: name
-        }
+        data: { adminName: name },
       });
-
-      console.log("Demoted admin:", name);
       onSuccess?.();
       setOpen(false);
     } catch (error) {
@@ -82,19 +72,14 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
     setLoading(true);
     try {
       await apiRequest<{ message?: string }>({
-        endpoint: "/api/admin/manage-admin",
+        endpoint: "/api/admin/remove-admin",
         method: "POST",
-        data: {
-          action: "revoke",
-          adminName: name
-        }
+        data: { adminName: name },
       });
-
-      console.log("Revoked admin access for:", name);
       onSuccess?.();
       setOpen(false);
     } catch (error) {
-      console.error("Failed to revoke admin:", error);
+      console.error("Failed to revoke admin access:", error);
     } finally {
       setLoading(false);
     }
@@ -103,7 +88,7 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[450px] bg-[#0a0a0a]/90 backdrop-blur-xl border-white/10 text-white shadow-2xl">
+      <DialogContent className="sm:max-w-[450px] bg-[#0d0d14] backdrop-blur-xl border border-purple-500/20 text-white shadow-[0_0_60px_rgba(131,58,253,0.2)] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <div className="p-2 rounded-full bg-[#8a3ffc]/20">
@@ -142,36 +127,37 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+        <DialogFooter className="flex flex-col sm:flex-row sm:flex-wrap gap-2 pt-1">
           <DialogClose asChild>
-            <Button variant="ghost" className="w-full sm:w-auto text-white/70 hover:text-white hover:bg-white/5">Cancel</Button>
+            <button type="button" className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all">Cancel</button>
           </DialogClose>
-          <Button
+          <button
+            type="button"
             onClick={handleUpdateRole}
             disabled={loading}
-            className="w-full sm:w-auto bg-gradient-to-r from-[#8a3ffc] to-[#522696] text-white rounded-md hover:opacity-90 transition-opacity shadow-[0px_0px_15px_rgba(138,63,252,0.4)] gap-2"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
           >
             <Shield className="w-4 h-4" />
             Update Role
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={handleDemote}
             disabled={loading}
-            variant="outline"
-            className="w-full sm:w-auto border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 hover:text-yellow-300 gap-2"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/10 hover:border-yellow-400/60 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <UserCog className="w-4 h-4" />
             Demote
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={handleRevoke}
             disabled={loading}
-            variant="outline"
-            className="w-full sm:w-auto border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 gap-2"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/40 text-red-400 hover:bg-red-500/10 hover:border-red-400/60 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <UserMinus className="w-4 h-4" />
             Revoke Access
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

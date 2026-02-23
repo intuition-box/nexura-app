@@ -61,15 +61,15 @@ export const resetEmail = async (email: string, link: string) => {
   }
 };
 
-export const addProjectAdminEmail = async (email: string, code: string) => {
+export const addHubAdminEmail = async (email: string, code: string) => {
   try {
     await transporter.sendMail({
       from: EMAIL_USER,
       to: email,
-      subject: "Project admin setup",
+      subject: "Hub admin setup",
       template: "admin-setup",
       context: {
-        url: `${CLIENT_URL}/studio/register`,
+        url: `${CLIENT_URL}/studio/register?email=${encodeURIComponent(email)}`,
         code
       },
     } as MailOptions);
