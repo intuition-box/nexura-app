@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { buyShares, sellShares } from "../services/web3"; // your web3 functions
-import { buildUrl } from "../lib/queryClient";
 
 interface Claim {
   id: string;
@@ -28,7 +27,7 @@ export default function PortalClaims() {
 
     try {
       const res = await fetch(
-        buildUrl(`/api/claims?limit=${LIMIT}&offset=${offset}`)
+        `http://localhost:5051/api/claims?limit=${LIMIT}&offset=${offset}`
       );
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));

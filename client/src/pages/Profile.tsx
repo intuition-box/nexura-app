@@ -271,7 +271,7 @@ export default function Profile() {
 
       <div className="max-w-5xl mx-auto space-y-8 relative z-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">My Profile</h1>
+          <h1 className="text-3xl font-bold text-white">My Profile</h1>
           <div className="flex items-center gap-3">
             <Link href="/profile/edit">
               <Button data-testid="button-edit-profile">

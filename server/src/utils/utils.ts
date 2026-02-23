@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { JWT_SECRET, network, REFRESH_SECRET } from "./env.utils";
+import { JWT_SECRET, REFRESH_SECRET } from "./env.utils";
 import { performIntuitionOnchainAction } from "./account";
 import { NexonsAddress } from "./constants";
 import { ethers } from "ethers";
@@ -195,14 +195,16 @@ export const validateEcosystemQuestData = (reqData: any) => {
 	return parseData;
 };
 
-export const validateHubData = (reqData: any) => {
-	const hubSchema = z.object({
+export const validateProjectData = (reqData: any) => {
+	const projectSchema = z.object({
 		name: z.string().trim(),
+		email: z.email().trim(),
     description: z.string().trim(),
 		address: z.string().trim(),
+		password: z.string().trim().length(8),
 	});
 
-	const parseData = hubSchema.safeParse(reqData);
+	const parseData = projectSchema.safeParse(reqData);
 
 	return parseData;
 };
@@ -217,27 +219,14 @@ export const generateOTP = () => {
 	return code;
 };
 
-export const validateSuperAdminData = (reqData: any) => {
-	const hubSuperAdminSchema = z.object({
-		name: z.string().trim().min(3),
+export const validateProjectAdminData = (reqData: any) => {
+	const projectAdminSchema = z.object({
 		email: z.email().trim(),
-    password: z.string().trim().min(8),
-	});
-
-	const parseData = hubSuperAdminSchema.safeParse(reqData);
-
-	return parseData;
-};
-
-export const validateHubAdminData = (reqData: any) => {
-	const hubAdminSchema = z.object({
-		name: z.string().trim().min(3),
-		email: z.email().trim(),
-    password: z.string().trim().min(8),
+    password: z.string().trim(),
 		code: z.string().trim().length(6),
 	});
 
-	const parseData = hubAdminSchema.safeParse(reqData);
+	const parseData = projectAdminSchema.safeParse(reqData);
 
 	return parseData;
 };
@@ -308,14 +297,14 @@ export const getRefreshToken = (id: any) => {
 export const checkPayment = async (txHash: string) => {
 	const provider = new ethers.JsonRpcProvider("https://rpc.intuition.systems");
 
-	const feeInterface = new ethers.Interface(["event FeePaid(uint256 totalCampaigns)"]);
+	const feeInterface = new ethers.Interface(["event FeePaid(uint256 totalCampaigns)"]); // Replace with your event interface
 
 	const receipt = await provider.getTransactionReceipt(txHash);
 	if (!receipt || receipt.status !== 1) {
 		throw new Error("Transaction failed");
 	}
 
-	const FEE_CONTRACT = network === "testnet" ? "0x742ed23dD10686C22A5cD459Af96BC1F83e58C7a" : "";
+	const FEE_CONTRACT = "0xcontractAddress";
 
 	let totalCampaigns: number = 0;
 

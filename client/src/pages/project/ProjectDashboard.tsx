@@ -9,7 +9,6 @@ import ProjectCollabs from "./ProjectCollabs";
 import ProjectNav from "../../components/ProjectNav";
 import { useLocation } from "wouter";
 import ProjectCreateCampaign from "./ProjectCreateCampaign";
-import NetworkButton from "../../components/NetworkButton";
 
 export default function ProjectDashboard({ params }: any) {
   const base = `/project/${params.projectId}`;
@@ -36,7 +35,6 @@ export default function ProjectDashboard({ params }: any) {
                   </h1>
                   {/* Debug path removed for production UI */}
                 </div>
-                <NetworkButton className="flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 transition-all cursor-pointer" />
               </div>
             </div>
           </div>

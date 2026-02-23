@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --watch server.ts",
+    "dev": "node --watch --loader ts-node/esm -r tsconfig-paths/register server.ts",
     "start": "bun server.ts"
   },
   "devDependencies": {

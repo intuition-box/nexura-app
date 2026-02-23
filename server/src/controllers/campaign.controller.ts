@@ -1,6 +1,7 @@
+import mongoose from "mongoose";
 import logger from "@/config/logger";
 import { campaign, campaignCompleted } from "@/models/campaign.model";
-import { hub } from "@/models/hub.model";
+import { project } from "@/models/project.model";
 import { referredUsers } from "@/models/referrer.model";
 import { user } from "@/models/user.model";
 import { performIntuitionOnchainAction } from "@/utils/account";
@@ -13,7 +14,6 @@ import {
 	NOT_FOUND,
 	FORBIDDEN,
 	UNAUTHORIZED,
-  NO_CONTENT,
 } from "@/utils/status.utils";
 import { validateCampaignData, updateLevel, checkPayment } from "@/utils/utils";
 import { campaignQuest } from "@/models/quests.model";
@@ -41,10 +41,7 @@ export const fetchCampaigns = async (
 	res: GlobalResponse
 ) => {
 	try {
-		// Hide only studio drafts (status: "Save"). All other campaigns
-		// (Active, Scheduled, Ended, or legacy campaigns with no status field)
-		// remain visible so non-studio campaigns are unaffected.
-		const campaigns = await campaign.find({ status: { $ne: "Save" } }).lean();
+		const campaigns = await campaign.find().lean();
 
 		const joinedCampaigns = await campaignCompleted.find({ user: req.id }).lean();
 
@@ -77,33 +74,36 @@ export const createCampaign = async (
 		const requestData: ICreateCampaign = req.body;
 		const coverImageAsFile = req.file?.buffer;
 
-		const hubUserId = req.admin.hub;
+		const projectUserId = req.id;
 
 		const txHash = req.body.txHash;
 		if (!txHash) {
 			res.status(BAD_REQUEST).json({ error: "transaction hash is required" });
 			return;
 		}
+
 		const campaignNo = await checkPayment(txHash);
 		if (!campaignNo) {
-			res.status(FORBIDDEN).json({ error: "kindly pay the require amount (1000 TRUST) to proceed" });
+			res
+				.status(FORBIDDEN)
+				.json({ error: "kindly pay the require amount (1000 TRUST) to proceed" });
 			return;
 		}
 
-		const createdHub = await hub.findById(hubUserId);
-		if (!createdHub) {
+		const campaignCreator = await project.findById(projectUserId);
+		if (!campaignCreator) {
 			res
 				.status(NOT_FOUND)
-				.json({ error: "id associated with createdHub is invalid" });
+				.json({ error: "id associated with user is invalid" });
 			return;
 		}
 
-		if (createdHub.campaignsCreated >= campaignNo) {
+		if (campaignCreator.campaignsCreated >= campaignNo) {
 			res.status(FORBIDDEN).json({ error: "kindly pay the required amount (1000 TRUST) to proceed" });
 			return;
 		}
 
-		const xpAllocated = createdHub.xpAllocated;
+		const xpAllocated = campaignCreator.xpAllocated;
 		if (xpAllocated === 0) {
 			res
 				.status(FORBIDDEN)
@@ -122,14 +122,14 @@ export const createCampaign = async (
 		if (!coverImageAsFile) {
 			res
 				.status(BAD_REQUEST)
-				.json({ error: "hub cover image is required" });
+				.json({ error: "project cover image is required" });
 			return;
 		}
 
 		const projectCoverImageUrl = await uploadImg({
 			file: coverImageAsFile,
 			filename: req.file?.originalname as string,
-			folder: "cover-images",
+			folder: "campaigns",
 			maxSize: 2 * 1024 ** 2, // 2 MB
 		});
 
@@ -137,20 +137,18 @@ export const createCampaign = async (
 
 		requestData.ends_at = ends_at;
 
-		requestData.creator = hubUserId as string;
+		requestData.creator = projectUserId as string;
 
 		requestData.projectCoverImage = projectCoverImageUrl;
 
-		requestData.project_image = createdHub.logo;
+		requestData.project_image = campaignCreator.logo;
 
 		const newCampaign = new campaign(requestData);
 
 		newCampaign.totalXpAvailable = xpAllocated;
 
-		newCampaign.status = "Active";
-
-		createdHub.campaignsCreated += 1;
-		createdHub.xpAllocated = 0;
+		campaignCreator.campaignsCreated += 1;
+		campaignCreator.xpAllocated = 0;
 
 		const campaignQuestsFromBody = req.body.campaignQuests as Record<string, any>[];
 
@@ -169,7 +167,7 @@ export const createCampaign = async (
 		newCampaign.noOfQuests = campaignQuestsFromBody.length;
 
 		await newCampaign.save();
-		await createdHub.save();
+		await campaignCreator.save();
 
 		res.status(CREATED).json({ message: "campaign created!" });
 	} catch (error) {
@@ -185,12 +183,13 @@ export const addCampaignAddress = async (
 	res: GlobalResponse
 ) => {
 	try {
-		const { id, contractAddress }: { id: string; contractAddress: string } = req.body;
+		const { id, contractAddress }: { id: string; contractAddress: string } =
+			req.body;
 
-		if (!id) {
-			res.status(BAD_REQUEST).json({ error: "send campaign ID" });
-			return;
-		}
+			if (!mongoose.Types.ObjectId.isValid(id)) {
+				res.status(BAD_REQUEST).json({ error: "Invalid campaign ID" });
+				return;
+			}
 
 		const foundCampaign = await campaign.findById(id);
 		if (!foundCampaign) {
@@ -217,9 +216,10 @@ export const joinCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const id = req.query.id;
 
-		if (!id) {
-      res.status(BAD_REQUEST).json({ error: "send campaign id" });
-      return
+		if (!id || !mongoose.Types.ObjectId.isValid(id as string)) {
+			return res.status(BAD_REQUEST).json({
+				error: "Invalid campaign ID",
+			});
     }
 
 		const userId = req.id;
@@ -274,28 +274,22 @@ export const updateCampaign = async (
 	res: GlobalResponse
 ) => {
 	try {
+		// todo: get logo and project cover image
 
-		const { id } = req.query as { id: string };
-		if (!id) {
-      res.status(BAD_REQUEST).json({ error: "send campaign id" });
-      return;
+		const { id } = req.body;
+		if (!mongoose.Types.ObjectId.isValid(id)) {
+			return res.status(400).json({ error: "Invalid campaign ID" });
 		}
 
-    const campaignUpdateData: Record<string, unknown> = {};
+		const campaignUpdateData: Record<string, unknown> = {};
 
-    const coverImageBuffer = req.file?.buffer;
-
-		if (req.body.projectCoverImage && coverImageBuffer) {
-			// remove previous cover image
-      req.body.coverImage = await uploadImg({
-        file: coverImageBuffer,
-        filename: req.file?.filename,
-        folder: "cover-images",
-        maxSize: 2 * 1024 ** 2
-      });
+		if (!mongoose.Types.ObjectId.isValid(id)) {
+			return res.status(BAD_REQUEST).json({
+				error: "Invalid campaign ID",
+			});
 		}
 
-		for (const field of ["description", "title", "ends_at", "starts_at", "projectCoverImage", "reward"]) {
+		for (const field of ["description", "title", "ends_at", "reward"]) {
 			const value = req.body[field];
 			if (field !== "ends_at") {
 				campaignUpdateData[field] = value;
@@ -330,10 +324,9 @@ export const closeCampaign = async (
 	try {
 		const id = req.query.id as string;
 
-		if (!id) {
-      res.status(BAD_REQUEST).json({ error: "send campaign id" });
-      return;
-    }
+		if (!mongoose.Types.ObjectId.isValid(id)) {
+  return res.status(400).json({ error: "Invalid campaign ID" });
+}
 
 		const foundCampaign = await campaign.findById(id);
 		if (!foundCampaign) {
@@ -440,87 +433,3 @@ export const claimCampaignRewards = async (
 			.json({ error: "error claiming campaign quest" });
 	}
 };
-
-export const fetchProjectCampaigns = async (req: GlobalRequest, res: GlobalResponse) => {
-  try {
-    const projectCampaigns = await campaign.find({ creator: req.admin.hub }).lean();
-
-    res.status(OK).json({ projectCampaigns });
-  } catch (error) {
-    logger.error(error);
-    res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching hub campaigns" });
-  }
-}
-
-export const publishCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
-	try {
-		const { id } = req.query as { id: string };
-
-    const createdHub = await hub.findById(req.admin.hub);
-    if (!createdHub) {
-      res.status(NOT_FOUND).json({ error: "hub id attached to admin is invalid" });
-      return;
-    }
-
-		const { txHash } = req.body;
-		if (!txHash) {
-			res.status(BAD_REQUEST).json({ error: "transaction hash is required" });
-			return;
-		}
-		const campaignNo = await checkPayment(txHash);
-		if (!campaignNo) {
-			res.status(FORBIDDEN).json({ error: "kindly pay the require amount (1000 TRUST) to proceed" });
-			return;
-    }
-
-		if (createdHub.campaignsCreated >= Number(campaignNo)) {
-			res.status(FORBIDDEN).json({ error: "kindly pay the required amount (1000 TRUST) to proceed" });
-			return;
-		}
-
-		const campaignExists = await campaign.findById(id);
-
-		if (!campaignExists) {
-			return res.status(NOT_FOUND).json({ error: "campaign not found" });
-		}
-
-		if (campaignExists.status !== "Save") {
-			return res.status(BAD_REQUEST).json({ error: "campaign is not in save status" });
-		}
-
-		campaignExists.status = "Active";
-		createdHub.campaignsCreated += 1;
-
-		await campaignExists.save();
-		await createdHub.save();
-
-		res.status(OK).json({ message: "campaign published" });
-	} catch (error) {
-		logger.error(error);
-		res.status(INTERNAL_SERVER_ERROR).json({ error: "error publishing campaign" });
-	}
-};
-
-export const deleteCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
-  try {
-    const id = req.query.id as string;
-    if (!id) {
-      res.status(BAD_REQUEST).json({ error: "send campaign id" });
-      return;
-    }
-
-    const campaignToBeDeleted = await campaign.findById(id);
-    if (!campaignToBeDeleted) {
-      res.status(NOT_FOUND).json({ error: "campaign not found, id is invalid" });
-      return;
-    }
-
-    await campaign.findByIdAndDelete(id);
-
-    res.status(NO_CONTENT).send();
-  } catch (error) {
-    logger.error(error);
-    res.status(INTERNAL_SERVER_ERROR).json({ error: "error deleting campaign" });
-  }
-}
-

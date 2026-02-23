@@ -55,8 +55,8 @@ const campaignSchema = new Schema({
 	},
 	status: {
 		type: String,
-		default: "Save",
-		enum: ["Active", "Scheduled", "Ended", "Save"],
+		default: "Active",
+		enum: ["Active", "Scheduled", "Ended"],
 	},
 	contractAddress: {
 		type: String,
@@ -85,8 +85,7 @@ const campaignSchema = new Schema({
 	},
 	creator: {
 		type: mongoose.Schema.Types.ObjectId,
-    ref: "project",
-		required: true
+		ref: "project",
 	},
 }, { timestamps: true });
 

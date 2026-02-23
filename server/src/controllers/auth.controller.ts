@@ -24,8 +24,8 @@ import {
 } from "@/utils/env.utils";
 import { formatDate } from "date-fns";
 import { user } from "@/models/user.model";
-import { getRefreshToken, JWT, validateHubData } from "@/utils/utils";
-import { hub } from "@/models/hub.model";
+import { getRefreshToken, JWT, validateProjectData } from "@/utils/utils";
+import { project } from "@/models/project.model";
 import { uploadImg } from "@/utils/img.utils";
 import { referredUsers } from "@/models/referrer.model";
 import axios from "axios";
@@ -295,21 +295,5 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 	} catch (error) {
 		logger.error(error);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "Error signing user in" });
-	}
-};
-
-export const logout = async (req: GlobalRequest, res: GlobalResponse) => {
-	try {
-		const { id, token } = req;
-
-    res.clearCookie("refreshToken");
-
-    // await REDIS.del(`user:${id}`);
-    await REDIS.set({ key: `access-token:${token}`, data: { token }, ttl: 7 * 24 * 60 * 60});
-
-		res.status(200).json({ message: "logged out" });
-	} catch (error) {
-		logger.error(error);
-		res.status(INTERNAL_SERVER_ERROR).json({ error: "Error logging out" });
 	}
 };

@@ -196,18 +196,14 @@ export default function Quests() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0b0718] via-[#0a0615] to-black text-white p-6 relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#0b0718] via-[#0a0615] to-black text-white p-4 sm:p-6 relative">
       <AnimatedBackground />
 
       <div className="mx-auto space-y-6 relative z-10 max-w-full sm:max-w-6xl px-1 sm:px-0">
         {/* Heading */}
-        <div className="space-y-1 mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-            <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">Quests</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">Quests</h1>
-          <p className="text-sm text-white/50 mt-1">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Quests</h1>
+          <p className="text-white/90 mt-1 sm:mt-2">
             Complete these quests to earn rewards
           </p>
         </div>

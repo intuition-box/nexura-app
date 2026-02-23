@@ -340,7 +340,7 @@ export default function CampaignCreate() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">Create Campaign</h1>
+            <h1 className="text-3xl font-bold text-white">Create Campaign</h1>
             <p className="text-white/60 mt-2">Build an engaging campaign with custom tasks</p>
           </div>
           <Button
