@@ -25,13 +25,24 @@ import { multiVaultPreviewDeposit, multiVaultPreviewRedeem, getMultiVaultAddress
 import Chart from "react-apexcharts";
 
 function generateChartData(claim: any, growthType: string) {
-  // For demo: use fixed pattern similar to your spec
   const dates = ["20/01", "25/01", "30/01", "05/02", "10/02", "15/02", "20/02"];
-  let values = [105, 104, 104, 105, 106, 105.5, 110];
+  let values: number[] = [];
 
-  if (growthType === "exponential") {
-    // small variation for demo exponential growth
-    values = values.map((v, i) => 104 + i ** 1.3);
+  if (growthType === "linear") {
+    const basePrice = 1.06;
+    values = dates.map(() => +(basePrice + (Math.random() - 0.5) * 0.01).toFixed(4));
+  } else if (growthType === "exponential") {
+    const basePrice = 80; // starting lower so we can rally to 90.69
+    const maxPrice = 90.69;
+
+    values = dates.map((_, i) => {
+      // simple rally curve: exponential-ish but capped
+      let val = basePrice * Math.pow(1.05, i); // exponential growth
+      if (val > maxPrice) val = maxPrice;       // cap at max
+      // add small random fluctuation
+      val += (Math.random() - 0.5) * 0.5;
+      return +val.toFixed(2);
+    });
   }
 
   return dates.map((date, i) => ({ date, value: values[i] }));
@@ -71,6 +82,15 @@ export default function ClaimDetails() {
   const [loadingAmount, setLoadingAmount] = useState(false);
   const [sortOption, setSortOption] = useState("")
   const [positionsOption, setPositionsOption] = useState("all");
+  const [activePosition, setActivePosition] = useState<any | null>(null);
+  // const [userShares, setUserShares] = useState("0");
+  // Somewhere in your component
+
+// Assuming you have:
+// - `userPositions` = your fetched user vault positions
+// - `activePosition` = the currently selected position object (from allPositions)
+
+
 
   const { user } = useAuth();
   const { connectWallet } = useWallet();
@@ -217,6 +237,17 @@ setUserPositions(myPositions);
     setVisiblePositions(initial.slice(0, ITEMS_PER_PAGE));
   };
 
+  const userShares = useMemo(() => {
+  if (!user || !activePosition) return 0;
+
+  // Find the user's position that matches the active position ID
+  const up = userPositions.find(
+    pos => pos.positionId === activePosition.id
+  );
+
+  return up ? Number(formatEther(BigInt(up.shares))) : 0;
+}, [userPositions, activePosition]);
+
   function getPrice() {
     let sharePrice = "0";
 
@@ -237,40 +268,83 @@ setUserPositions(myPositions);
     return sharePrice;
   }
 
-  const handleClaimAction = async () => {
-    try {
-      const curveId = growthType === "linear" ? 1n : 2n;
-      
-      const address = activeTab === "support" ? id : counterTerm.id;
+ const getUserShares = async () => {
+  if (!user) return;
 
-      if (isBuy) {
-        if (!buyAmount) {
-          toast({ title: "Error", description: "select a buy amount to proceed", variant: "destructive" });
-          return;
-        }
+  const walletClient = await getWalletClient();
+  const publicClient = getPublicClient();
+  await walletClient.switchChain({ id: chain.id });
 
-        setBuying(true);
-        await buyShares(buyAmount, address as Address, curveId);
-        setBuying(false);
-      } else {
-        if (!sellAmount) {
-          toast({ title: "Error", description: "select a sell amount to proceed", variant: "destructive" });
-          return;
-        }
+  const address = getMultiVaultAddressFromChainId(walletClient.chain?.id!);
 
-        setSelling(true);
-        await sellShares(sellAmount, address as Address, curveId);
-        setSelling(false);
-      }
+  const linearCurve = 1n;
+  const exponentialCurve = 2n;
 
-      toast({ title: "Success", description: `Shares ${isBuy ? "bought" : "sold"} successfully!` });
-    } catch (error) {
-      console.error(error);
-      setSelling(false);
-      setBuying(false);
-      toast({ title: "error", description: `error ${isBuy ? "buying" : "selling"} shares`, variant: "destructive" })
-    }
+  let totalShares = 0n;
+
+  // sum across all vaults for both term and counterTerm
+  for (const curveId of [linearCurve, exponentialCurve]) {
+    const [userSupportShares] = await multiVaultPreviewRedeem(
+      { walletClient, publicClient, address },
+      { args: [term.id as Address, curveId, 0n], view: true } // use "view" to just query
+    );
+    const [userOpposeShares] = await multiVaultPreviewRedeem(
+      { walletClient, publicClient, address },
+      { args: [counterTerm.id as Address, curveId, 0n], view: true }
+    );
+    totalShares += userSupportShares + userOpposeShares;
   }
+
+  setUserShares(formatEther(totalShares));
+};
+
+const refreshUserData = async () => {
+  if (!user) return;
+
+  const updatedBalance = await getBalance();
+  setBalance(updatedBalance);
+
+  await fetchClaim(); // updates userPositions & visiblePositions
+};
+
+const handleClaimAction = async () => {
+  if (!user) return await handleConnectWallet();
+
+  try {
+    const curveId = growthType === "linear" ? 1n : 2n;
+    const address = activeTab === "support" ? id : counterTerm.id;
+
+    if (isBuy) {
+      if (!buyAmount) throw new Error("No buy amount selected");
+      setBuying(true);
+      await buyShares(buyAmount, address as Address, curveId);
+      setBuying(false);
+    } else {
+      if (!sellAmount) throw new Error("No sell amount selected");
+      setSelling(true);
+      await sellShares(sellAmount, address as Address, curveId);
+      setSelling(false);
+    }
+
+    // Refresh balance and user positions after the tx is mined
+    await refreshUserData();
+
+    toast({
+      title: "Success",
+      description: `Shares ${isBuy ? "bought" : "sold"} successfully!`
+    });
+
+  } catch (err: any) {
+    console.error(err);
+    setBuying(false);
+    setSelling(false);
+    toast({
+      title: "Error",
+      description: err.message || `Failed ${isBuy ? "buying" : "selling"} shares`,
+      variant: "destructive"
+    });
+  }
+};
 
   const handleConnectWallet = async () => {
     await connectWallet();
@@ -341,6 +415,10 @@ setUserPositions(myPositions);
 
   return data;
 }, [positions, positionsOption, sortOption]);
+
+const numericBalance = Number(balance);
+const hasBalance = numericBalance > 0;
+
 
   if (!claim) return <div className="p-3 text-white">Claim not found</div>;
 
@@ -564,22 +642,36 @@ setUserPositions(myPositions);
   </div>
 
 
+
           {/* Amount Section */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <span className="text-gray-400">Amount: {balance}</span>
-            <span className="text-gray-400">TRUST</span>
-          </div>
+<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+  <span className="text-gray-400">
+    {isBuy ? `Your balance: ${balance}` : `Your shares: ${userShares}`}
+  </span>
+  <span className="text-gray-400">TRUST</span>
+</div>
 
           {/* Inputs */}
-          <div className="w-full bg-gray-800 rounded-md border border-[#833AFD] flex items-center px-2">
-            <input
-              type="text"
-              placeholder="0.1"
-              onChange={(e) => isBuy ? setBuyAmount(e.target.value) : setSellAmount(e.target.value)}
-              className="flex-1 bg-gray-800 text-white p-2 outline-none"
-            />
-            <span className="text-gray-400 ml-2">min</span>
-          </div>
+<div className="w-full bg-gray-800 rounded-md border border-[#833AFD] flex items-center px-2">
+  <input
+    type="text"
+    placeholder="0.1"
+    disabled={!hasBalance}
+    onChange={(e) =>
+      isBuy ? setBuyAmount(e.target.value) : setSellAmount(e.target.value)
+    }
+    className={`flex-1 bg-gray-800 text-white p-2 outline-none ${
+      !hasBalance ? "opacity-50 cursor-not-allowed" : ""
+    }`}
+  />
+  <span className="text-gray-400 ml-2">min</span>
+</div>
+
+{!hasBalance && (
+  <div className="mt-2 text-sm text-red-400 font-semibold">
+    You shall NOT pass! Get some TRUST.
+  </div>
+)}
           <div className="w-full bg-gray-800 border border-[#833AFD] rounded-md px-3 py-2 flex items-center justify-between text-white text-sm">
   {/* Left label */}
   <span>Amount you receive</span>
@@ -624,7 +716,10 @@ setUserPositions(myPositions);
   }}
   className="flex items-center justify-center gap-2 bg-white text-black font-semibold py-2 rounded-3xl"
 >
-  <img src="/key.png" alt="Key Icon" className="w-5 h-5" />
+  {!user && (
+    <img src="/key.png" alt="Key Icon" className="w-5 h-5" />
+  )}
+
   {user
     ? isBuy
       ? buying

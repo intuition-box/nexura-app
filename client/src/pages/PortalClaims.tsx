@@ -6,8 +6,11 @@ import type { Term } from "../types/types";
 import { useToast } from "../hooks/use-toast";
 import { formatNumber } from "../lib/utils";
 import { useLocation } from "wouter";
+import { getPublicClient } from "../lib/viem";
+import { useAuth } from "../lib/auth";
 
 interface Claim {
+  user: { address: Address };
   term_id: Address;
   counter_term_id: Address;
   total_market_cap: string;
@@ -17,12 +20,14 @@ interface Claim {
   counter_term: Term;
 }
 
+
 export const toFixed = (num: string) => {
   const parseNumber = parseFloat(num).toFixed(2);
   return parseFloat(parseNumber).toLocaleString();
 }
 
 export default function PortalClaims() {
+  const { user } = useAuth();
   const [_, setLocation] = useLocation();
   const [view, setView] = useState("list");
   const [sortOption, setSortOption] = useState('{"total_market_cap":"desc"}');
@@ -49,6 +54,25 @@ export default function PortalClaims() {
     const [sortedClaims, setSortedClaims] = useState(visibleClaims);
     const [showCurveInfo, setShowCurveInfo] = useState(false);
     const [activePosition, setActivePosition] = useState<bigint>(0n);
+
+    async function fetchWalletBalance(address: Address) {
+  const publicClient = getPublicClient();
+  const balance = await publicClient.getBalance({ address });
+  return balance ?? 0n;
+}
+
+useEffect(() => {
+  (async () => {
+    if (!user?.address) return;
+
+    try {
+      const balance = await fetchWalletBalance(user.address);
+      setTTrustBalance(balance);
+    } catch (err) {
+      console.error("Failed to fetch wallet balance:", err);
+    }
+  })();
+}, [user?.address]);
 
 useEffect(() => {
   setSortedClaims(sortClaims(visibleClaims, sortOption));
@@ -674,19 +698,18 @@ const sortClaims = (claims, option) => {
     {/* Redeem Tab */}
     <button
       className={`relative px-3 py-1.5 text-sm font-semibold ${
-        Number(tTrustBalance) > 0
+        activePosition > 0
           ? activeTab === "redeem"
             ? "text-white"
             : "text-gray-400 hover:text-white cursor-pointer"
-          : "text-gray-500 cursor-not-allowed"
+          : "text-gray-500 cursor-not-allowed pointer-events-none"
       }`}
       onClick={() => {
-        if (Number(tTrustBalance) > 0) setActiveTab("redeem");
+        if (activePosition > 0) setActiveTab("redeem");
       }}
-      disabled={Number(tTrustBalance) <= 0}
     >
       Redeem
-      {activeTab === "redeem" && Number(tTrustBalance) > 0 && (
+      {activeTab === "redeem" && activePosition > 0 && (
         <span className="absolute left-1/2 bottom-0 w-24 transform -translate-x-1/2 h-1 bg-blue-500 rounded-full"></span>
       )}
     </button>
@@ -712,13 +735,15 @@ const sortClaims = (claims, option) => {
   </p>
     </div>
 
-    {/* Wallet Div */}
-    <div className="mt-2 ml-auto bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max mb-4 text-sm">
-      <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
-      <span className="text-white font-semibold">
-  {Number(tTrustBalance) / 10 ** 18} TRUST
-</span>
-    </div>
+{/* Wallet Div */}
+<div className="mt-2 ml-auto bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max mb-4 text-sm">
+  <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+  <span className="text-white font-semibold">
+    {Number(tTrustBalance) / 10 ** 18 >= 0
+      ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
+      : "0.0000"} TRUST
+  </span>
+</div>
 
 {/* Center Big Zero */}
 <div className="flex flex-col items-center my-2">
@@ -726,8 +751,8 @@ const sortClaims = (claims, option) => {
     type="number"
     min="0"
     placeholder="0"
-    value={inputValue}
-    onChange={(e) => setInputValue(e.target.value)}
+    value={transactionAmount}
+    onChange={(e) => setTransactionAmount(e.target.value)}
     className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40 
                appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
   />
@@ -829,14 +854,14 @@ const sortClaims = (claims, option) => {
 {/* Review Deposit Button */}
 <button
   className={`w-full py-2.5 rounded-3xl font-semibold mt-3 text-sm transition-colors ${
-    inputValue && Number(inputValue) > 0
+    transactionAmount && Number(transactionAmount) > 0
       ? "bg-white text-black hover:bg-gray-200"
       : "bg-gray-700 text-gray-400 cursor-not-allowed"
   }`}
   onClick={() => setShowReviewDepositModal(true)}
-  disabled={!inputValue || Number(inputValue) <= 0}
+  disabled={!transactionAmount || Number(transactionAmount) <= 0}
 >
-  {inputValue && Number(inputValue) > 0 ? "Review Deposit" : "Enter an Amount"}
+  {transactionAmount && Number(transactionAmount) > 0 ? "Review Deposit" : "Enter an Amount"}
 </button>
   </div>
 )}
@@ -859,13 +884,15 @@ const sortClaims = (claims, option) => {
   </p>
     </div>
 
-    {/* Wallet Div */}
-    <div className="mt-2 ml-auto bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max mb-4 text-sm">
-      <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
-      <span className="text-white font-semibold">
-  {Number(tTrustBalance) / 10 ** 18} TRUST
-</span>
-    </div>
+{/* Wallet Div */}
+<div className="mt-2 ml-auto bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max mb-4 text-sm">
+  <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+  <span className="text-white font-semibold">
+    {Number(tTrustBalance) / 10 ** 18 >= 0
+      ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
+      : "0.0000"} TRUST
+  </span>
+</div>
 
 {/* Center Big Zero */}
 <div className="flex flex-col items-center my-2">
@@ -1025,11 +1052,13 @@ const sortClaims = (claims, option) => {
         <span className="text-white font-semibold">Review...</span>
       </div>
 
-      {/* Total Cost */}
-      <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-        <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
-        <span className="text-white font-bold">0.0954</span>
-      </div>
+{/* Total Cost */}
+<div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
+  <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
+  <span className="text-white font-bold">
+    {transactionAmount ? Number(transactionAmount).toFixed(4) : "0.0000"}
+  </span>
+</div>
 
       {/* Deposit TRUST Label */}
       <span className="text-gray-300 font-semibold mb-2 block">Deposit TRUST into Claim</span>
@@ -1044,16 +1073,16 @@ const sortClaims = (claims, option) => {
         <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[150px] truncate">{activeClaim.term.triple.object.label}</span>
       </div>
 
-      {/* Amount Input */}
-      <div className="mb-4">
-        <label className="text-gray-300 text-sm mb-1 block">Amount (in TRUST)</label>
-        <input
-          type="text"
-          value={transactionAmount}
-          onChange={(e) => setTransactionAmount(e.target.value)}
-          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+{/* Amount Input */}
+<div className="mb-4">
+  <label className="text-gray-300 text-sm mb-1 block">Amount (in TRUST)</label>
+  <input
+    type="text"
+    value={transactionAmount}
+    readOnly
+    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white cursor-not-allowed"
+  />
+</div>
 
       {/* Deposit / Redeem Button */}
       <button
