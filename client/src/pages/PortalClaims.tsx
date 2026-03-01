@@ -60,6 +60,7 @@ export default function PortalClaims() {
   const balance = await publicClient.getBalance({ address });
   return balance ?? 0n;
 }
+const [modalStep, setModalStep] = useState<"review" | "awaiting">("review");
 
 useEffect(() => {
   (async () => {
@@ -290,25 +291,25 @@ const sortClaims = (claims, option) => {
 };
 
   return (
-    <div className="p-3 text-white">
+    <div className="p-3 text-white font-geist">
       {/* Header */}
       <h1 className="text-base font-semibold">Claims</h1>
 
-      <p className="text-gray-400 mt-2 max-w-3xl">
+      <p className="text-gray-400 mt-2 max-w-xl text-xs">
         Semantic statements, allowing anyone to claim anything about anything
       </p>
 
       {/* Controls Section */}
-      <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4">
+      <div className="mt-4 flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 mb-2">
 
         {/* Search */}
-        <div className="flex-1 min-w-[280px]">
+        <div className="flex-1 min-w-[250px]">
           <input
   type="text"
   placeholder="Search claims by subject, predicate, or object.."
   value={searchTerm}
   onChange={(e) => setSearchTerm(e.target.value)}
-  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
 />
         </div>
 
@@ -316,14 +317,14 @@ const sortClaims = (claims, option) => {
         <div className="hidden md:flex items-center bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
           <button
             onClick={() => setView("list")}
-            className={`px-3 py-2 ${view === "list" ? "bg-gray-900" : ""}`}
+            className={`px-3 py-1 ${view === "list" ? "bg-gray-900" : ""}`}
           >
             <img src="/list.png" alt="List View" className="w-5 h-5" />
           </button>
 
           <button
             onClick={() => setView("grid")}
-            className={`px-3 py-2 ${view === "grid" ? "bg-gray-900" : ""}`}
+            className={`px-3 py-1 ${view === "grid" ? "bg-gray-900" : ""}`}
           >
             <img src="/grid.png" alt="Grid View" className="w-5 h-5" />
           </button>
@@ -334,7 +335,7 @@ const sortClaims = (claims, option) => {
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value)}
-            className="appearance-none bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 pr-10 focus:outline-none"
+            className="appearance-none bg-gray-900 border border-gray-700 rounded-lg px-4 py-1 pr-10 focus:outline-none text-xs"
           >
             <option value="totalMarketCap_desc">Highest Total Market Cap</option>
             <option value="totalMarketCap_asc">Lowest Total Market Cap</option>
@@ -361,12 +362,12 @@ const sortClaims = (claims, option) => {
       </div>
 
       {/* Claims Table */}
-      <div className="mt-8 overflow-x-auto">
-        <div className="mt-8">
+      <div className="mt-4 overflow-x-auto text-xs">
+        <div className="mt-8 text-xs">
           {view === "list" && (
             <>
               {/* ================= DESKTOP TABLE ================= */}
-              <div className="hidden md:block overflow-x-auto w-full">
+              <div className="hidden md:block overflow-x-auto w-full font-geist text-xs">
                 <table className="min-w-full text-left border-collapse">
                   <thead className="text-sm">
                     <tr className="bg-gray-800 text-gray-300">
@@ -378,18 +379,18 @@ const sortClaims = (claims, option) => {
                     </tr>
                   </thead>
 
-                  <tbody className="text-sm">
-  {visibleClaims.map((claim, index) => (
+                  <tbody className="text-xs">
+  {sortedClaims.map((claim, index) => (
     <tr
       key={index}
-      className="bg-[#060210] hover:bg-[#1a0f2e] cursor-pointer"
+      className="bg-[#060210] hover:bg-[#1a0f2e] cursor-pointer font-geist"
     >
       {/* Claim cell: clickable to navigate */}
       <td
         className="px-4 py-3"
         onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
       >
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 font-geist">
           <span className="bg-[#0b0618] px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate">
             <img src={claim.term.triple.subject.image} className="w-5 h-5 flex-shrink-0" />
             <span className="truncate">{highlightMatch(claim.term.triple.subject.label, searchTerm)}</span>
@@ -402,7 +403,7 @@ const sortClaims = (claims, option) => {
       </td>
 
       {/* Market Cap */}
-      <td className="px-4 py-3 font-semibold">
+      <td className="px-4 py-3 font-semibold font-geist">
         {formatNumber(parseFloat(formatEther(BigInt(claim.total_market_cap))))} TRUST
       </td>
 
@@ -421,10 +422,10 @@ const sortClaims = (claims, option) => {
       </td>
 
       {/* Actions: buttons only */}
-      <td className="px-4 py-3 text-center">
+      <td className="px-4 py-3 text-center text-xs">
         <div className="flex justify-center gap-2">
           <button
-            className="bg-blue-600 px-4 py-2 rounded-lg text-sm pointer-events-auto"
+            className="bg-blue-600 px-4 py-2 rounded-lg text-xs pointer-events-auto"
             onClick={(e) => {
               e.stopPropagation();
               handleSupportClick(claim);
@@ -434,7 +435,7 @@ const sortClaims = (claims, option) => {
           </button>
 
           <button
-            className="bg-[#F19C03] px-4 py-2 rounded-lg text-sm pointer-events-auto"
+            className="bg-[#F19C03] px-4 py-2 rounded-lg  pointer-events-auto"
             onClick={(e) => {
               e.stopPropagation();
               handleOpposeClick(claim);
@@ -452,7 +453,7 @@ const sortClaims = (claims, option) => {
 
               {/* ================= MOBILE STACKED LIST ================= */}
               <div className="md:hidden flex flex-col gap-4">
-                {visibleClaims.map((claim, index) => (
+                {sortedClaims.map((claim, index) => (
                   <div
                     key={index}
                     className="bg-[#060210] border border-gray-700 rounded-xl p-4 hover:bg-[#1a0f2e] cursor-pointer"
@@ -518,7 +519,7 @@ const sortClaims = (claims, option) => {
           )}
                     {view === "grid" && (
           <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-3">
-            {visibleClaims.map((claim) => {
+            {sortedClaims.map((claim) => {
               const supportCount = Number(claim.term.positions_aggregate.aggregate.count);
               const opposeCount = Number(claim.counter_term.positions_aggregate.aggregate.count);
 
@@ -651,11 +652,11 @@ const sortClaims = (claims, option) => {
   <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
 <div
   className="bg-[#070315] max-w-lg w-full mx-4 p-3 rounded-lg relative border max-h-[85vh] overflow-y-auto"
-  style={{ borderColor: "#8B3EFE" }}
+  style={{ borderColor: "#220350" }}
 >
 
       {/* Title + Support Tag */}
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1 p-2 pb-1">
         <h2 className="text-white font-bold text-base">Claim</h2>
         <span
   className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
@@ -665,12 +666,12 @@ const sortClaims = (claims, option) => {
       </div>
 
       {/* Subtitle */}
-      <p className="text-gray-400 text-sm mb-3">
-        Supporting or Opposing a triple enhances its discoverability in the intuition system
+      <p className="text-gray-400 text-xs mb-12 -pt-2">
+        Staking on a Triple enhances its discoverability in the Intuition system
       </p>
 
 {/* Statement */}
-<div className="text-gray-300 mb-4 px-6 flex flex-wrap items-center gap-2">
+<div className="text-gray-300 mb-4 px-6 flex flex-wrap items-center gap-2 text-lg">
   <span className="bg-[#0b0618] px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate min-w-0">
     <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
     {activeClaim.term.triple.subject.label}
@@ -683,36 +684,43 @@ const sortClaims = (claims, option) => {
 <div className="flex justify-center mb-3">
   <div className="flex gap-6 relative">
     {/* Deposit Tab */}
-    <button
-      className={`relative px-3 py-1.5 text-sm font-semibold ${
-        activeTab === "deposit" ? "text-white" : "text-gray-400"
-      }`}
-      onClick={() => setActiveTab("deposit")}
-    >
-      Deposit
-      {activeTab === "deposit" && (
-        <span className="absolute left-1/2 bottom-0 w-24 transform -translate-x-1/2 h-1 bg-blue-500 rounded-full"></span>
-      )}
-    </button>
+<button
+  className={`relative px-3 py-1.5 text-sm font-semibold ${
+    activeTab === "deposit" ? "text-white" : "text-gray-400"
+  }`}
+  onClick={() => setActiveTab("deposit")}
+>
+  Deposit
+  {activeTab === "deposit" && (
+    <span
+      className="absolute left-1/2 bottom-0 w-40 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
+    ></span>
+  )}
+</button>
 
-    {/* Redeem Tab */}
-    <button
-      className={`relative px-3 py-1.5 text-sm font-semibold ${
-        activePosition > 0
-          ? activeTab === "redeem"
-            ? "text-white"
-            : "text-gray-400 hover:text-white cursor-pointer"
-          : "text-gray-500 cursor-not-allowed pointer-events-none"
-      }`}
-      onClick={() => {
-        if (activePosition > 0) setActiveTab("redeem");
-      }}
-    >
-      Redeem
-      {activeTab === "redeem" && activePosition > 0 && (
-        <span className="absolute left-1/2 bottom-0 w-24 transform -translate-x-1/2 h-1 bg-blue-500 rounded-full"></span>
-      )}
-    </button>
+{/* Add spacing between tabs */}
+<div className="w-10"></div>
+
+{/* Redeem Tab */}
+<button
+  className={`relative px-3 py-1.5 text-sm font-semibold ${
+    activePosition > 0
+      ? activeTab === "redeem"
+        ? "text-white"
+        : "text-gray-400 hover:text-white cursor-pointer"
+      : "text-gray-500 cursor-not-allowed pointer-events-none"
+  }`}
+  onClick={() => {
+    if (activePosition > 0) setActiveTab("redeem");
+  }}
+>
+  Redeem
+  {activeTab === "redeem" && activePosition > 0 && (
+    <span
+      className="absolute left-1/2 bottom-0 w-40 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
+    ></span>
+  )}
+</button>
   </div>
 </div>
 
@@ -720,24 +728,27 @@ const sortClaims = (claims, option) => {
 {/* Tab Content */}
 {activeTab === "deposit" && (
   <div className="px-4 md:px-12">
-    {/* Main Card: Active Position */}
-    <div className="bg-[#110A2B] border-2 border-[#393B60] p-4 rounded-xl min-h-[120px] flex flex-col justify-between mb-3">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-gray-300 text-sm font-semibold">Your Active Position</span>
-                <span
-  className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
->
-  {opposeMode ? "Oppose" : "Support"}
-</span>
-      </div>
-        <p className="text-white font-bold text-xl">
-    {activePosition ? toFixed(formatEther(activePosition)) : "0"} TRUST
-  </p>
-    </div>
+{/* Main Card: Active Position */}
+<div className="bg-[#110A2B] border-2 border-[#393B60] p-4 rounded-xl flex items-center justify-between mb-1">
+  <span className="text-gray-300 text-sm font-semibold">Your Active Position</span>
 
-{/* Wallet Div */}
-<div className="mt-2 ml-auto bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max mb-4 text-sm">
-  <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+  <div className="flex items-center gap-4">
+    <span
+      className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+    >
+      {opposeMode ? "Oppose" : "Support"}
+    </span>
+    <span className="font-bold text-xl">
+      {activePosition ? toFixed(formatEther(activePosition)) : "0"} TRUST
+    </span>
+  </div>
+</div>
+
+{/* Wallet + Curve Row */}
+<div className="flex items-center gap-3 mb-2">
+{/* Wallet Div (Compact) */}
+<div className="ml-1 bg-[#110A2B] border border-[#393B60] rounded-2xl px-2 py-1 flex items-center gap-1.5 text-xs">
+  <img src="/wallet.png" alt="Wallet Icon" className="w-3 h-3" />
   <span className="text-white font-semibold">
     {Number(tTrustBalance) / 10 ** 18 >= 0
       ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
@@ -745,8 +756,105 @@ const sortClaims = (claims, option) => {
   </span>
 </div>
 
+  <div className="flex items-center relative">
+
+      {/* Curve Info + Toggle */}
+      <div className="flex items-center flex-1">
+        {/* Curve Info Text */}
+        <div className="flex flex-col justify-center ml-8">
+          <span className="text-white font-bold text-xs">
+            {isToggled ? "Exponential Curve" : "Linear Curve"}
+          </span>
+          <span className="text-[0.6rem] text-gray-300">
+            {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
+          </span>
+        </div>
+
+        {/* Toggle Button */}
+        <div className="flex-none ml-4">
+          <label className="relative inline-block w-10 h-5 cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isToggled}
+              onChange={() => setIsToggled(!isToggled)}
+            />
+            {/* Track */}
+            <span className="block w-full h-full bg-white rounded-full peer-checked:bg-[#FFF] transition-colors"></span>
+            {/* Thumb */}
+            <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
+          </label>
+        </div>
+      </div>
+
+      {/* Info Icon (Beside Card) */}
+      <div className="flex flex-col items-center ml-4">
+        <button
+          onClick={() => setShowCurveInfo(true)}
+          className="w-8 h-8 mt-2 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm font-bold hover:bg-[#1a133d] hover:text-white transition-colors"
+        >
+          i
+        </button>
+
+        {/* Slide-in Modal (Fixed Right) */}
+        {showCurveInfo && (
+          <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
+            
+            {/* Close Button */}
+            <button
+              onClick={() => setShowCurveInfo(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-white font-bold"
+            >
+              ✕
+            </button>
+
+            {/* Main Heading */}
+            <h2 className="text-white font-bold text-lg text-center mb-2">
+              How Bonding Curves Work
+            </h2>
+            <p className="text-gray-300 text-sm text-left mb-6">
+              Intuition uses bonding curves to automatically set identity and claim prices based on supply and demand, rewarding early curation of valuable information.
+            </p>
+
+            {/* Linear Curve Section */}
+            <img
+              src="/linear-curve.svg"
+              alt="Linear Curve"
+              className="w-full mb-4 rounded"
+            />
+            <div className="text-left mb-6">
+              <h4 className="text-white font-semibold mb-1">Linear Curve (Safe)</h4>
+              <p className="text-gray-300 text-sm mb-2">
+                The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
+              </p>
+              <p className="text-gray-400 text-sm">
+                In other words, minus the fees, you will get back your original deposit value, plus any portion of the fees collected.
+              </p>
+            </div>
+
+            {/* Exponential Curve Section */}
+            <img
+              src="/exponential.svg"
+              alt="Exponential Curve"
+              className="w-full mb-4 rounded"
+            />
+            <div className="text-left mb-6">
+              <h4 className="text-white font-semibold mb-1">Exponential Curve (Riskier)</h4>
+              <p className="text-gray-300 text-sm mb-2">
+                The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
+              </p>
+              <p className="text-gray-300 text-sm">
+                Choose based on your risk tolerance and timing. It's riskier but can yield higher returns; however, if you deposit later, you will pay more for the same amount of shares.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+</div>
+
 {/* Center Big Zero */}
-<div className="flex flex-col items-center my-2">
+<div className="flex flex-col items-center">
   <input
     type="number"
     min="0"
@@ -756,100 +864,10 @@ const sortClaims = (claims, option) => {
     className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40 
                appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
   />
-  <span className="text-gray-300 text-xs mt-1">TRUST</span>
+  <span className="text-gray-300 text-xs -my-2 mb-2">TRUST</span>
 </div>
 
-<div className="flex items-start gap-3">
 
-  {/* Curve Card */}
-  <div className="bg-[#110A2B] border-2 border-[#393B60] p-3 rounded-xl flex flex-col gap-3 flex-1">
-    <div className="flex justify-between items-center">
-      <div className="flex flex-col">
-        <span className="text-white font-bold text-base">
-          {isToggled ? "Exponential Curve" : "Linear Curve"}
-        </span>
-        <span className="text-gray-300 text-xs mt-0.5">
-          {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
-        </span>
-      </div>
-
-      {/* Toggle Button */}
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          className="sr-only peer"
-          checked={isToggled}
-          onChange={() => setIsToggled(!isToggled)}
-        />
-        <div className="w-10 h-5 bg-white rounded-full peer peer-checked:bg-[#FFF] transition-colors"></div>
-        <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-5 transition-transform"></div>
-      </label>
-    </div>
-  </div>
-
-  {/* Info Icon (Outside Card) */}
-  <button
-    onClick={() => setShowCurveInfo(true)}
-    className="w-8 h-8 mt-2 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm font-bold hover:bg-[#1a133d] hover:text-white transition-colors"
-  >
-    i
-  </button>
-
-  {/* Slide-in Modal */}
-{/* Curve Info Modal */}
-{showCurveInfo && (
-  <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
-    
-    {/* Close Button */}
-    <button
-      onClick={() => setShowCurveInfo(false)}
-      className="absolute top-3 right-3 text-gray-400 hover:text-white font-bold"
-    >
-      ✕
-    </button>
-
-    {/* Main Heading */}
-    <h2 className="text-white font-bold text-lg text-center mb-2">How Bonding Curves Work</h2>
-    <p className="text-gray-300 text-sm text-left mb-6">
-      Intuition uses bonding curves to automatically set identity and claim prices based on supply and demand, rewarding early curation of valuable information.
-    </p>
-
-    {/* Linear Curve Section */}
-    <img
-      src="/linear-curve.svg"
-      alt="Linear Curve"
-      className="w-full mb-4 rounded"
-    />
-    <div className="text-left mb-6">
-      <h4 className="text-white font-semibold mb-1">Linear Curve (Safe)</h4>
-      <p className="text-gray-300 text-sm mb-2">
-        The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
-      </p>
-      <p className="text-gray-400 text-sm">
-        In other words, minus the fees, you will get back your original deposit value, plus any portion of the fees collected.
-      </p>
-    </div>
-
-    {/* Exponential Curve Section */}
-    <img
-      src="/exponential.svg"
-      alt="Exponential Curve"
-      className="w-full mb-4 rounded"
-    />
-    <div className="text-left mb-6">
-      <h4 className="text-white font-semibold mb-1">Exponential Curve (Riskier)</h4>
-      <p className="text-gray-300 text-sm mb-2">
-        The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
-      </p>
-      <p className="text-gray-300 text-sm">
-        Choose based on your risk tolerance and timing. It's riskier but can yield higher returns; however, if you deposit later, you will pay more for the same amount of shares.
-      </p>
-    </div>
-
-  </div>
-)}
-
-</div>
 
 {/* Review Deposit Button */}
 <button
@@ -910,95 +928,59 @@ const sortClaims = (claims, option) => {
 
 <div className="flex items-start gap-3">
 
-  {/* Curve Card */}
-  <div className="bg-[#110A2B] border-2 border-[#393B60] p-3 rounded-xl flex flex-col gap-3 flex-1">
-    <div className="flex justify-between items-center">
-      <div className="flex flex-col">
-        <span className="text-white font-bold text-base">
-          {isToggled ? "Exponential Curve" : "Linear Curve"}
-        </span>
-        <span className="text-gray-300 text-xs mt-0.5">
-          {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
-        </span>
-      </div>
-
-      {/* Toggle Button */}
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          className="sr-only peer"
-          checked={isToggled}
-          onChange={() => setIsToggled(!isToggled)}
-        />
-        <div className="w-10 h-5 bg-white rounded-full peer peer-checked:bg-[#FFF] transition-colors"></div>
-        <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-5 transition-transform"></div>
-      </label>
-    </div>
+</div>{/* Wallet + Curve Row */}
+<div className="flex items-center gap-3 mb-2">
+  {/* Wallet Div */}
+  <div className="ml-1 bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max text-sm">
+    <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+    <span className="text-white font-semibold">
+      {Number(tTrustBalance) / 10 ** 18 >= 0
+        ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
+        : "0.0000"} TRUST
+    </span>
   </div>
 
-  {/* Info Icon (Beside Card) */}
-  <div className="flex flex-col items-center">
-    <button
-      onClick={() => setShowCurveInfo(true)}
-      className="w-8 h-8 mt-2 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm font-bold hover:bg-[#1a133d] hover:text-white transition-colors"
-    >
-      i
-    </button>
+  {/* Curve Info */}
+  <div className="flex flex-col justify-center ml-8">
+    <span className="text-white font-bold text-xs">
+      {isToggled ? "Exponential Curve" : "Linear Curve"}
+    </span>
+    <span className="text-[0.6rem] text-gray-300">
+      {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
+    </span>
+  </div>
 
-    {/* Slide-in Modal (Fixed Right) */}
-    {showCurveInfo && (
-      <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
-        
-        {/* Close Button */}
-        <button
-          onClick={() => setShowCurveInfo(false)}
-          className="absolute top-3 right-3 text-gray-400 hover:text-white font-bold"
-        >
-          ✕
-        </button>
-
-        {/* Main Heading */}
-        <h2 className="text-white font-bold text-lg text-center mb-2">How Bonding Curves Work</h2>
-        <p className="text-gray-300 text-sm text-left mb-6">
-          Intuition uses bonding curves to automatically set identity and claim prices based on supply and demand, rewarding early curation of valuable information.
-        </p>
-
-        {/* Linear Curve Section */}
-        <img
-          src="/linear-curve.svg"
-          alt="Linear Curve"
-          className="w-full mb-4 rounded"
-        />
-        <div className="text-left mb-6">
-          <h4 className="text-white font-semibold mb-1">Linear Curve (Safe)</h4>
-          <p className="text-gray-300 text-sm mb-2">
-            The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
-          </p>
-          <p className="text-gray-400 text-sm">
-            In other words, minus the fees, you will get back your original deposit value, plus any portion of the fees collected.
-          </p>
-        </div>
-
-        {/* Exponential Curve Section */}
-        <img
-          src="/exponential.svg"
-          alt="Exponential Curve"
-          className="w-full mb-4 rounded"
-        />
-        <div className="text-left mb-6">
-          <h4 className="text-white font-semibold mb-1">Exponential Curve (Riskier)</h4>
-          <p className="text-gray-300 text-sm mb-2">
-            The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
-          </p>
-          <p className="text-gray-300 text-sm">
-            Choose based on your risk tolerance and timing. It's riskier but can yield higher returns; however, if you deposit later, you will pay more for the same amount of shares.
-          </p>
-        </div>
-
-      </div>
-    )}
+  {/* Toggle Button */}
+  <div className="flex-none ml-4">
+    <label className="relative inline-block w-10 h-5 cursor-pointer">
+      <input
+        type="checkbox"
+        className="sr-only peer"
+        checked={isToggled}
+        onChange={() => setIsToggled(!isToggled)}
+      />
+      {/* Track */}
+      <span className="block w-full h-full bg-white rounded-full peer-checked:bg-[#FFF] transition-colors"></span>
+      {/* Thumb */}
+      <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
+    </label>
   </div>
 </div>
+
+{/* Center Big Zero */}
+<div className="flex flex-col items-center">
+  <input
+    type="number"
+    min="0"
+    placeholder="0"
+    value={transactionAmount}
+    onChange={(e) => setTransactionAmount(e.target.value)}
+    className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40 
+               appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+  />
+  <span className="text-gray-300 text-xs -my-2 mb-2">TRUST</span>
+</div>
+
 
     {/* Review Deposit Button */}
 <button
@@ -1028,7 +1010,10 @@ const sortClaims = (claims, option) => {
       {/* Close Button */}
       <button
         className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl font-bold"
-        onClick={() => setShowReviewDepositModal(false)}
+        onClick={() => {
+          setShowReviewDepositModal(false);
+          setModalStep("review"); // reset next time
+        }}
       >
         ×
       </button>
@@ -1036,61 +1021,62 @@ const sortClaims = (claims, option) => {
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-white font-bold text-base">Claim</h2>
-        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold">
-          Deposit
+        <span
+          className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+        >
+          {opposeMode ? "Oppose" : "Support"}
         </span>
       </div>
 
-      {/* Subtitle */}
       <p className="text-gray-400 text-sm mb-6">
-        Depositing into a triple increases its impact in the intuition system
+        Staking on a Triple enhances its discoverability in the Intuition system
       </p>
 
-      {/* Centered Spinner + Label */}
-      <div className="flex flex-col items-center my-6">
-        <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2 animate-spin" />
-        <span className="text-white font-semibold">Review...</span>
-      </div>
+      {modalStep === "review" ? (
+        <>
+          {/* Review Step */}
+          <div className="flex flex-col items-center my-6">
+            <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
+            <span className="text-white font-semibold">Review...</span>
+          </div>
 
-{/* Total Cost */}
-<div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-  <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
-  <span className="text-white font-bold">
-    {transactionAmount ? Number(transactionAmount).toFixed(4) : "0.0000"}
-  </span>
-</div>
+          <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
+            <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
+            <span className="text-white font-bold">
+              {transactionAmount ? Number(transactionAmount).toFixed(4) : "0.0000"}
+            </span>
+          </div>
 
-      {/* Deposit TRUST Label */}
-      <span className="text-gray-300 font-semibold mb-2 block">Deposit TRUST into Claim</span>
+          <button
+            className="w-full bg-white text-black py-2.5 rounded-3xl font-semibold text-sm"
+            onClick={() => {
+              setModalStep("awaiting");
+              handleClaimAction("deposit");
+            }}
+          >
+            Confirm
+          </button>
+        </>
+      ) : (
+        <>
+          {/* Awaiting Wallet Approval */}
+          <div className="flex flex-col items-center my-6">
+            <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
+            <span className="text-white font-semibold">Awaiting...</span>
+          </div>
 
-      {/* Statement */}
-      <div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center gap-2">
-        <span className="font-bold bg-[#0b0618] px-2 py-1 rounded inline-flex items-center gap-2 max-w-[150px] truncate">
-          <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
-          {activeClaim.term.triple.subject.label}
-        </span>
-        <span>{activeClaim.term.triple.predicate.label}</span>
-        <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[150px] truncate">{activeClaim.term.triple.object.label}</span>
-      </div>
-
-{/* Amount Input */}
-<div className="mb-4">
-  <label className="text-gray-300 text-sm mb-1 block">Amount (in TRUST)</label>
-  <input
-    type="text"
-    value={transactionAmount}
-    readOnly
-    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white cursor-not-allowed"
-  />
-</div>
-
-      {/* Deposit / Redeem Button */}
-      <button
-  className="w-full bg-white text-black py-2.5 rounded-3xl font-semibold text-sm"
-  onClick={() => handleClaimAction("deposit")}
->
-  Deposit
-</button>
+          <div className="flex items-center justify-center gap-2 bg-[#110A2B] border border-[#393B60] rounded-2xl px-4 py-2 mx-4">
+            <img src="/wallet.png" alt="Wallet Icon" className="w-5 h-5" />
+            <span className="text-white font-semibold text-sm">Awaiting wallet approval</span>
+            <div className="relative group">
+              <span className="text-gray-400 font-bold cursor-pointer text-sm">?</span>
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Approve this transaction in your wallet
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   </div>
 )}
@@ -1117,7 +1103,7 @@ const sortClaims = (claims, option) => {
 
       {/* Subtitle */}
       <p className="text-gray-400 text-sm mb-6">
-        Supporting or Opposing a triple enhances its discoverability in the intuition system
+        Staking on a Triple enhances its discoverability in the Intuition system
       </p>
 
       {/* Centered Spinner + Label */}
