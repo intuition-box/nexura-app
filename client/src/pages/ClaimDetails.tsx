@@ -23,6 +23,7 @@ import { getPublicClient, getWalletClient } from "../lib/viem";
 import chain from "../lib/chain";
 import { multiVaultPreviewDeposit, multiVaultPreviewRedeem, getMultiVaultAddressFromChainId } from "@0xintuition/sdk";
 import Chart from "react-apexcharts";
+import html2canvas from "html2canvas";
 
 function generateChartData(claim: any, growthType: string) {
   const dates = ["20/01", "25/01", "30/01", "05/02", "10/02", "15/02", "20/02"];
@@ -75,6 +76,10 @@ export default function ClaimDetails() {
   const [opposePercent, setOpposePercent] = useState(0);
   const [totalPostions, setTotalPositions] = useState("0");
   const [marketCap, setMarketCap] = useState("0");
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [imageData, setImageData] = useState<string | null>(null);
   const [balance, setBalance] = useState("0");
   const [amountToReceive, setAmountToReceive] = useState("0");
   const [isToggled, setIsToggled] = useState(false);
@@ -83,14 +88,7 @@ export default function ClaimDetails() {
   const [sortOption, setSortOption] = useState("")
   const [positionsOption, setPositionsOption] = useState("all");
   const [activePosition, setActivePosition] = useState<any | null>(null);
-  // const [userShares, setUserShares] = useState("0");
-  // Somewhere in your component
-
-// Assuming you have:
-// - `userPositions` = your fetched user vault positions
-// - `activePosition` = the currently selected position object (from allPositions)
-
-
+  const inputAmount = isBuy ? buyAmount : sellAmount;
 
   const { user } = useAuth();
   const { connectWallet } = useWallet();
@@ -267,6 +265,7 @@ setUserPositions(myPositions);
 
     return sharePrice;
   }
+  
 
  const getUserShares = async () => {
   if (!user) return;
@@ -419,8 +418,69 @@ const handleClaimAction = async () => {
 const numericBalance = Number(balance);
 const hasBalance = numericBalance > 0;
 
+const currentUrl = window.location.href;
 
-  if (!claim) return <div className="p-3 text-white">Claim not found</div>;
+ const handleGenerateImage = async () => {
+    if (!cardRef.current) return;
+    setGeneratingImage(true);
+
+    try {
+      const canvas = await html2canvas(cardRef.current);
+      const imgData = canvas.toDataURL("image/png");
+      setImageData(imgData);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to generate image.");
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!imageData) return;
+    const link = document.createElement("a");
+    link.href = imageData;
+    link.download = "claim_snapshot.png";
+    link.click();
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(currentUrl)
+      .then(() => alert("Link copied to clipboard!"))
+      .catch(() => alert("Failed to copy link."));
+  };
+
+  const handleShareX = () => {
+    const text = `Check out this claim: ${currentUrl}`;
+    const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(xUrl, "_blank");
+  };
+
+
+  if (!claim) return <div className="p-3 text-white">
+    <div className="flex items-center justify-center w-full h-full">
+  <svg
+    className="w-8 h-8 animate-spin text-gray-400"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    />
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+    />
+  </svg>
+</div>
+      </div>;
 
   return (
     <div className="p-3 text-white space-y-6">
@@ -465,18 +525,130 @@ const hasBalance = numericBalance > 0;
             <span className="font-semibold">{term.triple.creator.label}</span>
           </div>
 
-          {/* Share Button */}
-          <button
-            onClick={() => {
-              const textToShare = `${marketCap} TRUST | Total Position: ${totalPostions}`;
-              navigator.clipboard.writeText(textToShare)
-                .then(() => alert("Copied to clipboard!"))
-                .catch(() => alert("Failed to copy."));
-            }}
-            className="ml-auto px-4 py-2 bg-[#110A2B] border border-[#393B60] rounded-md text-white font-semibold hover:bg-[#1A0F3D] transition-colors duration-200"
-          >
-            Share
-          </button>
+ {/* Share Button */}
+      <button
+        onClick={() => {
+          setIsShareModalOpen(true);
+          handleGenerateImage();
+        }}
+        className="ml-auto px-4 py-2 bg-[#110A2B] border border-[#393B60] rounded-md text-white font-semibold hover:bg-[#1A0F3D] transition-colors duration-200"
+      >
+        Share
+      </button>
+
+      {/* Modal */}
+{isShareModalOpen && (
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div className="bg-[#070315] rounded-xl p-6 max-w-lg w-full relative">
+      {/* Close Button */}
+      <button
+        onClick={() => setIsShareModalOpen(false)}
+        className="absolute top-3 right-3 text-white font-bold text-xl"
+      >
+        ×
+      </button>
+
+      {/* Modal Content */}
+      <div className="flex flex-col gap-4">
+        {/* Claim Title */}
+        <div className="flex flex-wrap items-center gap-1">
+          <img src={term.triple.subject.image} alt="Claim Icon" className="w-16 h-16" />
+          <span className="bg-[#0b0618] px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate">
+            {term.triple.subject.label}
+          </span>
+          <span>{term.triple.predicate.label}</span>
+          <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[150px] truncate">{term.triple.object.label}</span>
+        </div>
+
+        {/* Card + Overlay */}
+        <div ref={cardRef} className="relative flex flex-col gap-4">
+          {/* Overlay for Generating Image */}
+          {generatingImage && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white z-10">
+              Generating image...
+            </div>
+          )}
+
+          {/* Support / Oppose Cards */}
+          <div className="flex gap-4 opacity-80">
+            {/* Support Card */}
+            <div className="flex-1 bg-[#006CD233] border border-[#393B60] rounded-xl p-4 flex flex-col gap-3">
+              <span className="font-semibold text-lg text-[#006CD2]">SUPPORT</span>
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-sm md:text-base">{claim.supportLabel}K TRUST</span>
+                <img src="/intuition-icon.png" alt="Intuition Icon" className="w-5 h-5" />
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-400 font-semibold text-base md:text-lg">{claim.support}</span>
+                  <img src="/user.png" alt="User Icon" className="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+
+            {/* Oppose Card */}
+            <div className="flex-1 bg-[#F19C0333] border border-[#393B60] rounded-xl p-4 flex flex-col gap-3">
+              <span className="font-semibold text-lg text-[#F19C03]">OPPOSE</span>
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-sm md:text-base">{claim.opposeLabel}K TRUST</span>
+                <img src="/intuition-icon.png" alt="Intuition Icon" className="w-5 h-5" />
+                <div className="flex items-center gap-2">
+                  <span className="text-[#F19C03] font-semibold text-base md:text-lg">{claim.oppose}</span>
+                  <img src="/user-red.png" alt="User Icon" className="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full h-5 bg-gray-700 rounded-lg overflow-hidden relative">
+            <div className="flex h-full text-white text-xs font-semibold">
+              <div className="bg-blue-600 flex items-center justify-center transition-all duration-500" style={{ width: `${supportPercent}%` }}>
+                {supportPercent.toFixed(0)}%
+              </div>
+              <div className="bg-[#F19C03] flex items-center justify-center transition-all duration-500" style={{ width: `${opposePercent}%` }}>
+                {opposePercent.toFixed(0)}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 mt-4">
+  {/* Share on X */}
+  <button
+    onClick={handleShareX}
+    className="flex items-center gap-1 px-3 py-1 bg-[#1DA1F2] text-white text-sm rounded-md font-semibold hover:bg-[#0d95e8] transition-colors"
+  >
+    X
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h8m-8 4h6" />
+    </svg>
+  </button>
+
+  {/* Copy Link */}
+  <button
+    onClick={handleCopyLink}
+    className="flex items-center gap-1 px-3 py-1 bg-[#393B60] text-white text-sm rounded-md font-semibold hover:bg-[#4a4c7a] transition-colors"
+  >
+    Copy
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16h8M8 12h8m-6-8h6a2 2 0 012 2v6a2 2 0 01-2 2h-6a2 2 0 01-2-2V6a2 2 0 012-2z" />
+    </svg>
+  </button>
+
+  {/* Download Image */}
+  <button
+    onClick={handleDownload}
+    className="flex items-center gap-1 px-3 py-1 bg-[#110A2B] text-white text-sm rounded-md font-semibold hover:bg-[#1a0f3d] transition-colors"
+  >
+    Download
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12v8m0 0l-4-4m4 4l4-4M12 4v8" />
+    </svg>
+  </button>
+</div>
+      </div>
+    </div>
+  </div>
+)}
         </div>
       </div>
 
@@ -651,15 +823,20 @@ const hasBalance = numericBalance > 0;
   <span className="text-gray-400">TRUST</span>
 </div>
 
-          {/* Inputs */}
+{/* Inputs */}
 <div className="w-full bg-gray-800 rounded-md border border-[#833AFD] flex items-center px-2">
   <input
     type="text"
     placeholder="0.1"
     disabled={!hasBalance}
-    onChange={(e) =>
-      isBuy ? setBuyAmount(e.target.value) : setSellAmount(e.target.value)
-    }
+    value={isBuy ? buyAmount : sellAmount}
+    onChange={(e) => {
+      const val = e.target.value;
+      // Allow only numbers and a single decimal point
+      if (/^\d*\.?\d*$/.test(val)) {
+        isBuy ? setBuyAmount(val) : setSellAmount(val);
+      }
+    }}
     className={`flex-1 bg-gray-800 text-white p-2 outline-none ${
       !hasBalance ? "opacity-50 cursor-not-allowed" : ""
     }`}
@@ -706,29 +883,33 @@ const hasBalance = numericBalance > 0;
 </div>
 
           {/* Connect / Buy / Sell Button */}
+{/* Connect / Buy / Sell Button */}
 <button
   onClick={async () => {
     if (!user) {
       await handleConnectWallet();
       return;
     }
+    if (!inputAmount || Number(inputAmount) <= 0) return; // block if no amount
     await handleClaimAction();
   }}
-  className="flex items-center justify-center gap-2 bg-white text-black font-semibold py-2 rounded-3xl"
+  disabled={!user || !inputAmount || Number(inputAmount) <= 0} // disable button
+  className={`flex items-center justify-center gap-2 font-semibold py-2 rounded-3xl transition-opacity duration-200
+    ${!user || !inputAmount || Number(inputAmount) <= 0 ? "bg-gray-600 text-gray-400 cursor-not-allowed" : "bg-white text-black"}`}
 >
-  {!user && (
-    <img src="/key.png" alt="Key Icon" className="w-5 h-5" />
-  )}
-
-  {user
-    ? isBuy
-      ? buying
-        ? "Buying"
-        : "Buy"
-      : selling
-      ? "Selling"
-      : "Sell"
-    : "Connect Wallet"}
+  {!user && <img src="/key.png" alt="Key Icon" className="w-5 h-5" />}
+  
+  {!user
+    ? "Connect Wallet"
+    : !inputAmount || Number(inputAmount) <= 0
+    ? "Enter Amount"
+    : isBuy
+    ? buying
+      ? "Buying"
+      : "Buy"
+    : selling
+    ? "Selling"
+    : "Sell"}
 </button>
         </div>
       </div>
@@ -772,82 +953,6 @@ const hasBalance = numericBalance > 0;
 
   <div className="h-px w-full bg-white opacity-80"></div>
 </div>
-
-      {/* Support Position Card */}
-      <div className="bg-[#110A2B] rounded-xl p-5 3 flex flex-col gap-3 text-white">
-
-        {/* Title Section */}
-        <div>
-          <h3 className="font-semibold text-base">Support Position</h3>
-          <p className="text-gray-400 text-xs">The Ticker (Progressive)</p>
-        </div>
-
-        {/* Position Summary Card */}
-<div className="bg-[#110A2B] rounded-xl p-5 flex flex-col gap-4 text-white">
-  {/* Row 1: Support / Oppose Percent */}
-  <div className="flex justify-between text-sm font-semibold text-gray-400">
-    <span>Support: {supportPercent.toFixed(2)}%</span>
-    <span>Oppose: {opposePercent.toFixed(2)}%</span>
-  </div>
-
-  {/* Row 2: Table Header */}
-  <div className="grid grid-cols-5 gap-3 text-gray-400 text-xs font-semibold border-b border-gray-700 pb-2">
-    <span>Side</span>
-    <span>Curve</span>
-    <span>Price / Share</span>
-    <span>Mkt Cap</span>
-    <span>Holders</span>
-  </div>
-
-  {/* Row 3: FOR */}
-  <div className="grid grid-cols-5 gap-3 items-center py-2">
-    <span className="flex items-center gap-2 font-semibold">
-      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-      FOR
-    </span>
-    <span>Exponential</span>
-    <span>{term.vaults?.[1]?.current_share_price ? toFixed(formatEther(BigInt(term.vaults[1].current_share_price))) : "-"}</span>
-    <span>{marketCap}</span>
-    <span>{term.vaults?.[1]?.holders?.length ?? 0}</span>
-  </div>
-
-  {/* Row 4: AGAINST */}
-  <div className="grid grid-cols-5 gap-3 items-center py-2">
-    <span className="flex items-center gap-2 font-semibold">
-      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-      AGAINST
-    </span>
-    <span>Exponential</span>
-    <span>{counterTerm.vaults?.[1]?.current_share_price ? toFixed(formatEther(BigInt(counterTerm.vaults[1].current_share_price))) : "-"}</span>
-    <span>{marketCap}</span>
-    <span>{counterTerm.vaults?.[1]?.holders?.length ?? 0}</span>
-  </div>
-
-  {/* Row 5: FOR Linear */}
-  <div className="grid grid-cols-5 gap-3 items-center py-2">
-    <span className="flex items-center gap-2 font-semibold">
-      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-      FOR
-    </span>
-    <span>Linear</span>
-    <span>{term.vaults?.[0]?.current_share_price ? toFixed(formatEther(BigInt(term.vaults[0].current_share_price))) : "-"}</span>
-    <span>{marketCap}</span>
-    <span>{term.vaults?.[0]?.holders?.length ?? 0}</span>
-  </div>
-
-  {/* Row 6: AGAINST Linear */}
-  <div className="grid grid-cols-5 gap-3 items-center py-2">
-    <span className="flex items-center gap-2 font-semibold">
-      <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-      AGAINST
-    </span>
-    <span>Linear</span>
-    <span>{counterTerm.vaults?.[0]?.current_share_price ? toFixed(formatEther(BigInt(counterTerm.vaults[0].current_share_price))) : "-"}</span>
-    <span>{marketCap}</span>
-    <span>{counterTerm.vaults?.[0]?.holders?.length ?? 0}</span>
-  </div>
-</div>
-      </div>
 
       {/* Positions on this Claim Section */}
       <div className="bg-[#110A2B] rounded-xl p-5 text-white flex flex-col gap-4">

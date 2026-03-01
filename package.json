@@ -2,5 +2,8 @@
   "dependencies": {
     "@0xintuition/graphql": "^2.0.2",
     "@0xintuition/sdk": "^2.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^10.0.2"
   }
 }

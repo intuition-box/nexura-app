@@ -50,23 +50,23 @@ export default function NexuraSidebar() {
       collapsible="icon"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="flex flex-col h-full"
+      className="flex flex-col h-full font-geist"
     >
       <AnimatedBackground />
-      <SidebarContent className="bg-black/55 backdrop-blur-sm relative z-10 flex flex-col h-full justify-between">
+      <SidebarContent className="bg-black/55 backdrop-blur-sm relative z-10 flex flex-col h-full justify-between font-geist">
         {/* Logo */}
         <div className="h-16 border-b border-border/40 flex items-center overflow-hidden px-3 group-data-[collapsible=icon]:justify-center">
           {/* Collapsed: nex.png icon */}
           <img
             src="/nex.png"
             alt="Nexura"
-            className="h-10 w-auto object-contain flex-shrink-0 transition-opacity duration-300 group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:block opacity-0 hidden"
+            className="h-8 w-auto object-contain flex-shrink-0 transition-opacity duration-300 group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:block opacity-0 hidden"
           />
           {/* Expanded: full logo */}
           <img
             src="/nexura-logo.png"
             alt="Nexura"
-            className="w-36 h-auto transition-opacity duration-300 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:hidden"
+            className="w-28 h-auto transition-opacity duration-300 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:hidden"
           />
         </div>
 
@@ -92,15 +92,15 @@ export default function NexuraSidebar() {
                     >
                       <Link
                         href={item.href}
-                        className="w-full flex items-center gap-0 group-data-[collapsible=icon]:justify-center"
+                        className="w-full flex items-center gap-1 group-data-[collapsible=icon]:justify-center"
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                       >
                         <img
                           src={item.icon}
                           alt={item.title}
-                          className="w-6 h-6 flex-shrink-0 object-contain"
+                          className="w-5 h-5 flex-shrink-0 object-contain"
                         />
-                        <span className="text-base font-medium truncate transition-[opacity,max-width,margin-left] duration-300 ease-in-out overflow-hidden max-w-[200px] ml-2 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:ml-0">
+                        <span className="text-sm font-medium truncate transition-[opacity,max-width,margin-left] duration-300 ease-in-out overflow-hidden max-w-[180px] ml-2 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:ml-0">
                           {item.title}
                         </span>
                       </Link>
@@ -111,52 +111,53 @@ export default function NexuraSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <div className="w-full flex flex-col gap-3 px-4 py-3 border-t border-border/40">
-  {/* Discord */}
-  <Link
-    href="https://discord.gg/ezBvGZVWU"
-    className="flex items-center gap-2 min-h-[44px] group-data-[collapsible=icon]:justify-center"
-  >
-    <img
-      src="/discord-logo.png"
-      alt="Discord"
-      className="w-6 h-6 flex-shrink-0 object-contain"
-    />
-    <span className="text-sm font-semibold text-white transition-all duration-300 overflow-hidden max-w-[150px] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
-      Discord
-    </span>
-  </Link>
 
-  {/* X */}
-  <Link
-    href="https://x.com/NexuraXYZ"
-    className="flex items-center gap-2 min-h-[44px] group-data-[collapsible=icon]:justify-center"
-  >
-    <img
-      src="/x-logo.png"
-      alt="X"
-      className="w-6 h-6 flex-shrink-0 object-contain"
-    />
-    <span className="text-sm font-semibold text-white transition-all duration-300 overflow-hidden max-w-[150px] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
-      X
-    </span>
-  </Link>
+        <div className="w-full flex flex-col gap-2 px-3 py-2 border-t border-border/40">
+          {/* Discord */}
+          <Link
+            href="https://discord.gg/ezBvGZVWU"
+            className="flex items-center gap-2 min-h-[32px] group-data-[collapsible=icon]:justify-center"
+          >
+            <img
+              src="/discord-logo.png"
+              alt="Discord"
+              className="w-4 h-4 flex-shrink-0 object-contain"
+            />
+            <span className="text-xs font-semibold text-white transition-all duration-300 overflow-hidden max-w-[110px] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
+              Discord
+            </span>
+          </Link>
 
-  {/* Docs */}
-  <Link
-    href="https://docsnexura.vercel.app"
-    className="flex items-center gap-2 min-h-[44px] group-data-[collapsible=icon]:justify-center"
-  >
-    <img
-      src="/docs-icon.png"
-      alt="Docs"
-      className="w-6 h-6 flex-shrink-0 object-contain"
-    />
-    <span className="text-sm font-semibold text-white transition-all duration-300 overflow-hidden max-w-[150px] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
-      Docs
-    </span>
-  </Link>
-</div>
+          {/* X */}
+          <Link
+            href="https://x.com/NexuraXYZ"
+            className="flex items-center gap-2 min-h-[32px] group-data-[collapsible=icon]:justify-center"
+          >
+            <img
+              src="/x-logo.png"
+              alt="X"
+              className="w-4 h-4 flex-shrink-0 object-contain"
+            />
+            <span className="text-xs font-semibold text-white transition-all duration-300 overflow-hidden max-w-[110px] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
+              X
+            </span>
+          </Link>
+
+          {/* Docs */}
+          <Link
+            href="https://docsnexura.vercel.app"
+            className="flex items-center gap-2 min-h-[32px] group-data-[collapsible=icon]:justify-center"
+          >
+            <img
+              src="/docs-icon.png"
+              alt="Docs"
+              className="w-4 h-4 flex-shrink-0 object-contain"
+            />
+            <span className="text-xs font-semibold text-white transition-all duration-300 overflow-hidden max-w-[110px] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
+              Docs
+            </span>
+          </Link>
+        </div>
       </SidebarContent>
     </Sidebar>
   );
