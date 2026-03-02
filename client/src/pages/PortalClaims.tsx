@@ -225,9 +225,14 @@ const handleOpposeClick = (claim: Claim) => {
       setOpposeMode(false);
     };
 
-  const handleClaimAction = async (action = "support") => {
-  try {
-    await buyShares("0.01", termId as Address, isToggled ? 1n : 0n); // example amount
+  const handleClaimAction = async (action = "deposit") => {
+    try {
+      const addressTermId = termId as Address;
+      if (action === "deposit") {
+      await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n); // example amount
+      } else if (action === "redeem") {
+        await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+    }
 
     toast({
       title: "Success",

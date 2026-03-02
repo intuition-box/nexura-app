@@ -130,7 +130,7 @@ export const hubDiscordCallback = async (req: GlobalRequest, res: GlobalResponse
 
 		res.redirect(DISCORD_HUB_CLIENT_REDIRECT_URI + `?id=${serversCreated._id}`);
 	} catch (error: any) {
-		logger.error(error);
+		console.error(error);
 		console.error("DISCORD HUB TOKEN ERROR STATUS:", error.response?.status);
 		console.error("DISCORD HUB TOKEN ERROR DATA:", error.response?.data);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "Error signing in with discord" });
@@ -173,7 +173,7 @@ export const fetchRoles = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		res.json({ message: "roles fetched", roles: data });
 	} catch (error: any) {
-		logger.error(error);
+		console.error(error);
 		console.error("DISCORD HUB TOKEN ERROR STATUS:", error.response?.status);
 		console.error("DISCORD HUB TOKEN ERROR DATA:", error.response?.data);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "Error fetching discord roles" });

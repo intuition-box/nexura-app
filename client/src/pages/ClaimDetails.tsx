@@ -280,11 +280,11 @@ const userShares = useMemo(() => {
   for (const curveId of [linearCurve, exponentialCurve]) {
     const [userSupportShares] = await multiVaultPreviewRedeem(
       { walletClient, publicClient, address },
-      { args: [term.id as Address, curveId, 0n], view: true } // use "view" to just query
+      { args: [term.id as Address, curveId, 0n] }
     );
     const [userOpposeShares] = await multiVaultPreviewRedeem(
       { walletClient, publicClient, address },
-      { args: [counterTerm.id as Address, curveId, 0n], view: true }
+      { args: [counterTerm.id as Address, curveId, 0n] }
     );
     totalShares += userSupportShares + userOpposeShares;
   }
