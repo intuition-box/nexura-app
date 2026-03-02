@@ -559,7 +559,7 @@ const currentUrl = window.location.href;
 
         {/* Card + Overlay */}
         <div ref={cardRef} className="relative flex flex-col gap-4">
-          
+
           {/* Overlay for Generating Image */}
           {generatingImage && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white z-10">
@@ -754,7 +754,7 @@ const currentUrl = window.location.href;
 
             <button
               className={`flex-1 rounded-md py-2 font-semibold ${activeTab === "oppose"
-                ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
+                ? "bg-[#FFA31A] border border-[#F19C03] text-white"
                 : "bg-gray-800 border border-gray-700 text-gray-400"
                 }`}
               onClick={() => setActiveTab("oppose")}
@@ -1131,3 +1131,4 @@ const currentUrl = window.location.href;
     </div>
   );
 }
+ 

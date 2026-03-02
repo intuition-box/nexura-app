@@ -54,6 +54,17 @@ export default function PortalClaims() {
     const [sortedClaims, setSortedClaims] = useState(visibleClaims);
     const [showCurveInfo, setShowCurveInfo] = useState(false);
     const [activePosition, setActivePosition] = useState<bigint>(0n);
+    
+// localstorage stuff
+const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>(() => {
+  const saved = localStorage.getItem("actionState");
+  return saved ? JSON.parse(saved) : {};
+});
+
+// Whenever state changes, we save it
+useEffect(() => {
+  localStorage.setItem("actionState", JSON.stringify(actionState));
+}, [actionState]);
 
     async function fetchWalletBalance(address: Address) {
   const publicClient = getPublicClient();
@@ -200,7 +211,7 @@ const handleSupportClick = (claim: Claim) => {
   setOpposeMode(false);
   
   // Get user's current active position for this claim
-  const userPosition = claim.term.user_position?.amount ?? 0n; // replace with actual property
+  const userPosition = claim.term.user_position?.amount ?? 0n; 
   setActivePosition(userPosition);
 
   setShowModal(true);
@@ -225,25 +236,37 @@ const handleOpposeClick = (claim: Claim) => {
       setOpposeMode(false);
     };
 
-  const handleClaimAction = async (action = "deposit") => {
-    try {
-      const addressTermId = termId as Address;
-      if (action === "deposit") {
-      await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n); // example amount
-      } else if (action === "redeem") {
-        await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
+  if (!termId) return;
+
+  try {
+    const addressTermId = termId as Address;
+
+    if (action === "deposit") {
+      await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+    } else {
+      await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
     }
+
+    const actionText = opposeMode ? "opposed" : "supported";
 
     toast({
       title: "Success",
-      description: `Successfully ${action ? "opposed" : "supported"} a claim!`
+      description: `Successfully ${actionText} a claim!`,
     });
+
+    // this should disable the button
+    setActionState(prev => ({
+      ...prev,
+      [termId]: opposeMode ? "opposed" : "supported"
+    }));
+
   } catch (err: any) {
     console.error(err);
     toast({
       title: "Error",
-      description: err?.message || String(err), // <-- convert Error object to string
-      variant: "destructive"
+      description: err?.message || String(err),
+      variant: "destructive",
     });
   }
 };
@@ -428,28 +451,34 @@ const sortClaims = (claims, option) => {
 
       {/* Actions: buttons only */}
       <td className="px-4 py-3 text-center text-xs">
-        <div className="flex justify-center gap-2">
-          <button
-            className="bg-blue-600 px-4 py-2 rounded-lg text-xs pointer-events-auto"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSupportClick(claim);
-            }}
-          >
-            Support
-          </button>
+  <div className="flex justify-center gap-2">
+{/* Support button */}
+<button
+  className={`px-4 py-2 rounded-lg text-xs bg-blue-600 transition-all
+    ${actionState[claim.term.id] === "supported" || actionState[claim.counter_term.id] === "opposed" ? "opacity-50 cursor-not-allowed" : ""}`}
+  disabled={actionState[claim.term.id] === "supported" || actionState[claim.counter_term.id] === "opposed"}
+  onClick={(e) => {
+    e.stopPropagation();
+    handleSupportClick(claim);
+  }}
+>
+  {actionState[claim.term.id] === "supported" ? "Supported" : "Support"}
+</button>
 
-          <button
-            className="bg-[#F19C03] px-4 py-2 rounded-lg  pointer-events-auto"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpposeClick(claim);
-            }}
-          >
-            Oppose
-          </button>
-        </div>
-      </td>
+{/* Oppose button */}
+<button
+  className={`px-4 py-2 rounded-lg text-xs bg-[#F19C03] transition-all
+    ${actionState[claim.counter_term.id] === "opposed" || actionState[claim.term.id] === "supported" ? "opacity-50 cursor-not-allowed" : ""}`}
+  disabled={actionState[claim.counter_term.id] === "opposed" || actionState[claim.term.id] === "supported"}
+  onClick={(e) => {
+    e.stopPropagation();
+    handleOpposeClick(claim);
+  }}
+>
+  {actionState[claim.counter_term.id] === "opposed" ? "Opposed" : "Oppose"}
+</button>
+  </div>
+</td>
     </tr>
   ))}
 </tbody>
@@ -756,8 +785,8 @@ const sortClaims = (claims, option) => {
   <img src="/wallet.png" alt="Wallet Icon" className="w-3 h-3" />
   <span className="text-white font-semibold">
     {Number(tTrustBalance) / 10 ** 18 >= 0
-      ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
-      : "0.0000"} TRUST
+      ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
+      : "0.00"} TRUST
   </span>
 </div>
 
@@ -908,12 +937,12 @@ const sortClaims = (claims, option) => {
     </div>
 
 {/* Wallet Div */}
-<div className="mt-2 ml-auto bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max mb-4 text-sm">
-  <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+<div className="ml-1 bg-[#110A2B] border border-[#393B60] rounded-2xl px-2 py-1 flex items-center gap-1.5 text-xs">
+  <img src="/wallet.png" alt="Wallet Icon" className="w-3 h-3" />
   <span className="text-white font-semibold">
     {Number(tTrustBalance) / 10 ** 18 >= 0
-      ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
-      : "0.0000"} TRUST
+      ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
+      : "0.00"} TRUST
   </span>
 </div>
 
@@ -935,15 +964,16 @@ const sortClaims = (claims, option) => {
 
 </div>{/* Wallet + Curve Row */}
 <div className="flex items-center gap-3 mb-2">
-  {/* Wallet Div */}
-  <div className="ml-1 bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max text-sm">
-    <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
-    <span className="text-white font-semibold">
-      {Number(tTrustBalance) / 10 ** 18 >= 0
-        ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
-        : "0.0000"} TRUST
-    </span>
-  </div>
+
+{/* Wallet Div (Compact) */}
+<div className="ml-1 bg-[#110A2B] border border-[#393B60] rounded-2xl px-2 py-1 flex items-center gap-1.5 text-xs">
+  <img src="/wallet.png" alt="Wallet Icon" className="w-3 h-3" />
+  <span className="text-white font-semibold">
+    {Number(tTrustBalance) / 10 ** 18 >= 0
+      ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
+      : "0.00"} TRUST
+  </span>
+</div>
 
   {/* Curve Info */}
   <div className="flex flex-col justify-center ml-8">
@@ -1048,7 +1078,7 @@ const sortClaims = (claims, option) => {
           <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
             <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
             <span className="text-white font-bold">
-              {transactionAmount ? Number(transactionAmount).toFixed(4) : "0.0000"}
+              {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
             </span>
           </div>
 
@@ -1119,9 +1149,11 @@ const sortClaims = (claims, option) => {
 
 {/* Total Cost */}
 <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-  <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
-  <span className="text-white font-bold">0.0954</span>
-</div>
+            <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
+            <span className="text-white font-bold">
+              {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
+            </span>
+          </div>
 
       {/* Redeem TRUST Label */}
       <span className="text-gray-300 font-semibold mb-2 block">Redeem TRUST from Claim</span>
