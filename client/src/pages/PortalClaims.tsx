@@ -54,13 +54,26 @@ export default function PortalClaims() {
     const [sortedClaims, setSortedClaims] = useState(visibleClaims);
     const [showCurveInfo, setShowCurveInfo] = useState(false);
     const [activePosition, setActivePosition] = useState<bigint>(0n);
+    const [modalStep, setModalStep] = useState<
+  "review" | "awaiting" | "success" | "failed"
+>("review");
+    
+// localstorage stuff
+const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>(() => {
+  const saved = localStorage.getItem("actionState");
+  return saved ? JSON.parse(saved) : {};
+});
+
+// Whenever state changes, we save it
+useEffect(() => {
+  localStorage.setItem("actionState", JSON.stringify(actionState));
+}, [actionState]);
 
     async function fetchWalletBalance(address: Address) {
   const publicClient = getPublicClient();
   const balance = await publicClient.getBalance({ address });
   return balance ?? 0n;
 }
-const [modalStep, setModalStep] = useState<"review" | "awaiting">("review");
 
 useEffect(() => {
   (async () => {
@@ -200,7 +213,7 @@ const handleSupportClick = (claim: Claim) => {
   setOpposeMode(false);
   
   // Get user's current active position for this claim
-  const userPosition = claim.term.user_position?.amount ?? 0n; // replace with actual property
+  const userPosition = claim.term.user_position?.amount ?? 0n; 
   setActivePosition(userPosition);
 
   setShowModal(true);
@@ -225,25 +238,43 @@ const handleOpposeClick = (claim: Claim) => {
       setOpposeMode(false);
     };
 
-  const handleClaimAction = async (action = "deposit") => {
-    try {
-      const addressTermId = termId as Address;
-      if (action === "deposit") {
-      await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n); // example amount
-      } else if (action === "redeem") {
-        await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
+  if (!termId) return;
+
+  try {
+    setModalStep("awaiting");
+
+    const addressTermId = termId as Address;
+
+    if (action === "deposit") {
+      await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+    } else {
+      await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
     }
+
+    const actionText = opposeMode ? "opposed" : "supported";
 
     toast({
       title: "Success",
-      description: `Successfully ${action ? "opposed" : "supported"} a claim!`
+      description: `Successfully ${actionText} a claim!`,
     });
+
+    setActionState(prev => ({
+      ...prev,
+      [termId]: opposeMode ? "opposed" : "supported"
+    }));
+
+    setModalStep("success");
+
   } catch (err: any) {
     console.error(err);
+
+    setModalStep("failed"); 
+
     toast({
       title: "Error",
-      description: err?.message || String(err), // <-- convert Error object to string
-      variant: "destructive"
+      description: err?.message || "Transaction failed",
+      variant: "destructive",
     });
   }
 };
@@ -428,28 +459,34 @@ const sortClaims = (claims, option) => {
 
       {/* Actions: buttons only */}
       <td className="px-4 py-3 text-center text-xs">
-        <div className="flex justify-center gap-2">
-          <button
-            className="bg-blue-600 px-4 py-2 rounded-lg text-xs pointer-events-auto"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSupportClick(claim);
-            }}
-          >
-            Support
-          </button>
+  <div className="flex justify-center gap-2">
+{/* Support button */}
+<button
+  className={`px-4 py-2 rounded-lg text-xs bg-blue-600 transition-all
+    ${actionState[claim.term.id] === "supported" || actionState[claim.counter_term.id] === "opposed" ? "opacity-50 cursor-not-allowed" : ""}`}
+  disabled={actionState[claim.term.id] === "supported" || actionState[claim.counter_term.id] === "opposed"}
+  onClick={(e) => {
+    e.stopPropagation();
+    handleSupportClick(claim);
+  }}
+>
+  {actionState[claim.term.id] === "supported" ? "Supported" : "Support"}
+</button>
 
-          <button
-            className="bg-[#F19C03] px-4 py-2 rounded-lg  pointer-events-auto"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpposeClick(claim);
-            }}
-          >
-            Oppose
-          </button>
-        </div>
-      </td>
+{/* Oppose button */}
+<button
+  className={`px-4 py-2 rounded-lg text-xs bg-[#F19C03] transition-all
+    ${actionState[claim.counter_term.id] === "opposed" || actionState[claim.term.id] === "supported" ? "opacity-50 cursor-not-allowed" : ""}`}
+  disabled={actionState[claim.counter_term.id] === "opposed" || actionState[claim.term.id] === "supported"}
+  onClick={(e) => {
+    e.stopPropagation();
+    handleOpposeClick(claim);
+  }}
+>
+  {actionState[claim.counter_term.id] === "opposed" ? "Opposed" : "Oppose"}
+</button>
+  </div>
+</td>
     </tr>
   ))}
 </tbody>
@@ -756,8 +793,8 @@ const sortClaims = (claims, option) => {
   <img src="/wallet.png" alt="Wallet Icon" className="w-3 h-3" />
   <span className="text-white font-semibold">
     {Number(tTrustBalance) / 10 ** 18 >= 0
-      ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
-      : "0.0000"} TRUST
+      ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
+      : "0.00"} TRUST
   </span>
 </div>
 
@@ -908,12 +945,12 @@ const sortClaims = (claims, option) => {
     </div>
 
 {/* Wallet Div */}
-<div className="mt-2 ml-auto bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max mb-4 text-sm">
-  <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+<div className="ml-1 bg-[#110A2B] border border-[#393B60] rounded-2xl px-2 py-1 flex items-center gap-1.5 text-xs">
+  <img src="/wallet.png" alt="Wallet Icon" className="w-3 h-3" />
   <span className="text-white font-semibold">
     {Number(tTrustBalance) / 10 ** 18 >= 0
-      ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
-      : "0.0000"} TRUST
+      ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
+      : "0.00"} TRUST
   </span>
 </div>
 
@@ -935,15 +972,16 @@ const sortClaims = (claims, option) => {
 
 </div>{/* Wallet + Curve Row */}
 <div className="flex items-center gap-3 mb-2">
-  {/* Wallet Div */}
-  <div className="ml-1 bg-[#110A2B] border-2 border-[#393B60] rounded-3xl px-3 py-1.5 flex items-center gap-2 w-max text-sm">
-    <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
-    <span className="text-white font-semibold">
-      {Number(tTrustBalance) / 10 ** 18 >= 0
-        ? (Number(tTrustBalance) / 10 ** 18).toFixed(4)
-        : "0.0000"} TRUST
-    </span>
-  </div>
+
+{/* Wallet Div (Compact) */}
+<div className="ml-1 bg-[#110A2B] border border-[#393B60] rounded-2xl px-2 py-1 flex items-center gap-1.5 text-xs">
+  <img src="/wallet.png" alt="Wallet Icon" className="w-3 h-3" />
+  <span className="text-white font-semibold">
+    {Number(tTrustBalance) / 10 ** 18 >= 0
+      ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
+      : "0.00"} TRUST
+  </span>
+</div>
 
   {/* Curve Info */}
   <div className="flex flex-col justify-center ml-8">
@@ -1017,7 +1055,7 @@ const sortClaims = (claims, option) => {
         className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl font-bold"
         onClick={() => {
           setShowReviewDepositModal(false);
-          setModalStep("review"); // reset next time
+          setModalStep("review");
         }}
       >
         ×
@@ -1026,9 +1064,7 @@ const sortClaims = (claims, option) => {
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-white font-bold text-base">Claim</h2>
-        <span
-          className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
-        >
+        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]">
           {opposeMode ? "Oppose" : "Support"}
         </span>
       </div>
@@ -1037,9 +1073,9 @@ const sortClaims = (claims, option) => {
         Staking on a Triple enhances its discoverability in the Intuition system
       </p>
 
-      {modalStep === "review" ? (
+      {/* REVIEW */}
+      {modalStep === "review" && (
         <>
-          {/* Review Step */}
           <div className="flex flex-col items-center my-6">
             <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
             <span className="text-white font-semibold">Review...</span>
@@ -1048,23 +1084,25 @@ const sortClaims = (claims, option) => {
           <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
             <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
             <span className="text-white font-bold">
-              {transactionAmount ? Number(transactionAmount).toFixed(4) : "0.0000"}
+              {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
             </span>
           </div>
 
           <button
             className="w-full bg-white text-black py-2.5 rounded-3xl font-semibold text-sm"
             onClick={() => {
-              setModalStep("awaiting");
               handleClaimAction("deposit");
+              setShowModal(false);
             }}
           >
             Confirm
           </button>
         </>
-      ) : (
+      )}
+
+      {/* AWAITING */}
+      {modalStep === "awaiting" && (
         <>
-          {/* Awaiting Wallet Approval */}
           <div className="flex flex-col items-center my-6">
             <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
             <span className="text-white font-semibold">Awaiting...</span>
@@ -1072,9 +1110,13 @@ const sortClaims = (claims, option) => {
 
           <div className="flex items-center justify-center gap-2 bg-[#110A2B] border border-[#393B60] rounded-2xl px-4 py-2 mx-4">
             <img src="/wallet.png" alt="Wallet Icon" className="w-5 h-5" />
-            <span className="text-white font-semibold text-sm">Awaiting wallet approval</span>
+            <span className="text-white font-semibold text-sm">
+              Awaiting wallet approval
+            </span>
             <div className="relative group">
-              <span className="text-gray-400 font-bold cursor-pointer text-sm">?</span>
+              <span className="text-gray-400 font-bold cursor-pointer text-sm">
+                ?
+              </span>
               <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                 Approve this transaction in your wallet
               </div>
@@ -1082,6 +1124,50 @@ const sortClaims = (claims, option) => {
           </div>
         </>
       )}
+
+      {/* SUCCESS */}
+      {modalStep === "success" && (
+        <div className="flex flex-col items-center my-8">
+          <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
+            <span className="text-white text-2xl font-bold">✓</span>
+          </div>
+
+          <span className="text-white font-semibold mb-6">
+            Successfully {opposeMode ? "opposed" : "supported"}!
+          </span>
+
+          <button
+            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
+            onClick={() => {
+              setShowReviewDepositModal(false);
+              setModalStep("review");
+            }}
+          >
+            Done
+          </button>
+        </div>
+      )}
+
+      {/* FAILED */}
+      {modalStep === "failed" && (
+        <div className="flex flex-col items-center my-8">
+          <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
+            <span className="text-white text-2xl font-bold">✕</span>
+          </div>
+
+          <span className="text-white font-semibold mb-6">
+            Transaction Failed
+          </span>
+
+          <button
+            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
+            onClick={() => setModalStep("review")}
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
     </div>
   </div>
 )}
@@ -1119,9 +1205,11 @@ const sortClaims = (claims, option) => {
 
 {/* Total Cost */}
 <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-  <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
-  <span className="text-white font-bold">0.0954</span>
-</div>
+            <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
+            <span className="text-white font-bold">
+              {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
+            </span>
+          </div>
 
       {/* Redeem TRUST Label */}
       <span className="text-gray-300 font-semibold mb-2 block">Redeem TRUST from Claim</span>

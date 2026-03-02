@@ -3,7 +3,14 @@
     "@0xintuition/graphql": "^2.0.2",
     "@0xintuition/sdk": "^2.0.2"
   },
+  "scripts": {
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
+  },
   "devDependencies": {
-    "eslint": "^10.0.2"
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
+    "eslint": "^9.39.3",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1"
   }
 }
