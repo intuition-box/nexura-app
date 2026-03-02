@@ -307,7 +307,7 @@ const handleClaimAction = async () => {
 
   try {
     const curveId = growthType === "linear" ? 1n : 2n;
-    const address = activeTab === "support" ? id : counterTerm.id;
+    const address = activeTab === "support" ? id : claim.counter_term_id;
 
     if (isBuy) {
       if (!buyAmount) throw new Error("No buy amount selected");
