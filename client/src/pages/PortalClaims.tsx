@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Address, formatEther } from "viem";
 import { buyShares, sellShares } from "../services/web3";
 import { apiRequestV2 } from "../lib/queryClient";
-import type { Term } from "../types/types";
+// import type { Term } from "../types/types";
 import { useToast } from "../hooks/use-toast";
 import { formatNumber } from "../lib/utils";
 import { useLocation } from "wouter";
 import { getPublicClient } from "../lib/viem";
 import { useAuth } from "../lib/auth";
+import { Term, Position } from "../types/types";
 
 interface Claim {
   user: { address: Address };
@@ -19,7 +20,6 @@ interface Claim {
   term: Term;
   counter_term: Term;
 }
-
 
 export const toFixed = (num: string) => {
   const parseNumber = parseFloat(num).toFixed(2);
@@ -36,7 +36,9 @@ export default function PortalClaims() {
   const [termId, setTermId] = useState("");
   const [activeTab, setActiveTab] = useState<"deposit" | "redeem">("deposit");
   const [isToggled, setIsToggled] = useState(false);
-
+  const [positions, setPositions] = useState<Position[]>([]); 
+  const [userPositions, setUserPositions] = useState<Position[]>([]);
+  const [totalPostions, setTotalPositions] = useState("0");
   const [visibleClaims, setVisibleClaims] = useState<Claim[]>([]);
   const [offset, setOffset] = useState<number>(0);
   const [loading, setLoading] = useState(false);
@@ -57,6 +59,8 @@ export default function PortalClaims() {
     const [modalStep, setModalStep] = useState<
   "review" | "awaiting" | "success" | "failed"
 >("review");
+// Example state to store totals
+const [userShares, setUserShares] = useState({ support: 0, oppose: 0 });
     
 // localstorage stuff
 const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>(() => {
@@ -118,33 +122,81 @@ const highlightMatch = (text: string, term: string) => {
 
   const LIMIT = 50;
 
-  const loadMore = async () => {
+  
+
+const loadMore = async () => {
   if (loading || !hasMore) return;
+  setLoading(true);
 
   try {
-    setLoading(true);
-
     const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
     const { claims } = await apiRequestV2(
-  "GET",
-  `/api/get-claims?filter=${sortOption}&offset=${offset}${searchQuery}`
-);
+      "GET",
+      `/api/get-claims?filter=${sortOption}&offset=${offset}${searchQuery}`
+    );
 
-const filteredClaims = claims.filter((claim: Claim) =>
-  claimMatchesSearch(claim, searchTerm)
-);
+    console.log("=== FETCHED CLAIMS ===", claims);
 
-if (filteredClaims.length < LIMIT) setHasMore(false);
+    if (!user) {
+      console.log("No user signed in, no positions to fetch");
+      setUserPositions([]);
+      setActivePosition(0n);
+      return;
+    }
 
-setVisibleClaims((prev) => [...prev, ...filteredClaims]);
-setOffset((prev) => prev + LIMIT);
-  } catch (err: any) {
-    console.error("Failed to fetch claims:", err);
-    setHasMore(false);
+    // Collect user positions exactly like your working suggestion
+    let myPositions: Position[] = [];
+    claims.forEach((claim, i) => {
+      const termVaults = claim.term?.vaults ?? [];
+      const counterVaults = claim.counter_term?.vaults ?? [];
+
+      // console.log(`Claim ${i}: termVaults`, termVaults);
+      // console.log(`Claim ${i}: counterVaults`, counterVaults);
+
+      myPositions.push(
+        ...(termVaults[0]?.userPosition ?? []).map(p => ({ ...p, direction: "support" })),
+        ...(termVaults[1]?.userPosition ?? []).map(p => ({ ...p, direction: "support" })),
+        ...(counterVaults[0]?.userPosition ?? []).map(p => ({ ...p, direction: "oppose" })),
+        ...(counterVaults[1]?.userPosition ?? []).map(p => ({ ...p, direction: "oppose" }))
+      );
+    });
+
+    console.log("=== USER POSITIONS ===", myPositions);
+
+    setUserPositions(prev => [...prev, ...myPositions]);
+
+    // Sum activePosition
+    const totalShares = myPositions.reduce(
+      (acc, p) => acc + BigInt(p.shares ?? 0n),
+      0n
+    );
+    console.log("=== TOTAL ACTIVE POSITION ===", totalShares);
+    setActivePosition(prev => prev + totalShares);
+
+    // Pagination logic
+    if (claims.length === 0 || claims.length < LIMIT) setHasMore(false);
+    else setOffset(prev => prev + claims.length);
+
+  } catch (err) {
+    console.error("Failed to load positions:", err);
   } finally {
     setLoading(false);
   }
 };
+
+
+// Call whenever user changes
+useEffect(() => {
+  if (user) {
+    setOffset(0);
+    setUserPositions([]);
+    setHasMore(true);
+    loadMore();
+  } else {
+    setUserPositions([]);
+    setActivePosition(0n);
+  }
+}, [user]);
 
 useEffect(() => {
   const resetAndLoad = async () => {
@@ -205,6 +257,7 @@ useEffect(() => {
   useEffect(() => {
     loadMore();
   }, [sortOption]);
+
 
   // ---------------- Handlers ----------------
 const handleSupportClick = (claim: Claim) => {
@@ -460,11 +513,14 @@ const sortClaims = (claims, option) => {
       {/* Actions: buttons only */}
       <td className="px-4 py-3 text-center text-xs">
   <div className="flex justify-center gap-2">
-{/* Support button */}
+{/* Support Button */}
 <button
-  className={`px-4 py-2 rounded-lg text-xs bg-blue-600 transition-all
-    ${actionState[claim.term.id] === "supported" || actionState[claim.counter_term.id] === "opposed" ? "opacity-50 cursor-not-allowed" : ""}`}
-  disabled={actionState[claim.term.id] === "supported" || actionState[claim.counter_term.id] === "opposed"}
+  className={`px-4 py-2 rounded-lg text-xs transition-all
+    ${
+      actionState[claim.term.id] === "supported"
+        ? "bg-transparent text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white" // hovered reverts
+        : "bg-blue-600 text-white hover:brightness-110"
+    }`}
   onClick={(e) => {
     e.stopPropagation();
     handleSupportClick(claim);
@@ -473,11 +529,14 @@ const sortClaims = (claims, option) => {
   {actionState[claim.term.id] === "supported" ? "Supported" : "Support"}
 </button>
 
-{/* Oppose button */}
+{/* Oppose Button */}
 <button
-  className={`px-4 py-2 rounded-lg text-xs bg-[#F19C03] transition-all
-    ${actionState[claim.counter_term.id] === "opposed" || actionState[claim.term.id] === "supported" ? "opacity-50 cursor-not-allowed" : ""}`}
-  disabled={actionState[claim.counter_term.id] === "opposed" || actionState[claim.term.id] === "supported"}
+  className={`px-4 py-2 rounded-lg text-xs transition-all
+    ${
+      actionState[claim.counter_term.id] === "opposed"
+        ? "bg-transparent text-[#F19C03] border border-[#F19C03] hover:bg-[#F19C03] hover:text-white"
+        : "bg-[#F19C03] text-white hover:brightness-110"
+    }`}
   onClick={(e) => {
     e.stopPropagation();
     handleOpposeClick(claim);
@@ -699,7 +758,7 @@ const sortClaims = (claims, option) => {
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-1 p-2 pb-1">
-        <h2 className="text-white font-bold text-base">Claim</h2>
+        <h2 className="text-white font-bold text-base">Stake</h2>
         <span
   className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
 >
@@ -771,18 +830,18 @@ const sortClaims = (claims, option) => {
 {activeTab === "deposit" && (
   <div className="px-4 md:px-12">
 {/* Main Card: Active Position */}
-<div className="bg-[#110A2B] border-2 border-[#393B60] p-4 rounded-xl flex items-center justify-between mb-1">
-  <span className="text-gray-300 text-sm font-semibold">Your Active Position</span>
+<div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between mb-1 font-geist">
+  <span className="text-gray-300 text-xs font-semibold">Your Active Position</span>
 
-  <div className="flex items-center gap-4">
+  <div className="flex items-center gap-2">
     <span
-      className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+      className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
     >
       {opposeMode ? "Oppose" : "Support"}
     </span>
-    <span className="font-bold text-xl">
-      {activePosition ? toFixed(formatEther(activePosition)) : "0"} TRUST
-    </span>
+<span className="font-bold text-lg">
+  {opposeMode ? userShares.oppose : userShares.support} TRUST
+</span>
   </div>
 </div>
 
@@ -798,7 +857,7 @@ const sortClaims = (claims, option) => {
   </span>
 </div>
 
-  <div className="flex items-center relative">
+  <div className="flex items-center justify-end relative">
 
       {/* Curve Info + Toggle */}
       <div className="flex items-center flex-1">
@@ -929,20 +988,21 @@ const sortClaims = (claims, option) => {
 
 {activeTab === "redeem" && (
   <div className="px-4 md:px-12">
-    {/* Main Card: Active Position */}
-    <div className="bg-[#110A2B] border-2 border-[#393B60] p-4 rounded-xl min-h-[120px] flex flex-col justify-between mb-3">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-gray-300 text-sm font-semibold">Your Active Position</span>
-                        <span
-  className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
->
-  {opposeMode ? "Oppose" : "Support"}
-</span>
-      </div>
-        <p className="text-white font-bold text-xl">
-    {activePosition ? toFixed(formatEther(activePosition)) : "0"} TRUST
-  </p>
-    </div>
+{/* Main Card: Active Position */}
+<div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between mb-1 font-geist">
+  <span className="text-gray-300 text-xs font-semibold">Your Active Position</span>
+
+  <div className="flex items-center gap-2">
+    <span
+      className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+    >
+      {opposeMode ? "Oppose" : "Support"}
+    </span>
+    <span className="font-bold text-lg">
+      {activePosition ? toFixed(formatEther(activePosition)) : "0"} TRUST
+    </span>
+  </div>
+</div>
 
 {/* Wallet Div */}
 <div className="ml-1 bg-[#110A2B] border border-[#393B60] rounded-2xl px-2 py-1 flex items-center gap-1.5 text-xs">
@@ -1063,7 +1123,7 @@ const sortClaims = (claims, option) => {
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white font-bold text-base">Claim</h2>
+        <h2 className="text-white font-bold text-base">Stake</h2>
         <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]">
           {opposeMode ? "Oppose" : "Support"}
         </span>
@@ -1186,7 +1246,7 @@ const sortClaims = (claims, option) => {
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white font-bold text-base">Claim</h2>
+        <h2 className="text-white font-bold text-base">Stake</h2>
         <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold">
           Support
         </span>
