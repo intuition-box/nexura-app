@@ -184,7 +184,6 @@ const loadMore = async () => {
   }
 };
 
-
 // Call whenever user changes
 useEffect(() => {
   if (user) {
