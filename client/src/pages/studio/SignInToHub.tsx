@@ -42,11 +42,11 @@ export default function SignInToHub() {
 
       // Fetch project profile to get name and logo
       try {
-        const profile = await projectApiRequest<{ name?: string; logo?: string }>({
+        const { hub } = await projectApiRequest<{ hub: Record<string, any> }>({
           method: "GET",
           endpoint: "/hub/me",
         });
-        storeProjectSession(token, { email, name: profile.name ?? email, logo: profile.logo ?? "" });
+        storeProjectSession(token, { email, name: hub.name ?? email, logo: hub.logo ?? "" });
       } catch {
         // profile fetch failed — keep email as name
       }

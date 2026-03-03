@@ -46,8 +46,8 @@ export default function ClaimDetails() {
   const [positionType, setPositionType] = useState("support");
   const [growthType, setGrowthType] = useState("linear");
   const [loading, setLoading] = useState(false);
-  const [positions, setPositions] = useState<Position[]>([]); // all positions
-  const [userPositions, setUserPositions] = useState<Position[]>([]); // my positions
+  const [positions, setPositions] = useState<Position[]>([]); 
+  const [userPositions, setUserPositions] = useState<Position[]>([]);
   const [visiblePositions, setVisiblePositions] = useState<Position[]>([]); // paginated slice
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -76,6 +76,9 @@ export default function ClaimDetails() {
   const [positionsOption, setPositionsOption] = useState("all");
   const [activePosition, setActivePosition] = useState<any | null>(null);
   const inputAmount = isBuy ? buyAmount : sellAmount;
+  const receiveTimeoutRef = useRef(null);
+
+const currentAmount = isBuy ? buyAmount : sellAmount;
 
   const { user } = useAuth();
   const { connectWallet } = useWallet();
@@ -229,6 +232,30 @@ setUserPositions(myPositions);
     setVisiblePositions(initial.slice(0, ITEMS_PER_PAGE));
   };
 
+  useEffect(() => {
+  if (!term?.vaults || !counterTerm?.vaults) return;
+
+  const supportPrices = term.vaults.map((v: any, i: number) => ({
+    type: "support",
+    index: i,
+    raw: v.current_share_price,
+    formatted: formatEther(BigInt(v.current_share_price))
+  }));
+
+  const counterPrices = counterTerm.vaults.map((v: any, i: number) => ({
+    type: "counter",
+    index: i,
+    raw: v.current_share_price,
+    formatted: formatEther(BigInt(v.current_share_price))
+  }));
+
+  const allPrices = [...supportPrices, ...counterPrices];
+
+  console.log("==== VAULT SHARE PRICES ====");
+  console.table(allPrices);
+
+}, [term, counterTerm]);
+
 const userShares = useMemo(() => {
   if (!user) return 0;
 
@@ -240,26 +267,29 @@ const userShares = useMemo(() => {
   return up ? Number(formatEther(BigInt(up.shares))) : 0;
 }, [userPositions, user]);
 
-  function getPrice() {
-    let sharePrice = "0";
+function getPrice() {
+  let sharePrice = "0";
 
-    const counterSharePrice = (index: number) => {
-      return toFixed(formatEther(BigInt(counterTerm.vaults[index].current_share_price)));
-    }
+  const counterSharePrice = (index: number) => {
+    return toFixed(formatEther(BigInt(counterTerm.vaults[index].current_share_price)));
+  };
 
-    const supportSharePrice = (index: number) => {
-      return toFixed(formatEther(BigInt(term.vaults[index].current_share_price)));
-    }
+  const supportSharePrice = (index: number) => {
+    return toFixed(formatEther(BigInt(term.vaults[index].current_share_price)));
+  };
 
-    if (activeTab === "support") {
-      sharePrice = growthType === "linear" ? supportSharePrice(0) : supportSharePrice(1);
-    } else {
-      sharePrice = growthType === "linear" ? counterSharePrice(0) : counterSharePrice(1);
-    }
-
-    return sharePrice;
+  if (activeTab === "support") {
+    sharePrice = growthType === "linear"
+      ? supportSharePrice(0)
+      : supportSharePrice(1);
+  } else {
+    sharePrice = growthType === "linear"
+      ? counterSharePrice(0)
+      : counterSharePrice(1);
   }
-  
+
+  return sharePrice;
+}  
 
  const getUserShares = async () => {
   if (!user) return;
@@ -808,11 +838,17 @@ const handleDownload = async () => {
 </div>
 
       
-{/* Linear Curve Section */}
+{/* Curve Section */}
 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
   <div>
-    <h3 className="font-semibold text-white">Linear Curve</h3>
-    <p className="text-gray-400 text-xs">Low Risk, Low Reward</p>
+    <h3 className="font-semibold text-white">
+      {growthType === "exponential" ? "Exponential Curve" : "Linear Curve"}
+    </h3>
+    <p className="text-gray-400 text-xs">
+      {growthType === "exponential"
+        ? "High Risk, High Reward"
+        : "Low Risk, Low Reward"}
+    </p>
   </div>
 
   {/* Toggle button */}
@@ -830,30 +866,47 @@ const handleDownload = async () => {
       }`}
     ></span>
   </button>
-  </div>
-
-
-
-          {/* Amount Section */}
-<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-  <span className="text-gray-400">
-    {isBuy ? `Your balance: ${balance}` : `Your shares: ${userShares}`}
-  </span>
-  <span className="text-gray-400">TRUST</span>
 </div>
 
-{/* Inputs */}
+
+{/* Amount Section */}
+<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+  <span className="text-gray-400">
+    {isBuy ? "Your balance:" : "Your shares:"}
+  </span>
+
+  <span className="text-gray-400 flex items-center gap-1 justify-end">
+    <img src="/wallet.png" alt="Wallet Icon" className="w-6 h-6" />
+    {isBuy
+      ? `${Math.floor(Number(balance) * 100) / 100} TRUST`
+      : `${Math.floor(Number(userShares) * 100) / 100} SHARES`}
+  </span>
+</div>
+
+{/* Input */}
 <div className="w-full bg-gray-800 rounded-md border border-[#833AFD] flex items-center px-2">
   <input
     type="text"
     placeholder="0.1"
     disabled={!hasBalance}
-    value={isBuy ? buyAmount : sellAmount}
+    value={currentAmount}
     onChange={(e) => {
       const val = e.target.value;
-      // Allow only numbers and a single decimal point
+
       if (/^\d*\.?\d*$/.test(val)) {
         isBuy ? setBuyAmount(val) : setSellAmount(val);
+
+        setLoadingAmount(true);
+
+        if (receiveTimeoutRef.current) {
+          clearTimeout(receiveTimeoutRef.current);
+        }
+
+        receiveTimeoutRef.current = setTimeout(() => {
+          // Put your real calculation here
+          // setAmountToReceive(calculatedValue)
+          setLoadingAmount(false);
+        }, 2000);
       }
     }}
     className={`flex-1 bg-gray-800 text-white p-2 outline-none ${
@@ -868,40 +921,46 @@ const handleDownload = async () => {
     You shall NOT pass! Get some TRUST.
   </div>
 )}
-          <div className="w-full bg-gray-800 border border-[#833AFD] rounded-md px-3 py-2 flex items-center justify-between text-white text-sm">
-  {/* Left label */}
-  <span>Amount you receive</span>
 
-  {/* Right value with spinner */}
+{/* You Receive Section */}
+<div className="w-full bg-gray-800 border border-[#833AFD] rounded-md px-3 py-2 flex items-center justify-between text-white text-sm">
+  <span>You receive</span>
+
   <div className="flex items-center gap-2">
     {loadingAmount ? (
-      <svg
-        className="w-4 h-4 animate-spin text-gray-400"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          className="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-        ></circle>
-        <path
-          className="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-        ></path>
-      </svg>
+      <div className="flex items-center gap-1">
+        <svg
+          className="w-4 h-4 animate-spin text-gray-400"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+          />
+        </svg>
+        <span className="text-gray-400 text-xs">Loading...</span>
+      </div>
     ) : (
-      <span>{amountToReceive}</span>
+      <span>
+        {amountToReceive
+          ? Math.floor(Number(amountToReceive) * 100) / 100
+          : "0.00"}
+      </span>
     )}
   </div>
 </div>
 
-          {/* Connect / Buy / Sell Button */}
 {/* Connect / Buy / Sell Button */}
 <button
   onClick={async () => {
@@ -909,29 +968,50 @@ const handleDownload = async () => {
       await handleConnectWallet();
       return;
     }
-    if (!inputAmount || Number(inputAmount) <= 0) return; // block if no amount
+
+    if (!currentAmount || Number(currentAmount) <= 0 || loadingAmount) return;
+
     await handleClaimAction();
+
+    // Clear input only after successful action
+    isBuy ? setBuyAmount("") : setSellAmount("");
   }}
-  disabled={!user || !inputAmount || Number(inputAmount) <= 0} // disable button
+  disabled={
+    !user ||
+    !currentAmount ||
+    Number(currentAmount) <= 0 ||
+    loadingAmount
+  }
   className={`flex items-center justify-center gap-2 font-semibold py-2 rounded-3xl transition-opacity duration-200
-    ${!user || !inputAmount || Number(inputAmount) <= 0 ? "bg-gray-600 text-gray-400 cursor-not-allowed" : "bg-white text-black"}`}
+    ${
+      !user ||
+      !currentAmount ||
+      Number(currentAmount) <= 0 ||
+      loadingAmount
+        ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+        : "bg-white text-black"
+    }`}
 >
-  {!user && <img src="/key.png" alt="Key Icon" className="w-5 h-5" />}
-  
+  {!user && (
+    <img src="/key.png" alt="Key Icon" className="w-5 h-5" />
+  )}
+
   {!user
     ? "Connect Wallet"
-    : !inputAmount || Number(inputAmount) <= 0
+    : !currentAmount || Number(currentAmount) <= 0
     ? "Enter Amount"
+    : loadingAmount
+    ? "Calculating..."
     : isBuy
     ? buying
-      ? "Buying"
-      : "Buy"
+      ? "Buying shares"
+      : "Buy Shares"
     : selling
-    ? "Selling"
-    : "Sell"}
+    ? "Selling shares"
+    : "Sell Shares"}
 </button>
-        </div>
-      </div>
+</div>
+</div>
 
       {/* Your Position Card */}
 <div className="bg-[#110A2B] rounded-xl p-4 flex flex-col gap-4">

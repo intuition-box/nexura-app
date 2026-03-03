@@ -54,11 +54,10 @@ export default function TheHub() {
         fd.append("logo", blob, "logo.png");
       }
 
-      const { accessToken } = await projectApiRequest<{ accessToken: string }>({ method: "POST", endpoint: `/hub/create-hub`, formData: fd });
+      await projectApiRequest({ method: "POST", endpoint: `/hub/create-hub`, formData: fd });
 
-      localStorage.setItem("nexura-project:token", accessToken);
-
-      setLocation("/connect-discord");
+      // setLocation("/connect-discord");
+      setLocation("/studio-dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign-up failed. Please try again.";
       toast({ title: "Sign up failed", description: msg, variant: "destructive" });

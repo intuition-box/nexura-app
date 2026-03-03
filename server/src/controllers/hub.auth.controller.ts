@@ -78,7 +78,9 @@ export const superAdminSignUp = async (req: GlobalRequest, res: GlobalResponse) 
 			const missingFields = getMissingFields(error);
 			res.status(BAD_REQUEST).json({ error: `these field(s) are/is required: ${missingFields}` });
 			return;
-		}
+    }
+
+    req.body.password = await hashPassword(req.body.password);
 
 		req.body.role = "superadmin";
 
