@@ -49,7 +49,7 @@ export default function PortalClaims() {
   const [showReviewDepositModal, setShowReviewDepositModal] = useState(false);
     const [transactionMode, setTransactionMode] = useState("redeem");
     const [opposeMode, setOpposeMode] = useState(false);
-    const [transactionAmount, setTransactionAmount] = useState("0");
+    const [transactionAmount, setTransactionAmount] = useState("");
       // Wallet & Blockchain
     const [tTrustBalance, setTTrustBalance] = useState<bigint>(0n);
     const [inputValue, setInputValue] = useState(0);
@@ -61,6 +61,7 @@ export default function PortalClaims() {
 >("review");
 // Example state to store totals
 const [userShares, setUserShares] = useState({ support: 0, oppose: 0 });
+const [showTabContent, setShowTabContent] = useState(false);
     
 // localstorage stuff
 const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>(() => {
@@ -184,7 +185,6 @@ const loadMore = async () => {
   }
 };
 
-
 // Call whenever user changes
 useEffect(() => {
   if (user) {
@@ -258,12 +258,23 @@ useEffect(() => {
     loadMore();
   }, [sortOption]);
 
+const inputRef = useRef(null);
+
+// optional: focus programmatically if you need more control
+useEffect(() => {
+  if (showModal && inputRef.current) {
+    inputRef.current.focus();
+  }
+}, [showModal]);
+
 
   // ---------------- Handlers ----------------
 const handleSupportClick = (claim: Claim) => {
   setActiveClaim(claim);
   setTermId(claim.term.id);
   setOpposeMode(false);
+  setTransactionAmount("");
+  
   
   // Get user's current active position for this claim
   const userPosition = claim.term.user_position?.amount ?? 0n; 
@@ -278,6 +289,7 @@ const handleOpposeClick = (claim: Claim) => {
   setTransactionMode("redeem");
   setActiveTab("deposit");
   setOpposeMode(true);
+  setTransactionAmount("");
 
   const userPosition = claim.counter_term.user_position?.amount ?? 0n;
   setActivePosition(userPosition);
@@ -317,6 +329,7 @@ const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
       [termId]: opposeMode ? "opposed" : "supported"
     }));
 
+     setTransactionAmount("");
     setModalStep("success");
 
   } catch (err: any) {
@@ -960,9 +973,10 @@ const sortClaims = (claims, option) => {
     type="number"
     min="0"
     placeholder="0"
-    value={transactionAmount}
+    value={transactionAmount || ""} // blank if empty
     onChange={(e) => setTransactionAmount(e.target.value)}
-    className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40 
+    autoFocus
+    className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40
                appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
   />
   <span className="text-gray-300 text-xs -my-2 mb-2">TRUST</span>
@@ -1015,17 +1029,18 @@ const sortClaims = (claims, option) => {
 </div>
 
 {/* Center Big Zero */}
-<div className="flex flex-col items-center my-2">
+<div className="flex flex-col items-center">
   <input
     type="number"
     min="0"
     placeholder="0"
-    value={inputValue}
-    onChange={(e) => setInputValue(e.target.value)}
-    className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40 
+    value={transactionAmount || ""} // blank if empty
+    onChange={(e) => setTransactionAmount(e.target.value)}
+    autoFocus
+    className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40
                appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
   />
-  <span className="text-gray-300 text-xs mt-1">TRUST</span>
+  <span className="text-gray-300 text-xs -my-2 mb-2">TRUST</span>
 </div>
 
 <div className="flex items-start gap-3">
@@ -1076,9 +1091,10 @@ const sortClaims = (claims, option) => {
     type="number"
     min="0"
     placeholder="0"
-    value={transactionAmount}
+    value={transactionAmount || ""} // blank if empty
     onChange={(e) => setTransactionAmount(e.target.value)}
-    className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40 
+    autoFocus
+    className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40
                appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
   />
   <span className="text-gray-300 text-xs -my-2 mb-2">TRUST</span>
@@ -1110,21 +1126,21 @@ const sortClaims = (claims, option) => {
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
     <div className="bg-[#070315] w-full max-w-md mx-4 p-3 rounded-xl relative border-2 border-[#8B3EFE]">
 
-      {/* Close Button */}
-      <button
-        className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl font-bold"
-        onClick={() => {
-          setShowReviewDepositModal(false);
-          setModalStep("review");
-        }}
-      >
-        ×
-      </button>
+{/* Back Button */}
+<button
+  className="absolute -top-1 pb-2 left-2 text-white font-extrabold text-2xl px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
+  onClick={() => {
+    setShowReviewDepositModal(false);
+    setModalStep("review");
+  }}
+>
+  ←
+</button>
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white font-bold text-base">Stake</h2>
-        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]">
+        <h2 className="text-white font-bold text-base mt-2">Stake</h2>
+        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 mt-2 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]">
           {opposeMode ? "Oppose" : "Support"}
         </span>
       </div>
