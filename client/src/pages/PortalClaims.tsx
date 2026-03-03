@@ -138,79 +138,107 @@ const loadMore = async () => {
     if (!user) {
       setUserPositions([]);
       setActivePosition(0n);
-      setUserShares({ support: 0n, oppose: 0n });
+      setUserSharesByCurve({
+        support: { linear: 0n, exponential: 0n },
+        oppose: { linear: 0n, exponential: 0n },
+      });
+      console.log("No user signed in, resetting positions and sharesByCurve");
       return;
     }
 
-    // Normalize positions for a single claim
+    // Normalize positions for a single claim and compute curve-specific sums
     const normalizePositionsForClaim = (fetchedClaim: Claim, user: User) => {
-      if (!user) return { positions: [], shares: { support: 0n, oppose: 0n } };
+      if (!user) return { positions: [], sharesByCurve: { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } } };
 
       const myPositions: Position[] = [];
 
-      // Term vaults → support
-      fetchedClaim.term.vaults?.forEach(vault => {
+      // Support positions from term vaults
+      fetchedClaim.term.vaults?.forEach((vault, vaultIndex) => {
+        console.log(`Processing support vault ${vaultIndex} with curve_id ${vault.curve_id}`);
         myPositions.push(
-          ...(vault.userPosition ?? []).map(p => ({
-            ...p,
-            direction: "support",
-            curve_id: Number(vault.curve_id),
-            account: {
-              id: p.account_id,
-              label: p.account_id,
-              image: user.image ?? null,
-            },
-          }))
+          ...(vault.userPosition ?? []).map(p => {
+            console.log(`Support position from user ${p.account_id}, shares: ${p.shares}, curve_id: ${vault.curve_id}`);
+            return {
+              ...p,
+              direction: "support",
+              curve_id: Number(vault.curve_id),
+              account: {
+                id: p.account_id,
+                label: p.account_id,
+                image: user.image ?? null,
+              },
+            };
+          })
         );
       });
 
-      // Counter term vaults → oppose
-      fetchedClaim.counter_term.vaults?.forEach(vault => {
+      // Oppose positions from counter term vaults
+      fetchedClaim.counter_term.vaults?.forEach((vault, vaultIndex) => {
+        console.log(`Processing oppose vault ${vaultIndex} with curve_id ${vault.curve_id}`);
         myPositions.push(
-          ...(vault.userPosition ?? []).map(p => ({
-            ...p,
-            direction: "oppose",
-            curve_id: Number(vault.curve_id),
-            account: {
-              id: p.account_id,
-              label: p.account_id,
-              image: user.image ?? null,
-            },
-          }))
+          ...(vault.userPosition ?? []).map(p => {
+            console.log(`Oppose position from user ${p.account_id}, shares: ${p.shares}, curve_id: ${vault.curve_id}`);
+            return {
+              ...p,
+              direction: "oppose",
+              curve_id: Number(vault.curve_id),
+              account: {
+                id: p.account_id,
+                label: p.account_id,
+                image: user.image ?? null,
+              },
+            };
+          })
         );
       });
 
-      // Log positions for debugging
       console.log(`Normalized positions for claim ${fetchedClaim.id}:`, myPositions);
 
-      // Sum active positions for this claim only
-      const totalShares = myPositions.reduce(
+      // Compute total shares split by direction and curve type
+      const sharesByCurve = myPositions.reduce(
         (acc, p) => {
-          if (p.direction === "support") acc.support += BigInt(p.shares ?? 0);
-          else if (p.direction === "oppose") acc.oppose += BigInt(p.shares ?? 0);
+          const shares = BigInt(p.shares ?? 0);
+          if (p.direction === "support") {
+            if (p.curve_id === 1) acc.support.linear += shares;
+            else if (p.curve_id === 2) acc.support.exponential += shares;
+            console.log(`Adding ${shares} to support ${p.curve_id === 1 ? "linear" : "exponential"}`);
+          } else if (p.direction === "oppose") {
+            if (p.curve_id === 1) acc.oppose.linear += shares;
+            else if (p.curve_id === 2) acc.oppose.exponential += shares;
+            console.log(`Adding ${shares} to oppose ${p.curve_id === 1 ? "linear" : "exponential"}`);
+          }
           return acc;
         },
-        { support: 0n, oppose: 0n }
+        { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } }
       );
 
-      return { positions: myPositions, shares: totalShares };
+      console.log("Computed sharesByCurve:", sharesByCurve);
+
+      return { positions: myPositions, sharesByCurve };
     };
 
-    // Example usage: normalize first claim (or whichever claim you click)
+    // Use the first claim (or whichever is active)
     if (claims.length > 0) {
-      const { positions, shares } = normalizePositionsForClaim(claims[0], user);
+      const { positions, sharesByCurve } = normalizePositionsForClaim(claims[0], user);
       setUserPositions(positions);
-      setUserShares(shares);
+      setUserSharesByCurve(sharesByCurve); // Updated state for curve-specific shares
+      console.log("Updated userPositions and userSharesByCurve state");
     }
 
-    // Pagination
-    if (claims.length === 0 || claims.length < LIMIT) setHasMore(false);
-    else setOffset(prev => prev + claims.length);
+    // Handle pagination
+    if (claims.length === 0 || claims.length < LIMIT) {
+      setHasMore(false);
+      console.log("No more claims to load, hasMore set to false");
+    } else {
+      setOffset(prev => prev + claims.length);
+      console.log(`Incrementing offset by ${claims.length}, new offset: ${offset + claims.length}`);
+    }
 
   } catch (err) {
     console.error("Failed to load positions:", err);
   } finally {
     setLoading(false);
+    console.log("Loading finished, loading state set to false");
   }
 };
 
@@ -805,7 +833,7 @@ const hasActivePosition = userPositions.some(
       <div className="flex items-center gap-2 mb-1 p-2 pb-1">
         <h2 className="text-white font text-base">Stake</h2>
 <span
-  className="bg-[#0A2D4D] text-white border border-white text-xs px-2 py-0.5 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+  className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
 >
   {opposeMode ? "Oppose" : "Support"}
 </span>
@@ -817,58 +845,63 @@ const hasActivePosition = userPositions.some(
       </p>
 
 {/* Statement */}
-<div className="text-gray-300 mb-4 px-6 flex flex-wrap items-center gap-2 text-lg">
-<span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate min-w-0 cursor-pointer">
-  <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
-  {activeClaim.term.triple.subject.label}
-</span>
+<div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center justify-center gap-2 text-sm">
+  <span className="font-bold bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-3 py-1.5 rounded inline-flex items-center gap-2 max-w-[200px] truncate">
+    <img
+      src={activeClaim.term.triple.subject.image}
+      alt="Claim Icon"
+      className="w-5 h-5 object-contain"
+    />
+    {activeClaim.term.triple.subject.label}
+  </span>
 
-<span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded truncate max-w-[40%] ml-2 min-w-0 cursor-pointer">
-  {activeClaim.term.triple.object.label}
-</span>
+  <span>{activeClaim.term.triple.predicate.label}</span>
+
+  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-3 py-1.5 rounded max-w-[200px] truncate">
+    {activeClaim.term.triple.object.label}
+  </span>
 </div>
 
 {/* Tabs */}
-<div className="flex justify-center mb-3">
-  <div className="flex gap-6 relative">
+<div className="flex justify-center mb-5">
+  <div className="flex gap-12 relative">
+
     {/* Deposit Tab */}
-<button
-  className={`relative px-3 py-1.5 text-sm ${
-    activeTab === "deposit" ? "text-white" : "text-gray-400"
-  }`}
-  onClick={() => setActiveTab("deposit")}
->
-  Deposit
-  {activeTab === "deposit" && (
-    <span
-      className="absolute left-1/2 bottom-0 w-40 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
-    ></span>
-  )}
-</button>
+    <button
+      className={`relative px-6 py-3 text-base font-medium ${
+        activeTab === "deposit" ? "text-white" : "text-gray-400"
+      }`}
+      onClick={() => setActiveTab("deposit")}
+    >
+      Deposit
+      {activeTab === "deposit" && (
+        <span
+          className="absolute left-1/2 bottom-0 w-48 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
+        ></span>
+      )}
+    </button>
 
-{/* Add spacing between tabs */}
-<div className="w-10"></div>
+    {/* Redeem Tab */}
+    <button
+      className={`relative px-6 py-3 text-base font-medium ${
+        activePosition > 0
+          ? activeTab === "redeem"
+            ? "text-white"
+            : "text-gray-400 hover:text-white cursor-pointer"
+          : "text-gray-500 cursor-not-allowed pointer-events-none"
+      }`}
+      onClick={() => {
+        if (activePosition > 0) setActiveTab("redeem");
+      }}
+    >
+      Redeem
+      {activeTab === "redeem" && activePosition > 0 && (
+        <span
+          className="absolute left-1/2 bottom-0 w-48 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
+        ></span>
+      )}
+    </button>
 
-{/* Redeem Tab */}
-<button
-  className={`relative px-3 py-1.5 text-sm ${
-    activePosition > 0
-      ? activeTab === "redeem"
-        ? "text-white"
-        : "text-gray-400 hover:text-white cursor-pointer"
-      : "text-gray-500 cursor-not-allowed pointer-events-none"
-  }`}
-  onClick={() => {
-    if (activePosition > 0) setActiveTab("redeem");
-  }}
->
-  Redeem
-  {activeTab === "redeem" && activePosition > 0 && (
-    <span
-      className="absolute left-1/2 bottom-0 w-40 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
-    ></span>
-  )}
-</button>
   </div>
 </div>
 
@@ -877,30 +910,44 @@ const hasActivePosition = userPositions.some(
 {activeTab === "deposit" && (
   <div className="px-4 md:px-12">
 {/* Main Card: Active Position */}
-<div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between mb-1 font-geist mt-4">
-  <span className="text-gray-300 text-xs">Your Active Position</span>
-
-  <div className="flex items-center gap-2">
-    <span
-      className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
-    >
-      {opposeMode ? "Oppose" : "Support"}
+<div className="flex justify-center mb-4">
+  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 font-geist mt-4 w-[380px]">
+    
+    <span className="text-gray-300 text-xs whitespace-nowrap">
+      Your Active Position
     </span>
-<span className="text-lg">
-  {toFixed(
-    userPositions
-      .filter(p => p.direction === (opposeMode ? "oppose" : "support"))
-      .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares ?? 0))), 0)
-  )}{" "}
-  TRUST
-</span>
+
+    <div className="flex items-center gap-2">
+      <span
+        className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+      >
+        {opposeMode ? "Oppose" : "Support"}
+      </span>
+
+      <span className="text-lg whitespace-nowrap">
+        {toFixed(
+          userPositions
+            .filter(p => p.direction === (opposeMode ? "oppose" : "support"))
+            .reduce(
+              (sum, p) =>
+                sum +
+                parseFloat(formatEther(BigInt(p.shares ?? 0))),
+              0
+            )
+        )}{" "}
+        TRUST
+      </span>
+    </div>
+
   </div>
 </div>
 
 {/* Wallet + Curve Row */}
-<div className="flex items-center justify-between mb-3 px-2">
+<div className="flex justify-center">
+  <div className="flex items-center gap-6 mb-3 w-[380px]"> {/* fixed width matching tabs/card */}
 
-  {/* LEFT: Wallet */}
+{/* LEFT: Wallet */}
+<div className="flex flex-col">
   <div className="bg-[#110A2B] border border-[#393B60] rounded-2xl px-3 py-1.5 flex items-center gap-2 text-xs">
     <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
     <span className="text-white">
@@ -910,38 +957,47 @@ const hasActivePosition = userPositions.some(
     </span>
   </div>
 
-  {/* RIGHT: Curve + Toggle + Info */}
-  <div className="flex items-center gap-6">
+  {/* Insufficient Funds Warning */}
+  {transactionAmount &&
+   Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
+    <span className="text-red-500 text-xs mt-1">
+      Insufficient funds
+    </span>
+  )}
+</div>
 
-        {/* Curve Info Text */}
-        <div className="flex flex-col justify-center ml-8">
-          <span className="text-white text-xs">
-            {isToggled ? "Exponential Curve" : "Linear Curve"}
-          </span>
-          <span className="text-[0.6rem] text-gray-300">
-            {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
-          </span>
-        </div>
+    {/* Right-aligned Cluster: Curve Info + Toggle + Info */}
+<div className="flex items-center gap-1 ml-auto"> {/* ml-auto pushes the whole cluster to far right, gap-1 keeps them tight */}
+  
+  {/* Curve Info Text */}
+  <div className="flex flex-col justify-center text-right"> {/* text-right aligns text toward toggle */}
+    <span className="text-white text-xs">
+      {isToggled ? "Exponential Curve" : "Linear Curve"}
+    </span>
+    <span className="text-[0.6rem] text-gray-300">
+      {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
+    </span>
+  </div>
 
-    {/* Toggle */}
-    <label className="relative inline-block w-10 h-5 cursor-pointer">
-      <input
-        type="checkbox"
-        className="sr-only peer"
-        checked={isToggled}
-        onChange={() => setIsToggled(!isToggled)}
-      />
-      <span className="block w-full h-full bg-white rounded-full peer-checked:bg-white transition-colors"></span>
-      <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
-    </label>
+  {/* Toggle */}
+  <label className="relative inline-block w-10 h-5 cursor-pointer">
+    <input
+      type="checkbox"
+      className="sr-only peer"
+      checked={isToggled}
+      onChange={() => setIsToggled(!isToggled)}
+    />
+    <span className="block w-full h-full bg-white rounded-full peer-checked:bg-white transition-colors"></span>
+    <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
+  </label>
 
-    {/* Info Button */}
-    <button
-      onClick={() => setShowCurveInfo(true)}
-      className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
-    >
-      i
-    </button>
+  {/* Info Button */}
+  <button
+    onClick={() => setShowCurveInfo(true)}
+    className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
+  >
+    i
+  </button>
 
         {/* Slide-in Modal (Fixed Right) */}
         {showCurveInfo && (
@@ -998,9 +1054,10 @@ const hasActivePosition = userPositions.some(
         )}
     </div>
 </div>
+</div>
 
 {/* Center Big Zero */}
-<div className="flex flex-col items-center">
+<div className="flex flex-col items-center mt-2">
   <input
     type="number"
     min="0"
@@ -1008,26 +1065,53 @@ const hasActivePosition = userPositions.some(
     value={transactionAmount || ""} // blank if empty
     onChange={(e) => setTransactionAmount(e.target.value)}
     autoFocus
-    className="bg-transparent text-white text-6xl text-center outline-none w-40
+    className="bg-transparent text-white text-6xl text-center outline-none w-48 h-20
                appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
   />
-  <span className="text-gray-300 text-xs -my-2 mb-2">TRUST</span>
-</div>
+  <span className="text-gray-300 text-xs font-normal mt-1">TRUST</span>
 
+  {/* Min Button */}
+  <button
+    type="button"
+    onClick={() => setTransactionAmount("0.01")}
+    className="mt-4 px-2 py-1 text-xs text-white bg-[#0A2D4D] rounded-full border border-white hover:bg-[#123a63] hover:border-[#8B3EFE] transition-colors"
+  >
+    Min
+  </button>
+</div>
 
 
 {/* Review Deposit Button */}
 <button
-  className={`mx-auto block px-6 py-2.5 rounded-3xl mt-3 text-sm transition-colors ${
-    transactionAmount && Number(transactionAmount) > 0
+  className={`mx-auto block px-6 py-2.5 rounded-3xl mt-4 text-sm transition-colors ${
+    transactionAmount &&
+    Number(transactionAmount) > 0 &&
+    Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
       ? "bg-white text-black hover:bg-gray-200"
       : "bg-gray-700 text-gray-400 cursor-not-allowed"
   }`}
   onClick={() => setShowReviewDepositModal(true)}
-  disabled={!transactionAmount || Number(transactionAmount) <= 0}
+  disabled={
+    !transactionAmount ||
+    Number(transactionAmount) <= 0 ||
+    Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
+  }
 >
-  {transactionAmount && Number(transactionAmount) > 0 ? "Review Deposit" : "Enter an Amount"}
+  {transactionAmount &&
+  Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
+    ? "Check Your Balance"
+    : transactionAmount && Number(transactionAmount) > 0
+    ? "Review Deposit"
+    : "Enter an Amount"}
 </button>
+
+{/* Optional small red warning below button */}
+{transactionAmount &&
+ Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
+  <span className="text-red-500 text-xs mt-1 block text-center">
+    Insufficient balance
+  </span>
+)}
   </div>
 )}
 

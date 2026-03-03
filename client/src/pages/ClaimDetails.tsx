@@ -42,6 +42,7 @@ function generateChartData(claim: any, growthType: string) {
 export default function ClaimDetails() {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("all");
+  const [mainTab, setMainTab] = useState("support");
   const [isBuy, setIsBuy] = useState(true);
   const [positionType, setPositionType] = useState("support");
   const [growthType, setGrowthType] = useState("linear");
@@ -312,23 +313,34 @@ function getPrice() {
   let sharePrice = "0";
 
   const counterSharePrice = (index: number) => {
-    return toFixed(formatEther(BigInt(counterTerm.vaults[index].current_share_price)));
+    console.log(`Counter vault index ${index}:`, counterTerm.vaults[index].current_share_price);
+    return counterTerm.vaults[index].current_share_price;
   };
 
   const supportSharePrice = (index: number) => {
-    return toFixed(formatEther(BigInt(term.vaults[index].current_share_price)));
+    console.log(`Support vault index ${index}:`, term.vaults[index].current_share_price);
+    return term.vaults[index].current_share_price;
   };
 
   if (activeTab === "support") {
-    sharePrice = growthType === "linear"
-      ? supportSharePrice(0)
-      : supportSharePrice(1);
+    if (growthType === "linear") {
+      console.log("ActiveTab: support, GrowthType: linear");
+      sharePrice = supportSharePrice(0);
+    } else {
+      console.log("ActiveTab: support, GrowthType: exponential");
+      sharePrice = supportSharePrice(1);
+    }
   } else {
-    sharePrice = growthType === "linear"
-      ? counterSharePrice(0)
-      : counterSharePrice(1);
+    if (growthType === "linear") {
+      console.log("ActiveTab: oppose, GrowthType: linear");
+      sharePrice = counterSharePrice(0);
+    } else {
+      console.log("ActiveTab: oppose, GrowthType: exponential");
+      sharePrice = counterSharePrice(1);
+    }
   }
 
+  console.log("Calculated sharePrice:", sharePrice);
   return sharePrice;
 }  
 
@@ -383,11 +395,59 @@ const handleClaimAction = async () => {
     if (isBuy) {
       if (!buyAmount) throw new Error("No buy amount selected");
       setBuying(true);
+
+      // Optimistically update userPositions
+      setUserPositions(prev => {
+        const existingSupport = prev.find(
+          p => p.direction === "support" && p.account.id === user.address
+        );
+        const newShares = parseFloat(buyAmount);
+
+        if (existingSupport) {
+          return prev.map(p =>
+            p === existingSupport
+              ? { ...p, shares: parseFloat(p.shares.toString()) + newShares }
+              : p
+          );
+        } else {
+          return [
+            ...prev,
+            {
+              direction: "support",
+              shares: newShares,
+              account: {
+                id: user.address,
+                label: user.address,
+                image: user.image ?? null,
+              },
+              curve_id: growthType === "linear" ? 1 : 2,
+            },
+          ];
+        }
+      });
+
       await buyShares(buyAmount, address as Address, curveId);
       setBuying(false);
     } else {
       if (!sellAmount) throw new Error("No sell amount selected");
       setSelling(true);
+
+      // Optimistically update userPositions
+      setUserPositions(prev => {
+        const dir = activeTab; // "support" or "oppose"
+        const existing = prev.find(
+          p => p.direction === dir && p.account.id === user.address
+        );
+        if (existing) {
+          return prev.map(p =>
+            p === existing
+              ? { ...p, shares: parseFloat(p.shares.toString()) - parseFloat(sellAmount) }
+              : p
+          );
+        }
+        return prev;
+      });
+
       await sellShares(sellAmount, address as Address, curveId);
       setSelling(false);
     }
@@ -397,7 +457,23 @@ const handleClaimAction = async () => {
 
     toast({
       title: "Success",
-      description: `Shares ${isBuy ? "bought" : "sold"} successfully!`
+      description: (
+        <div className="flex items-center gap-2 text-green-500 font-semibold">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>{`Shares ${isBuy ? "bought" : "sold"} successfully!`}</span>
+        </div>
+      ),
     });
 
   } catch (err: any) {
@@ -747,7 +823,7 @@ const handleDownload = async () => {
 
       <div className="flex flex-col lg:flex-row gap-3 mt-3">
         {/* Graph Placeholder (70%) */}
-        <div className="w-full lg:w-[70%] bg-gradient-to-br from-[#1A0A2B] to-[#0B0515] rounded-xl p-4 shadow-lg">
+        <div className="w-full lg:w-[75%] bg-gradient-to-br from-[#1A0A2B] to-[#0B0515] rounded-xl p-4 shadow-lg">
           {/* Chart Header */}
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -834,25 +910,25 @@ const handleDownload = async () => {
         </div>
 
         {/* Control Card (20%) */}
-        <div className="w-full lg:w-[30%] bg-gray-900 rounded-xl p-6 flex flex-col gap-4">
+        <div className="w-full lg:w-[25%] bg-gray-900 border border-gray-700 rounded-xl p-6 flex flex-col gap-4">
           {/* Support / Oppose Tabs */}
           <div className="flex gap-4">
             <button
-              className={`flex-1 rounded-md py-2 font-semibold ${activeTab === "support"
+              className={`flex-1 rounded-md py-2 font-semibold ${mainTab === "support"
                 ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
                 : "bg-gray-800 border border-gray-700 text-gray-400"
                 }`}
-              onClick={() => setActiveTab("support")}
+              onClick={() => setMainTab("support")}
             >
               Support
             </button>
 
             <button
-              className={`flex-1 rounded-md py-2 font-semibold ${activeTab === "oppose"
+              className={`flex-1 rounded-md py-2 font-semibold ${mainTab === "oppose"
                 ? "bg-[#FFA31A] border border-[#F19C03] text-white"
                 : "bg-gray-800 border border-gray-700 text-gray-400"
                 }`}
-              onClick={() => setActiveTab("oppose")}
+              onClick={() => setMainTab("oppose")}
             >
               Oppose
             </button>
@@ -885,10 +961,10 @@ const handleDownload = async () => {
 {/* Curve Section */}
 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
   <div>
-    <h3 className="font-semibold text-white">
+    <h3 className="text-white text-sm">
       {growthType === "exponential" ? "Exponential Curve" : "Linear Curve"}
     </h3>
-    <p className="text-gray-400 text-xs">
+    <p className="text-gray-400 text-[0.65rem]">
       {growthType === "exponential"
         ? "High Risk, High Reward"
         : "Low Risk, Low Reward"}
@@ -914,8 +990,8 @@ const handleDownload = async () => {
 
 
 {/* Amount Section */}
-<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-  <span className="text-gray-400 text-xs font-semibold">Amount:</span>
+<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+  <span className="text-gray-400 text-xs">Amount:</span>
 
   <span className="text-gray-400 flex items-center gap-1 justify-end text-xs font-semibold">
     <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
@@ -926,7 +1002,7 @@ const handleDownload = async () => {
 </div>
 
 {/* Input */}
-<div className="w-full bg-gray-800 rounded-md border border-[#833AFD] flex items-center px-2 mt-2">
+<div className="w-full bg-gray-800 -mt-3 rounded-md border border-[#833AFD] flex items-center px-2">
   <input
     type="text"
     placeholder="0.1"
@@ -945,7 +1021,6 @@ const handleDownload = async () => {
         }
 
         receiveTimeoutRef.current = setTimeout(() => {
-          // calculation placeholder
           setLoadingAmount(false);
         }, 2000);
       }
@@ -959,13 +1034,35 @@ const handleDownload = async () => {
   <button
     className="bg-[#0A2D4D] hover:bg-[#123a63] text-white hover:text-white text-xs px-2 py-0.5 rounded-full ml-2 transition-colors duration-200"
     onClick={() => {
-      if (isBuy) setBuyAmount("0.1");
+      if (isBuy) setBuyAmount("0.01");
       else setSellAmount(balance.toString());
     }}
   >
     {isBuy ? "min" : "max"}
   </button>
 </div>
+
+{/* Minimum Deposit Warning */}
+{isBuy && currentAmount && Number(currentAmount) < 0.01 && (
+  <div className="mt-1 flex items-center gap-1 text-red-400 text-xs font-semibold">
+    {/* Red Caution Icon */}
+    <svg
+      className="w-4 h-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"
+      />
+    </svg>
+    Minimum deposit is 0.010000 TRUST
+  </div>
+)}
 
 {!hasBalance && (
   <div className="mt-2 text-xs text-red-400 font-semibold">
@@ -1005,8 +1102,8 @@ const handleDownload = async () => {
     ) : (
       <span>
         {amountToReceive && Number(currentAmount) > 0
-          ? `${Math.floor(Number(amountToReceive) * 100) / 100} shares`
-          : ""}
+          ? `${Math.floor(Number(amountToReceive) * 100) / 100} ${isBuy ? "shares" : "TRUST"}`
+          : "--"}
       </span>
     )}
   </div>
