@@ -17,7 +17,8 @@ import {
   updateCamapaignQuest,
   updateHub,
   updateIds,
-  createHub
+  createHub,
+  getHub
 } from "@/controllers/hub.controller";
 import { Router } from "express";
 import { upload } from "@/config/multer";
@@ -31,6 +32,7 @@ router
   .get("/get-campaign", getCampaign)
   .delete("/delete-hub", deleteHub)
   .patch("/update-ids", updateIds)
+  .get("/me", getHub)
   .delete("/remove-admin", removeHubAdmin)
   .post("/create-hub", upload.single("logo"), createHub)
   .patch("/update-hub", upload.single("logo"), updateHub)

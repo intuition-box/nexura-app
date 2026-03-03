@@ -57,6 +57,17 @@ export const createHub = async (req: GlobalRequest, res: GlobalResponse) => {
   }
 };
 
+export const getHub = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const hubFound = await hub.findById(req.admin.hub).lean();
+
+    res.status(OK).json({ hub: hubFound });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Error getting hub" });
+  }
+};
+
 export const updateIds = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { verifiedId, guildId } = req.body;
