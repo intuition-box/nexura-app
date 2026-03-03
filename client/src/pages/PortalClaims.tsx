@@ -422,6 +422,11 @@ const sortClaims = (claims, option) => {
   }
 };
 
+// Determine if the user has any active shares in the current direction
+const hasActivePosition = userPositions.some(
+  p => p.direction === (opposeMode ? "oppose" : "support") && BigInt(p.shares ?? 0) > 0n
+);
+
   return (
     <div className="p-3 text-white font-geist">
       {/* Header */}
@@ -776,7 +781,7 @@ const sortClaims = (claims, option) => {
                     {/* Total MarketCap */}
                     <div className="flex flex-col items-end text-gray-300 text-sm">
                       <span className="font-semibold">Total Market Cap</span>
-                      <span className="font-bold text-lg text-white">
+                      <span className=" text-lg text-white">
                         {toFixed(
                           formatEther(
                             BigInt(claim.total_market_cap)
@@ -794,16 +799,13 @@ const sortClaims = (claims, option) => {
           {/* Modal */}
   {showModal && activeClaim && (
   <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-<div
-  className="bg-[#070315] max-w-lg w-full mx-4 p-3 rounded-lg relative border max-h-[85vh] overflow-y-auto"
-  style={{ borderColor: "#220350" }}
->
+<div className="bg-[#070315] max-w-2xl w-full mx-4 p-6 rounded-lg relative border h-[calc(100vh-8rem)] overflow-y-auto">
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-1 p-2 pb-1">
-        <h2 className="text-white font-bold text-base">Stake</h2>
-        <span
-  className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+        <h2 className="text-white font text-base">Stake</h2>
+<span
+  className="bg-[#0A2D4D] text-white border border-white text-xs px-2 py-0.5 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
 >
   {opposeMode ? "Oppose" : "Support"}
 </span>
@@ -816,12 +818,14 @@ const sortClaims = (claims, option) => {
 
 {/* Statement */}
 <div className="text-gray-300 mb-4 px-6 flex flex-wrap items-center gap-2 text-lg">
-  <span className="bg-[#0b0618] px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate min-w-0">
-    <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
-    {activeClaim.term.triple.subject.label}
-  </span>
-  <span>{activeClaim.term.triple.predicate.label}</span>
-  <span className="bg-[#0b0618] px-2 py-1 rounded truncate max-w-[40%] ml-2 min-w-0">{activeClaim.term.triple.object.label}</span>
+<span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate min-w-0 cursor-pointer">
+  <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
+  {activeClaim.term.triple.subject.label}
+</span>
+
+<span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded truncate max-w-[40%] ml-2 min-w-0 cursor-pointer">
+  {activeClaim.term.triple.object.label}
+</span>
 </div>
 
 {/* Tabs */}
@@ -829,7 +833,7 @@ const sortClaims = (claims, option) => {
   <div className="flex gap-6 relative">
     {/* Deposit Tab */}
 <button
-  className={`relative px-3 py-1.5 text-sm font-semibold ${
+  className={`relative px-3 py-1.5 text-sm ${
     activeTab === "deposit" ? "text-white" : "text-gray-400"
   }`}
   onClick={() => setActiveTab("deposit")}
@@ -847,7 +851,7 @@ const sortClaims = (claims, option) => {
 
 {/* Redeem Tab */}
 <button
-  className={`relative px-3 py-1.5 text-sm font-semibold ${
+  className={`relative px-3 py-1.5 text-sm ${
     activePosition > 0
       ? activeTab === "redeem"
         ? "text-white"
@@ -873,16 +877,16 @@ const sortClaims = (claims, option) => {
 {activeTab === "deposit" && (
   <div className="px-4 md:px-12">
 {/* Main Card: Active Position */}
-<div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between mb-1 font-geist">
-  <span className="text-gray-300 text-xs font-semibold">Your Active Position</span>
+<div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between mb-1 font-geist mt-4">
+  <span className="text-gray-300 text-xs">Your Active Position</span>
 
   <div className="flex items-center gap-2">
     <span
-      className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+      className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
     >
       {opposeMode ? "Oppose" : "Support"}
     </span>
-<span className="font-bold text-lg">
+<span className="text-lg">
   {toFixed(
     userPositions
       .filter(p => p.direction === (opposeMode ? "oppose" : "support"))
@@ -894,24 +898,24 @@ const sortClaims = (claims, option) => {
 </div>
 
 {/* Wallet + Curve Row */}
-<div className="flex items-center gap-3 mb-2">
-{/* Wallet Div (Compact) */}
-<div className="ml-1 bg-[#110A2B] border border-[#393B60] rounded-2xl px-2 py-1 flex items-center gap-1.5 text-xs">
-  <img src="/wallet.png" alt="Wallet Icon" className="w-3 h-3" />
-  <span className="text-white font-semibold">
-    {Number(tTrustBalance) / 10 ** 18 >= 0
-      ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
-      : "0.00"} TRUST
-  </span>
-</div>
+<div className="flex items-center justify-between mb-3 px-2">
 
-  <div className="flex items-center justify-end relative">
+  {/* LEFT: Wallet */}
+  <div className="bg-[#110A2B] border border-[#393B60] rounded-2xl px-3 py-1.5 flex items-center gap-2 text-xs">
+    <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+    <span className="text-white">
+      {Number(tTrustBalance) / 10 ** 18 >= 0
+        ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
+        : "0.00"} TRUST
+    </span>
+  </div>
 
-      {/* Curve Info + Toggle */}
-      <div className="flex items-center flex-1">
+  {/* RIGHT: Curve + Toggle + Info */}
+  <div className="flex items-center gap-6">
+
         {/* Curve Info Text */}
         <div className="flex flex-col justify-center ml-8">
-          <span className="text-white font-bold text-xs">
+          <span className="text-white text-xs">
             {isToggled ? "Exponential Curve" : "Linear Curve"}
           </span>
           <span className="text-[0.6rem] text-gray-300">
@@ -919,31 +923,25 @@ const sortClaims = (claims, option) => {
           </span>
         </div>
 
-        {/* Toggle Button */}
-        <div className="flex-none ml-4">
-          <label className="relative inline-block w-10 h-5 cursor-pointer">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={isToggled}
-              onChange={() => setIsToggled(!isToggled)}
-            />
-            {/* Track */}
-            <span className="block w-full h-full bg-white rounded-full peer-checked:bg-[#FFF] transition-colors"></span>
-            {/* Thumb */}
-            <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
-          </label>
-        </div>
-      </div>
+    {/* Toggle */}
+    <label className="relative inline-block w-10 h-5 cursor-pointer">
+      <input
+        type="checkbox"
+        className="sr-only peer"
+        checked={isToggled}
+        onChange={() => setIsToggled(!isToggled)}
+      />
+      <span className="block w-full h-full bg-white rounded-full peer-checked:bg-white transition-colors"></span>
+      <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
+    </label>
 
-      {/* Info Icon (Beside Card) */}
-      <div className="flex flex-col items-center ml-4">
-        <button
-          onClick={() => setShowCurveInfo(true)}
-          className="w-8 h-8 mt-2 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm font-bold hover:bg-[#1a133d] hover:text-white transition-colors"
-        >
-          i
-        </button>
+    {/* Info Button */}
+    <button
+      onClick={() => setShowCurveInfo(true)}
+      className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
+    >
+      i
+    </button>
 
         {/* Slide-in Modal (Fixed Right) */}
         {showCurveInfo && (
@@ -952,13 +950,13 @@ const sortClaims = (claims, option) => {
             {/* Close Button */}
             <button
               onClick={() => setShowCurveInfo(false)}
-              className="absolute top-3 right-3 text-gray-400 hover:text-white font-bold"
+              className="absolute top-3 right-3 text-gray-400 hover:text-white"
             >
               ✕
             </button>
 
             {/* Main Heading */}
-            <h2 className="text-white font-bold text-lg text-center mb-2">
+            <h2 className="text-white text-lg text-center mb-2">
               How Bonding Curves Work
             </h2>
             <p className="text-gray-300 text-sm text-left mb-6">
@@ -972,7 +970,7 @@ const sortClaims = (claims, option) => {
               className="w-full mb-4 rounded"
             />
             <div className="text-left mb-6">
-              <h4 className="text-white font-semibold mb-1">Linear Curve (Safe)</h4>
+              <h4 className="text-white mb-1">Linear Curve (Safe)</h4>
               <p className="text-gray-300 text-sm mb-2">
                 The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
               </p>
@@ -988,7 +986,7 @@ const sortClaims = (claims, option) => {
               className="w-full mb-4 rounded"
             />
             <div className="text-left mb-6">
-              <h4 className="text-white font-semibold mb-1">Exponential Curve (Riskier)</h4>
+              <h4 className="text-white mb-1">Exponential Curve (Riskier)</h4>
               <p className="text-gray-300 text-sm mb-2">
                 The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
               </p>
@@ -998,7 +996,6 @@ const sortClaims = (claims, option) => {
             </div>
           </div>
         )}
-      </div>
     </div>
 </div>
 
@@ -1011,7 +1008,7 @@ const sortClaims = (claims, option) => {
     value={transactionAmount || ""} // blank if empty
     onChange={(e) => setTransactionAmount(e.target.value)}
     autoFocus
-    className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40
+    className="bg-transparent text-white text-6xl text-center outline-none w-40
                appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
   />
   <span className="text-gray-300 text-xs -my-2 mb-2">TRUST</span>
@@ -1021,7 +1018,7 @@ const sortClaims = (claims, option) => {
 
 {/* Review Deposit Button */}
 <button
-  className={`w-full py-2.5 rounded-3xl font-semibold mt-3 text-sm transition-colors ${
+  className={`mx-auto block px-6 py-2.5 rounded-3xl mt-3 text-sm transition-colors ${
     transactionAmount && Number(transactionAmount) > 0
       ? "bg-white text-black hover:bg-gray-200"
       : "bg-gray-700 text-gray-400 cursor-not-allowed"
@@ -1039,11 +1036,11 @@ const sortClaims = (claims, option) => {
   <div className="px-4 md:px-12">
 {/* Main Card: Active Position */}
 <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between mb-1 font-geist">
-  <span className="text-gray-300 text-xs font-semibold">Your Active Position</span>
+  <span className="text-gray-300 text-xs">Your Active Position</span>
 
   <div className="flex items-center gap-2">
     <span
-      className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+      className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
     >
       {opposeMode ? "Oppose" : "Support"}
     </span>
@@ -1072,7 +1069,7 @@ const sortClaims = (claims, option) => {
     value={transactionAmount || ""} // blank if empty
     onChange={(e) => setTransactionAmount(e.target.value)}
     autoFocus
-    className="bg-transparent text-white font-bold text-6xl text-center outline-none w-40
+    className="bg-transparent text-white text-6xl text-center outline-none w-40
                appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
   />
   <span className="text-gray-300 text-xs -my-2 mb-2">TRUST</span>
@@ -1175,9 +1172,11 @@ const sortClaims = (claims, option) => {
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-white font-bold text-base mt-2">Stake</h2>
-        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 mt-2 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]">
-          {opposeMode ? "Oppose" : "Support"}
-        </span>
+<span
+  className="bg-[#0A2D4D] text-white border border-white text-xs font-semibold px-2 py-0.5 mt-2 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+>
+  {opposeMode ? "Oppose" : "Support"}
+</span>
       </div>
 
       <p className="text-gray-400 text-sm mb-6">
@@ -1199,15 +1198,15 @@ const sortClaims = (claims, option) => {
             </span>
           </div>
 
-          <button
-            className="w-full bg-white text-black py-2.5 rounded-3xl font-semibold text-sm"
-            onClick={() => {
-              handleClaimAction("deposit");
-              setShowModal(false);
-            }}
-          >
-            Confirm
-          </button>
+<button
+  className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl font-semibold text-sm"
+  onClick={() => {
+    handleClaimAction("deposit");
+    setShowModal(false);
+  }}
+>
+  Confirm
+</button>
         </>
       )}
 
@@ -1325,15 +1324,19 @@ const sortClaims = (claims, option) => {
       {/* Redeem TRUST Label */}
       <span className="text-gray-300 font-semibold mb-2 block">Redeem TRUST from Claim</span>
 
-      {/* Statement */}
-      <div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center gap-2">
-        <span className="font-bold bg-[#0b0618] px-2 py-1 rounded inline-flex items-center gap-2 max-w-[150px] truncate">
-          <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
-          {activeClaim.term.triple.subject.label}
-        </span>
-        <span>{activeClaim.term.triple.predicate.label}</span>
-        <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[150px] truncate">{activeClaim.term.triple.object.label}</span>
-      </div>
+{/* Statement */}
+<div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center gap-2">
+  <span className="font-bold bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded inline-flex items-center gap-2 max-w-[150px] truncate">
+    <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
+    {activeClaim.term.triple.subject.label}
+  </span>
+
+  <span>{activeClaim.term.triple.predicate.label}</span>
+
+  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded max-w-[150px] truncate">
+    {activeClaim.term.triple.object.label}
+  </span>
+</div>
 
       {/* Amount Input */}
 <div className="mb-4">

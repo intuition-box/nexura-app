@@ -915,20 +915,18 @@ const handleDownload = async () => {
 
 {/* Amount Section */}
 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-  <span className="text-gray-400">
-    {isBuy ? "Your balance:" : "Your shares:"}
-  </span>
+  <span className="text-gray-400 text-xs font-semibold">Amount:</span>
 
-  <span className="text-gray-400 flex items-center gap-1 justify-end">
-    <img src="/wallet.png" alt="Wallet Icon" className="w-6 h-6" />
+  <span className="text-gray-400 flex items-center gap-1 justify-end text-xs font-semibold">
+    <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
     {isBuy
       ? `${Math.floor(Number(balance) * 100) / 100} TRUST`
-      : `${Math.floor(Number(userShares) * 100) / 100} SHARES`}
+      : `${Math.floor(Number(userShares) * 100) / 100} shares`}
   </span>
 </div>
 
 {/* Input */}
-<div className="w-full bg-gray-800 rounded-md border border-[#833AFD] flex items-center px-2">
+<div className="w-full bg-gray-800 rounded-md border border-[#833AFD] flex items-center px-2 mt-2">
   <input
     type="text"
     placeholder="0.1"
@@ -947,30 +945,39 @@ const handleDownload = async () => {
         }
 
         receiveTimeoutRef.current = setTimeout(() => {
-          // Put your real calculation here
-          // setAmountToReceive(calculatedValue)
+          // calculation placeholder
           setLoadingAmount(false);
         }, 2000);
       }
     }}
-    className={`flex-1 bg-gray-800 text-white p-2 outline-none ${
+    className={`flex-1 bg-gray-800 text-gray-300 placeholder-gray-500 text-sm p-2 outline-none ${
       !hasBalance ? "opacity-50 cursor-not-allowed" : ""
     }`}
   />
-  <span className="text-gray-400 ml-2">min</span>
+
+  {/* Min / Max Button */}
+  <button
+    className="bg-[#0A2D4D] hover:bg-[#123a63] text-white hover:text-white text-xs px-2 py-0.5 rounded-full ml-2 transition-colors duration-200"
+    onClick={() => {
+      if (isBuy) setBuyAmount("0.1");
+      else setSellAmount(balance.toString());
+    }}
+  >
+    {isBuy ? "min" : "max"}
+  </button>
 </div>
 
 {!hasBalance && (
-  <div className="mt-2 text-sm text-red-400 font-semibold">
+  <div className="mt-2 text-xs text-red-400 font-semibold">
     You shall NOT pass! Get some TRUST.
   </div>
 )}
 
 {/* You Receive Section */}
-<div className="w-full bg-gray-800 border border-[#833AFD] rounded-md px-3 py-2 flex items-center justify-between text-white text-sm">
+<div className="w-full bg-gray-800 border border-[#833AFD] rounded-md px-3 py-1.5 flex items-center justify-between text-white text-xs mt-2">
   <span>You receive</span>
 
-  <div className="flex items-center gap-2">
+  <div className="flex items-center gap-1">
     {loadingAmount ? (
       <div className="flex items-center gap-1">
         <svg
@@ -997,63 +1004,73 @@ const handleDownload = async () => {
       </div>
     ) : (
       <span>
-        {amountToReceive
-          ? Math.floor(Number(amountToReceive) * 100) / 100
-          : "0.00"}
+        {amountToReceive && Number(currentAmount) > 0
+          ? `${Math.floor(Number(amountToReceive) * 100) / 100} shares`
+          : ""}
       </span>
     )}
   </div>
 </div>
 
 {/* Connect / Buy / Sell Button */}
-<button
-  onClick={async () => {
-    if (!user) {
-      await handleConnectWallet();
-      return;
-    }
+<div className="mt-3 flex flex-col gap-1">
+  {/* Inline Error */}
+  {currentAmount && Number(currentAmount) > (isBuy ? balance : userShares) && (
+    <span className="text-red-400 text-xs font-semibold">
+      You cannot {isBuy ? "buy more than your balance" : "sell more than your shares"}!
+    </span>
+  )}
 
-    if (!currentAmount || Number(currentAmount) <= 0 || loadingAmount) return;
+  <button
+    onClick={async () => {
+      if (!user) {
+        await handleConnectWallet();
+        return;
+      }
 
-    await handleClaimAction();
+      if (
+        !currentAmount ||
+        Number(currentAmount) <= 0 ||
+        Number(currentAmount) > (isBuy ? balance : userShares)
+      )
+        return;
 
-    // Clear input only after successful action
-    isBuy ? setBuyAmount("") : setSellAmount("");
-  }}
-  disabled={
-    !user ||
-    !currentAmount ||
-    Number(currentAmount) <= 0 ||
-    loadingAmount
-  }
-  className={`flex items-center justify-center gap-2 font-semibold py-2 rounded-3xl transition-opacity duration-200
-    ${
+      await handleClaimAction();
+
+      // Clear input only after successful action
+      isBuy ? setBuyAmount("") : setSellAmount("");
+    }}
+    disabled={
       !user ||
       !currentAmount ||
       Number(currentAmount) <= 0 ||
-      loadingAmount
-        ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-        : "bg-white text-black"
-    }`}
->
-  {!user && (
-    <img src="/key.png" alt="Key Icon" className="w-5 h-5" />
-  )}
+      Number(currentAmount) > (isBuy ? balance : userShares)
+    }
+    className={`flex items-center justify-center gap-2 font-semibold py-2 px-6 text-sm rounded-3xl transition-all duration-200
+      ${
+        !user ||
+        !currentAmount ||
+        Number(currentAmount) <= 0 ||
+        Number(currentAmount) > (isBuy ? balance : userShares)
+          ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+          : "bg-gradient-to-r from-[#8B3EFE] to-[#B57EFF] text-white hover:from-[#B57EFF] hover:to-[#8B3EFE] hover:scale-105"
+      }`}
+  >
+    {!user && <img src="/key.png" alt="Key Icon" className="w-4 h-4" />}
 
-  {!user
-    ? "Connect Wallet"
-    : !currentAmount || Number(currentAmount) <= 0
-    ? "Enter Amount"
-    : loadingAmount
-    ? "Calculating..."
-    : isBuy
-    ? buying
-      ? "Buying shares"
-      : "Buy Shares"
-    : selling
-    ? "Selling shares"
-    : "Sell Shares"}
-</button>
+    {!user
+      ? "Connect Wallet"
+      : !currentAmount || Number(currentAmount) <= 0
+      ? "Enter Amount"
+      : isBuy
+      ? buying
+        ? "Buying shares"
+        : "Buy Shares"
+      : selling
+      ? "Selling shares"
+      : "Sell Shares"}
+  </button>
+</div>
 </div>
 </div>
 
