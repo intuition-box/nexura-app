@@ -322,6 +322,7 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
           trustTokens: reward.trust ?? 0,
         },
       };
+      body.hub = req.admin.hub;
       const savedCampaign = await campaign.create(body);
       const savedCampaignId = savedCampaign._id;
 
