@@ -23,7 +23,6 @@ import DiscordCallback from "./pages/DiscordCallback";
 import XCallback from "./pages/XCallback";
 import Levels from "./pages/Levels";
 import UserReferred from "./pages/UserReferred";
-import Projects from "./pages/studio/Projects";
 import ProjectCreate from "./pages/studio/ProjectCreate";
 import ProjectDashboard from "./pages/project/ProjectDashboard";
 import NexuraSidebar from "./components/QuestflowSidebar";
@@ -43,6 +42,7 @@ import SignInToHub from "./pages/studio/SignInToHub.tsx"
 import TheHub from "./pages/studio/TheHub.tsx";
 import ConnectedDiscord from "./pages/studio/ConnectedDiscord.tsx";
 import StudioDashboard from "./pages/studio/StudioDashboard.tsx"
+import StudioLayout from "./pages/studio/StudioLayout.tsx"
 import CampaignsTab from "./components/admin/CampaignsTab.tsx";
 import { getStoredAccessToken, apiRequest } from './lib/config'
 import { clearProjectSession, getStoredProjectToken, projectApiRequest } from './lib/projectApi'
@@ -97,7 +97,6 @@ function Router() {
       <Route path="/achievements" component={Achievements} />
       <Route path="/leaderboard" component={Leaderboard} />
       {/* Developer pages */}
-      <Route path="/projects" component={Projects} />
       <Route path="/projects/create" component={ProjectCreate} />
       <Route path="/projects/create/create-hub" component={CreateHub} />
       <Route path="/projects/create/signin-to-hub" component={SignInToHub} />
@@ -107,10 +106,26 @@ function Router() {
       <Route path="/studio-dashboard">
   <StudioDashboard onLogout={handleLogout} />
 </Route>
-<Route path="/studio-dashboard/create-new-campaign" component={CreateNewCampaigns} />
-<Route path="/studio-dashboard/campaigns-tab" component={CampaignsTab} />
-<Route path="/studio-dashboard/admin-management" component={AdminManagement} />
-<Route path="/studio-dashboard/my-campaign" component={MyCampaign} />
+<Route path="/studio-dashboard/create-new-campaign">
+  <StudioLayout title="Create Campaign" onLogout={handleLogout}>
+    <CreateNewCampaigns />
+  </StudioLayout>
+</Route>
+<Route path="/studio-dashboard/campaigns-tab">
+  <StudioLayout title="Campaigns" onLogout={handleLogout}>
+    <CampaignsTab />
+  </StudioLayout>
+</Route>
+<Route path="/studio-dashboard/admin-management">
+  <StudioLayout title="User Administration" onLogout={handleLogout}>
+    <AdminManagement />
+  </StudioLayout>
+</Route>
+<Route path="/studio-dashboard/my-campaign">
+  <StudioLayout title="My Campaign" onLogout={handleLogout}>
+    <MyCampaign />
+  </StudioLayout>
+</Route>
 
 
       <Route path="/studio/register" component={AdminSignUp} />
@@ -151,6 +166,7 @@ function App() {
                 const isHome = location === "/" || location === "/home";
                 const isStudio = location.startsWith("/studio-dashboard");
                 const isProject = location.startsWith("/project/");
+                const isProjectCreate = location.startsWith("/projects/create");
                 return (
                   <div className="flex h-screen w-full text-white selection:bg-blue-500/30 relative">
 
@@ -158,11 +174,11 @@ function App() {
                     <AnimatedBackground />
 
                     {/* Sidebar */}
-                    {!isHome && !isStudio && <NexuraSidebar />}
+                    {!isHome && !isStudio && !isProjectCreate && <NexuraSidebar />}
 
                     {/* Main content */}
                     <div className="flex-1 flex flex-col relative z-10">
-                      {!isHome && !isStudio &&(
+                      {!isHome && !isStudio && !isProjectCreate &&(
                         <header className="flex items-center p-4 app-header">
                           <SidebarTrigger data-testid="button-sidebar-toggle" className="md:hidden" />
                           <div className="ml-auto">

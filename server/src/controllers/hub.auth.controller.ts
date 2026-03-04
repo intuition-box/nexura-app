@@ -80,11 +80,22 @@ export const superAdminSignUp = async (req: GlobalRequest, res: GlobalResponse) 
 			return;
     }
 
-    req.body.password = await hashPassword(req.body.password);
+    const { name, email, password } = req.body;
 
-		req.body.role = "superadmin";
+    const emailExists = await hubAdmin.exists({ email: email.trim().toLowerCase() });
+    if (emailExists) {
+      res.status(BAD_REQUEST).json({ error: "An account with this email already exists. Please sign in instead." });
+      return;
+    }
 
-		const superAdmin = await hubAdmin.create(req.body);
+    const hashedPassword = await hashPassword(password);
+
+		const superAdmin = await hubAdmin.create({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+      role: "superadmin",
+    });
 
 		const accessToken = JWT.sign(superAdmin._id.toString());
 		const refreshToken = getRefreshToken(superAdmin._id.toString());
@@ -96,9 +107,12 @@ export const superAdminSignUp = async (req: GlobalRequest, res: GlobalResponse) 
 		});
 
 		res.status(CREATED).json({ message: "super admin created", accessToken });
-	} catch (error) {
+	} catch (error: any) {
 		logger.error(error);
-		res.status(INTERNAL_SERVER_ERROR).json({ error: "error creating super admin" });
+		const isDuplicate = error?.code === 11000;
+		res.status(isDuplicate ? BAD_REQUEST : INTERNAL_SERVER_ERROR).json({
+      error: isDuplicate ? "An account with this email already exists. Please sign in instead." : "Error creating super admin",
+    });
 	}
 }
 

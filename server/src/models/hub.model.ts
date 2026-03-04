@@ -13,10 +13,12 @@ const hubSchema = new Schema({
   guildId: {
     type: String,
     unique: true,
+    sparse: true,
   },
   verifiedId: {
     type: String,
     unique: true,
+    sparse: true,
   },
   logo: {
     type: String,
@@ -33,12 +35,16 @@ const hubSchema = new Schema({
   },
   xpAllocated: {
     type: Number,
-    default: 0
+    default: 200
   },
   superAdmin: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "admins",
     required: true
+  },
+  pendingTxHash: {
+    type: String,
+    default: null,
   }
 }, { timestamps: true });
 
@@ -66,6 +72,10 @@ const hubAdminSchema = new mongoose.Schema({
   hub: {
     type: Schema.Types.ObjectId,
     ref: 'hubs',
+  },
+  pendingTxHash: {
+    type: String,
+    default: null,
   }
 }, { timestamps: true });
 

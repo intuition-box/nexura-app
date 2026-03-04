@@ -38,33 +38,58 @@ export const createHub = async (req: GlobalRequest, res: GlobalResponse) => {
 
     const hubLogo = await uploadImg({ file: hubLogoAsFile, filename: req.file?.originalname, folder: "hub-logos" });
 
-    req.body.logo = hubLogo;
-    req.body.name = name;
-    req.body.superAdmin = req.id;
+    const createdHub = await hub.create({
+      name,
+      description: req.body.description ?? "",
+      logo: hubLogo,
+      superAdmin: req.id,
+      xpAllocated: 200,
+    });
 
-    const createdHub = await hub.create(req.body);
+    const adminDoc = req.admin as any;
+    await hubAdmin.findByIdAndUpdate(req.id, { hub: createdHub._id, pendingTxHash: null });
 
-    req.admin.hub = createdHub._id;
-
-    await req.admin.save();
+    // Migrate any pending payment hash from admins to hub
+    if (adminDoc?.pendingTxHash) {
+      await hub.findByIdAndUpdate(createdHub._id, { pendingTxHash: adminDoc.pendingTxHash });
+    }
 
     res.status(CREATED).json({ message: "hub created!" });
-  } catch (error) {
+  } catch (error: any) {
     logger.error(error);
     res
       .status(INTERNAL_SERVER_ERROR)
-      .json({ error: "Error creating hub" });
+      .json({ error: error?.message || "Error creating hub" });
   }
 };
 
 export const getHub = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const hubFound = await hub.findById(req.admin.hub).lean();
-
-    res.status(OK).json({ hub: hubFound });
+    const hubFound = await hub.findById(req.admin.hub).lean() as any;
+    // If hub exists but pendingTxHash isn't on it, fall back to admin's stored hash
+    const adminHash = (req.admin as any).pendingTxHash ?? null;
+    const pendingTxHash = hubFound?.pendingTxHash ?? adminHash;
+    res.status(OK).json({ hub: hubFound ? { ...hubFound, pendingTxHash } : { pendingTxHash } });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "Error getting hub" });
+  }
+};
+
+export const savePaymentHash = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { txHash } = req.body;
+    if (req.admin.hub) {
+      // Hub exists — save on hub
+      await hub.findByIdAndUpdate(req.admin.hub, { pendingTxHash: txHash ?? null });
+    } else {
+      // Hub not created yet — save on admin as fallback
+      await hubAdmin.findByIdAndUpdate(req.id, { pendingTxHash: txHash ?? null });
+    }
+    res.status(OK).json({ message: "payment hash saved" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Error saving payment hash" });
   }
 };
 
@@ -130,7 +155,8 @@ export const updateHub = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
-    const updatedHub = await hub.findByIdAndUpdate(req.admin.hub, req.body, { new: true });
+    const { xpAllocated: _xp, ...safeBody } = req.body;
+    const updatedHub = await hub.findByIdAndUpdate(req.admin.hub, safeBody, { new: true });
     res.status(OK).json(updatedHub);
   } catch (error) {
     logger.error(error);
@@ -375,6 +401,9 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const saveCampaignWithQuests = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
+    if (typeof req.body.reward === "string") try { req.body.reward = JSON.parse(req.body.reward); } catch { /* leave */ }
+    if (typeof req.body.campaignQuests === "string") try { req.body.campaignQuests = JSON.parse(req.body.campaignQuests); } catch { /* leave */ }
+
     const { error } = validateCampaignData(req.body);
     if (error) {
       const emptyFields = getMissingFields(error);

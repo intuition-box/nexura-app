@@ -81,9 +81,27 @@ const [rewardPool, setRewardPool] = useState("");
 const [participants, setParticipants] = useState("");
 const [xpRewards, setXpRewards] = useState("200");
 const [publishedCampaign, setPublishedCampaign] = useState<any | null>(null);
-const [paymentTxHash, setPaymentTxHash] = useState("");
+const [paymentTxHash, setPaymentTxHash] = useState(() => localStorage.getItem("nexura:studio-txhash") ?? "");
 const [paymentLoading, setPaymentLoading] = useState(false);
 const [isEditMode, setIsEditMode] = useState(false);
+
+// Sync pendingTxHash from DB on mount, also redirect if hub hasn't been created
+useEffect(() => {
+  projectApiRequest<{ hub?: any }>({ method: "GET", endpoint: "/hub/me" })
+    .then(({ hub }) => {
+      if (!hub?._id) {
+        // No hub yet — send them to complete hub setup
+        setLocation("/projects/create/the-hub");
+        return;
+      }
+      const dbHash: string = hub?.pendingTxHash ?? "";
+      if (dbHash) {
+        setPaymentTxHash(dbHash);
+        localStorage.setItem("nexura:studio-txhash", dbHash);
+      }
+    })
+    .catch(() => {});
+}, []);
 
 // Pre-fill from existing draft when ?edit=<id> is in the URL
 const parseDateTime = (isoStr: string) => {
@@ -164,9 +182,9 @@ const formatDate = (dateStr: string) => {
 
 
 const typeToTag = (type: string) => {
-  if (type === "Comment on our X post") return "comment";
-  if (type === "Follow us on X") return "follow";
-  if (type === "Join Us On Discord") return "join";
+  if (type === "Comment on our X post") return "comment-x";
+  if (type === "Follow us on X") return "follow-x";
+  if (type === "Join Us On Discord") return "join-discord";
   if (type === "Check Out the Portal Claims") return "portal";
   return "other";
 };
@@ -185,6 +203,7 @@ const buildCampaignFormData = (isDraft: boolean): FormData => {
   fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
   fd.append("reward", JSON.stringify({ xp: Number(xpRewards) || 0, pool: Number(rewardPool) || 0 }));
   if (coverImage instanceof File) fd.append("coverImage", coverImage);
+  else if (coverImagePreview) fd.append("existingCoverImage", coverImagePreview);
   if (isDraft) fd.append("isDraft", "true");
   fd.append("campaignQuests", JSON.stringify(
     tasks.map(t => ({
@@ -1192,6 +1211,9 @@ const isActive =
                 try {
                   const hash = await payStudioHubFee();
                   setPaymentTxHash(hash);
+                  localStorage.setItem("nexura:studio-txhash", hash);
+                  // Persist to DB so reloads or other devices retain the hash
+                  projectApiRequest({ method: "PATCH", endpoint: "/hub/save-payment-hash", data: { txHash: hash } }).catch(() => {});
                   toast({ title: "Payment successful", description: "1000 TRUST sent. You can now publish your campaign." });
                 } catch (err: any) {
                   toast({ title: "Payment failed", description: err.message ?? "Transaction was rejected.", variant: "destructive" });
@@ -1225,26 +1247,15 @@ const isActive =
       toast({ title: "Payment required", description: "Please complete the 1000 TRUST payment before publishing.", variant: "destructive" });
       return;
     }
+    if (!(coverImage instanceof File) && !coverImagePreview) {
+      toast({ title: "Cover image required", description: "Please upload a cover image for your campaign.", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
     try {
-      const fd = new FormData();
-      fd.append("title", campaignTitle);
-      fd.append("description", campaignName);
-      fd.append("nameOfProject", campaignName);
-      fd.append("starts_at", startDate && startTime ? `${startDate}T${startTime}` : startDate);
-      fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
-      fd.append("reward", JSON.stringify({ xp: Number(xpRewards) || 0, pool: Number(rewardPool) || 0 }));
+      const fd = buildCampaignFormData(false);
       fd.append("txHash", paymentTxHash);
-      fd.append("campaignQuests", JSON.stringify(
-        tasks.map((t: any) => ({
-          title: t.type,
-          description: t.description,
-          url: t.handleOrUrl,
-          reward: { xp: Number(xpRewards) || 0 },
-        }))
-      ));
-      if (coverImage instanceof File) fd.append("coverImage", coverImage);
 
       await projectApiRequest({
         method: "POST",
@@ -1253,6 +1264,10 @@ const isActive =
       });
 
       toast({ title: "Campaign published!", description: "Your campaign is now live." });
+      localStorage.removeItem("nexura:studio-txhash");
+      // Clear hash from DB
+      projectApiRequest({ method: "PATCH", endpoint: "/hub/save-payment-hash", data: { txHash: null } }).catch(() => {});
+      setPaymentTxHash("");
       setPublishedCampaign({ title: campaignTitle, name: campaignName, rewardPool, coverImage: coverImagePreview ?? undefined });
       setShowPublishModal(false);
       setShowSuccessModal(true);

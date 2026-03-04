@@ -68,7 +68,7 @@ const campaignSchema = new Schema({
 		},
 		trustTokens: {
 			type: Number,
-			required: true,
+			default: 0,
 		},
 		pool: {
 			type: Number,
