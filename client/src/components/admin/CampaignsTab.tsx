@@ -43,11 +43,11 @@ export default function CampaignsTab() {
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await projectApiRequest<{ projectCampaigns?: Campaign[] }>({
+      const res = await projectApiRequest<{ hubCampaigns?: Campaign[] }>({
         method: "GET",
         endpoint: "/hub/get-campaigns",
       });
-      setCampaigns(res.projectCampaigns ?? []);
+      setCampaigns(res.hubCampaigns ?? []);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load campaigns.";
       toast({ title: "Error", description: msg, variant: "destructive" });

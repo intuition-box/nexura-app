@@ -1,7 +1,7 @@
 import { API_URL_PROD, API_URL_DEV } from "@0xintuition/graphql"
-import { environment } from "./env.utils";
+import { network } from "./env.utils";
 
-export const GRAPHQL_API_URL = environment === "development" ? API_URL_DEV : API_URL_PROD;
+export const GRAPHQL_API_URL = network === "testnet" ? API_URL_DEV : API_URL_PROD;
 
 export const NexonsAddress: Record<string, `0x${string}`> = {
 	"1": "0x28D5405dA0E2e2476e8EddA08775c61b3B4FeB7d",
