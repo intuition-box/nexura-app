@@ -335,13 +335,22 @@ export const performCampaignQuest = async (
 			return;
 		}
 
-		const campaignDone = await campaignQuestCompleted.findOne({
+		let campaignDone = await campaignQuestCompleted.findOne({
 			user: req.id,
 			campaignQuest: id,
 		});
 		if (!campaignDone) {
-			res.status(NOT_FOUND).json({ error: "campaign quest has not been done" });
-			return
+			// Auto-create completion record for tasks that skip the submit step
+			// (e.g. X follow/comment where verification is deferred)
+			campaignDone = await campaignQuestCompleted.create({
+				campaign: campaignId,
+				campaignQuest: id,
+				user: req.id,
+				done: true,
+				status: "done",
+			});
+			res.status(OK).json({ message: "quest done" });
+			return;
 		}
 
 		if (campaignDone.status !== "pending") {

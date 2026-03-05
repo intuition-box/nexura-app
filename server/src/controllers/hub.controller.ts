@@ -359,7 +359,7 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
         if (questsToSave.length > 0) {
           await campaignQuest.insertMany(
             questsToSave.map((q: any) => (
-              q.tag === "discord" ? { ...q, campaign: savedCampaignId, guildId: hubFound.guildId } :
+              (q.tag === "discord" || q.tag === "join-discord") ? { ...q, campaign: savedCampaignId, guildId: hubFound.guildId } :
               { ...q, campaign: savedCampaignId }))
           );
         }
@@ -385,7 +385,7 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
       if (questsToSave.length > 0) {
         await campaignQuest.insertMany(
           questsToSave.map((q: any) => (
-            q.tag === "discord" ? { ...q, campaign: id, guildId: hubFound.guildId } :
+            (q.tag === "discord" || q.tag === "join-discord") ? { ...q, campaign: id, guildId: hubFound.guildId } :
             { ...q, campaign: id }
           ))
         );

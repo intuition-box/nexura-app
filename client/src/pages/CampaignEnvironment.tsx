@@ -15,7 +15,7 @@ type Quest = {
   _id: string;
   quest: string;
   reward: number;
-  tag: "like" | "follow" | "join" | "repost" | "comment" | "portal";
+  tag: string;
   link: string;
   status: string;
   guildId?: string;
@@ -233,7 +233,7 @@ export default function CampaignEnvironment() {
           //     throw new Error(`Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`);
           //   }
           // } else 
-          if (["join", "message"].includes(quest.tag)) {
+          if (["join", "message", "join-discord", "message-discord"].includes(quest.tag)) {
             if (!user?.socialProfiles.discord.connected) {
               throw new Error("discord not connected yet, go to profile to connect");
             }
@@ -380,7 +380,7 @@ export default function CampaignEnvironment() {
         <div className="space-y-4 sm:space-y-6">
           {quests.length > 0 ? (
             quests.map((quest) => {
-              const requiresProof = ["comment", "follow"].includes(quest.tag);
+              const requiresProof = ["comment", "follow", "comment-x", "follow-x", "repost-x"].includes(quest.tag);
               const visited = visitedQuests.includes(quest._id);
               const claimed = quest.done || claimedQuests.includes(quest._id);
               const pending = quest.status === "pending" || pendingQuests.includes(quest._id);

@@ -144,9 +144,9 @@ useEffect(() => {
           params: { id: editId },
         });
         const tagToType = (tag: string) => {
-          if (tag === "comment") return "Comment on our X post";
-          if (tag === "follow") return "Follow us on X";
-          if (tag === "join") return "Join Us On Discord";
+          if (tag === "comment" || tag === "comment-x") return "Comment on our X post";
+          if (tag === "follow" || tag === "follow-x") return "Follow us on X";
+          if (tag === "join" || tag === "join-discord") return "Join Us On Discord";
           if (tag === "portal") return "Check Out the Portal Claims";
           return "others";
         };
@@ -156,7 +156,7 @@ useEffect(() => {
           return "";
         };
         const tagToValidation = (tag: string) => {
-          if (tag === "join") return "Discord Auth";
+          if (tag === "join" || tag === "join-discord") return "Discord Auth";
           if (tag === "portal") return "Auto Verified";
           return "Manual Validation";
         };
