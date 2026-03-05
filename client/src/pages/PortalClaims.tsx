@@ -29,8 +29,6 @@ export const toFixed = (num: string) => {
 export default function PortalClaims() {
   const { user } = useAuth();
   const [_, setLocation] = useLocation();
-  const [linearPosition, setLinearPosition] = useState<Position | null>(null);
-const [exponentialPosition, setExponentialPosition] = useState<Position | null>(null);
   const [view, setView] = useState("list");
   const [sortOption, setSortOption] = useState('{"total_market_cap":"desc"}');
   const [sortDirection, setSortDirection] = useState("desc");
@@ -69,8 +67,6 @@ const [actionState, setActionState] = useState<Record<string, "none" | "supporte
   const saved = localStorage.getItem("actionState");
   return saved ? JSON.parse(saved) : {};
 });
-
-
  const [userSharesByCurve, setUserSharesByCurve] = useState<{
   support: { linear: bigint; exponential: bigint };
   oppose: { linear: bigint; exponential: bigint };
@@ -78,6 +74,8 @@ const [actionState, setActionState] = useState<Record<string, "none" | "supporte
   support: { linear: 0n, exponential: 0n },
   oppose: { linear: 0n, exponential: 0n },
 });
+const [supportShares, setSupportShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
+const [opposeShares, setOpposeShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
 
 // Whenever state changes, we save it
 useEffect(() => {
@@ -133,7 +131,57 @@ const highlightMatch = (text: string, term: string) => {
 
   const LIMIT = 50;
 
-  
+//   // ----------------- Utility Function -----------------
+// const fetchUserPositionsForClaim = (claim: Claim, user: User) => {
+//   if (!user) return { positions: [], sharesByCurve: { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } } };
+
+//   const positions: Position[] = [];
+
+//   // --- Support ---
+//   claim.term.vaults?.forEach((vault) => {
+//     (vault.userPosition ?? []).forEach((p) => {
+//       positions.push({
+//         account: p.account_id,
+//         shares: p.shares,
+//         curve: vault.curve_id,
+//         direction: "support",
+//       });
+//       console.log("SUPPORT POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
+//     });
+//   });
+
+//   // --- Oppose ---
+//   claim.counter_term.vaults?.forEach((vault) => {
+//     (vault.userPosition ?? []).forEach((p) => {
+//       positions.push({
+//         account: p.account_id,
+//         shares: p.shares,
+//         curve: vault.curve_id,
+//         direction: "oppose",
+//       });
+//       console.log("OPPOSE POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
+//     });
+//   });
+
+//   // Compute shares by curve
+//   const sharesByCurve = positions.reduce(
+//     (acc, p) => {
+//       const s = BigInt(p.shares ?? 0);
+//       if (p.direction === "support") {
+//         p.curve === "1" ? (acc.support.linear += s) : (acc.support.exponential += s);
+//       } else {
+//         p.curve === "1" ? (acc.oppose.linear += s) : (acc.oppose.exponential += s);
+//       }
+//       return acc;
+//     },
+//     { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } }
+//   );
+
+//   console.log(`Normalized user positions for claim: ${claim.id}`, positions);
+//   console.log(`Shares by curve for claim: ${claim.id}`, sharesByCurve);
+
+//   return { positions, sharesByCurve };
+// };
 
 const loadMore = async () => {
   if (loading || !hasMore) return;
@@ -157,75 +205,26 @@ const loadMore = async () => {
       return;
     }
 
-    if (!claims?.length) {
+if (claims.length > 0) {
+  // const { positions, sharesByCurve } = fetchUserPositionsForClaim(claims[0], user);
+  setUserPositions(positions);
+  setUserSharesByCurve(sharesByCurve);
+  console.log("Updated userPositions and userSharesByCurve state");
+}
+    // Handle pagination
+    if (claims.length === 0 || claims.length < LIMIT) {
       setHasMore(false);
-      return;
+      console.log("No more claims to load, hasMore set to false");
+    } else {
+      setOffset(prev => prev + claims.length);
+      console.log(`Incrementing offset by ${claims.length}, new offset: ${offset + claims.length}`);
     }
-
-    const fetchedClaim = claims[0]; // using first claim for now
-
-    // --- Normalize positions ---
-    const normalizePositionsForClaim = (claim: Claim, user: User) => {
-      if (!user) return { positions: [], sharesByCurve: { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } } };
-
-      const positions: Position[] = [];
-
-      // Support
-      claim.term.vaults?.forEach(vault => {
-        positions.push(
-          ...(vault.userPosition ?? []).map(p => ({
-            ...p,
-            direction: "support",
-            curve_id: Number(vault.curve_id),
-            account: { id: p.account_id, label: p.account_id, image: user.image ?? null },
-          }))
-        );
-      });
-
-      // Oppose
-      claim.counter_term.vaults?.forEach(vault => {
-        positions.push(
-          ...(vault.userPosition ?? []).map(p => ({
-            ...p,
-            direction: "oppose",
-            curve_id: Number(vault.curve_id),
-            account: { id: p.account_id, label: p.account_id, image: user.image ?? null },
-          }))
-        );
-      });
-
-      // Compute shares by curve
-      const sharesByCurve = positions.reduce(
-        (acc, p) => {
-          const shares = BigInt(p.shares ?? 0);
-          if (p.direction === "support") {
-            if (p.curve_id === 1) acc.support.linear += shares;
-            else if (p.curve_id === 2) acc.support.exponential += shares;
-          } else if (p.direction === "oppose") {
-            if (p.curve_id === 1) acc.oppose.linear += shares;
-            else if (p.curve_id === 2) acc.oppose.exponential += shares;
-          }
-          return acc;
-        },
-        { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } }
-      );
-
-      return { positions, sharesByCurve };
-    };
-
-    setUserPositions(positions);
-    setUserSharesByCurve(sharesByCurve);
-
-    console.log("Normalized positions and sharesByCurve:", positions, sharesByCurve);
-
-    // Pagination
-    if (claims.length < LIMIT) setHasMore(false);
-    else setOffset(prev => prev + claims.length);
 
   } catch (err) {
     console.error("Failed to load positions:", err);
   } finally {
     setLoading(false);
+    console.log("Loading finished, loading state set to false");
   }
 };
 
@@ -312,32 +311,49 @@ useEffect(() => {
   }
 }, [showModal]);
 
+const formatTrust = (shares: bigint, decimals = 18, precision = 2) => {
+  const divisor = 10n ** BigInt(decimals);
+  const formatted = Number(shares) / Number(divisor);
+  return formatted.toFixed(precision);
+};
 
   // ---------------- Handlers ----------------
 const handleSupportClick = (claim: Claim) => {
   if (!user) return;
 
-  // Filter support positions for this claim
-  const supportPositions = userPositions.filter(p => p.direction === "support");
-
-  const linear = supportPositions.find(p => p.curve_id === 1) ?? null;
-  const exponential = supportPositions.find(p => p.curve_id === 2) ?? null;
-
-  console.log("Support Linear:", linear ?? "No Position Found");
-  console.log("Support Exponential:", exponential ?? "No Position Found");
-
-  // Save positions in state so modal can read them
-  setLinearPosition(linear);
-  setExponentialPosition(exponential);
-
-  // Default active curve (linear)
-  setActivePosition(linear?.shares ?? 0n);
-
   setActiveClaim(claim);
+  setTermId(claim.term.id);
+  setOpposeMode(false);
+  setTransactionAmount("");
+
+  let linear = 0n;
+  let exponential = 0n;
+
+  claim.term.vaults?.forEach((vault) => {
+    const curveId = String(vault.curve_id).trim();
+
+    (vault.userPosition ?? []).forEach((p) => {
+      if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
+        const shares = BigInt(p.shares);
+        if (curveId === "1") linear += shares;
+        if (curveId === "2") exponential += shares;
+      }
+    });
+  });
+
+  console.log("Support Linear:", linear.toString(), "Exponential:", exponential.toString());
+
+  setSupportShares({ linear, exponential });
+
+  // Set active position to the currently toggled curve
+  setActivePosition(isToggled ? exponential : linear);
+
   setShowModal(true);
 };
 
 const handleOpposeClick = (claim: Claim) => {
+  if (!user) return;
+
   setActiveClaim(claim);
   setTermId(claim.counter_term.id);
   setTransactionMode("redeem");
@@ -345,24 +361,42 @@ const handleOpposeClick = (claim: Claim) => {
   setOpposeMode(true);
   setTransactionAmount("");
 
-    if (!user) return;
+  let linear = 0n;
+  let exponential = 0n;
 
-  const opposePositions = userPositions.filter(p => p.direction === "oppose" && p.curve_id);
+  claim.counter_term.vaults?.forEach((vault) => {
+    const curveId = String(vault.curve_id).trim();
 
-  const linear = opposePositions.find(p => p.curve_id === 1);
-  const exponential = opposePositions.find(p => p.curve_id === 2);
+    (vault.userPosition ?? []).forEach((p) => {
+      if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
+        const shares = BigInt(p.shares);
+        if (curveId === "1") linear += shares;
+        if (curveId === "2") exponential += shares;
+      }
+    });
+  });
 
-  console.log("Oppose Linear:", linear ?? "No Position Found");
-  console.log("Oppose Exponential:", exponential ?? "No Position Found");
+  console.log("Oppose Linear:", linear.toString(), "Exponential:", exponential.toString());
+
+  setOpposeShares({ linear, exponential });
+
+  // Set active position to currently toggled curve
+  setActivePosition(isToggled ? exponential : linear);
 
   setShowModal(true);
 };
+
+const displayedShares = opposeMode
+  ? (isToggled ? opposeShares.exponential : opposeShares.linear)
+  : (isToggled ? supportShares.exponential : supportShares.linear);
 
     const handleCloseModal = () => {
       setActiveClaim(null);
       setShowModal(false);
       setOpposeMode(false);
     };
+
+    const maxRedeemable = Number(displayedShares) / 10 ** 18;
 
 const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
   if (!termId) return;
@@ -454,9 +488,10 @@ const sortClaims = (claims, option) => {
 };
 
 // Determine if the user has any active shares in the current direction
-const hasActivePosition = userPositions.some(
-  p => p.direction === (opposeMode ? "oppose" : "support") && BigInt(p.shares ?? 0) > 0n
-);
+const hasAnyPosition =
+  (supportShares.linear + supportShares.exponential > 0n) ||
+  (opposeShares.linear + opposeShares.exponential > 0n);
+  console.log("Has any position:", hasAnyPosition, supportShares, opposeShares);
 
   return (
     <div className="p-3 text-white font-geist">
@@ -889,16 +924,16 @@ const hasActivePosition = userPositions.some(
   className={`relative px-6 py-3 text-base font-medium ${
     activeTab === "redeem"
       ? "text-white"
-      : "text-gray-400 hover:text-white cursor-pointer"
+      : hasAnyPosition
+      ? "text-gray-400 hover:text-white cursor-pointer"
+      : "text-gray-600 cursor-not-allowed"
   }`}
-  onClick={() => setActiveTab("redeem")}
+  onClick={() => {
+    if (hasAnyPosition) setActiveTab("redeem");
+  }}
+  disabled={!hasAnyPosition}
 >
   Redeem
-  {activeTab === "redeem" && (
-    <span
-      className="absolute left-1/2 bottom-0 w-48 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
-    ></span>
-  )}
 </button>
 
   </div>
@@ -918,21 +953,16 @@ const hasActivePosition = userPositions.some(
 
     <div className="flex items-center gap-2">
       <span
-        className="bg-[#0A2D4D] border border-white text-[7px] px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+        className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
       >
         {opposeMode ? "Oppose" : "Support"}
       </span>
 
-  {/* Active Curve Amount */}
-  <span className="text-lg whitespace-nowrap">
-    {isToggled
-      ? exponentialPosition
-        ? toFixed(parseFloat(formatEther(BigInt(exponentialPosition.shares ?? 0))))
-        : "No Position Found"
-      : linearPosition
-      ? toFixed(parseFloat(formatEther(BigInt(linearPosition.shares ?? 0))))
-      : "No Position Found"}{" "}
-  </span>
+<span className="text-lg whitespace-nowrap">
+  {displayedShares > 0n
+    ? `${formatTrust(displayedShares)} TRUST`
+    : "No active position"}
+</span>
     </div>
 
   </div>
@@ -1132,14 +1162,10 @@ const hasActivePosition = userPositions.some(
 
   {/* Active Curve Amount */}
   <span className="text-lg whitespace-nowrap">
-    {isToggled
-      ? exponentialPosition
-        ? toFixed(parseFloat(formatEther(BigInt(exponentialPosition.shares ?? 0))))
-        : "No Position Found"
-      : linearPosition
-      ? toFixed(parseFloat(formatEther(BigInt(linearPosition.shares ?? 0))))
-      : "No Position Found"}{" "}
-  </span>
+  {displayedShares > 0n
+    ? `${formatTrust(displayedShares)} TRUST`
+    : "No active position"}
+</span>
     </div>
 
   </div>
@@ -1162,7 +1188,7 @@ const hasActivePosition = userPositions.some(
 
   {/* Insufficient Funds Warning */}
   {transactionAmount &&
-   Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
+  Number(transactionAmount) > maxRedeemable && (
     <span className="text-red-500 text-xs mt-1">
       Insufficient funds
     </span>
@@ -1297,22 +1323,22 @@ const hasActivePosition = userPositions.some(
   disabled={
     !transactionAmount ||
     Number(transactionAmount) <= 0 ||
-    Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
+    Number(transactionAmount) > maxRedeemable
   }
 >
-{transactionAmount &&
-  Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
-    ? "Check Your Balance"
-    : transactionAmount && Number(transactionAmount) > 0
-    ? "Review Redeem"
-    : "Enter an Amount"}
+{transactionAmount
+  ? Number(transactionAmount) > maxRedeemable
+    ? "Check Your Position"
+    : "Review Redeem"
+  : "Enter an Amount"}
+
 </button>
 
 {/* Optional small red warning below button */}
 {transactionAmount &&
- Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
+ Number(transactionAmount) > maxRedeemable && (
   <span className="text-red-500 text-xs mt-1 block text-center">
-    Insufficient balance
+    "You only have {maxRedeemable} shares"
   </span>
 )}
   </div>
@@ -1460,126 +1486,75 @@ const hasActivePosition = userPositions.some(
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
     <div className="bg-[#070315] w-full max-w-md mx-4 p-3 rounded-xl relative border-2 border-[#8B3EFE]">
 
-      {/* Back Button */}
-<button
-  className="absolute -top-1 pb-2 left-2 text-white font-extrabold text-2xl px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
-  onClick={() => {
-    setShowReviewDepositModal(false);
-    setModalStep("review");
-  }}
->
-  ←
-</button>
+      {/* Close Button */}
+      <button
+        className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl font-bold"
+        onClick={() => setShowReviewRedeemModal(false)}
+      >
+        ×
+      </button>
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white font-bold text-base mt-2">Stake</h2>
-<span
-  className="bg-[#0A2D4D] text-white border border-white text-xs font-semibold px-2 py-0.5 mt-2 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
->
-  {opposeMode ? "Oppose" : "Support"}
-</span>
+        <h2 className="text-white font-bold text-base">Stake</h2>
+        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold">
+          Support
+        </span>
       </div>
 
+      {/* Subtitle */}
       <p className="text-gray-400 text-sm mb-6">
         Staking on a Triple enhances its discoverability in the Intuition system
       </p>
 
+      {/* Centered Spinner + Label */}
+      <div className="flex flex-col items-center my-6">
+        <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2 animate-spin" />
+        <span className="text-white font-semibold">Review...</span>
+      </div>
 
-      {/* REVIEW */}
-      {modalStep === "review" && (
-        <>
-          <div className="flex flex-col items-center my-6">
-            <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white font-semibold">Review...</span>
-          </div>
-
-          <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
+{/* Total Cost */}
+<div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
             <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
             <span className="text-white font-bold">
               {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
             </span>
           </div>
 
+      {/* Redeem TRUST Label */}
+      <span className="text-gray-300 font-semibold mb-2 block">Redeem TRUST from Claim</span>
+
+{/* Statement */}
+<div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center gap-2">
+  <span className="font-bold bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded inline-flex items-center gap-2 max-w-[150px] truncate">
+    <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
+    {activeClaim.term.triple.subject.label}
+  </span>
+
+  <span>{activeClaim.term.triple.predicate.label}</span>
+
+  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded max-w-[150px] truncate">
+    {activeClaim.term.triple.object.label}
+  </span>
+</div>
+
+      {/* Amount Input */}
+<div className="mb-4">
+  <label className="text-gray-300 text-sm mb-1 block">Amount (in TRUST)</label>
+  <input
+    type="text"
+    value={transactionAmount}
+    onChange={(e) => setTransactionAmount(e.target.value)}
+    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+  />
+</div>
+{/* Redeem / Deposit Button */}
 <button
-  className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl font-semibold text-sm"
-  onClick={() => {
-    handleClaimAction("deposit");
-    setShowModal(false);
-  }}
+  className="w-full bg-white text-black py-2.5 rounded-3xl font-semibold text-sm"
+  onClick={() => handleClaimAction("redeem")}
 >
-  Confirm
+  Redeem
 </button>
-        </>
-      )}
-
-      {/* AWAITING */}
-      {modalStep === "awaiting" && (
-        <>
-          <div className="flex flex-col items-center my-6">
-            <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white font-semibold">Awaiting...</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 bg-[#110A2B] border border-[#393B60] rounded-2xl px-4 py-2 mx-4">
-            <img src="/wallet.png" alt="Wallet Icon" className="w-5 h-5" />
-            <span className="text-white font-semibold text-sm">
-              Awaiting wallet approval
-            </span>
-            <div className="relative group">
-              <span className="text-gray-400 font-bold cursor-pointer text-sm">
-                ?
-              </span>
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Approve this transaction in your wallet
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* SUCCESS */}
-      {modalStep === "success" && (
-        <div className="flex flex-col items-center my-8">
-          <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">✓</span>
-          </div>
-
-          <span className="text-white font-semibold mb-6">
-            Successfully {opposeMode ? "opposed" : "supported"}!
-          </span>
-
-          <button
-            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
-            onClick={() => {
-              setShowReviewDepositModal(false);
-              setModalStep("review");
-            }}
-          >
-            Done
-          </button>
-        </div>
-      )}
-
-      {/* FAILED */}
-      {modalStep === "failed" && (
-        <div className="flex flex-col items-center my-8">
-          <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">✕</span>
-          </div>
-
-          <span className="text-white font-semibold mb-6">
-            Transaction Failed
-          </span>
-
-          <button
-            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
-            onClick={() => setModalStep("review")}
-          >
-            Try Again
-          </button>
-        </div>
-      )}
     </div>
   </div>
 )}
