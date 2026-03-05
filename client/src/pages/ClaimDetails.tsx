@@ -312,16 +312,16 @@ const userShares = useMemo(() => {
 const hasOppositePosition = useMemo(() => {
   if (!user || !userPositions.length) return false;
 
-  const oppositeDirection = mainTab === "support" ? "oppose" : "support";
-  const curveId = growthType === "linear" ? 1 : 2;
+  // Opposite tab direction
+  const oppositeDirection = activeTab === "support" ? "oppose" : "support";
 
+  // Block if user has any shares in the opposite tab, ignore curve
   return userPositions.some(
-    pos =>
+    (pos) =>
       pos.direction === oppositeDirection &&
-      Number(pos.curve_id) === curveId &&
-      Number(formatEther(BigInt(pos.shares))) > 0
+      Number(formatEther(BigInt(pos.shares ?? 0))) > 0
   );
-}, [userPositions, mainTab, growthType, user]);
+}, [userPositions, activeTab, user]);
 
 function getPrice() {
   let sharePrice = "0";
@@ -696,77 +696,69 @@ const handleDownload = async () => {
 
   return (
     <div className="p-3 text-white font-geist font-light tracking-wide space-y-6">
-      {/* Top Statement */}
-<div className="flex flex-wrap text-lg items-center gap-1">
-  <img src={term.triple.subject.image} alt="Claim Icon" className="w-16 h-16" />
 
-  <span className="bg-[#0b0618] px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate cursor-pointer hover:bg-[#1a1230] transition-colors">
-    {term.triple.subject.label}
-  </span>
-
-  <span>{term.triple.predicate.label}</span>
-
-  <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[150px] truncate cursor-pointer hover:bg-[#1a1230] transition-colors">
-    {term.triple.object.label}
-  </span>
+{/* Top Statement */}
+<div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-lg">
+  <img src={term.triple.subject.image} alt="Claim Icon" className="w-12 h-12 sm:w-16 sm:h-16" />
+  <div className="flex flex-wrap gap-1 sm:gap-2 items-center">
+    <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[100px] sm:max-w-[150px] truncate">{term.triple.subject.label}</span>
+    <span>{term.triple.predicate.label}</span>
+    <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[100px] sm:max-w-[150px] truncate">{term.triple.object.label}</span>
+  </div>
 </div>
       <div>
 
-        {/* Total Market Info Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center text-sm gap-4 mt-4">
+
           {/* Total Market Cap */}
-          <div className="flex items-center gap-2">
-            <span className="opacity-50">Total Market Cap</span>
-            <span className="text-xs text-white">
-              {marketCap} TRUST
-            </span>
-            <img src="/intuition-icon.png" alt="Intuition Icon" className="w-5 h-5" />
-          </div>
+<div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mt-4 w-full">
+  <div className="flex items-center gap-2 flex-wrap">
+    <span className="opacity-50 text-xs">Total Market Cap</span>
+    <span className="text-xs sm:text-sm">{marketCap} TRUST</span>
+    <img src="/intuition-icon.png" className="w-4 h-4 sm:w-5 sm:h-5" />
+  </div>
 
           {/* Divider */}
           <span className="hidden sm:block border-l border-gray-500 h-6"></span>
 
           {/* Total Position */}
-          <div className="flex items-center gap-2">
-            <span className="opacity-50">Total Position:</span>
-            <span className="">{totalPostions}</span>
-          </div>
+  <div className="flex items-center gap-2 flex-wrap">
+    <span className="opacity-50 text-xs">Total Position:</span>
+    <span className="text-xs sm:text-sm">{totalPostions}</span>
+  </div>
 
           {/* Divider */}
           <span className="hidden sm:block border-l border-gray-500 h-6"></span>
 
           {/* Creator */}
-          <div className="flex items-center gap-2">
-            <span className="opacity-50">Creator:</span>
-            <span className="">{term.triple.creator.label}</span>
-          </div>
+  <div className="flex items-center gap-2 flex-wrap">
+    <span className="opacity-50 text-xs">Creator:</span>
+    <span className="text-xs sm:text-sm">{term.triple.creator.label}</span>
+  </div>
 
 {/* Share Button */}
-<button
-  onClick={() => {
-    setIsShareModalOpen(true);
-    setGeneratingImage(true);
+<div className="flex flex-row sm:flex-row items-center w-full">
+  <button
+    onClick={() => {
+      setIsShareModalOpen(true);
+      setGeneratingImage(true);
+      setTimeout(() => setGeneratingImage(false), 2500);
+      handleGenerateImage();
+    }}
+    className="mt-2 sm:mt-0 px-3 py-1 bg-[#110A2B] rounded-md text-xs sm:text-sm hover:bg-[#1A0F3D] transition-colors
+               sm:ml-auto"
+  >
+    Share
+  </button>
+</div>
 
-    // Stop spinner after 2.5 seconds
-    setTimeout(() => setGeneratingImage(false), 2500);
-
-    // Generate image in the background
-    handleGenerateImage();
-  }}
-  className="ml-auto px-4 py-2 bg-[#110A2B] border border-[#393B60] rounded-md text-white hover:bg-[#1A0F3D] transition-colors duration-200"
->
-  Share
-</button>
-
-{/* Modal */}
 {isShareModalOpen && (
-  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-    <div className="bg-[#070315] rounded-xl p-6 max-w-lg w-full relative">
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 sm:p-0">
+    <div className="bg-[#070315] rounded-xl p-4 sm:p-6 w-full max-w-md sm:max-w-lg relative">
       
       {/* Close Button */}
       <button
         onClick={() => setIsShareModalOpen(false)}
-        className="absolute top-3 right-3 text-white text-xl"
+        className="absolute top-3 right-3 text-white text-2xl sm:text-xl"
       >
         ×
       </button>
@@ -775,78 +767,69 @@ const handleDownload = async () => {
       <div ref={cardRef} className="relative flex flex-col gap-4">
         
         {/* Overlay for Generating Image */}
-{generatingImage && (
-  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white z-10 gap-2">
-    {/* Rounded Spinner */}
-    <div className="w-10 h-10 border-4 border-gray-600 border-t-white rounded-full animate-spin"></div>
-    <span className="text-sm">Generating image...</span>
-  </div>
-)}
+        {generatingImage && (
+          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white z-10 gap-2">
+            <div className="w-10 h-10 border-4 border-gray-600 border-t-white rounded-full animate-spin"></div>
+            <span className="text-sm sm:text-base">Generating image...</span>
+          </div>
+        )}
 
         {/* Card Content */}
         {!generatingImage && (
           <>
             {/* Total Market Cap */}
-<div className="flex flex-col items-end text-gray-300 text-sm mb-2">
-  <span className="">Total Market Cap</span>
-  <span className="text-lg text-white">
-    {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
-  </span>
-</div>
+            <div className="flex flex-col items-end text-gray-300 text-sm sm:text-base mb-2">
+              <span>Total Market Cap</span>
+              <span className="text-lg sm:text-xl text-white">
+                {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
+              </span>
+            </div>
 
-{/* Support / Oppose Cards */}
-<div className="flex gap-4 opacity-80">
-  {/* Support Card */}
-  <div className="flex-1 bg-[#006CD233] border border-[#393B60] rounded-xl p-4 flex flex-col gap-3">
-    <span className="text-lg text-[#006CD2]">SUPPORT</span>
-    <div className="flex items-center gap-3">
-      <span className=" text-sm md:text-base">{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
-      <img src="/intuition-icon.png" alt="Intuition Icon" className="w-5 h-5" />
-      <div className="flex items-center gap-2">
-        <span className="text-blue-400 text-base md:text-lg">{claim.support}</span>
-        <img src="/user.png" alt="User Icon" className="w-4 h-4" />
-      </div>
-    </div>
-  </div>
+            {/* Support / Oppose Cards */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-2">
+              <div className="flex-1 bg-[#006CD233] border border-[#393B60] rounded-xl p-3 flex flex-col gap-2">
+                <span className="text-sm sm:text-lg text-[#006CD2]">SUPPORT</span>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <span>{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
+                  <img src="/intuition-icon.png" className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="text-blue-400">{claim.support}</span>
+                </div>
+              </div>
 
-  {/* Oppose Card */}
-  <div className="flex-1 bg-[#F19C0333] border border-[#393B60] rounded-xl p-4 flex flex-col gap-3">
-    <span className=" text-lg text-[#F19C03]">OPPOSE</span>
-    <div className="flex items-center gap-3">
-      <span className="text-sm md:text-base">{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
-      <img src="/intuition-icon.png" alt="Intuition Icon" className="w-5 h-5" />
-      <div className="flex items-center gap-2">
-        <span className="text-[#F19C03] text-base md:text-lg">{claim.oppose}</span>
-        <img src="/user-red.png" alt="User Icon" className="w-4 h-4" />
-      </div>
-    </div>
-  </div>
-</div>
+              <div className="flex-1 bg-[#F19C0333] border border-[#393B60] rounded-xl p-3 flex flex-col gap-2">
+                <span className="text-sm sm:text-lg text-[#F19C03]">OPPOSE</span>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <span>{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
+                  <img src="/intuition-icon.png" className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="text-[#F19C03]">{claim.oppose}</span>
+                </div>
+              </div>
+            </div>
 
-{/* Progress Bar */}
-<div className="w-full h-5 bg-gray-700 rounded-lg overflow-hidden relative mt-2">
-  <div className="flex h-full text-white text-xs">
-    <div
-      className="bg-blue-600 flex items-center justify-center transition-all duration-500"
-      style={{ width: `${supportPercent}%` }}
-    >
-      {supportPercent.toFixed(0)}%
-    </div>
-    <div
-      className="bg-[#F19C03] flex items-center justify-center transition-all duration-500"
-      style={{ width: `${opposePercent}%` }}
-    >
-      {opposePercent.toFixed(0)}%
-    </div>
-  </div>
-</div>
+            {/* Progress Bar */}
+            <div className="w-full h-5 bg-gray-700 rounded-lg overflow-hidden relative mt-2">
+              <div className="flex h-full text-white text-xs sm:text-sm">
+                <div
+                  className="bg-blue-600 flex items-center justify-center transition-all duration-500"
+                  style={{ width: `${supportPercent}%` }}
+                >
+                  {supportPercent.toFixed(0)}%
+                </div>
+                <div
+                  className="bg-[#F19C03] flex items-center justify-center transition-all duration-500"
+                  style={{ width: `${opposePercent}%` }}
+                >
+                  {opposePercent.toFixed(0)}%
+                </div>
+              </div>
+            </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-2 mt-4">
               {/* Post on X */}
               <button
                 onClick={handleShareX}
-                className="flex items-center gap-2 px-3 py-1 bg-[#1DA1F2] text-white text-sm rounded-md hover:bg-[#0d95e8] transition-colors"
+                className="flex items-center gap-2 px-3 py-1 bg-[#1DA1F2] text-white text-sm rounded-md hover:bg-[#0d95e8] transition-colors w-full sm:w-auto justify-center"
               >
                 <span>Post on X</span>
                 <div className="bg-white/20 p-1 flex items-center justify-center">
@@ -857,7 +840,7 @@ const handleDownload = async () => {
               {/* Copy Link */}
               <button
                 onClick={handleCopyLink}
-                className="flex items-center gap-2 px-3 py-1 bg-[#393B60] text-white text-sm rounded-md hover:bg-[#4a4c7a] transition-colors"
+                className="flex items-center gap-2 px-3 py-1 bg-[#393B60] text-white text-sm rounded-md hover:bg-[#4a4c7a] transition-colors w-full sm:w-auto justify-center"
               >
                 <span>Copy Link</span>
                 <div className="bg-white/10 p-1 flex items-center justify-center">
@@ -868,7 +851,7 @@ const handleDownload = async () => {
               {/* Save as Image */}
               <button
                 onClick={handleDownload}
-                className="flex items-center gap-2 px-3 py-1 bg-[#110A2B] text-white text-sm rounded-md hover:bg-[#1a0f3d] transition-colors"
+                className="flex items-center gap-2 px-3 py-1 bg-[#110A2B] text-white text-sm rounded-md hover:bg-[#1a0f3d] transition-colors w-full sm:w-auto justify-center"
               >
                 <span>Save as Image</span>
                 <div className="bg-white/10 p-1 flex items-center justify-center">
@@ -885,178 +868,173 @@ const handleDownload = async () => {
         </div>
       </div>
 
+      
       <div className="flex flex-col lg:flex-row gap-3 mt-3">
-        {/* Graph Placeholder (70%) */}
-        <div className="w-full lg:w-[73%] bg-gradient-to-br from-[#1A0A2B] to-[#0B0515] rounded-xl p-4 shadow-lg">
-          {/* Chart Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <span className="text-xs text-gray-400">Share Price</span>
-              <div className="text-xl sm:text-2xl text-white">
-                {getPrice()} TRUST
-              </div>
-            </div>
+  {/* Graph Placeholder (70%) */}
+  <div className="w-full lg:w-[73%] bg-gradient-to-br from-[#1A0A2B] to-[#0B0515] rounded-xl p-3 sm:p-4 shadow-lg">
+    
+    {/* Chart Header */}
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+        <span className="text-xs sm:text-sm text-gray-400">Share Price</span>
+        <div className="text-lg sm:text-2xl text-white">{getPrice()} TRUST</div>
+      </div>
 
-{/* Toggle Linear / Exponential */}
-<div className="flex rounded-full bg-[#1F123A] p-1">
-  {["linear", "exponential"].map((type) => (
+      {/* Toggle Linear / Exponential */}
+      <div className="flex flex-wrap gap-1 sm:gap-2 rounded-full bg-[#1F123A] p-1 mt-2 sm:mt-0">
+        {["linear", "exponential"].map(type => (
+          <button
+            key={type}
+            onClick={() => setGrowthType(type)}
+            className={`px-2 sm:px-4 py-1 rounded-full text-xs sm:text-sm transition-all duration-300 ${
+              growthType === type
+                ? "bg-[#392D5F] text-white"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            {type.charAt(0).toUpperCase() + type.slice(1)}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {/* ApexCharts Area Graph */}
+    <Chart
+      type="area"
+      height={220} // slightly smaller for mobile
+      series={[
+        {
+          name: "Share Price",
+          data: generateChartData(claim, growthType).map(d => ({ x: d.date, y: d.value })),
+        },
+      ]}
+      options={{
+        chart: {
+          toolbar: { show: false },
+          zoom: { enabled: false },
+          animations: { enabled: true, easing: "easeinout", speed: 800 },
+        },
+        dataLabels: { enabled: false },
+        stroke: { curve: "smooth", width: 3, colors: ["#AD77FF"] },
+        fill: {
+          type: "gradient",
+          gradient: {
+            shade: "light",
+            type: "vertical",
+            gradientToColors: ["#8B3EFE"],
+            opacityFrom: 0.6,
+            opacityTo: 0.3,
+            stops: [0, 50, 100],
+          },
+        },
+        xaxis: {
+          type: "category",
+          labels: { style: { colors: "#BDAFFF", fontSize: '10px' } },
+          axisBorder: { show: false },
+          axisTicks: { show: false },
+          crosshairs: { show: true, width: 1, color: "#8B3EFE" },
+        },
+        yaxis: {
+          show: true,
+          min: Math.min(...generateChartData(claim, growthType).map(d => d.value)) * 0.95,
+          max: Math.max(...generateChartData(claim, growthType).map(d => d.value)) * 1.05,
+          labels: { style: { colors: "#BDAFFF", fontSize: '10px' }, formatter: val => val.toFixed(2) },
+        },
+        tooltip: {
+          theme: "dark",
+          shared: true,
+          intersect: false,
+          x: { show: true },
+          y: { formatter: val => `${val} TRUST` },
+        },
+        grid: { show: false },
+      }}
+    />
+  </div>
+
+
+{/* Control Card (20%) */}
+<div className="w-full lg:w-[25%] bg-gray-900 border border-gray-700 rounded-xl p-4 sm:p-6 flex flex-col gap-4">
+
+  {/* Support / Oppose Tabs */}
+  <div className="flex flex-col sm:flex-row gap-2">
     <button
-      key={type}
-      onClick={() => setGrowthType(type)}
-      className={`px-4 py-1 rounded-full text-xs transition-all duration-300 ${
-        growthType === type
-          ? "bg-[#392D5F] text-white"
-          : "text-gray-400 hover:text-white"
+      className={`flex-1 rounded-md py-2 text-sm transition-colors duration-200 ${
+        mainTab === "support"
+          ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
+          : "bg-gray-800 border border-gray-700 text-gray-400"
       }`}
+      onClick={() => setMainTab("support")}
     >
-      {type.charAt(0).toUpperCase() + type.slice(1)}
+      Support
     </button>
-  ))}
-</div>
-</div>
 
-{/* ApexCharts Area Graph - Deep Complex Purple */}
-<Chart
-  type="area"
-  height={280}
-  series={[
-    {
-      name: "Share Price",
-      data: generateChartData(claim, growthType).map(d => ({
-        x: d.date,
-        y: d.value,
-      })),
-    },
-  ]}
-  options={{
-    chart: {
-      toolbar: { show: false },
-      zoom: { enabled: false },
-      animations: { enabled: true, easing: "easeinout", speed: 800 },
-    },
-    dataLabels: { enabled: false },
-    stroke: { curve: "smooth", width: 3, colors: ["#AD77FF"] },
-    fill: {
-      type: "gradient",
-      gradient: {
-        shade: "light",
-        type: "vertical",
-        gradientToColors: ["#8B3EFE"],
-        opacityFrom: 0.6,
-        opacityTo: 0.3,
-        stops: [0, 50, 100],
-      },
-    },
-    xaxis: {
-      type: "category",
-      labels: { style: { colors: "#BDAFFF" } },
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-      crosshairs: { show: true, width: 1, color: "#8B3EFE" },
-    },
-    yaxis: {
-      show: true,
-      min: Math.min(...generateChartData(claim, growthType).map(d => d.value)) * 0.95,
-      max: Math.max(...generateChartData(claim, growthType).map(d => d.value)) * 1.05,
-      labels: { style: { colors: "#BDAFFF" }, formatter: val => val.toFixed(2) },
-    },
-    tooltip: {
-      theme: "dark",
-      shared: true,
-      intersect: false,
-      x: { show: true },
-      y: { formatter: val => `${val} TRUST` },
-    },
-    grid: { show: false },
-  }}
-/>
+    <button
+      className={`flex-1 rounded-md py-2 text-sm transition-colors duration-200 ${
+        mainTab === "oppose"
+          ? "bg-[#FFA31A] border border-[#F19C03] text-white"
+          : "bg-gray-800 border border-gray-700 text-gray-400"
+      }`}
+      onClick={() => setMainTab("oppose")}
+    >
+      Oppose
+    </button>
+  </div>
 
-        </div>
-
-        {/* Control Card (20%) */}
-        <div className="w-full lg:w-[25%] bg-gray-900 border border-gray-700 rounded-xl p-6 flex flex-col gap-4">
-          {/* Support / Oppose Tabs */}
-          <div className="flex gap-4">
-            <button
-              className={`flex-1 rounded-md py-2 ${mainTab === "support"
-                ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
-                : "bg-gray-800 border border-gray-700 text-gray-400"
-                }`}
-              onClick={() => setMainTab("support")}
-            >
-              Support
-            </button>
-
-            <button
-              className={`flex-1 rounded-md py-2 ${mainTab === "oppose"
-                ? "bg-[#FFA31A] border border-[#F19C03] text-white"
-                : "bg-gray-800 border border-gray-700 text-gray-400"
-                }`}
-              onClick={() => setMainTab("oppose")}
-            >
-              Oppose
-            </button>
-          </div>
 
           {/* Buy / Sell Toggle */}
-<div className="flex w-full h-max overflow-hidden select-none cursor-pointer bg-[#060210] border border-[#006CD2] rounded-full">
-  {/* Buy */}
-  <div
-    onClick={() => setIsBuy(true)}
-    className={`flex-1 flex items-center rounded-full justify-center text-base h-6 transition-colors duration-300 ${
-      isBuy ? "bg-[#8B3EFE] text-white rounded-l-3xl" : "bg-[#060210] text-white rounded-l-3xl"
-    }`}
-  >
-    Buy
-  </div>
-
-  {/* Sell */}
-  <div
-    onClick={() => setIsBuy(false)}
-    className={`flex-1 flex items-center rounded-full justify-center text-base h-6 transition-colors duration-300 ${
-      !isBuy ? "bg-[#8B3EFE] text-white rounded-r-3xl" : "bg-[#060210] text-white rounded-r-3xl"
-    }`}
-  >
-    Sell
-  </div>
-</div>
-
-{/* Curve Section */}
-<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-  <div>
-    <h3 className="text-white text-sm">
-      {growthType === "exponential" ? "Exponential Curve" : "Linear Curve"}
-    </h3>
-    <p className="text-gray-400 text-[0.65rem]">
-      {growthType === "exponential"
-        ? "High Risk, High Reward"
-        : "Low Risk, Low Reward"}
-    </p>
-  </div>
-
-      <div className="flex items-center gap-1 ml-auto"> 
-  {/* Toggle button */}
-  <button
-    onClick={() =>
-      setGrowthType(growthType === "linear" ? "exponential" : "linear")
-    }
-    className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${
-      growthType === "exponential" ? "bg-purple-400" : "bg-gray-700"
-    }`}
-  >
-    <span
-      className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${
-        growthType === "exponential" ? "left-6" : "left-0.5"
+  <div className="flex w-full h-max overflow-hidden select-none cursor-pointer bg-[#060210] border border-[#006CD2] rounded-full text-sm">
+    <div
+      onClick={() => setIsBuy(true)}
+      className={`flex-1 flex items-center justify-center py-1 transition-colors duration-300 ${
+        isBuy ? "bg-[#8B3EFE] text-white rounded-l-full" : "bg-[#060210] text-white rounded-l-full"
       }`}
-    ></span>
-  </button>
-  {/* Info Button */}
-  <button
-    onClick={() => setShowCurveInfo(true)}
-    className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
-  >
-    i
-  </button>
+    >
+      Buy
+    </div>
+    <div
+      onClick={() => setIsBuy(false)}
+      className={`flex-1 flex items-center justify-center py-1 transition-colors duration-300 ${
+        !isBuy ? "bg-[#8B3EFE] text-white rounded-r-full" : "bg-[#060210] text-white rounded-r-full"
+      }`}
+    >
+      Sell
+    </div>
+  </div>
+
+ {/* Curve Section */}
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full">
+    <div className="flex-1">
+      <h3 className="text-white text-sm">
+        {growthType === "exponential" ? "Exponential Curve" : "Linear Curve"}
+      </h3>
+      <p className="text-gray-400 text-[0.65rem]">
+        {growthType === "exponential" ? "High Risk, High Reward" : "Low Risk, Low Reward"}
+      </p>
+    </div>
+
+    <div className="flex items-center gap-2 mt-2 sm:mt-0">
+      {/* Toggle Button */}
+      <button
+        onClick={() => setGrowthType(growthType === "linear" ? "exponential" : "linear")}
+        className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${
+          growthType === "exponential" ? "bg-purple-400" : "bg-gray-700"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${
+            growthType === "exponential" ? "left-6" : "left-0.5"
+          }`}
+        ></span>
+      </button>
+
+      {/* Info Button */}
+      <button
+        onClick={() => setShowCurveInfo(true)}
+        className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
+      >
+        i
+      </button>
 
         {/* Slide-in Modal (Fixed Right) */}
         {showCurveInfo && (
@@ -1114,343 +1092,250 @@ const handleDownload = async () => {
 </div>
 </div>
 
-{/* Amount Section */}
-<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-  <span className="text-gray-400 text-xs">Amount:</span>
-
-  <span className="text-gray-400 flex items-center gap-1 justify-end text-xs">
-    <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
-    {isBuy
-      ? `${Math.floor(Number(balance) * 100) / 100} TRUST`
-      : `${Math.floor(Number(userShares) * 100) / 100} shares`}
-  </span>
-</div>
-
-{/* Input */}
-<div className="w-full bg-gray-800 -mt-3 rounded-md border border-[#833AFD] flex items-center px-2">
-  <input
-    type="text"
-    placeholder="0.1"
-    disabled={tradeLocked}
-    value={currentAmount}
-    onChange={(e) => {
-      const val = e.target.value;
-
-      if (/^\d*\.?\d*$/.test(val)) {
-        isBuy ? setBuyAmount(val) : setSellAmount(val);
-
-        setLoadingAmount(true);
-
-        if (receiveTimeoutRef.current) {
-          clearTimeout(receiveTimeoutRef.current);
-        }
-
-        receiveTimeoutRef.current = setTimeout(() => {
-          setLoadingAmount(false);
-        }, 2000);
-      }
-    }}
-    className={`flex-1 bg-gray-800 text-gray-300 placeholder-gray-500 text-sm p-2 outline-none ${
-      !tradeLocked ? "opacity-50 cursor-not-allowed" : ""
-    }`}
-  />
-
-  {/* Min / Max Button */}
-<button
-  disabled={tradeLocked}
-  className={`text-xs px-2 py-0.5 rounded-full ml-2 transition-colors duration-200 ${
-    tradeLocked
-      ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-      : "bg-[#0A2D4D] hover:bg-[#123a63] text-white"
-  }`}
-  onClick={() => {
-    if (tradeLocked) return;
-
-    if (isBuy) setBuyAmount("0.01");
-    else setSellAmount(userShares.toString());
-  }}
->
-  {isBuy ? "min" : "max"}
-</button>
-</div>
-
-{/* Minimum Deposit Warning */}
-{isBuy && currentAmount && Number(currentAmount) < 0.01 && (
-  <div className="mt-1 flex items-center gap-1 text-red-400 text-xs">
-    {/* Red Caution Icon */}
-    <svg
-      className="w-4 h-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"
-      />
-    </svg>
-    Minimum deposit is 0.010000 TRUST
-  </div>
-)}
-
-{!hasBalance && (
-  <div className="mt-2 text-xs text-red-400">
-    You shall NOT pass! Get some TRUST.
-  </div>
-)}
-
-{hasOppositePosition && (
-  <div className="mt-1 flex items-center gap-1 text-red-400 text-xs">
-    <svg
-      className="w-4 h-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"
-      />
-    </svg>
-
-    {`You already have a ${mainTab === "support" ? "oppose" : "support"} position on this curve`}
-  </div>
-)}
-
-{/* You Receive Section */}
-<div className="w-full bg-gray-800 border border-[#833AFD] rounded-md px-3 py-1.5 flex items-center justify-between text-white text-xs mt-2">
-  <span>You receive</span>
-
-  <div className="flex items-center gap-1">
-    {loadingAmount ? (
-      <div className="flex items-center gap-1">
-        <svg
-          className="w-4 h-4 animate-spin text-gray-400"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-          />
-        </svg>
-        <span className="text-gray-400 text-xs">Loading...</span>
-      </div>
-    ) : (
-      <span>
-        {amountToReceive && Number(currentAmount) > 0
-          ? `${Math.floor(Number(amountToReceive) * 100) / 100} ${isBuy ? "shares" : "TRUST"}`
-          : "--"}
-      </span>
-    )}
-  </div>
-</div>
-
-{/* Connect / Buy / Sell Button */}
-<div className="mt-3 flex flex-col gap-1">
-  {/* Inline Error */}
-  {currentAmount && Number(currentAmount) > (isBuy ? balance : userShares) && (
-    <span className="text-red-400 text-xs">
-      You cannot {isBuy ? "buy more than your balance" : "sell more than your shares"}!
+  {/* Amount Section */}
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 w-full">
+    <span className="text-gray-400 text-xs">Amount:</span>
+    <span className="text-gray-400 flex items-center gap-1 justify-end text-xs">
+      <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+      {isBuy
+        ? `${Math.floor(Number(balance) * 100) / 100} TRUST`
+        : `${Math.floor(Number(userShares) * 100) / 100} shares`}
     </span>
+  </div>
+
+  {/* Input */}
+  <div className="flex w-full items-center px-2 py-1 bg-gray-800 border border-[#833AFD] rounded-md gap-2">
+    <input
+      type="text"
+      placeholder="0.1"
+      disabled={tradeLocked}
+      value={currentAmount}
+      onChange={e => {
+        const val = e.target.value;
+        if (/^\d*\.?\d*$/.test(val)) {
+          isBuy ? setBuyAmount(val) : setSellAmount(val);
+          setLoadingAmount(true);
+          if (receiveTimeoutRef.current) clearTimeout(receiveTimeoutRef.current);
+          receiveTimeoutRef.current = setTimeout(() => setLoadingAmount(false), 2000);
+        }
+      }}
+      className={`flex-1 bg-gray-800 text-gray-300 placeholder-gray-500 text-sm p-2 outline-none ${
+        tradeLocked ? "opacity-50 cursor-not-allowed" : ""
+      }`}
+    />
+
+      {/* Min / Max Button */}
+    <button
+      disabled={tradeLocked}
+      className={`text-xs px-2 py-1 rounded-full transition-colors duration-200 ${
+        tradeLocked
+          ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+          : "bg-[#0A2D4D] hover:bg-[#123a63] text-white"
+      }`}
+      onClick={() => {
+        if (tradeLocked) return;
+        if (isBuy) setBuyAmount("0.01");
+        else setSellAmount(userShares.toString());
+      }}
+    >
+      {isBuy ? "min" : "max"}
+    </button>
+  </div>
+
+  {/* Warnings */}
+  {isBuy && currentAmount && Number(currentAmount) < 0.01 && (
+    <div className="mt-1 flex items-center gap-1 text-red-400 text-xs">
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z" />
+      </svg>
+      Minimum deposit is 0.010000 TRUST
+    </div>
   )}
 
-  <button
-    onClick={async () => {
-      if (!user) {
-        await handleConnectWallet();
-        return;
-      }
+{!hasBalance && <div className="mt-2 text-xs text-red-400">You shall NOT pass! Get some TRUST.</div>}
 
-      if (
-        !currentAmount ||
-        Number(currentAmount) <= 0 ||
-        Number(currentAmount) > (isBuy ? balance : userShares)
-      )
-        return;
+  {hasOppositePosition && (
+    <div className="mt-1 flex items-center gap-1 text-red-400 text-xs">
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z" />
+      </svg>
+      {`You already have a ${mainTab === "support" ? "oppose" : "support"} position on this curve`}
+    </div>
+  )}
 
-      await handleClaimAction();
+  {/* You Receive */}
+  <div className="flex w-full justify-between items-center px-3 py-1.5 bg-gray-800 border border-[#833AFD] rounded-md text-white text-xs mt-2">
+    <span>You receive</span>
+    <div className="flex items-center gap-1">
+      {loadingAmount ? (
+        <div className="flex items-center gap-1">
+          <svg className="w-4 h-4 animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <span className="text-gray-400 text-xs">Loading...</span>
+        </div>
+      ) : (
+        <span>
+          {amountToReceive && Number(currentAmount) > 0
+            ? `${Math.floor(Number(amountToReceive) * 100) / 100} ${isBuy ? "shares" : "TRUST"}`
+            : "--"}
+        </span>
+      )}
+    </div>
+  </div>
 
-      // Clear input only after successful action
-      isBuy ? setBuyAmount("") : setSellAmount("");
-    }}
-    disabled={
-      !user ||
-      !currentAmount ||
-      Number(currentAmount) <= 0 ||
-      Number(currentAmount) > (isBuy ? balance : userShares)
-    }
-    className={`flex items-center justify-center gap-2 py-2 px-6 text-sm rounded-3xl transition-all duration-200
-      ${
-        !user ||
-        !currentAmount ||
-        Number(currentAmount) <= 0 ||
-        Number(currentAmount) > (isBuy ? balance : userShares)
+{/* Connect / Buy / Sell Button */}
+  <div className="mt-3 flex flex-col gap-2 w-full">
+    {currentAmount && Number(currentAmount) > (isBuy ? balance : userShares) && (
+      <span className="text-red-400 text-xs">
+        You cannot {isBuy ? "buy more than your balance" : "sell more than your shares"}!
+      </span>
+    )}
+
+    <button
+      onClick={async () => {
+        if (!user) { await handleConnectWallet(); return; }
+        if (!currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? balance : userShares)) return;
+        await handleClaimAction();
+        isBuy ? setBuyAmount("") : setSellAmount("");
+      }}
+      disabled={!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? balance : userShares)}
+      className={`flex items-center justify-center gap-2 py-2 w-full text-sm rounded-3xl transition-all duration-200 ${
+        !user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? balance : userShares)
           ? "bg-gray-600 text-gray-400 cursor-not-allowed"
           : "bg-gradient-to-r from-[#8B3EFE] to-[#B57EFF] text-white hover:from-[#B57EFF] hover:to-[#8B3EFE] hover:scale-105"
       }`}
-  >
-    {!user && <img src="/key.png" alt="Key Icon" className="w-4 h-4" />}
-
-    {!user
-      ? "Connect Wallet"
-      : !currentAmount || Number(currentAmount) <= 0
-      ? "Enter Amount"
-      : isBuy
-      ? buying
-        ? "Buying shares"
-        : "Buy Shares"
-      : selling
-      ? "Selling shares"
-      : "Sell Shares"}
-  </button>
-</div>
+    >
+      {!user && <img src="/key.png" alt="Key Icon" className="w-4 h-4" />}
+      {!user ? "Connect Wallet" : !currentAmount || Number(currentAmount) <= 0 ? "Enter Amount" : isBuy ? buying ? "Buying shares" : "Buy Shares" : selling ? "Selling shares" : "Sell Shares"}
+    </button>
+  </div>
 </div>
 </div>
 
 {/* Your Position Card */}
-<div className="bg-[#110A2B] rounded-xl p-4 flex flex-col gap-4">
-  <div className="flex items-center gap-3 text-white text-base">
-    <span>Your Position</span>
-    <div className="w-6 h-[3px] bg-[#AD77FF] rounded-full"></div>
+<div className="bg-[#110A2B] rounded-xl p-4 flex flex-col gap-3 w-full">
+  {/* Header */}
+  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-white text-sm sm:text-base w-full">
+    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <span>Your Position</span>
+      <div className="w-6 h-[3px] bg-[#AD77FF] rounded-full"></div>
+    </div>
 
-    {userPositions.length > 0 ? (
-      (() => {
-        const supportPosition = userPositions.find(p => p.direction === "support");
-        const opposePosition = userPositions.find(p => p.direction === "oppose");
+    {/* Positions Info */}
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-gray-300 flex-wrap">
+      {userPositions.length > 0 ? (
+        (() => {
+          const supportPosition = userPositions.find(p => p.direction === "support");
+          const opposePosition = userPositions.find(p => p.direction === "oppose");
 
-        if (supportPosition) {
-          return (
-            <span>
-              Support:{" "}
-              <span>
-                {toFixed(
-                  userPositions
-                    .filter(p => p.direction === "support")
-                    .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)
-                )}{" "}
-                TRUST
-              </span>
-            </span>
-          );
-        } else if (opposePosition) {
-          return (
-            <span>
-              Oppose:{" "}
-              <span>
-                {toFixed(
-                  userPositions
-                    .filter(p => p.direction === "oppose")
-                    .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)
-                )}{" "}
-                TRUST
-              </span>
-            </span>
-          );
-        } else {
-          return <span className="text-gray-400">No positions found</span>;
-        }
-      })()
-    ) : (
-      <span className="text-gray-400">No positions found</span>
-    )}
+          if (supportPosition) {
+            const totalSupport = toFixed(
+              userPositions
+                .filter(p => p.direction === "support")
+                .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)
+            );
+            return <span className="whitespace-nowrap">Support: <span className="text-white">{totalSupport} TRUST</span></span>;
+          } else if (opposePosition) {
+            const totalOppose = toFixed(
+              userPositions
+                .filter(p => p.direction === "oppose")
+                .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)
+            );
+            return <span className="whitespace-nowrap">Oppose: <span className="text-white">{totalOppose} TRUST</span></span>;
+          } else {
+            return <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>;
+          }
+        })()
+      ) : (
+        <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>
+      )}
+    </div>
   </div>
+
+  {/* Divider */}
   <div className="h-px w-full bg-white opacity-80"></div>
 </div>
 
       {/* Positions on this Claim Section */}
-      <div className="bg-[#110A2B] rounded-xl p-5 text-white flex flex-col gap-4">
-        {/* Tabs */}
-        <div className="flex gap-2 mb-2 justify-start">
-          <button
-            className={`rounded-md py-2 px-4 ${activeTab === "all"
-              ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
-              : "bg-gray-800 border border-gray-700 text-gray-400"
-              }`}
-            onClick={() => setActiveTab("all")}
-          >
-            All Positions
-          </button>
+<div className="bg-[#110A2B] rounded-xl p-4 sm:p-5 text-white flex flex-col gap-4 w-full">
+  {/* Tabs */}
+  <div className="flex flex-wrap gap-2 mb-2 justify-start">
+    <button
+      className={`flex-1 sm:flex-auto text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${
+        activeTab === "all"
+          ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
+          : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
+      }`}
+      onClick={() => setActiveTab("all")}
+    >
+      All Positions
+    </button>
 
-          <button
-            className={`rounded-md py-2 px-4 ${activeTab === "my"
-              ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
-              : "bg-gray-800 border border-gray-700 text-gray-400"
-              }`}
-            onClick={() => setActiveTab("my")}
-          >
-            My Position
-          </button>
-        </div>
+    <button
+      className={`flex-1 sm:flex-auto text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${
+        activeTab === "my"
+          ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
+          : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
+      }`}
+      onClick={() => setActiveTab("my")}
+    >
+      My Position
+    </button>
+  </div>
+</div>
 
+{/* Dynamic Heading */}
+<h3 className="text-sm sm:text-base text-white font-semibold">
+  {activeTab === "all"
+    ? "All Positions on this Claim"
+    : "My Position on this Claim"}
+</h3>
 
+<div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+  {/* Search Positions Input */}
+  <input
+    type="text"
+    placeholder="Search positions"
+    className="w-full sm:w-1/2 bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-sm"
+  />
 
-        {/* Dynamic Heading */}
-        <h3 className="text-base">
-          {activeTab === "all"
-            ? "All Positions on this Claim"
-            : "My Position on this Claim"}
-        </h3>
+  {/* Positions / Sort Dropdown */}
+  <div className="flex items-center gap-2 w-full sm:w-auto">
+    <span className="text-white text-sm whitespace-nowrap">Positions:</span>
 
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search Positions Input */}
-          <input
-            type="text"
-            placeholder="Search positions"
-            className="w-full lg:w-1/2 bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none"
-          />
+    <div className="relative flex-1 sm:flex-auto">
+      <select
+        value={positionsOption}
+        onChange={(e) => setPositionsOption(e.target.value)}
+        className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
+      >
+        <option value="all">All</option>
+        <option value="linear">Linear</option>
+        <option value="exponential">Exponential</option>
+        <option value="support">Support</option>
+        <option value="oppose">Oppose</option>
+      </select>
 
-          {/* Positions / Sort Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-white">Positions:</span>
+      {/* Icon inside the select */}
+      <img
+        src="/up-down.png"
+        alt="Dropdown"
+        className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+      />
+    </div>
+  </div>
 
-            <div className="relative w-48">
-              <select
-                value={positionsOption}
-                onChange={(e) => setPositionsOption(e.target.value)}
-                className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white focus:outline-none"
-              >
-                <option value="all">All</option>
-                <option value="linear">Linear</option>
-                <option value="exponential">Exponential</option>
-                <option value="support">Support</option>
-                <option value="oppose">Oppose</option>
-              </select>
+{/* Sort Dropdown */}
+<div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+  <span className="text-white text-sm sm:text-base whitespace-nowrap">Sort:</span>
 
-              {/* Icon inside the select */}
-              <img
-                src="/up-down.png"
-                alt="Dropdown"
-                className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-              />
-            </div>
-          </div>
-
-          {/* Sort Input */}
-          {/* Sort Dropdown */}
-<div className="flex items-center gap-2">
-  <span className="text-white">Sort:</span>
-  
-  <div className="relative w-48">
+  <div className="relative flex-1 sm:flex-auto w-full sm:w-auto">
     <select
       value={sortOption}
       onChange={(e) => setSortOption(e.target.value)}
-      className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white focus:outline-none"
+      className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm sm:text-base focus:outline-none"
     >
       <option value="highest_shares">Highest Shares</option>
       <option value="lowest_shares">Lowest Shares</option>
@@ -1468,72 +1353,72 @@ const handleDownload = async () => {
     />
   </div>
 </div>
-        </div>
 
 
-        {/* TABLE */}
-<div className="overflow-x-auto">
-  <div className="min-w-[700px]">
+       {/* TABLE */}
+<div className="overflow-x-auto w-full">
+  <div className="min-w-[320px] sm:min-w-[700px]">
     {processedPositions.length === 0 ? (
-  <div className="text-gray-400 text-center py-4">No positions found</div>
-) : (
-  <div className="flex flex-col gap-2">
-
-    <div className="bg-[#060210] p-3 rounded-md flex items-center text-gray-400 text-xs">
-      <div className="w-[5%] text-center">#</div>
-      <div className="w-[35%]">Account</div>
-      <div className="w-[15%] text-center">Curve</div>
-      <div className="w-[15%] text-center">Direction</div>
-      <div className="w-[20%] text-right">Shares</div>
-    </div>
-
-    {processedPositions.map((pos, idx) => (
-      <div
-        key={idx}
-        className="bg-[#110A2B] p-4 rounded-md flex items-center text-white"
-      >
-        <div className="w-[5%] text-gray-400 text-center">
-          {idx + 1}
+      <div className="text-gray-400 text-center py-4 text-sm">No positions found</div>
+    ) : (
+      <div className="flex flex-col gap-2">
+        {/* Table Header */}
+        <div className="hidden sm:flex bg-[#060210] p-3 rounded-md text-gray-400 text-xs sm:text-sm">
+          <div className="w-[5%] text-center">#</div>
+          <div className="w-[35%]">Account</div>
+          <div className="w-[15%] text-center">Curve</div>
+          <div className="w-[15%] text-center">Direction</div>
+          <div className="w-[20%] text-right">Shares</div>
         </div>
 
-        <div className="w-[35%] flex items-center gap-2 truncate">
-          {pos.account?.image && (
-            <img
-              src={pos.account.image}
-              alt={pos.account.label ?? "User"}
-              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-            />
-          )}
-          <span className="truncate">
-            {pos.account?.label ?? pos.account?.id ?? "Anonymous"}
-          </span>
-        </div>
+        {/* Table Rows */}
+        {processedPositions.map((pos, idx) => (
+          <div
+            key={idx}
+            className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-sm sm:text-base gap-2 sm:gap-0"
+          >
+            {/* Index */}
+            <div className="flex sm:w-[5%] w-full text-gray-400 text-center sm:text-center justify-between sm:justify-center">
+              <span className="sm:hidden font-semibold">#:</span> {idx + 1}
+            </div>
 
-        <div className="w-[15%] text-center text-gray-400">
-          {Number(pos.curve_id) === 1
-            ? "Linear"
-            : Number(pos.curve_id) === 2
-            ? "Exponential"
-            : "—"}
-        </div>
+            {/* Account */}
+            <div className="flex sm:w-[35%] w-full items-center gap-2 truncate">
+              {pos.account?.image && (
+                <img
+                  src={pos.account.image}
+                  alt={pos.account.label ?? "User"}
+                  className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                />
+              )}
+              <span className="truncate">{pos.account?.label ?? pos.account?.id ?? "Anonymous"}</span>
+            </div>
 
-        <div className="w-[15%] text-center">
-          {pos.direction?.toLowerCase() === "support"
-            ? "Support"
-            : pos.direction?.toLowerCase() === "oppose"
-            ? "Oppose"
-            : "—"}
-        </div>
+            {/* Curve */}
+            <div className="flex sm:w-[15%] w-full text-gray-400 sm:text-center justify-between sm:justify-center">
+              <span className="sm:hidden font-semibold">Curve:</span> 
+              {Number(pos.curve_id) === 1 ? "Linear" : Number(pos.curve_id) === 2 ? "Exponential" : "—"}
+            </div>
 
-        <div className="w-[20%] text-right">
-          {pos.shares
-            ? `${toFixed(formatEther(BigInt(pos.shares)))}`
-            : ""}
-        </div>
+            {/* Direction */}
+            <div className="flex sm:w-[15%] w-full justify-between sm:justify-center">
+              <span className="sm:hidden font-semibold">Direction:</span>
+              {pos.direction?.toLowerCase() === "support"
+                ? "Support"
+                : pos.direction?.toLowerCase() === "oppose"
+                ? "Oppose"
+                : "—"}
+            </div>
+
+            {/* Shares */}
+            <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right">
+              <span className="sm:hidden font-semibold">Shares:</span>
+              {pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : ""}
+            </div>
+          </div>
+        ))}
       </div>
-    ))}
-  </div>
-)}
+    )}
 
             {/* Observer div for infinite scroll */}
             <div ref={observerRef} className="h-10"></div>

@@ -411,8 +411,7 @@ const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
     } else {
       await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
     }
-
-    // 🔹 Refresh wallet balance after transaction
+    
     await fetchTrustBalance();
 
     const actionText = opposeMode ? "opposed" : "supported";
@@ -502,7 +501,7 @@ const hasAnyPosition =
   // console.log("Has any position:", hasAnyPosition, supportShares, opposeShares);
 
   return (
-    <div className="p-3 text-white font-geist font-light tracking-wide">
+    <div className="text-white font-geist font-light tracking-wide">
       {/* Header */}
       <h1 className="text-base">Claims</h1>
 
@@ -688,70 +687,100 @@ const hasAnyPosition =
                 </table>
               </div>
 
-              {/* ================= MOBILE STACKED LIST ================= */}
-              <div className="md:hidden flex flex-col gap-4">
-                {sortedClaims.map((claim, index) => (
-                  <div
-                    key={index}
-                    className="bg-[#060210] border border-gray-700 rounded-xl p-4 hover:bg-[#1a0f2e] cursor-pointer"
-                    onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
-                  >
-                    {/* Claim Statement */}
-                    <div className="flex flex-wrap gap-2 mb-3 text-sm">
-                      <span className="bg-gray-700 px-2 py-1 rounded flex items-center gap-1">
-                        <img src={claim.term.triple.subject.image} className="w-5 h-5" />
-                        {claim.term.triple.subject.label}
-                      </span>
-                      {claim.term.triple.predicate.label}
-                      <span className="bg-gray-700 px-2 py-1 rounded">
-                        {claim.term.triple.object.label}
-                      </span>
-                    </div>
+{/* ================= MOBILE STACKED CARDS ================= */}
+<div className="md:hidden flex flex-col gap-3 px-1">
+  {sortedClaims.map((claim, index) => {
+    const supportCount = claim.term.positions_aggregate.aggregate.count;
+    const opposeCount = claim.counter_term.positions_aggregate.aggregate.count;
+    const total = supportCount + opposeCount;
+    const supportPercent = total ? Math.round((supportCount / total) * 100) : 0;
+    const opposePercent = total ? 100 - supportPercent : 0;
 
-                    {/* Market Cap */}
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-400">Market Cap</span>
-                      <span className="">
-                        {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
-                      </span>
-                    </div>
-
-                    {/* Support / Oppose */}
-                    <div className="flex justify-between text-sm mb-3">
-                      <div className="text-blue-400">
-                        Support: {formatNumber(claim.term.positions_aggregate.aggregate.count)}
-                      </div>
-
-                      <div className="text-[#F19C03]">
-                        Oppose: {formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-<div className="flex justify-center gap-2">
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      handleSupportClick(claim); // open modal
+    return (
+      <div
+        key={index}
+        className="bg-[#060210] border border-gray-700 rounded-xl p-3 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all cursor-pointer mx-auto w-full max-w-[95vw]"
+        onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
+      >
+        {/* Claim Statement */}
+{/* Claim Statement */}
+<div
+  className="mb-2 flex items-center gap-1 text-xs sm:text-sm w-full whitespace-nowrap overflow-hidden"
+  style={{ cursor: 'pointer' }}
+>
+  {/* Subject */}
+  <span
+    className="px-2 py-0.5 rounded truncate transition-colors duration-200"
+    style={{
+      flex: '0 0 20%',
+      minWidth: 0,
+      backgroundColor: '#1c122e', // slightly lighter than original
     }}
-    className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center"
+    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2b1f45')}
+    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1c122e')}
   >
-    <img src="/support.png" alt="Support" className="w-4 h-4" />
-  </button>
+    {claim.term.triple.subject.label}
+  </span>
 
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      handleOpposeClick(claim); // open modal
-    }}
-    className="h-8 w-8 bg-[#F19C03] rounded-lg flex items-center justify-center"
+  {/* Predicate */}
+  <span
+    className="truncate text-center"
+    style={{ flex: '0 0 10%', minWidth: 0 }}
   >
-    <img src="/oppose.png" alt="Oppose" className="w-4 h-4" />
-  </button>
+    {claim.term.triple.predicate.label}
+  </span>
+
+  {/* Object */}
+  <span
+    className="px-2 py-0.5 rounded truncate transition-colors duration-200"
+    style={{
+      flex: '0 0 20%',
+      minWidth: 0,
+      backgroundColor: '#1c122e', // match subject
+    }}
+    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2b1f45')}
+    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1c122e')}
+  >
+    {claim.term.triple.object.label}
+  </span>
 </div>
-                  </div>
-                ))}
-              </div>
+
+        {/* Support / Oppose Stats */}
+        <div className="flex justify-between items-center text-xs sm:text-sm mb-3 w-full">
+          <div className="flex flex-col" style={{ flex: '0 0 45%' }}>
+            <span className="text-blue-400 font-semibold">Support: {supportCount}</span>
+            <span className="text-blue-400 text-[10px]">{supportPercent}%</span>
+          </div>
+          <div className="flex flex-col items-end" style={{ flex: '0 0 45%' }}>
+            <span className="text-[#F19C03] font-semibold">Oppose: {opposeCount}</span>
+            <span className="text-[#F19C03] text-[10px]">{opposePercent}%</span>
+          </div>
+        </div>
+
+        {/* Action Buttons & Market Cap */}
+        <div className="flex justify-between items-center gap-2 w-full flex-wrap">
+          <div className="flex gap-2" style={{ flex: '0 0 45%' }}>
+            <button
+              onClick={() => handleSupportClick(claim)}
+              className="flex-1 h-10 sm:h-12 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 hover:scale-105 transition-transform"
+            >
+              Support
+            </button>
+            <button
+              onClick={() => handleOpposeClick(claim)}
+              className="flex-1 h-10 sm:h-12 bg-[#F19C03] text-white font-semibold rounded-xl hover:bg-[#e59400] hover:scale-105 transition-transform"
+            >
+              Oppose
+            </button>
+          </div>
+          <div className="text-gray-400 text-xs sm:text-sm font-semibold text-right" style={{ flex: '0 0 45%' }}>
+            {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
+          </div>
+        </div>
+      </div>
+    );
+  })}
+</div>
             </>
           )}
                     {view === "grid" && (
