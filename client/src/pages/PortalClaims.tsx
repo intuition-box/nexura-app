@@ -412,11 +412,19 @@ const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
       await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
     }
 
+    // 🔹 Refresh wallet balance after transaction
+    await fetchTrustBalance();
+
     const actionText = opposeMode ? "opposed" : "supported";
 
     toast({
       title: "Success",
-      description: `Successfully ${actionText} a claim!`,
+      description: (
+        <div className="flex items-center gap-2">
+          <img src="/check.png" alt="success" className="w-4 h-4" />
+          <span>Successfully {actionText} a claim!</span>
+        </div>
+      ),
     });
 
     setActionState(prev => ({
@@ -424,13 +432,13 @@ const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
       [termId]: opposeMode ? "opposed" : "supported"
     }));
 
-     setTransactionAmount("");
+    setTransactionAmount("");
     setModalStep("success");
 
   } catch (err: any) {
     console.error(err);
 
-    setModalStep("failed"); 
+    setModalStep("failed");
 
     toast({
       title: "Error",
@@ -571,14 +579,14 @@ const hasAnyPosition =
             <>
               {/* ================= DESKTOP TABLE ================= */}
               <div className="hidden md:block overflow-x-auto w-full text-xs">
-                <table className="min-w-full text-left border-collapse">
-                  <thead className="text-sm">
+                <table className="min-w-full text-left border-collapse font-geist font-light tracking-wide">
+                  <thead className="text-sm font-light tracking-wide">
                     <tr className="bg-gray-800 text-gray-300">
-                      <th className="px-16 py-2">Claims</th>
-                      <th className="px-4 py-2">Market Cap</th>
-                      <th className="px-4 py-2">Support</th>
-                      <th className="px-4 py-2">Oppose</th>
-                      <th className="px-16 py-2">Actions</th>
+                      <th className="px-16 py-2 font-light tracking-wide">Claims</th>
+                      <th className="px-4 py-2 font-light tracking-wide">Market Cap</th>
+                      <th className="px-4 py-2 font-light tracking-wide">Support</th>
+                      <th className="px-4 py-2 font-light tracking-wide">Oppose</th>
+                      <th className="px-16 py-2 font-light tracking-wide">Actions</th>
                     </tr>
                   </thead>
 
@@ -747,134 +755,123 @@ const hasAnyPosition =
             </>
           )}
                     {view === "grid" && (
-          <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-3">
-            {sortedClaims.map((claim) => {
-              const supportCount = Number(claim.term.positions_aggregate.aggregate.count);
-              const opposeCount = Number(claim.counter_term.positions_aggregate.aggregate.count);
+  <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-3">
+    {sortedClaims.map((claim) => {
+      const supportCount = Number(claim.term.positions_aggregate.aggregate.count);
+      const opposeCount = Number(claim.counter_term.positions_aggregate.aggregate.count);
+      const total = supportCount + opposeCount;
+      const supportPercent = total > 0 ? (supportCount / total) * 100 : 0;
+      const opposePercent = total > 0 ? (opposeCount / total) * 100 : 0;
 
-              const total = supportCount + opposeCount;
-              const supportPercent = total > 0 ? (supportCount / total) * 100 : 0;
-              const opposePercent = total > 0 ? (opposeCount / total) * 100 : 0;
-
-              return (
-                <div
-                  key={claim.term_id}
-                  className="bg-[#060210] border border-gray-700 rounded-xl p-4 hover:bg-[#2c0738] transition"
-                >
-                  {/* Statement */}
-                  <div className="text-gray-300 mb-4 flex flex-wrap items-center gap-2">
-                    <span className=" text-xl bg-[#0b0618] px-2 py-1 rounded mr-2 max-w-[40%] truncate">
-                      {claim.term.triple.subject.label}
-                    </span>
-                    {claim.term.triple.predicate.label}
-                    <span className="bg-[#0b0618] px-2 py-1 rounded ml-2 max-w-[40%] truncate">
-                      {claim.term.triple.object.label}
-                    </span>
-                  </div>
-                  {/* Stats Section */}
-                  <div className="flex overflow-hidden rounded-md">
-
-                    {/* Support */}
-                    <div className="flex-1 flex flex-col p-2 gap-1">
-                      <span className="text-blue-400">Support</span>
-                      <div className="flex items-center justify-between">
-                        <span className="">{toFixed(formatEther(BigInt(claim.term.total_assets)))} TRUST</span>
-                        <div className="flex items-center gap-1 text-blue-400">
-                          <span>{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
-                          <img src="/user.png" alt="User Icon" className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Vertical Separator */}
-                    <div className="w-px bg-white"></div>
-
-                    {/* Oppose */}
-                    <div className="flex-1 flex flex-col p-2 gap-1">
-                      <span className="text-[#F19C03]">Oppose</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#F19C03]">{toFixed(formatEther(BigInt(claim.counter_term.total_assets)))} TRUST</span>
-                        <div className="flex items-center gap-1 text-[#F19C03] ">
-                          <span>{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
-                          <img
-                            src="/user-red.png"
-                            alt="User Icon"
-                            className="w-4 h-4"
-                            style={{ filter: "invert(51%) sepia(90%) saturate(4515%) hue-rotate(2deg) brightness(97%) contrast(96%)" }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full h-5 bg-gray-700 rounded-lg overflow-hidden mt-2 relative">
-                    <div className="flex h-full text-white text-xs">
-
-                      {supportPercent > 0 && (
-                        <div
-                          className="bg-blue-600 flex items-center justify-center transition-all duration-500"
-                          style={{ width: `${supportPercent}%` }}
-                        >
-                          {supportPercent > 8 && `${supportPercent.toFixed(1)}%`}
-                        </div>
-                      )}
-
-                      {opposePercent > 0 && (
-                        <div
-                          className="bg-[#F19C03] flex items-center justify-center transition-all duration-500"
-                          style={{ width: `${opposePercent}%` }}
-                        >
-                          {opposePercent > 8 && `${opposePercent.toFixed(1)}%`}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-700">
-
-
-                      {/* Action Buttons */}
-<div className="flex justify-center gap-2">
-          <button
-            className="bg-blue-600 px-4 py-2 rounded-lg text-sm pointer-events-auto"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSupportClick(claim);
-            }}
-          >
-            Support
-          </button>
-
-          <button
-            className="bg-[#F19C03] px-4 py-2 rounded-lg text-sm pointer-events-auto"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpposeClick(claim);
-            }}
-          >
-            Oppose
-          </button>
-</div>
-
-                    {/* Total MarketCap */}
-                    <div className="flex flex-col items-end text-gray-300 text-sm">
-                      <span className="">Total Market Cap</span>
-                      <span className=" text-lg text-white">
-                        {toFixed(
-                          formatEther(
-                            BigInt(claim.total_market_cap)
-                          )
-                        )} TRUST
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+      return (
+        <div
+          key={claim.term_id}
+          className="bg-[#060210] border border-gray-700 rounded-xl p-3 hover:bg-[#2c0738] transition cursor-pointer"
+          onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
+        >
+          {/* Statement */}
+          <div className="text-gray-300 mb-2 flex flex-wrap items-center gap-1 text-sm">
+            <span className="bg-[#0b0618] px-2 py-0.5 rounded max-w-[40%] truncate text-xs">
+              {claim.term.triple.subject.label}
+            </span>
+            <span className="text-xs">{claim.term.triple.predicate.label}</span>
+            <span className="bg-[#0b0618] px-2 py-0.5 rounded max-w-[40%] truncate text-xs">
+              {claim.term.triple.object.label}
+            </span>
           </div>
-            )}
+
+          {/* Stats Section */}
+          <div className="flex overflow-hidden rounded-md text-xs">
+            {/* Support */}
+            <div className="flex-1 flex flex-col p-1 gap-0.5">
+              <span className="text-blue-400">Support</span>
+              <div className="flex items-center justify-between">
+                <span>{toFixed(formatEther(BigInt(claim.term.total_assets)))} TRUST</span>
+                <div className="flex items-center gap-1 text-blue-400">
+                  <span>{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
+                  <img src="/user.png" alt="User Icon" className="w-3 h-3" />
+                </div>
+              </div>
+            </div>
+
+            {/* Vertical Separator */}
+            <div className="w-px bg-white"></div>
+
+            {/* Oppose */}
+            <div className="flex-1 flex flex-col p-1 gap-0.5">
+              <span className="text-[#F19C03]">Oppose</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[#F19C03]">{toFixed(formatEther(BigInt(claim.counter_term.total_assets)))} TRUST</span>
+                <div className="flex items-center gap-1 text-[#F19C03]">
+                  <span>{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
+                  <img
+                    src="/user-red.png"
+                    alt="User Icon"
+                    className="w-3 h-3"
+                    style={{ filter: "invert(51%) sepia(90%) saturate(4515%) hue-rotate(2deg) brightness(97%) contrast(96%)" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Percent Bar */}
+          <div className="w-full h-3 bg-gray-700 rounded-lg overflow-hidden mt-1 relative">
+            <div className="flex h-full text-white text-xs">
+              {supportPercent > 0 && (
+                <div
+                  className="bg-blue-600 flex items-center justify-center transition-all duration-500"
+                  style={{ width: `${supportPercent}%` }}
+                >
+                  {supportPercent > 8 && `${supportPercent.toFixed(1)}%`}
+                </div>
+              )}
+              {opposePercent > 0 && (
+                <div
+                  className="bg-[#F19C03] flex items-center justify-center transition-all duration-500"
+                  style={{ width: `${opposePercent}%` }}
+                >
+                  {opposePercent > 8 && `${opposePercent.toFixed(1)}%`}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-700 text-xs">
+            <div className="flex justify-center gap-2">
+              <button
+                className="bg-blue-600 px-3 py-1 rounded-lg text-xs pointer-events-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSupportClick(claim);
+                }}
+              >
+                Support
+              </button>
+              <button
+                className="bg-[#F19C03] px-3 py-1 rounded-lg text-xs pointer-events-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpposeClick(claim);
+                }}
+              >
+                Oppose
+              </button>
+            </div>
+
+            <div className="flex flex-col items-end text-gray-300">
+              <span>Total Market Cap</span>
+              <span className="text-white text-sm">
+                {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
 
           {/* Modal */}
   {showModal && activeClaim && (
@@ -884,11 +881,22 @@ const hasAnyPosition =
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-1 p-2 pb-1">
         <h2 className="text-white font text-base">Stake</h2>
-<span
-  className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
->
-  {opposeMode ? "Oppose" : "Support"}
-</span>
+<div className="flex items-center gap-1 group relative">
+  <span
+    className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+  >
+    {opposeMode ? "Oppose" : "Support"}
+  </span>
+
+  <span className="text-[10px] bg-gray-300 text-black rounded-full w-3 h-3 flex items-center justify-center cursor-default">
+    ?
+  </span>
+
+  {/* Tooltip */}
+  <div className="absolute left-0 top-5 w-56 text-[10px] bg-black text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+    Staking on a Triple signifies a belief in the relevancy of the respective Triple and enhances its discoverability in the Intuition system.
+  </div>
+</div>
       </div>
 
       {/* Subtitle */}
@@ -898,7 +906,7 @@ const hasAnyPosition =
 
 {/* Statement */}
 <div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center justify-center gap-2 text-sm">
-  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-3 py-1.5 rounded inline-flex items-center gap-2 max-w-[200px] truncate">
+  <span className="bg-[#1a1230] hover:bg-[#241744] cursor-pointer transition-colors duration-200 px-3 py-1.5 rounded inline-flex items-center gap-2 max-w-[200px] truncate">
     <img
       src={activeClaim.term.triple.subject.image}
       alt="Claim Icon"
@@ -909,7 +917,7 @@ const hasAnyPosition =
 
   <span>{activeClaim.term.triple.predicate.label}</span>
 
-  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-3 py-1.5 rounded max-w-[200px] truncate">
+  <span className="bg-[#1a1230] hover:bg-[#241744] cursor-pointer transition-colors duration-200 px-3 py-1.5 rounded max-w-[200px] truncate">
     {activeClaim.term.triple.object.label}
   </span>
 </div>
@@ -969,10 +977,10 @@ const hasAnyPosition =
 
     <div className="flex items-center gap-2">
       <span
-        className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-[9px] cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
-      >
-        {opposeMode ? "Oppose" : "Support"}
-      </span>
+  className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+>
+  {opposeMode ? "Oppose" : "Support"}
+</span>
 
 <span className="text-xs whitespace-nowrap">
   {displayedShares > 0n
@@ -1021,17 +1029,21 @@ const hasAnyPosition =
     </span>
   </div>
 
-  {/* Toggle */}
-  <label className="relative inline-block w-10 h-5 cursor-pointer">
-    <input
-      type="checkbox"
-      className="sr-only peer"
-      checked={isToggled}
-      onChange={() => setIsToggled(!isToggled)}
-    />
-    <span className="block w-full h-full bg-white rounded-full peer-checked:bg-white transition-colors"></span>
-    <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
-  </label>
+{/* Toggle */}
+<label className="relative inline-block w-10 h-5 cursor-pointer">
+  <input
+    type="checkbox"
+    className="sr-only peer"
+    checked={isToggled}
+    onChange={() => setIsToggled(!isToggled)}
+  />
+
+  {/* Track */}
+  <span className="block w-full h-full bg-gray-400 peer-checked:bg-white rounded-full transition-colors duration-200"></span>
+
+  {/* Knob */}
+  <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-[1.25rem]"></span>
+</label>
 
   {/* Info Button */}
   <button
@@ -1099,17 +1111,23 @@ const hasAnyPosition =
 </div>
 
 {/* Center Big Zero */}
-<div className="flex flex-col items-center mt-2">
+{/* <div className="flex flex-col items-center mt-2"> */}
+<div className="flex flex-col items-center mt-2 w-full px-4">
   <input
     type="number"
     min="0"
     placeholder="0"
-    value={transactionAmount || ""} // blank if empty
+    value={transactionAmount || ""}
     onChange={(e) => setTransactionAmount(e.target.value)}
     autoFocus
-    className="bg-transparent text-white text-6xl text-center outline-none w-48 h-20
-               appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+    className="bg-transparent text-white text-3xl text-center outline-none
+               w-full max-w-[400px] h-12
+               appearance-none
+               [&::-webkit-inner-spin-button]:appearance-none
+               [&::-webkit-outer-spin-button]:appearance-none
+               overflow-x-auto"
   />
+
   <span className="text-gray-300 text-xs font-normal mt-1">TRUST</span>
 
   {/* Min Button */}
@@ -1163,7 +1181,7 @@ const hasAnyPosition =
   <div className="px-4 md:px-12">
 {/* Main Card: Active Position */}
 <div className="flex justify-center mb-4">
-  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-base flex items-center justify-between gap-6 mt-4 w-[380px]">
+  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 mt-4 w-[380px]">
     
     <span className="text-gray-300 text-xs whitespace-nowrap">
       Your Active Position
@@ -1171,10 +1189,10 @@ const hasAnyPosition =
 
     <div className="flex items-center gap-2">
       <span
-        className="bg-[#0A2D4D] border border-white text-[7px] px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
-      >
-        {opposeMode ? "Oppose" : "Support"}
-      </span>
+  className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+>
+  {opposeMode ? "Oppose" : "Support"}
+</span>
 
   {/* Active Curve Amount */}
   <span className="text-xs whitespace-nowrap">
@@ -1225,16 +1243,20 @@ const hasAnyPosition =
   </div>
 
   {/* Toggle */}
-  <label className="relative inline-block w-10 h-5 cursor-pointer">
-    <input
-      type="checkbox"
-      className="sr-only peer"
-      checked={isToggled}
-      onChange={() => setIsToggled(!isToggled)}
-    />
-    <span className="block w-full h-full bg-white rounded-full peer-checked:bg-white transition-colors"></span>
-    <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
-  </label>
+<label className="relative inline-block w-10 h-5 cursor-pointer">
+  <input
+    type="checkbox"
+    className="sr-only peer"
+    checked={isToggled}
+    onChange={() => setIsToggled(!isToggled)}
+  />
+
+  {/* Track */}
+  <span className="block w-full h-full bg-gray-400 peer-checked:bg-white rounded-full transition-colors duration-200"></span>
+
+  {/* Knob */}
+  <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-[1.25rem]"></span>
+</label>
 
   {/* Info Button */}
   <button
@@ -1302,33 +1324,41 @@ const hasAnyPosition =
 </div>
 
 {/* Center Big Zero */}
-<div className="flex flex-col items-center mt-2">
+{/* <div className="flex flex-col items-center mt-2"> */}
+<div className="flex flex-col items-center mt-2 w-full px-4">
   <input
     type="number"
     min="0"
     placeholder="0"
-    value={transactionAmount || ""} // blank if empty
+    value={transactionAmount || ""}
     onChange={(e) => setTransactionAmount(e.target.value)}
     autoFocus
-    className="bg-transparent text-white text-6xl text-center outline-none w-48 h-20
-               appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+    className="bg-transparent text-white text-3xl text-center outline-none
+               w-full max-w-[400px] h-12
+               appearance-none
+               [&::-webkit-inner-spin-button]:appearance-none
+               [&::-webkit-outer-spin-button]:appearance-none
+               overflow-x-auto"
   />
   <span className="text-gray-300 text-xs font-normal mt-1">TRUST</span>
 
-  {/* Min Button */}
-  <button
-    type="button"
-    onClick={() => setTransactionAmount("0.01")}
-    className="mt-4 px-2 py-1 text-xs text-white bg-[#0A2D4D] rounded-full border border-white hover:bg-[#123a63] hover:border-[#8B3EFE] transition-colors"
-  >
-    Min
-  </button>
+{/* Max Button */}
+<button
+  type="button"
+  onClick={() => {
+    const max = Number(displayedShares) / 10 ** 18;
+    setTransactionAmount(max.toString());
+  }}
+  className="mt-4 px-2 py-1 text-xs text-white bg-[#0A2D4D] rounded-full border border-white hover:bg-[#123a63] hover:border-[#8B3EFE] transition-colors"
+>
+  Max
+</button>
 </div>
 
 
     {/* Review Deposit Button */}
 <button
-  className={`mx-auto block px-6 py-2.5 rounded-3xl mt-4 text-sm transition-colors ${
+  className={`mx-auto block px-5 py-1.5 rounded-3xl mt-4 text-sm transition-colors ${
     transactionAmount &&
     Number(transactionAmount) > 0 &&
     Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
@@ -1342,12 +1372,11 @@ const hasAnyPosition =
     Number(transactionAmount) > maxRedeemable
   }
 >
-{transactionAmount
-  ? Number(transactionAmount) > maxRedeemable
-    ? "Check Your Position"
-    : "Review Redeem"
-  : "Enter an Amount"}
-
+  {transactionAmount
+    ? Number(transactionAmount) > maxRedeemable
+      ? "Check Your Position"
+      : "Review Redeem"
+    : "Enter an Amount"}
 </button>
 
 {/* Optional small red warning below button */}
