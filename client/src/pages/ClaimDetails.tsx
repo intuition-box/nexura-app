@@ -304,10 +304,10 @@ const userShares = useMemo(() => {
 
   // Find the entry for the logged-in user
   const up = userPositions.find(
-    pos => pos.account_id.toLowerCase() === user.address.toLowerCase()
+    pos => pos.account_id?.toLowerCase() === user.address.toLowerCase()
   );
 
-  return up ? Number(formatEther(BigInt(up.shares))) : 0;
+  return up ? Number(formatEther(BigInt(up.shares ?? 0))) : 0;
 }, [userPositions, user]);
 
 function getPrice() {
@@ -319,7 +319,7 @@ function getPrice() {
     return price;
   };
 
-  if (activeTab === "support") {
+  if (mainTab === "support") {
     sharePrice = growthType === "linear"
       ? getVaultPrice(term.vaults, 0)
       : getVaultPrice(term.vaults, 1);
@@ -332,7 +332,7 @@ function getPrice() {
   }
 
   // Use formatEther to convert BigInt string → human-readable decimal
-  const formattedPrice = parseFloat(formatEther(sharePrice)).toFixed(2);
+  const formattedPrice = parseFloat(formatEther(BigInt(sharePrice))).toFixed(2);
   console.log("Calculated sharePrice (formatted):", formattedPrice);
 
   return formattedPrice;
@@ -389,13 +389,13 @@ const handleClaimAction = async () => {
   }
 
   const curveId = growthType === "linear" ? 1n : 2n;
-  const address = activeTab === "support" ? id : claim.counter_term_id;
+  const address = mainTab === "support" ? id : claim.counter_term_id;
 
   const updateVaultPrice = (amount: number, isBuying: boolean) => {
     const vaultIndex = growthType === "linear" ? 0 : 1;
 
-    if (activeTab === "support") {
-      const vault = term.vaults[vaultIndex];
+    if (mainTab === "support") {
+      const vault = term.vaults[vaultIndex]!;
       const currentPrice = BigInt(vault.current_share_price);
       const delta = parseEther(amount.toString());
       vault.current_share_price = isBuying
@@ -979,7 +979,7 @@ const handleDownload = async () => {
   {/* Toggle button */}
   <button
     onClick={() =>
-      setGrowthType(growthType === "linear" ? "exponential" : "linear")
+      setGrowthType(growthType !== "linear" ? "exponential" : "linear")
     }
     className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${
       growthType === "exponential" ? "bg-purple-400" : "bg-gray-700"
@@ -1117,7 +1117,7 @@ const handleDownload = async () => {
 {/* Connect / Buy / Sell Button */}
 <div className="mt-3 flex flex-col gap-1">
   {/* Inline Error */}
-  {currentAmount && Number(currentAmount) > (isBuy ? balance : userShares) && (
+  {currentAmount && Number(currentAmount) > (isBuy ? Number(balance) : userShares) && (
     <span className="text-red-400 text-xs font-semibold">
       You cannot {isBuy ? "buy more than your balance" : "sell more than your shares"}!
     </span>
@@ -1133,7 +1133,7 @@ const handleDownload = async () => {
       if (
         !currentAmount ||
         Number(currentAmount) <= 0 ||
-        Number(currentAmount) > (isBuy ? balance : userShares)
+        Number(currentAmount) > (isBuy ? Number(balance) : userShares)
       )
         return;
 
@@ -1146,14 +1146,14 @@ const handleDownload = async () => {
       !user ||
       !currentAmount ||
       Number(currentAmount) <= 0 ||
-      Number(currentAmount) > (isBuy ? balance : userShares)
+      Number(currentAmount) > (isBuy ? Number(balance) : userShares)
     }
     className={`flex items-center justify-center gap-2 font-semibold py-2 px-6 text-sm rounded-3xl transition-all duration-200
       ${
         !user ||
         !currentAmount ||
         Number(currentAmount) <= 0 ||
-        Number(currentAmount) > (isBuy ? balance : userShares)
+        Number(currentAmount) > (isBuy ? Number(balance) : userShares)
           ? "bg-gray-600 text-gray-400 cursor-not-allowed"
           : "bg-gradient-to-r from-[#8B3EFE] to-[#B57EFF] text-white hover:from-[#B57EFF] hover:to-[#8B3EFE] hover:scale-105"
       }`}
@@ -1189,9 +1189,9 @@ const handleDownload = async () => {
             Support:{" "}
             <span className="font-bold">
               {toFixed(
-                userPositions
+                (userPositions
                   .filter(p => p.direction === "support")
-                  .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)
+                  .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
               )}{" "}
               TRUST
             </span>
@@ -1202,9 +1202,9 @@ const handleDownload = async () => {
             Oppose:{" "}
             <span className="font-bold">
               {toFixed(
-                userPositions
+                (userPositions
                   .filter(p => p.direction === "oppose")
-                  .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)
+                  .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
               )}{" "}
               TRUST
             </span>
@@ -1242,8 +1242,6 @@ const handleDownload = async () => {
             My Position
           </button>
         </div>
-
-
 
         {/* Dynamic Heading */}
         <h3 className="font-semibold text-base">
