@@ -6,6 +6,7 @@ import { NexonsAddress } from "./constants";
 import { ethers } from "ethers";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import chain from "./chain.utils";
 
 export const padNumber = (numberToBePadded: number) => {
 	return numberToBePadded.toString().padStart(3, "0");
@@ -305,7 +306,7 @@ export const getRefreshToken = (id: any) => {
 };
 
 export const checkPayment = async (txHash: string) => {
-	const provider = new ethers.JsonRpcProvider("https://rpc.intuition.systems");
+	const provider = new ethers.JsonRpcProvider(chain.rpcUrls.default.http[0]);
 
 	const feeInterface = new ethers.Interface(["event FeePaid(uint256 totalCampaigns)"]);
 
@@ -316,7 +317,7 @@ export const checkPayment = async (txHash: string) => {
 
 	const FEE_CONTRACT = network === "testnet" ? "0x742ed23dD10686C22A5cD459Af96BC1F83e58C7a" : "";
 
-	let totalCampaigns: number = 0;
+	let totalCampaigns: bigint = 0n;
 
 	// Check logs
 	for (const log of receipt.logs) {
@@ -325,9 +326,9 @@ export const checkPayment = async (txHash: string) => {
     const parsed = feeInterface.parseLog(log);
 
 		if (parsed?.name === "FeePaid") {
-			totalCampaigns = parsed.args.totalCampaigns ?? 0;
+			totalCampaigns = parsed.args.totalCampaigns ?? 0n;
 		}
 	}
 
-	return totalCampaigns;
+	return Number(totalCampaigns);
 }

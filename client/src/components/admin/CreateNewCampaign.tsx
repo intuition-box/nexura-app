@@ -98,11 +98,11 @@ useEffect(() => {
   if (!editId) return;
   (async () => {
     try {
-      const res = await projectApiRequest<{ projectCampaigns?: any[] }>({
+      const res = await projectApiRequest<{ hubCampaigns?: any[] }>({
         method: "GET",
         endpoint: "/hub/get-campaigns",
       });
-      const found = (res.projectCampaigns ?? []).find((c: any) => c._id === editId);
+      const found = (res.hubCampaigns ?? []).find((c: any) => c._id === editId);
       if (!found) return;
       setCampaignId(editId);
       setIsEditMode(true);
