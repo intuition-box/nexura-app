@@ -376,7 +376,8 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
-    await campaign.findByIdAndUpdate(id, req.body, { new: true }).lean();
+    const { campaignQuests: _cq, isDraft: _d, existingCoverImage: _e, hubCoverImage: _h, nameOfProject: _n, ...updateFields } = req.body;
+    await campaign.findByIdAndUpdate(id, updateFields, { new: true }).lean();
 
     // Update quests
     if (questsToSave !== null) {
