@@ -224,7 +224,7 @@ if (claims.length > 0) {
     console.error("Failed to load positions:", err);
   } finally {
     setLoading(false);
-    console.log("Loading finished, loading state set to false");
+    // console.log("Loading finished, loading state set to false");
   }
 };
 
@@ -491,12 +491,12 @@ const sortClaims = (claims, option) => {
 const hasAnyPosition =
   (supportShares.linear + supportShares.exponential > 0n) ||
   (opposeShares.linear + opposeShares.exponential > 0n);
-  console.log("Has any position:", hasAnyPosition, supportShares, opposeShares);
+  // console.log("Has any position:", hasAnyPosition, supportShares, opposeShares);
 
   return (
-    <div className="p-3 text-white font-geist">
+    <div className="p-3 text-white font-geist font-light tracking-wide">
       {/* Header */}
-      <h1 className="text-base font-semibold">Claims</h1>
+      <h1 className="text-base">Claims</h1>
 
       <p className="text-gray-400 mt-2 max-w-xl text-xs">
         Semantic statements, allowing anyone to claim anything about anything
@@ -570,7 +570,7 @@ const hasAnyPosition =
           {view === "list" && (
             <>
               {/* ================= DESKTOP TABLE ================= */}
-              <div className="hidden md:block overflow-x-auto w-full font-geist text-xs">
+              <div className="hidden md:block overflow-x-auto w-full text-xs">
                 <table className="min-w-full text-left border-collapse">
                   <thead className="text-sm">
                     <tr className="bg-gray-800 text-gray-300">
@@ -586,38 +586,52 @@ const hasAnyPosition =
   {sortedClaims.map((claim, index) => (
     <tr
       key={index}
-      className="bg-[#060210] hover:bg-[#1a0f2e] cursor-pointer font-geist"
+      className="bg-[#060210] hover:bg-[#1a0f2e] cursor-pointer"
     >
       {/* Claim cell: clickable to navigate */}
       <td
         className="px-4 py-3"
         onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
       >
-        <div className="flex flex-wrap items-center gap-2 font-geist">
-          <span className="bg-[#0b0618] px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate">
-            <img src={claim.term.triple.subject.image} className="w-5 h-5 flex-shrink-0" />
-            <span className="truncate">{highlightMatch(claim.term.triple.subject.label, searchTerm)}</span>
-          </span>
-          <span className="max-w-[120px] truncate">{highlightMatch(claim.term.triple.predicate.label, searchTerm)}</span>
-          <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[150px] truncate">
-            {highlightMatch(claim.term.triple.object.label, searchTerm)}
-          </span>
-        </div>
+        <div className="flex flex-wrap items-center gap-2">
+  {/* Subject */}
+  <span
+    className="bg-[#1a1328] px-2 py-1 rounded flex items-center gap-1 max-w-[200px] truncate cursor-pointer hover:bg-[#2b1f45] transition-colors duration-200"
+  >
+    <img
+      src={claim.term.triple.subject.image}
+      className="w-5 h-5 flex-shrink-0"
+    />
+    <span className="truncate">
+      {highlightMatch(claim.term.triple.subject.label, searchTerm)}
+    </span>
+  </span>
+
+  {/* Predicate */}
+  <span className="text-xs">{highlightMatch(claim.term.triple.predicate.label, searchTerm)}</span>
+
+  {/* Object */}
+  <span
+    className="bg-[#1a1328] px-2 py-1 rounded max-w-[250px] truncate cursor-pointer hover:bg-[#2b1f45] transition-colors duration-200"
+  >
+    {highlightMatch(claim.term.triple.object.label, searchTerm)}
+  </span>
+</div>
       </td>
 
       {/* Market Cap */}
-      <td className="px-4 py-3 font-semibold font-geist">
+      <td className="px-4 py-3">
         {formatNumber(parseFloat(formatEther(BigInt(claim.total_market_cap))))} TRUST
       </td>
 
       {/* Support / Oppose Stats */}
-      <td className="px-4 py-3 text-blue-400 font-semibold">
+      <td className="px-4 py-3 text-blue-400">
         <div className="flex items-center gap-2">
           <img src="/user.png" className="w-4 h-4" />
           {formatNumber(claim.term.positions_aggregate.aggregate.count, "user")}
         </div>
       </td>
-      <td className="px-4 py-3 text-[#F19C03] font-semibold">
+      <td className="px-4 py-3 text-[#F19C03] ">
         <div className="flex items-center gap-2">
           <img src="/user-red.png" className="w-4 h-4" />
           {formatNumber(claim.counter_term.positions_aggregate.aggregate.count, "user")}
@@ -689,18 +703,18 @@ const hasAnyPosition =
                     {/* Market Cap */}
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-gray-400">Market Cap</span>
-                      <span className="font-semibold">
+                      <span className="">
                         {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
                       </span>
                     </div>
 
                     {/* Support / Oppose */}
                     <div className="flex justify-between text-sm mb-3">
-                      <div className="text-blue-400 font-semibold">
+                      <div className="text-blue-400">
                         Support: {formatNumber(claim.term.positions_aggregate.aggregate.count)}
                       </div>
 
-                      <div className="text-[#F19C03] font-semibold">
+                      <div className="text-[#F19C03]">
                         Oppose: {formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}
                       </div>
                     </div>
@@ -749,7 +763,7 @@ const hasAnyPosition =
                 >
                   {/* Statement */}
                   <div className="text-gray-300 mb-4 flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-xl bg-[#0b0618] px-2 py-1 rounded mr-2 max-w-[40%] truncate">
+                    <span className=" text-xl bg-[#0b0618] px-2 py-1 rounded mr-2 max-w-[40%] truncate">
                       {claim.term.triple.subject.label}
                     </span>
                     {claim.term.triple.predicate.label}
@@ -762,10 +776,10 @@ const hasAnyPosition =
 
                     {/* Support */}
                     <div className="flex-1 flex flex-col p-2 gap-1">
-                      <span className="text-blue-400 font-semibold">Support</span>
+                      <span className="text-blue-400">Support</span>
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold">{toFixed(formatEther(BigInt(claim.term.total_assets)))} TRUST</span>
-                        <div className="flex items-center gap-1 text-blue-400 font-semibold">
+                        <span className="">{toFixed(formatEther(BigInt(claim.term.total_assets)))} TRUST</span>
+                        <div className="flex items-center gap-1 text-blue-400">
                           <span>{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
                           <img src="/user.png" alt="User Icon" className="w-4 h-4" />
                         </div>
@@ -777,10 +791,10 @@ const hasAnyPosition =
 
                     {/* Oppose */}
                     <div className="flex-1 flex flex-col p-2 gap-1">
-                      <span className="text-[#F19C03] font-semibold">Oppose</span>
+                      <span className="text-[#F19C03]">Oppose</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[#F19C03]">{toFixed(formatEther(BigInt(claim.counter_term.total_assets)))} TRUST</span>
-                        <div className="flex items-center gap-1 text-[#F19C03] font-semibold">
+                        <span className="text-[#F19C03]">{toFixed(formatEther(BigInt(claim.counter_term.total_assets)))} TRUST</span>
+                        <div className="flex items-center gap-1 text-[#F19C03] ">
                           <span>{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
                           <img
                             src="/user-red.png"
@@ -794,7 +808,7 @@ const hasAnyPosition =
                   </div>
 
                   <div className="w-full h-5 bg-gray-700 rounded-lg overflow-hidden mt-2 relative">
-                    <div className="flex h-full text-white text-xs font-semibold">
+                    <div className="flex h-full text-white text-xs">
 
                       {supportPercent > 0 && (
                         <div
@@ -846,7 +860,7 @@ const hasAnyPosition =
 
                     {/* Total MarketCap */}
                     <div className="flex flex-col items-end text-gray-300 text-sm">
-                      <span className="font-semibold">Total Market Cap</span>
+                      <span className="">Total Market Cap</span>
                       <span className=" text-lg text-white">
                         {toFixed(
                           formatEther(
@@ -884,7 +898,7 @@ const hasAnyPosition =
 
 {/* Statement */}
 <div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center justify-center gap-2 text-sm">
-  <span className="font-bold bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-3 py-1.5 rounded inline-flex items-center gap-2 max-w-[200px] truncate">
+  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-3 py-1.5 rounded inline-flex items-center gap-2 max-w-[200px] truncate">
     <img
       src={activeClaim.term.triple.subject.image}
       alt="Claim Icon"
@@ -919,21 +933,23 @@ const hasAnyPosition =
       )}
     </button>
 
-    {/* Redeem Tab */}
+{/* Redeem Tab */}
 <button
-  className={`relative px-6 py-3 text-base font-medium ${
-    activeTab === "redeem"
-      ? "text-white"
-      : hasAnyPosition
-      ? "text-gray-400 hover:text-white cursor-pointer"
-      : "text-gray-600 cursor-not-allowed"
-  }`}
-  onClick={() => {
-    if (hasAnyPosition) setActiveTab("redeem");
-  }}
-  disabled={!hasAnyPosition}
+  className={`relative px-6 py-3 text-base font-medium transition-colors duration-200
+    ${hasAnyPosition 
+      ? activeTab === "redeem"
+        ? "text-white" 
+        : "text-gray-400 hover:text-white cursor-pointer"
+      : "text-gray-600 cursor-not-allowed pointer-events-none"
+    }`}
+  onClick={() => hasAnyPosition && setActiveTab("redeem")}
 >
   Redeem
+  {hasAnyPosition && activeTab === "redeem" && (
+    <span
+      className="absolute left-1/2 bottom-0 w-48 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
+    ></span>
+  )}
 </button>
 
   </div>
@@ -945,7 +961,7 @@ const hasAnyPosition =
   <div className="px-4 md:px-12">
 {/* Main Card: Active Position */}
 <div className="flex justify-center mb-4">
-  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 font-geist mt-4 w-[380px]">
+  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 mt-4 w-[380px]">
     
     <span className="text-gray-300 text-xs whitespace-nowrap">
       Your Active Position
@@ -953,12 +969,12 @@ const hasAnyPosition =
 
     <div className="flex items-center gap-2">
       <span
-        className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
+        className="bg-[#0A2D4D] border border-white text-white px-2 py-0.5 rounded-full text-[9px] cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
       >
         {opposeMode ? "Oppose" : "Support"}
       </span>
 
-<span className="text-lg whitespace-nowrap">
+<span className="text-xs whitespace-nowrap">
   {displayedShares > 0n
     ? `${formatTrust(displayedShares)} TRUST`
     : "No active position"}
@@ -1147,7 +1163,7 @@ const hasAnyPosition =
   <div className="px-4 md:px-12">
 {/* Main Card: Active Position */}
 <div className="flex justify-center mb-4">
-  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 font-geist mt-4 w-[380px]">
+  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-base flex items-center justify-between gap-6 mt-4 w-[380px]">
     
     <span className="text-gray-300 text-xs whitespace-nowrap">
       Your Active Position
@@ -1161,7 +1177,7 @@ const hasAnyPosition =
       </span>
 
   {/* Active Curve Amount */}
-  <span className="text-lg whitespace-nowrap">
+  <span className="text-xs whitespace-nowrap">
   {displayedShares > 0n
     ? `${formatTrust(displayedShares)} TRUST`
     : "No active position"}
@@ -1360,7 +1376,7 @@ const hasAnyPosition =
 
 {/* Back Button */}
 <button
-  className="absolute -top-1 pb-2 left-2 text-white font-extrabold text-2xl px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
+  className="absolute -top-1 pb-2 left-2 text-white text-2xl px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
   onClick={() => {
     setShowReviewDepositModal(false);
     setModalStep("review");
@@ -1371,9 +1387,9 @@ const hasAnyPosition =
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white font-bold text-base mt-2">Stake</h2>
+        <h2 className="text-white text-base mt-2">Stake</h2>
 <span
-  className="bg-[#0A2D4D] text-white border border-white text-xs font-semibold px-2 py-0.5 mt-2 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+  className="bg-[#0A2D4D] text-white border border-white text-xs px-2 py-0.5 mt-2 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
 >
   {opposeMode ? "Oppose" : "Support"}
 </span>
@@ -1388,18 +1404,18 @@ const hasAnyPosition =
         <>
           <div className="flex flex-col items-center my-6">
             <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white font-semibold">Review...</span>
+            <span className="text-white">Review...</span>
           </div>
 
           <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-            <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
-            <span className="text-white font-bold">
+            <span className="text-gray-300 text-sm">Total Cost</span>
+            <span className="text-white">
               {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
             </span>
           </div>
 
 <button
-  className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl font-semibold text-sm"
+  className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl text-sm"
   onClick={() => {
     handleClaimAction("deposit");
     setShowModal(false);
@@ -1415,16 +1431,16 @@ const hasAnyPosition =
         <>
           <div className="flex flex-col items-center my-6">
             <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white font-semibold">Awaiting...</span>
+            <span className="text-white">Awaiting...</span>
           </div>
 
           <div className="flex items-center justify-center gap-2 bg-[#110A2B] border border-[#393B60] rounded-2xl px-4 py-2 mx-4">
             <img src="/wallet.png" alt="Wallet Icon" className="w-5 h-5" />
-            <span className="text-white font-semibold text-sm">
+            <span className="text-white text-sm">
               Awaiting wallet approval
             </span>
             <div className="relative group">
-              <span className="text-gray-400 font-bold cursor-pointer text-sm">
+              <span className="text-gray-400 cursor-pointer text-sm">
                 ?
               </span>
               <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -1439,15 +1455,15 @@ const hasAnyPosition =
       {modalStep === "success" && (
         <div className="flex flex-col items-center my-8">
           <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">✓</span>
+            <span className="text-white text-2xl">✓</span>
           </div>
 
-          <span className="text-white font-semibold mb-6">
+          <span className="text-white mb-6">
             Successfully {opposeMode ? "opposed" : "supported"}!
           </span>
 
           <button
-            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
+            className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
             onClick={() => {
               setShowReviewDepositModal(false);
               setModalStep("review");
@@ -1462,15 +1478,15 @@ const hasAnyPosition =
       {modalStep === "failed" && (
         <div className="flex flex-col items-center my-8">
           <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">✕</span>
+            <span className="text-white text-2xl">✕</span>
           </div>
 
-          <span className="text-white font-semibold mb-6">
+          <span className="text-white mb-6">
             Transaction Failed
           </span>
 
           <button
-            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
+            className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
             onClick={() => setModalStep("review")}
           >
             Try Again
@@ -1488,7 +1504,7 @@ const hasAnyPosition =
 
       {/* Close Button */}
       <button
-        className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl font-bold"
+        className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl"
         onClick={() => setShowReviewRedeemModal(false)}
       >
         ×
@@ -1496,8 +1512,8 @@ const hasAnyPosition =
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white font-bold text-base">Stake</h2>
-        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm font-semibold">
+        <h2 className="text-white text-base">Stake</h2>
+        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm">
           Support
         </span>
       </div>
@@ -1510,23 +1526,23 @@ const hasAnyPosition =
       {/* Centered Spinner + Label */}
       <div className="flex flex-col items-center my-6">
         <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2 animate-spin" />
-        <span className="text-white font-semibold">Review...</span>
+        <span className="text-white">Review...</span>
       </div>
 
 {/* Total Cost */}
 <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-            <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
-            <span className="text-white font-bold">
+            <span className="text-gray-300 text-sm">Total Cost</span>
+            <span className="text-white">
               {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
             </span>
           </div>
 
       {/* Redeem TRUST Label */}
-      <span className="text-gray-300 font-semibold mb-2 block">Redeem TRUST from Claim</span>
+      <span className="text-gray-300 mb-2 block">Redeem TRUST from Claim</span>
 
 {/* Statement */}
 <div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center gap-2">
-  <span className="font-bold bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded inline-flex items-center gap-2 max-w-[150px] truncate">
+  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded inline-flex items-center gap-2 max-w-[150px] truncate">
     <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
     {activeClaim.term.triple.subject.label}
   </span>
@@ -1550,7 +1566,7 @@ const hasAnyPosition =
 </div>
 {/* Redeem / Deposit Button */}
 <button
-  className="w-full bg-white text-black py-2.5 rounded-3xl font-semibold text-sm"
+  className="w-full bg-white text-black py-2.5 rounded-3xl text-sm"
   onClick={() => handleClaimAction("redeem")}
 >
   Redeem
