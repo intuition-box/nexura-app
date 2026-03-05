@@ -96,7 +96,7 @@ export default function MyCampaign() {
     </button>
 
     <button
-      onClick={() => setLocation("/studio-dashboard/create-new-campaign")}
+      onClick={() => setLocation(`/studio-dashboard/create-new-campaign?edit=${campaign._id}`)}
     >
       <img src="/edit-campaign.png" alt="Edit Campaign" className="w-18 h-8 object-contain" />
     </button>

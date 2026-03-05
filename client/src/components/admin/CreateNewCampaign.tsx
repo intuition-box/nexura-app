@@ -83,6 +83,7 @@ const [publishedCampaign, setPublishedCampaign] = useState<any | null>(null);
 const [paymentTxHash, setPaymentTxHash] = useState(() => localStorage.getItem("nexura:studio-txhash") ?? "");
 const [paymentLoading, setPaymentLoading] = useState(false);
 const [isEditMode, setIsEditMode] = useState(false);
+const [campaignStatus, setCampaignStatus] = useState<string | null>(null);
 
 // Sync pendingTxHash from DB on mount, also redirect if hub hasn't been created
 useEffect(() => {
@@ -123,6 +124,7 @@ useEffect(() => {
       if (!found) return;
       setCampaignId(editId);
       setIsEditMode(true);
+      setCampaignStatus(found.status ?? null);
       setCampaignTitle(found.title ?? "");
       setCampaignName(found.description ?? found.nameOfProject ?? "");
       const s = parseDateTime(found.starts_at ?? "");
@@ -142,9 +144,9 @@ useEffect(() => {
           params: { id: editId },
         });
         const tagToType = (tag: string) => {
-          if (tag === "comment") return "Comment on our X post";
-          if (tag === "follow") return "Follow us on X";
-          if (tag === "join") return "Join Us On Discord";
+          if (tag === "comment" || tag === "comment-x") return "Comment on our X post";
+          if (tag === "follow" || tag === "follow-x") return "Follow us on X";
+          if (tag === "join" || tag === "join-discord") return "Join Us On Discord";
           if (tag === "portal") return "Check Out the Portal Claims";
           return "others";
         };
@@ -154,7 +156,7 @@ useEffect(() => {
           return "";
         };
         const tagToValidation = (tag: string) => {
-          if (tag === "join") return "Discord Auth";
+          if (tag === "join" || tag === "join-discord") return "Discord Auth";
           if (tag === "portal") return "Auto Verified";
           return "Manual Validation";
         };
@@ -1128,7 +1130,45 @@ const isActive =
   {/* ========================= */}
   {/* PUBLISH MODAL */}
   {/* ========================= */}
-  {showPublishModal && (
+  {showPublishModal && (isEditMode && campaignStatus === "Active" ? (
+    /* Quick confirm for updating an already-active campaign */
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-[#0d0d14] w-full max-w-md border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
+        <button onClick={() => setShowPublishModal(false)} className="absolute top-3 right-3 text-white/50 hover:text-white text-xl">✕</button>
+        <h2 className="text-lg font-bold text-white mb-2">Update Campaign</h2>
+        <p className="text-white/60 text-sm mb-4">Save your changes to this active campaign?</p>
+        <button
+          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+          onClick={async () => {
+            if (!campaignTitle || !campaignName) {
+              toast({ title: "Incomplete details", description: "Please fill in campaign name and title.", variant: "destructive" });
+              return;
+            }
+            if (tasks.length === 0) {
+              toast({ title: "No tasks", description: "Please add at least one task.", variant: "destructive" });
+              return;
+            }
+            setLoading(true);
+            try {
+              const fd = buildCampaignFormData(false);
+              await projectApiRequest({ method: "PATCH", endpoint: "/hub/save-campaign", formData: fd, params: { id: campaignId! } });
+              toast({ title: "Campaign updated!", description: "Your changes have been saved." });
+              setShowPublishModal(false);
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Failed to update campaign.";
+              toast({ title: "Update failed", description: msg, variant: "destructive" });
+            } finally {
+              setLoading(false);
+            }
+          }}
+        >
+          {loading ? <span className="flex items-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving...</span> : "Save Changes"}
+        </button>
+        <button onClick={() => setShowPublishModal(false)} className="mt-2 w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all">Cancel</button>
+      </div>
+    </div>
+  ) : (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
       <div className="bg-[#0d0d14] w-full max-w-md border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
@@ -1220,7 +1260,8 @@ const isActive =
       toast({ title: "No tasks", description: "Please add at least one task.", variant: "destructive" });
       return;
     }
-    if (!paymentTxHash.trim()) {
+    const needsPayment = !(isEditMode && campaignStatus === "Active");
+    if (needsPayment && !paymentTxHash.trim()) {
       toast({ title: "Payment required", description: "Please complete the 1000 TRUST payment before publishing.", variant: "destructive" });
       return;
     }
@@ -1231,20 +1272,50 @@ const isActive =
 
     setLoading(true);
     try {
-      const fd = buildCampaignFormData(false);
-      fd.append("txHash", paymentTxHash);
+      if (isEditMode && campaignId) {
+        // Editing an existing campaign — save changes first
+        const fd = buildCampaignFormData(false);
+        const params: Record<string, string> = { id: campaignId };
+        await projectApiRequest({
+          method: "PATCH",
+          endpoint: "/hub/save-campaign",
+          formData: fd,
+          params,
+        });
 
-      await projectApiRequest({
-        method: "POST",
-        endpoint: "/hub/create-campaign",
-        formData: fd,
-      });
+        if (campaignStatus === "Active") {
+          // Already published — just saved the update
+          toast({ title: "Campaign updated!", description: "Your changes have been saved." });
+        } else {
+          // Draft — publish it
+          await projectApiRequest({
+            method: "PATCH",
+            endpoint: "/hub/publish-campaign",
+            data: { txHash: paymentTxHash },
+            params: { id: campaignId },
+          });
+          toast({ title: "Campaign published!", description: "Your campaign is now live." });
+          localStorage.removeItem("nexura:studio-txhash");
+          projectApiRequest({ method: "PATCH", endpoint: "/hub/save-payment-hash", data: { txHash: null } }).catch(() => {});
+          setPaymentTxHash("");
+        }
+      } else {
+        // Brand-new campaign
+        const fd = buildCampaignFormData(false);
+        fd.append("txHash", paymentTxHash);
 
-      toast({ title: "Campaign published!", description: "Your campaign is now live." });
-      localStorage.removeItem("nexura:studio-txhash");
-      // Clear hash from DB
-      projectApiRequest({ method: "PATCH", endpoint: "/hub/save-payment-hash", data: { txHash: null } }).catch(() => {});
-      setPaymentTxHash("");
+        await projectApiRequest({
+          method: "POST",
+          endpoint: "/hub/create-campaign",
+          formData: fd,
+        });
+
+        toast({ title: "Campaign published!", description: "Your campaign is now live." });
+        localStorage.removeItem("nexura:studio-txhash");
+        projectApiRequest({ method: "PATCH", endpoint: "/hub/save-payment-hash", data: { txHash: null } }).catch(() => {});
+        setPaymentTxHash("");
+      }
+
       setPublishedCampaign({ title: campaignTitle, name: campaignName, rewardPool, coverImage: coverImagePreview ?? undefined });
       setShowPublishModal(false);
       setShowSuccessModal(true);
@@ -1255,9 +1326,9 @@ const isActive =
       setLoading(false);
     }
   }}
-  disabled={loading || !paymentTxHash}
+  disabled={loading || (!(isEditMode && campaignStatus === "Active") && !paymentTxHash)}
 >
-  {loading ? <span className="flex items-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Publishing...</span> : "Confirm & Publish"}
+  {loading ? <span className="flex items-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Publishing...</span> : isEditMode && campaignStatus === "Active" ? "Save Changes" : "Confirm & Publish"}
 </button>
 
         {/* Cancel Button */}
@@ -1270,7 +1341,7 @@ const isActive =
 
       </div>
     </div>
-  )}
+  ))}
 
   {/* ========================= */}
   {/* SUCCESS MODAL */}

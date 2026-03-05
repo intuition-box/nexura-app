@@ -62,7 +62,7 @@ const campaignQuestSchema = new Schema({
 	},
 	tag: {
 		type: String,
-		enum: ["like", "follow", "repost", "join", "portal", "message", "portal", "comment", "other"],
+		enum: ["like", "follow", "follow-x", "repost", "repost-x", "join", "join-discord", "portal", "message", "message-discord", "comment", "comment-x", "other"],
 		required: true
 	},
 	followers: {
