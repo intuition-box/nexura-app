@@ -46,6 +46,10 @@ const submissionSchema = new mongoose.Schema({
     ref: "hubs",
     required: true
   },
+  rejectedCount: {
+    type: Number,
+    default: 0
+  },
 }, { timestamps: true });
 
 export const submission = mongoose.model("submissions", submissionSchema);

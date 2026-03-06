@@ -78,6 +78,13 @@ const [campaignTasks, setCampaignTasks] = useState<TASKS[]>([]);
     }
   };
 
+  // Fetch submissions when the component mounts or when switching to the submissions tab
+  useEffect(() => {
+    if (activeTab === "campaignSubmissions") {
+      fetchTasks();
+    }
+  }, [activeTab]);
+
   const fetchAdmins = async () => {
     try {
       setAdminsLoading(true);

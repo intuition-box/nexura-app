@@ -79,9 +79,15 @@ export default function SharedAccessCredentials() {
 
       setLocation("/projects/create/the-hub");
     } catch (error: any) {
-      console.log(error);
+      console.error(error);
       setCreating(false);
-      toast({ title: "Error", description: error || "Failed to sign up.", variant: "destructive" });
+      const msg: string = error?.message || "Failed to sign up.";
+      if (msg.toLowerCase().includes("already exists")) {
+        toast({ title: "Account already exists", description: "Redirecting you to sign in…", variant: "destructive" });
+        setTimeout(() => setLocation("/projects/create/signin-to-hub"), 1500);
+      } else {
+        toast({ title: "Error", description: msg, variant: "destructive" });
+      }
     }
   }
 

@@ -15,7 +15,7 @@ type Quest = {
   _id: string;
   quest: string;
   reward: number;
-  tag: "like" | "follow" | "join" | "repost" | "comment" | "portal";
+  tag: string;
   link: string;
   status: string;
   guildId?: string;
@@ -128,7 +128,9 @@ export default function CampaignEnvironment() {
 
   // Open quest links
   const markQuestAsVisited = (quest: Quest) => {
-    window.open(quest.link, "_blank");
+    let url = quest.link?.trim() || "#";
+    if (url !== "#" && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+    window.open(url, "_blank");
 
     if (!visitedQuests.includes(quest._id)) setVisitedQuests([...visitedQuests, quest._id]);
     if (quest.status === "retry") {
@@ -231,7 +233,7 @@ export default function CampaignEnvironment() {
           //     throw new Error(`Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`);
           //   }
           // } else 
-          if (["join", "message"].includes(quest.tag)) {
+          if (["join", "message", "join-discord", "message-discord"].includes(quest.tag)) {
             if (!user?.socialProfiles.discord.connected) {
               throw new Error("discord not connected yet, go to profile to connect");
             }
@@ -282,7 +284,7 @@ export default function CampaignEnvironment() {
         throw new Error("Kindly complete quests to claim reward");
       }
 
-      if (trustClaimed < 4000) {
+      if (campaignAddress && trustClaimed < 4000) {
         await claimCampaignOnchainReward({ campaignAddress, userId });
       }
 
@@ -378,7 +380,7 @@ export default function CampaignEnvironment() {
         <div className="space-y-4 sm:space-y-6">
           {quests.length > 0 ? (
             quests.map((quest) => {
-              const requiresProof = ["comment", "follow"].includes(quest.tag);
+              const requiresProof = ["comment", "follow", "comment-x", "follow-x", "repost-x"].includes(quest.tag);
               const visited = visitedQuests.includes(quest._id);
               const claimed = quest.done || claimedQuests.includes(quest._id);
               const pending = quest.status === "pending" || pendingQuests.includes(quest._id);
@@ -426,12 +428,20 @@ export default function CampaignEnvironment() {
                         </button>
                       )}
                       {visited && !claimed && requiresProof && !pending && (
-                        <button
-                          onClick={() => setExpandedQuestId(isExpanded ? null : quest._id)}
-                          className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold bg-purple-700 hover:bg-purple-800"
-                        >
-                          Submit Proof
-                        </button>
+                        <>
+                          <button
+                            onClick={() => markQuestAsVisited(quest)}
+                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/20"
+                          >
+                            View Link
+                          </button>
+                          <button
+                            onClick={() => setExpandedQuestId(isExpanded ? null : quest._id)}
+                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-700 hover:bg-purple-800"
+                          >
+                            Submit Proof
+                          </button>
+                        </>
                       )}
 
                       {claimed && (

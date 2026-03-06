@@ -73,7 +73,7 @@ export async function apiRequestV2(
 
   const isFormData = data instanceof FormData;
 
-  const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+  const res = await fetch(`${BACKEND_URL || ""}${endpoint}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,

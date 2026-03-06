@@ -16,6 +16,9 @@ import { authenticateUser2 } from "@/middlewares/auth.middleware";
 const router = Router();
 
 router
+	.get("/server-time", (_req, res) => {
+		res.json({ serverTime: Date.now() });
+	})
 	.use("/", appRoutes)
 	.use("/admin", adminRoutes)
 	.get("/ecosystem-quests", authenticateUser2, fetchEcosystemDapps)

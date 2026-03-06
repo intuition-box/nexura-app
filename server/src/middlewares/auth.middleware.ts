@@ -65,10 +65,15 @@ export const authenticateHubAdmin2 = async (req: GlobalRequest, res: GlobalRespo
 
     const token = authHeader.split(" ")[1]!;
 
-    const loggedOut = await REDIS.get(`logout:${token}`);
-    if (loggedOut) {
-      res.status(BAD_REQUEST).json({ error: "admin is logged out, kindly login again" });
-      return;
+    // Redis logout check — non-fatal if Redis is unreachable
+    try {
+      const loggedOut = await REDIS.get(`logout:${token}`);
+      if (loggedOut) {
+        res.status(BAD_REQUEST).json({ error: "admin is logged out, kindly login again" });
+        return;
+      }
+    } catch (redisErr) {
+      logger.warn("Redis unavailable in authenticateHubAdmin2, skipping logout check");
     }
 
     const { id } = await JWT.verify(token) as decodedDataType;
@@ -87,7 +92,8 @@ export const authenticateHubAdmin2 = async (req: GlobalRequest, res: GlobalRespo
 		next();
 	} catch (error: any) {
 		logger.error(error);
-		if (error?.trim() === "jwt expired") {
+		const msg = typeof error === "string" ? error.trim() : error?.message ?? "";
+		if (msg === "jwt expired") {
 			res.status(BAD_REQUEST).json({ error: "Token has expired, kindly re-login" });
 			return
 		}
@@ -108,10 +114,15 @@ export const authenticateUser = async (req: GlobalRequest, res: GlobalResponse, 
 
     const token = authHeader.split(" ")[1]!;
 
-    const userLoggedOut = await REDIS.get(`logout:${token}`);
-    if (userLoggedOut) {
-      res.status(BAD_REQUEST).json({ error: "user is logged out, kindly login again" });
-      return;
+    // Redis logout check — non-fatal if Redis is unreachable
+    try {
+      const userLoggedOut = await REDIS.get(`logout:${token}`);
+      if (userLoggedOut) {
+        res.status(BAD_REQUEST).json({ error: "user is logged out, kindly login again" });
+        return;
+      }
+    } catch (redisErr) {
+      logger.warn("Redis unavailable in authenticateUser, skipping logout check");
     }
 
 		const { id } = await JWT.verify(token) as decodedDataType;
@@ -134,8 +145,9 @@ export const authenticateUser = async (req: GlobalRequest, res: GlobalResponse, 
 		next();
 	} catch (error: any) {
 		logger.error(error);
-		if (error?.trim() === "jwt expired") {
-			res.status(BAD_REQUEST).json({ error: "Token has expired, kindly re-login, kindly login again" });
+		const msg = typeof error === "string" ? error.trim() : error?.message ?? "";
+		if (msg === "jwt expired") {
+			res.status(BAD_REQUEST).json({ error: "Token has expired, kindly re-login" });
 			return
 		}
 

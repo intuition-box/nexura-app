@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
@@ -94,27 +94,75 @@ export default function Campaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([TASKS_CARD]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadingCampaign, setLoadingCampaign] = useState<string | null>(null);
+  const [serverOffset, setServerOffset] = useState<number>(0);
+  const [countdowns, setCountdowns] = useState<Record<string, string>>({});
 
   const { toast } = useToast();
 
-  // Fetch campaigns initially and every 5 minutes
+  // Fetch server time offset once
   useEffect(() => {
-    const fetchCampaigns = async () => {
+    const fetchServerTime = async () => {
       try {
-        const res = await apiRequestV2("GET", `/api/campaigns`);
-        setCampaigns(res.campaigns);
-        setIsLoading(false);
-      } catch (err: any) {
-        console.error(err);
-        toast({ title: "Error", description: err.message, variant: "destructive" });
-        setIsLoading(false);
+        const res = await apiRequestV2("GET", `/api/server-time`);
+        setServerOffset(res.serverTime - Date.now());
+      } catch {
+        // fallback: assume no offset
       }
     };
-
-    fetchCampaigns();
-    const interval = setInterval(fetchCampaigns, 300000);
-    return () => clearInterval(interval);
+    fetchServerTime();
   }, []);
+
+  const fetchCampaignsData = useCallback(async () => {
+    try {
+      const res = await apiRequestV2("GET", `/api/campaigns`);
+      setCampaigns(res.campaigns);
+      setIsLoading(false);
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  // Fetch campaigns initially and every 5 minutes
+  useEffect(() => {
+    fetchCampaignsData();
+    const interval = setInterval(fetchCampaignsData, 300000);
+    return () => clearInterval(interval);
+  }, [fetchCampaignsData]);
+
+  // Countdown ticker for scheduled campaigns
+  useEffect(() => {
+    const scheduled = campaigns.filter((c) => c.status === "Scheduled" && c.starts_at);
+    if (scheduled.length === 0) return;
+
+    const tick = () => {
+      const now = Date.now() + serverOffset;
+      const newCountdowns: Record<string, string> = {};
+      let anyExpired = false;
+
+      for (const c of scheduled) {
+        const diff = new Date(c.starts_at!).getTime() - now;
+        if (diff <= 0) {
+          anyExpired = true;
+          newCountdowns[c._id] = "Starting...";
+        } else {
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          newCountdowns[c._id] = d > 0 ? `${d}d ${h}h ${m}m ${s}s` : h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+        }
+      }
+
+      setCountdowns(newCountdowns);
+      if (anyExpired) fetchCampaignsData();
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [campaigns, serverOffset, fetchCampaignsData]);
 
   const goToCampaign = async (campaign: Campaign, active: boolean) => {
     if (!active) return;
@@ -142,7 +190,6 @@ export default function Campaigns() {
     }
   };
 
-  const now = new Date();
   const allCampaigns = [...campaigns];
 
   const activeCampaigns = allCampaigns.filter((c) => c.status === "Active");
@@ -156,8 +203,6 @@ export default function Campaigns() {
     } catch {
       metadata = {};
     }
-
-    const status = isActive ? "Active" : "Coming Soon";
 
     const starts_atFormatted = campaign.starts_at
       ? new Date(campaign.starts_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })
@@ -182,17 +227,20 @@ export default function Campaigns() {
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-          {/* Status Badge */}
+          {/* Status Badge / Countdown */}
           <div className="absolute top-2 right-2">
-            <Badge
-              className={
-                isActive
-                  ? "bg-green-500/20 text-green-400 border border-green-500/30 text-[0.65rem] sm:text-xs"
-                  : "bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[0.65rem] sm:text-xs"
-              }
-            >
-              {status}
-            </Badge>
+            {isActive ? (
+              <Badge className="bg-green-500/20 text-green-400 border border-green-500/30 text-[0.65rem] sm:text-xs">
+                Active
+              </Badge>
+            ) : (
+              <div className="bg-black/60 backdrop-blur-sm border border-purple-500/30 rounded-lg px-2 py-1 flex items-center gap-1.5">
+                <Clock className="w-3 h-3 text-purple-400 animate-pulse" />
+                <span className="text-purple-300 text-[0.6rem] sm:text-xs font-mono font-semibold">
+                  {countdowns[campaign._id] || "Loading..."}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Category */}
@@ -269,7 +317,7 @@ export default function Campaigns() {
               </>
             ) : (
               <>
-                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Coming Soon
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Starts in {countdowns[campaign._id] || "..."}
               </>
             )}
           </Button>

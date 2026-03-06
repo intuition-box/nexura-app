@@ -6,7 +6,8 @@ import { TASKS } from "../../types/admin";
 export const StatsOverview = ({ tasks }: { tasks: TASKS[] }) => {
     const totalPending = tasks.filter(task => task.status === "pending").length;
     const approvedToday = tasks.filter(task => task.status === "done").length;
-    const rejectedToday = tasks.filter(task => task.status === "retry").length;
+    // Count total historical rejections (includes tasks later re-approved)
+    const rejectedToday = tasks.reduce((sum, task) => sum + ((task as any).rejectedCount || (task.status === "retry" ? 1 : 0)), 0);
     const totalProcessed = approvedToday + rejectedToday;
     const totalSubmissions = tasks.length;
 

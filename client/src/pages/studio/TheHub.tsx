@@ -7,7 +7,7 @@ import { Input } from "../../components/ui/input";
 import { Link, useLocation } from "wouter";
 import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
-import { projectApiRequest, storeProjectSession, base64ToBlob } from "../../lib/projectApi";
+import { projectApiRequest, storeProjectSession, getStoredProjectToken, getStoredProjectInfo, base64ToBlob } from "../../lib/projectApi";
 import { useToast } from "../../hooks/use-toast";
 
 export default function TheHub() {
@@ -55,6 +55,17 @@ export default function TheHub() {
       }
 
       await projectApiRequest({ method: "POST", endpoint: `/hub/create-hub`, formData: fd });
+
+      // Update stored project session with hub name and logo
+      const token = getStoredProjectToken();
+      const existingInfo = getStoredProjectInfo() ?? {};
+      if (token) {
+        storeProjectSession(token, {
+          ...existingInfo,
+          name: hubName.trim(),
+          logo: imagePreview ?? "",
+        });
+      }
 
       // setLocation("/connect-discord");
       setLocation("/studio-dashboard");

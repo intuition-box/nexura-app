@@ -29,8 +29,6 @@ export const toFixed = (num: string) => {
 export default function PortalClaims() {
   const { user } = useAuth();
   const [_, setLocation] = useLocation();
-  const [linearPosition, setLinearPosition] = useState<Position | null>(null);
-const [exponentialPosition, setExponentialPosition] = useState<Position | null>(null);
   const [view, setView] = useState("list");
   const [sortOption, setSortOption] = useState('{"total_market_cap":"desc"}');
   const [sortDirection, setSortDirection] = useState("desc");
@@ -69,8 +67,6 @@ const [actionState, setActionState] = useState<Record<string, "none" | "supporte
   const saved = localStorage.getItem("actionState");
   return saved ? JSON.parse(saved) : {};
 });
-
-
  const [userSharesByCurve, setUserSharesByCurve] = useState<{
   support: { linear: bigint; exponential: bigint };
   oppose: { linear: bigint; exponential: bigint };
@@ -78,6 +74,8 @@ const [actionState, setActionState] = useState<Record<string, "none" | "supporte
   support: { linear: 0n, exponential: 0n },
   oppose: { linear: 0n, exponential: 0n },
 });
+const [supportShares, setSupportShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
+const [opposeShares, setOpposeShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
 
 // Whenever state changes, we save it
 useEffect(() => {
@@ -133,7 +131,57 @@ const highlightMatch = (text: string, term: string) => {
 
   const LIMIT = 50;
 
-  
+//   // ----------------- Utility Function -----------------
+// const fetchUserPositionsForClaim = (claim: Claim, user: User) => {
+//   if (!user) return { positions: [], sharesByCurve: { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } } };
+
+//   const positions: Position[] = [];
+
+//   // --- Support ---
+//   claim.term.vaults?.forEach((vault) => {
+//     (vault.userPosition ?? []).forEach((p) => {
+//       positions.push({
+//         account: p.account_id,
+//         shares: p.shares,
+//         curve: vault.curve_id,
+//         direction: "support",
+//       });
+//       console.log("SUPPORT POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
+//     });
+//   });
+
+//   // --- Oppose ---
+//   claim.counter_term.vaults?.forEach((vault) => {
+//     (vault.userPosition ?? []).forEach((p) => {
+//       positions.push({
+//         account: p.account_id,
+//         shares: p.shares,
+//         curve: vault.curve_id,
+//         direction: "oppose",
+//       });
+//       console.log("OPPOSE POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
+//     });
+//   });
+
+//   // Compute shares by curve
+//   const sharesByCurve = positions.reduce(
+//     (acc, p) => {
+//       const s = BigInt(p.shares ?? 0);
+//       if (p.direction === "support") {
+//         p.curve === "1" ? (acc.support.linear += s) : (acc.support.exponential += s);
+//       } else {
+//         p.curve === "1" ? (acc.oppose.linear += s) : (acc.oppose.exponential += s);
+//       }
+//       return acc;
+//     },
+//     { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } }
+//   );
+
+//   console.log(`Normalized user positions for claim: ${claim.id}`, positions);
+//   console.log(`Shares by curve for claim: ${claim.id}`, sharesByCurve);
+
+//   return { positions, sharesByCurve };
+// };
 
 const loadMore = async () => {
   if (loading || !hasMore) return;
@@ -157,75 +205,26 @@ const loadMore = async () => {
       return;
     }
 
-    if (!claims?.length) {
+if (claims.length > 0) {
+  // const { positions, sharesByCurve } = fetchUserPositionsForClaim(claims[0], user);
+  setUserPositions(positions);
+  setUserSharesByCurve(userSharesByCurve);
+  console.log("Updated userPositions and userSharesByCurve state");
+}
+    // Handle pagination
+    if (claims.length === 0 || claims.length < LIMIT) {
       setHasMore(false);
-      return;
+      console.log("No more claims to load, hasMore set to false");
+    } else {
+      setOffset(prev => prev + claims.length);
+      console.log(`Incrementing offset by ${claims.length}, new offset: ${offset + claims.length}`);
     }
-
-    const fetchedClaim = claims[0]; // using first claim for now
-
-    // --- Normalize positions ---
-    const normalizePositionsForClaim = (claim: Claim, user: User) => {
-      if (!user) return { positions: [], sharesByCurve: { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } } };
-
-      const positions: Position[] = [];
-
-      // Support
-      claim.term.vaults?.forEach(vault => {
-        positions.push(
-          ...(vault.userPosition ?? []).map(p => ({
-            ...p,
-            direction: "support",
-            curve_id: Number(vault.curve_id),
-            account: { id: p.account_id, label: p.account_id, image: user.image ?? null },
-          }))
-        );
-      });
-
-      // Oppose
-      claim.counter_term.vaults?.forEach(vault => {
-        positions.push(
-          ...(vault.userPosition ?? []).map(p => ({
-            ...p,
-            direction: "oppose",
-            curve_id: Number(vault.curve_id),
-            account: { id: p.account_id, label: p.account_id, image: user.image ?? null },
-          }))
-        );
-      });
-
-      // Compute shares by curve
-      const sharesByCurve = positions.reduce(
-        (acc, p) => {
-          const shares = BigInt(p.shares ?? 0);
-          if (p.direction === "support") {
-            if (p.curve_id === 1) acc.support.linear += shares;
-            else if (p.curve_id === 2) acc.support.exponential += shares;
-          } else if (p.direction === "oppose") {
-            if (p.curve_id === 1) acc.oppose.linear += shares;
-            else if (p.curve_id === 2) acc.oppose.exponential += shares;
-          }
-          return acc;
-        },
-        { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } }
-      );
-
-      return { positions, sharesByCurve };
-    };
-
-    setUserPositions(positions);
-    setUserSharesByCurve(sharesByCurve);
-
-    console.log("Normalized positions and sharesByCurve:", positions, sharesByCurve);
-
-    // Pagination
-    if (claims.length < LIMIT) setHasMore(false);
-    else setOffset(prev => prev + claims.length);
 
   } catch (err) {
     console.error("Failed to load positions:", err);
   } finally {
     setLoading(false);
+    // console.log("Loading finished, loading state set to false");
   }
 };
 
@@ -312,32 +311,49 @@ useEffect(() => {
   }
 }, [showModal]);
 
+const formatTrust = (shares: bigint, decimals = 18, precision = 2) => {
+  const divisor = 10n ** BigInt(decimals);
+  const formatted = Number(shares) / Number(divisor);
+  return formatted.toFixed(precision);
+};
 
   // ---------------- Handlers ----------------
 const handleSupportClick = (claim: Claim) => {
   if (!user) return;
 
-  // Filter support positions for this claim
-  const supportPositions = userPositions.filter(p => p.direction === "support");
-
-  const linear = supportPositions.find(p => p.curve_id === 1) ?? null;
-  const exponential = supportPositions.find(p => p.curve_id === 2) ?? null;
-
-  console.log("Support Linear:", linear ?? "No Position Found");
-  console.log("Support Exponential:", exponential ?? "No Position Found");
-
-  // Save positions in state so modal can read them
-  setLinearPosition(linear);
-  setExponentialPosition(exponential);
-
-  // Default active curve (linear)
-  setActivePosition(linear?.shares ?? 0n);
-
   setActiveClaim(claim);
+  setTermId(claim.term.id);
+  setOpposeMode(false);
+  setTransactionAmount("");
+
+  let linear = 0n;
+  let exponential = 0n;
+
+  claim.term.vaults?.forEach((vault) => {
+    const curveId = String(vault.curve_id).trim();
+
+    (vault.userPosition ?? []).forEach((p) => {
+      if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
+        const shares = BigInt(p.shares);
+        if (curveId === "1") linear += shares;
+        if (curveId === "2") exponential += shares;
+      }
+    });
+  });
+
+  console.log("Support Linear:", linear.toString(), "Exponential:", exponential.toString());
+
+  setSupportShares({ linear, exponential });
+
+  // Set active position to the currently toggled curve
+  setActivePosition(isToggled ? exponential : linear);
+
   setShowModal(true);
 };
 
 const handleOpposeClick = (claim: Claim) => {
+  if (!user) return;
+
   setActiveClaim(claim);
   setTermId(claim.counter_term.id);
   setTransactionMode("redeem");
@@ -345,18 +361,34 @@ const handleOpposeClick = (claim: Claim) => {
   setOpposeMode(true);
   setTransactionAmount("");
 
-    if (!user) return;
+  let linear = 0n;
+  let exponential = 0n;
 
-  const opposePositions = userPositions.filter(p => p.direction === "oppose" && p.curve_id);
+  claim.counter_term.vaults?.forEach((vault) => {
+    const curveId = String(vault.curve_id).trim();
 
-  const linear = opposePositions.find(p => p.curve_id === 1);
-  const exponential = opposePositions.find(p => p.curve_id === 2);
+    (vault.userPosition ?? []).forEach((p) => {
+      if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
+        const shares = BigInt(p.shares);
+        if (curveId === "1") linear += shares;
+        if (curveId === "2") exponential += shares;
+      }
+    });
+  });
 
-  console.log("Oppose Linear:", linear ?? "No Position Found");
-  console.log("Oppose Exponential:", exponential ?? "No Position Found");
+  console.log("Oppose Linear:", linear.toString(), "Exponential:", exponential.toString());
+
+  setOpposeShares({ linear, exponential });
+
+  // Set active position to currently toggled curve
+  setActivePosition(isToggled ? exponential : linear);
 
   setShowModal(true);
 };
+
+const displayedShares = opposeMode
+  ? (isToggled ? opposeShares.exponential : opposeShares.linear)
+  : (isToggled ? supportShares.exponential : supportShares.linear);
 
     const handleCloseModal = () => {
       setActiveClaim(null);
@@ -364,8 +396,10 @@ const handleOpposeClick = (claim: Claim) => {
       setOpposeMode(false);
     };
 
+    const maxRedeemable = Number(displayedShares) / 10 ** 18;
+
 const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
-  if (!termId) return;
+  if (!termId || !user?.address) return;
 
   try {
     setModalStep("awaiting");
@@ -378,11 +412,20 @@ const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
       await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
     }
 
+    // Refresh wallet balance after transaction
+    const balance = await fetchWalletBalance(user.address);
+    setTTrustBalance(balance); // update state
+
     const actionText = opposeMode ? "opposed" : "supported";
 
     toast({
       title: "Success",
-      description: `Successfully ${actionText} a claim!`,
+      description: (
+        <div className="flex items-center gap-2">
+          <img src="/check.png" alt="success" className="w-4 h-4" />
+          <span>Successfully {actionText} a claim!</span>
+        </div>
+      ),
     });
 
     setActionState(prev => ({
@@ -390,13 +433,13 @@ const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
       [termId]: opposeMode ? "opposed" : "supported"
     }));
 
-     setTransactionAmount("");
+    setTransactionAmount("");
     setModalStep("success");
 
   } catch (err: any) {
     console.error(err);
 
-    setModalStep("failed"); 
+    setModalStep("failed");
 
     toast({
       title: "Error",
@@ -454,14 +497,15 @@ const sortClaims = (claims, option) => {
 };
 
 // Determine if the user has any active shares in the current direction
-const hasActivePosition = userPositions.some(
-  p => p.direction === (opposeMode ? "oppose" : "support") && BigInt(p.shares ?? 0) > 0n
-);
+const hasAnyPosition =
+  (supportShares.linear + supportShares.exponential > 0n) ||
+  (opposeShares.linear + opposeShares.exponential > 0n);
+  // console.log("Has any position:", hasAnyPosition, supportShares, opposeShares);
 
   return (
-    <div className="p-3 text-white font-geist">
+    <div className="text-white font-geist font-light tracking-wide">
       {/* Header */}
-      <h1 className="text-base font-semibold">Claims</h1>
+      <h1 className="text-base">Claims</h1>
 
       <p className="text-gray-400 mt-2 max-w-xl text-xs">
         Semantic statements, allowing anyone to claim anything about anything
@@ -535,15 +579,15 @@ const hasActivePosition = userPositions.some(
           {view === "list" && (
             <>
               {/* ================= DESKTOP TABLE ================= */}
-              <div className="hidden md:block overflow-x-auto w-full font-geist text-xs">
-                <table className="min-w-full text-left border-collapse">
-                  <thead className="text-sm">
+              <div className="hidden md:block overflow-x-auto w-full text-xs">
+                <table className="min-w-full text-left border-collapse font-geist font-light tracking-wide">
+                  <thead className="text-sm font-light tracking-wide">
                     <tr className="bg-gray-800 text-gray-300">
-                      <th className="px-16 py-2">Claims</th>
-                      <th className="px-4 py-2">Market Cap</th>
-                      <th className="px-4 py-2">Support</th>
-                      <th className="px-4 py-2">Oppose</th>
-                      <th className="px-16 py-2">Actions</th>
+                      <th className="px-16 py-2 font-light tracking-wide">Claims</th>
+                      <th className="px-4 py-2 font-light tracking-wide">Market Cap</th>
+                      <th className="px-4 py-2 font-light tracking-wide">Support</th>
+                      <th className="px-4 py-2 font-light tracking-wide">Oppose</th>
+                      <th className="px-16 py-2 font-light tracking-wide">Actions</th>
                     </tr>
                   </thead>
 
@@ -551,38 +595,56 @@ const hasActivePosition = userPositions.some(
   {sortedClaims.map((claim, index) => (
     <tr
       key={index}
-      className="bg-[#060210] hover:bg-[#1a0f2e] cursor-pointer font-geist"
+      className="bg-[#060210] hover:bg-[#1a0f2e] cursor-pointer"
     >
       {/* Claim cell: clickable to navigate */}
       <td
         className="px-4 py-3"
         onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
       >
-        <div className="flex flex-wrap items-center gap-2 font-geist">
-          <span className="bg-[#0b0618] px-2 py-1 rounded flex items-center gap-1 max-w-[150px] truncate">
-            <img src={claim.term.triple.subject.image} className="w-5 h-5 flex-shrink-0" />
-            <span className="truncate">{highlightMatch(claim.term.triple.subject.label, searchTerm)}</span>
-          </span>
-          <span className="max-w-[120px] truncate">{highlightMatch(claim.term.triple.predicate.label, searchTerm)}</span>
-          <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[150px] truncate">
-            {highlightMatch(claim.term.triple.object.label, searchTerm)}
-          </span>
-        </div>
+        <div className="flex flex-wrap items-center gap-2">
+{/* Subject */}
+<span
+  className="bg-[#22193A] px-2.5 py-1 rounded flex items-center gap-2 max-w-[240px] truncate cursor-pointer hover:bg-[#2f2350] transition-colors duration-200 text-sm sm:text-base"
+>
+  <img
+    src={claim.term.triple.subject.image}
+    className="w-5 h-5 flex-shrink-0"
+  />
+  <span className="truncate">
+    {highlightMatch(claim.term.triple.subject.label, searchTerm)}
+  </span>
+</span>
+
+{/* Predicate */}
+<span
+  className="text-xs px-1 cursor-pointer hover:text-white transition-colors duration-200"
+>
+  {highlightMatch(claim.term.triple.predicate.label, searchTerm)}
+</span>
+
+{/* Object */}
+<span
+  className="bg-[#22193A] px-2.5 py-1 rounded max-w-[280px] truncate cursor-pointer hover:bg-[#2f2350] transition-colors duration-200 text-sm sm:text-base"
+>
+  {highlightMatch(claim.term.triple.object.label, searchTerm)}
+</span>
+</div>
       </td>
 
       {/* Market Cap */}
-      <td className="px-4 py-3 font-semibold font-geist">
+      <td className="px-4 py-3">
         {formatNumber(parseFloat(formatEther(BigInt(claim.total_market_cap))))} TRUST
       </td>
 
       {/* Support / Oppose Stats */}
-      <td className="px-4 py-3 text-blue-400 font-semibold">
+      <td className="px-4 py-3 text-blue-400">
         <div className="flex items-center gap-2">
           <img src="/user.png" className="w-4 h-4" />
           {formatNumber(claim.term.positions_aggregate.aggregate.count, "user")}
         </div>
       </td>
-      <td className="px-4 py-3 text-[#F19C03] font-semibold">
+      <td className="px-4 py-3 text-[#F19C03] ">
         <div className="flex items-center gap-2">
           <img src="/user-red.png" className="w-4 h-4" />
           {formatNumber(claim.counter_term.positions_aggregate.aggregate.count, "user")}
@@ -631,201 +693,220 @@ const hasActivePosition = userPositions.some(
                 </table>
               </div>
 
-              {/* ================= MOBILE STACKED LIST ================= */}
-              <div className="md:hidden flex flex-col gap-4">
-                {sortedClaims.map((claim, index) => (
-                  <div
-                    key={index}
-                    className="bg-[#060210] border border-gray-700 rounded-xl p-4 hover:bg-[#1a0f2e] cursor-pointer"
-                    onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
-                  >
-                    {/* Claim Statement */}
-                    <div className="flex flex-wrap gap-2 mb-3 text-sm">
-                      <span className="bg-gray-700 px-2 py-1 rounded flex items-center gap-1">
-                        <img src={claim.term.triple.subject.image} className="w-5 h-5" />
-                        {claim.term.triple.subject.label}
-                      </span>
-                      {claim.term.triple.predicate.label}
-                      <span className="bg-gray-700 px-2 py-1 rounded">
-                        {claim.term.triple.object.label}
-                      </span>
-                    </div>
+{/* ================= MOBILE STACKED CARDS ================= */}
+<div className="md:hidden flex flex-col gap-3 px-1">
+  {sortedClaims.map((claim, index) => {
+    const supportCount = claim.term.positions_aggregate.aggregate.count;
+    const opposeCount = claim.counter_term.positions_aggregate.aggregate.count;
+    const total = supportCount + opposeCount;
+    const supportPercent = total ? Math.round((supportCount / total) * 100) : 0;
+    const opposePercent = total ? 100 - supportPercent : 0;
 
-                    {/* Market Cap */}
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-400">Market Cap</span>
-                      <span className="font-semibold">
-                        {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
-                      </span>
-                    </div>
-
-                    {/* Support / Oppose */}
-                    <div className="flex justify-between text-sm mb-3">
-                      <div className="text-blue-400 font-semibold">
-                        Support: {formatNumber(claim.term.positions_aggregate.aggregate.count)}
-                      </div>
-
-                      <div className="text-[#F19C03] font-semibold">
-                        Oppose: {formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-<div className="flex justify-center gap-2">
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      handleSupportClick(claim); // open modal
+    return (
+      <div
+        key={index}
+        className="bg-[#060210] border border-gray-700 rounded-xl p-3 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all cursor-pointer mx-auto w-full max-w-[95vw]"
+        onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
+      >
+        {/* Claim Statement */}
+{/* Claim Statement */}
+<div
+  className="mb-2 flex items-center gap-1 text-xs sm:text-sm w-full whitespace-nowrap overflow-hidden"
+  style={{ cursor: 'pointer' }}
+>
+  {/* Subject */}
+  <span
+    className="px-2 py-0.5 rounded truncate transition-colors duration-200"
+    style={{
+      flex: '0 0 20%',
+      minWidth: 0,
+      backgroundColor: '#1c122e', // slightly lighter than original
     }}
-    className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center"
+    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2b1f45')}
+    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1c122e')}
   >
-    <img src="/support.png" alt="Support" className="w-4 h-4" />
-  </button>
+    {claim.term.triple.subject.label}
+  </span>
 
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      handleOpposeClick(claim); // open modal
-    }}
-    className="h-8 w-8 bg-[#F19C03] rounded-lg flex items-center justify-center"
+  {/* Predicate */}
+  <span
+    className="truncate text-center"
+    style={{ flex: '0 0 10%', minWidth: 0 }}
   >
-    <img src="/oppose.png" alt="Oppose" className="w-4 h-4" />
-  </button>
+    {claim.term.triple.predicate.label}
+  </span>
+
+  {/* Object */}
+  <span
+    className="px-2 py-0.5 rounded truncate transition-colors duration-200"
+    style={{
+      flex: '0 0 20%',
+      minWidth: 0,
+      backgroundColor: '#1c122e', // match subject
+    }}
+    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2b1f45')}
+    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1c122e')}
+  >
+    {claim.term.triple.object.label}
+  </span>
 </div>
-                  </div>
-                ))}
-              </div>
+
+        {/* Support / Oppose Stats */}
+        <div className="flex justify-between items-center text-xs sm:text-sm mb-3 w-full">
+          <div className="flex flex-col" style={{ flex: '0 0 45%' }}>
+            <span className="text-blue-400">Support: {supportCount}</span>
+            <span className="text-blue-400 text-[10px]">{supportPercent}%</span>
+          </div>
+          <div className="flex flex-col items-end" style={{ flex: '0 0 45%' }}>
+            <span className="text-[#F19C03]">Oppose: {opposeCount}</span>
+            <span className="text-[#F19C03] text-[10px]">{opposePercent}%</span>
+          </div>
+        </div>
+
+        {/* Action Buttons & Market Cap */}
+        <div className="flex justify-between items-center gap-2 w-full flex-wrap">
+          <div className="flex gap-2" style={{ flex: '0 0 45%' }}>
+            <button
+              onClick={() => handleSupportClick(claim)}
+              className="flex-1 h-10 sm:h-12 bg-blue-600 text-white rounded-xl hover:bg-blue-700 hover:scale-105 transition-transform"
+            >
+              Support
+            </button>
+            <button
+              onClick={() => handleOpposeClick(claim)}
+              className="flex-1 h-10 sm:h-12 bg-[#F19C03] text-white rounded-xl hover:bg-[#e59400] hover:scale-105 transition-transform"
+            >
+              Oppose
+            </button>
+          </div>
+          <div className="text-gray-400 text-xs sm:text-sm text-right" style={{ flex: '0 0 45%' }}>
+            {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
+          </div>
+        </div>
+      </div>
+    );
+  })}
+</div>
             </>
           )}
                     {view === "grid" && (
-          <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-3">
-            {sortedClaims.map((claim) => {
-              const supportCount = Number(claim.term.positions_aggregate.aggregate.count);
-              const opposeCount = Number(claim.counter_term.positions_aggregate.aggregate.count);
+  <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-3">
+    {sortedClaims.map((claim) => {
+      const supportCount = Number(claim.term.positions_aggregate.aggregate.count);
+      const opposeCount = Number(claim.counter_term.positions_aggregate.aggregate.count);
+      const total = supportCount + opposeCount;
+      const supportPercent = total > 0 ? (supportCount / total) * 100 : 0;
+      const opposePercent = total > 0 ? (opposeCount / total) * 100 : 0;
 
-              const total = supportCount + opposeCount;
-              const supportPercent = total > 0 ? (supportCount / total) * 100 : 0;
-              const opposePercent = total > 0 ? (opposeCount / total) * 100 : 0;
-
-              return (
-                <div
-                  key={claim.term_id}
-                  className="bg-[#060210] border border-gray-700 rounded-xl p-4 hover:bg-[#2c0738] transition"
-                >
-                  {/* Statement */}
-                  <div className="text-gray-300 mb-4 flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-xl bg-[#0b0618] px-2 py-1 rounded mr-2 max-w-[40%] truncate">
-                      {claim.term.triple.subject.label}
-                    </span>
-                    {claim.term.triple.predicate.label}
-                    <span className="bg-[#0b0618] px-2 py-1 rounded ml-2 max-w-[40%] truncate">
-                      {claim.term.triple.object.label}
-                    </span>
-                  </div>
-                  {/* Stats Section */}
-                  <div className="flex overflow-hidden rounded-md">
-
-                    {/* Support */}
-                    <div className="flex-1 flex flex-col p-2 gap-1">
-                      <span className="text-blue-400 font-semibold">Support</span>
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold">{toFixed(formatEther(BigInt(claim.term.total_assets)))} TRUST</span>
-                        <div className="flex items-center gap-1 text-blue-400 font-semibold">
-                          <span>{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
-                          <img src="/user.png" alt="User Icon" className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Vertical Separator */}
-                    <div className="w-px bg-white"></div>
-
-                    {/* Oppose */}
-                    <div className="flex-1 flex flex-col p-2 gap-1">
-                      <span className="text-[#F19C03] font-semibold">Oppose</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[#F19C03]">{toFixed(formatEther(BigInt(claim.counter_term.total_assets)))} TRUST</span>
-                        <div className="flex items-center gap-1 text-[#F19C03] font-semibold">
-                          <span>{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
-                          <img
-                            src="/user-red.png"
-                            alt="User Icon"
-                            className="w-4 h-4"
-                            style={{ filter: "invert(51%) sepia(90%) saturate(4515%) hue-rotate(2deg) brightness(97%) contrast(96%)" }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full h-5 bg-gray-700 rounded-lg overflow-hidden mt-2 relative">
-                    <div className="flex h-full text-white text-xs font-semibold">
-
-                      {supportPercent > 0 && (
-                        <div
-                          className="bg-blue-600 flex items-center justify-center transition-all duration-500"
-                          style={{ width: `${supportPercent}%` }}
-                        >
-                          {supportPercent > 8 && `${supportPercent.toFixed(1)}%`}
-                        </div>
-                      )}
-
-                      {opposePercent > 0 && (
-                        <div
-                          className="bg-[#F19C03] flex items-center justify-center transition-all duration-500"
-                          style={{ width: `${opposePercent}%` }}
-                        >
-                          {opposePercent > 8 && `${opposePercent.toFixed(1)}%`}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-700">
-
-
-                      {/* Action Buttons */}
-<div className="flex justify-center gap-2">
-          <button
-            className="bg-blue-600 px-4 py-2 rounded-lg text-sm pointer-events-auto"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSupportClick(claim);
-            }}
-          >
-            Support
-          </button>
-
-          <button
-            className="bg-[#F19C03] px-4 py-2 rounded-lg text-sm pointer-events-auto"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpposeClick(claim);
-            }}
-          >
-            Oppose
-          </button>
-</div>
-
-                    {/* Total MarketCap */}
-                    <div className="flex flex-col items-end text-gray-300 text-sm">
-                      <span className="font-semibold">Total Market Cap</span>
-                      <span className=" text-lg text-white">
-                        {toFixed(
-                          formatEther(
-                            BigInt(claim.total_market_cap)
-                          )
-                        )} TRUST
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+      return (
+        <div
+          key={claim.term_id}
+          className="bg-[#060210] border border-gray-700 rounded-xl p-3 hover:bg-[#2c0738] transition cursor-pointer"
+          onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
+        >
+          {/* Statement */}
+          <div className="text-gray-300 mb-2 flex flex-wrap items-center gap-1 text-sm">
+            <span className="bg-[#0b0618] px-2 py-0.5 rounded max-w-[40%] truncate text-xs">
+              {claim.term.triple.subject.label}
+            </span>
+            <span className="text-xs">{claim.term.triple.predicate.label}</span>
+            <span className="bg-[#0b0618] px-2 py-0.5 rounded max-w-[40%] truncate text-xs">
+              {claim.term.triple.object.label}
+            </span>
           </div>
-            )}
+
+          {/* Stats Section */}
+          <div className="flex overflow-hidden rounded-md text-xs">
+            {/* Support */}
+            <div className="flex-1 flex flex-col p-1 gap-0.5">
+              <span className="text-blue-400">Support</span>
+              <div className="flex items-center justify-between">
+                <span>{toFixed(formatEther(BigInt(claim.term.total_assets)))} TRUST</span>
+                <div className="flex items-center gap-1 text-blue-400">
+                  <span>{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
+                  <img src="/user.png" alt="User Icon" className="w-3 h-3" />
+                </div>
+              </div>
+            </div>
+
+            {/* Vertical Separator */}
+            <div className="w-px bg-white"></div>
+
+            {/* Oppose */}
+            <div className="flex-1 flex flex-col p-1 gap-0.5">
+              <span className="text-[#F19C03]">Oppose</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[#F19C03]">{toFixed(formatEther(BigInt(claim.counter_term.total_assets)))} TRUST</span>
+                <div className="flex items-center gap-1 text-[#F19C03]">
+                  <span>{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
+                  <img
+                    src="/user-red.png"
+                    alt="User Icon"
+                    className="w-3 h-3"
+                    style={{ filter: "invert(51%) sepia(90%) saturate(4515%) hue-rotate(2deg) brightness(97%) contrast(96%)" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Percent Bar */}
+          <div className="w-full h-3 bg-gray-700 rounded-lg overflow-hidden mt-1 relative">
+            <div className="flex h-full text-white text-xs">
+              {supportPercent > 0 && (
+                <div
+                  className="bg-blue-600 flex items-center justify-center transition-all duration-500"
+                  style={{ width: `${supportPercent}%` }}
+                >
+                  {supportPercent > 8 && `${supportPercent.toFixed(1)}%`}
+                </div>
+              )}
+              {opposePercent > 0 && (
+                <div
+                  className="bg-[#F19C03] flex items-center justify-center transition-all duration-500"
+                  style={{ width: `${opposePercent}%` }}
+                >
+                  {opposePercent > 8 && `${opposePercent.toFixed(1)}%`}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-700 text-xs">
+            <div className="flex justify-center gap-2">
+              <button
+                className="bg-blue-600 px-3 py-1 rounded-lg text-xs pointer-events-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSupportClick(claim);
+                }}
+              >
+                Support
+              </button>
+              <button
+                className="bg-[#F19C03] px-3 py-1 rounded-lg text-xs pointer-events-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpposeClick(claim);
+                }}
+              >
+                Oppose
+              </button>
+            </div>
+
+            <div className="flex flex-col items-end text-gray-300">
+              <span>Total Market Cap</span>
+              <span className="text-white text-sm">
+                {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
 
           {/* Modal */}
   {showModal && activeClaim && (
@@ -835,11 +916,22 @@ const hasActivePosition = userPositions.some(
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-1 p-2 pb-1">
         <h2 className="text-white font text-base">Stake</h2>
-<span
-  className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
->
-  {opposeMode ? "Oppose" : "Support"}
-</span>
+<div className="flex items-center gap-1 group relative">
+  <span
+    className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+  >
+    {opposeMode ? "Oppose" : "Support"}
+  </span>
+
+  <span className="text-[10px] bg-gray-300 text-black rounded-full w-3 h-3 flex items-center justify-center cursor-default">
+    ?
+  </span>
+
+  {/* Tooltip */}
+  <div className="absolute left-0 top-5 w-56 text-[10px] bg-black text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+    Staking on a Triple signifies a belief in the relevancy of the respective Triple and enhances its discoverability in the Intuition system.
+  </div>
+</div>
       </div>
 
       {/* Subtitle */}
@@ -849,7 +941,7 @@ const hasActivePosition = userPositions.some(
 
 {/* Statement */}
 <div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center justify-center gap-2 text-sm">
-  <span className="font-bold bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-3 py-1.5 rounded inline-flex items-center gap-2 max-w-[200px] truncate">
+  <span className="bg-[#1a1230] hover:bg-[#241744] cursor-pointer transition-colors duration-200 px-3 py-1.5 rounded inline-flex items-center gap-2 max-w-[200px] truncate">
     <img
       src={activeClaim.term.triple.subject.image}
       alt="Claim Icon"
@@ -860,7 +952,7 @@ const hasActivePosition = userPositions.some(
 
   <span>{activeClaim.term.triple.predicate.label}</span>
 
-  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-3 py-1.5 rounded max-w-[200px] truncate">
+  <span className="bg-[#1a1230] hover:bg-[#241744] cursor-pointer transition-colors duration-200 px-3 py-1.5 rounded max-w-[200px] truncate">
     {activeClaim.term.triple.object.label}
   </span>
 </div>
@@ -884,17 +976,19 @@ const hasActivePosition = userPositions.some(
       )}
     </button>
 
-    {/* Redeem Tab */}
+{/* Redeem Tab */}
 <button
-  className={`relative px-6 py-3 text-base font-medium ${
-    activeTab === "redeem"
-      ? "text-white"
-      : "text-gray-400 hover:text-white cursor-pointer"
-  }`}
-  onClick={() => setActiveTab("redeem")}
+  className={`relative px-6 py-3 text-base font-medium transition-colors duration-200
+    ${hasAnyPosition 
+      ? activeTab === "redeem"
+        ? "text-white" 
+        : "text-gray-400 hover:text-white cursor-pointer"
+      : "text-gray-600 cursor-not-allowed pointer-events-none"
+    }`}
+  onClick={() => hasAnyPosition && setActiveTab("redeem")}
 >
   Redeem
-  {activeTab === "redeem" && (
+  {hasAnyPosition && activeTab === "redeem" && (
     <span
       className="absolute left-1/2 bottom-0 w-48 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
     ></span>
@@ -910,7 +1004,7 @@ const hasActivePosition = userPositions.some(
   <div className="px-4 md:px-12">
 {/* Main Card: Active Position */}
 <div className="flex justify-center mb-4">
-  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 font-geist mt-4 w-[380px]">
+  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 mt-4 w-[380px]">
     
     <span className="text-gray-300 text-xs whitespace-nowrap">
       Your Active Position
@@ -918,21 +1012,16 @@ const hasActivePosition = userPositions.some(
 
     <div className="flex items-center gap-2">
       <span
-        className="bg-[#0A2D4D] border border-white text-[7px] px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
-      >
-        {opposeMode ? "Oppose" : "Support"}
-      </span>
+  className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+>
+  {opposeMode ? "Oppose" : "Support"}
+</span>
 
-  {/* Active Curve Amount */}
-  <span className="text-lg whitespace-nowrap">
-    {isToggled
-      ? exponentialPosition
-        ? toFixed(parseFloat(formatEther(BigInt(exponentialPosition.shares ?? 0))))
-        : "No Position Found"
-      : linearPosition
-      ? toFixed(parseFloat(formatEther(BigInt(linearPosition.shares ?? 0))))
-      : "No Position Found"}{" "}
-  </span>
+<span className="text-xs whitespace-nowrap">
+  {displayedShares > 0n
+    ? `${formatTrust(displayedShares)} TRUST`
+    : "No active position"}
+</span>
     </div>
 
   </div>
@@ -975,17 +1064,21 @@ const hasActivePosition = userPositions.some(
     </span>
   </div>
 
-  {/* Toggle */}
-  <label className="relative inline-block w-10 h-5 cursor-pointer">
-    <input
-      type="checkbox"
-      className="sr-only peer"
-      checked={isToggled}
-      onChange={() => setIsToggled(!isToggled)}
-    />
-    <span className="block w-full h-full bg-white rounded-full peer-checked:bg-white transition-colors"></span>
-    <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
-  </label>
+{/* Toggle */}
+<label className="relative inline-block w-10 h-5 cursor-pointer">
+  <input
+    type="checkbox"
+    className="sr-only peer"
+    checked={isToggled}
+    onChange={() => setIsToggled(!isToggled)}
+  />
+
+  {/* Track */}
+  <span className="block w-full h-full bg-gray-400 peer-checked:bg-white rounded-full transition-colors duration-200"></span>
+
+  {/* Knob */}
+  <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-[1.25rem]"></span>
+</label>
 
   {/* Info Button */}
   <button
@@ -1053,17 +1146,23 @@ const hasActivePosition = userPositions.some(
 </div>
 
 {/* Center Big Zero */}
-<div className="flex flex-col items-center mt-2">
+{/* <div className="flex flex-col items-center mt-2"> */}
+<div className="flex flex-col items-center mt-2 w-full px-4">
   <input
     type="number"
     min="0"
     placeholder="0"
-    value={transactionAmount || ""} // blank if empty
+    value={transactionAmount || ""}
     onChange={(e) => setTransactionAmount(e.target.value)}
     autoFocus
-    className="bg-transparent text-white text-6xl text-center outline-none w-48 h-20
-               appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+    className="bg-transparent text-white text-3xl text-center outline-none
+               w-full max-w-[400px] h-12
+               appearance-none
+               [&::-webkit-inner-spin-button]:appearance-none
+               [&::-webkit-outer-spin-button]:appearance-none
+               overflow-x-auto"
   />
+
   <span className="text-gray-300 text-xs font-normal mt-1">TRUST</span>
 
   {/* Min Button */}
@@ -1117,7 +1216,7 @@ const hasActivePosition = userPositions.some(
   <div className="px-4 md:px-12">
 {/* Main Card: Active Position */}
 <div className="flex justify-center mb-4">
-  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 font-geist mt-4 w-[380px]">
+  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 mt-4 w-[380px]">
     
     <span className="text-gray-300 text-xs whitespace-nowrap">
       Your Active Position
@@ -1125,21 +1224,17 @@ const hasActivePosition = userPositions.some(
 
     <div className="flex items-center gap-2">
       <span
-        className="bg-[#0A2D4D] border border-white text-[7px] px-2 py-0.5 rounded-full text-xs cursor-pointer transition-colors duration-200 hover:bg-[#123a63] hover:border-[#8B3EFE]"
-      >
-        {opposeMode ? "Oppose" : "Support"}
-      </span>
+  className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+>
+  {opposeMode ? "Oppose" : "Support"}
+</span>
 
   {/* Active Curve Amount */}
-  <span className="text-lg whitespace-nowrap">
-    {isToggled
-      ? exponentialPosition
-        ? toFixed(parseFloat(formatEther(BigInt(exponentialPosition.shares ?? 0))))
-        : "No Position Found"
-      : linearPosition
-      ? toFixed(parseFloat(formatEther(BigInt(linearPosition.shares ?? 0))))
-      : "No Position Found"}{" "}
-  </span>
+  <span className="text-xs whitespace-nowrap">
+  {displayedShares > 0n
+    ? `${formatTrust(displayedShares)} TRUST`
+    : "No active position"}
+</span>
     </div>
 
   </div>
@@ -1162,7 +1257,7 @@ const hasActivePosition = userPositions.some(
 
   {/* Insufficient Funds Warning */}
   {transactionAmount &&
-   Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
+  Number(transactionAmount) > maxRedeemable && (
     <span className="text-red-500 text-xs mt-1">
       Insufficient funds
     </span>
@@ -1183,16 +1278,20 @@ const hasActivePosition = userPositions.some(
   </div>
 
   {/* Toggle */}
-  <label className="relative inline-block w-10 h-5 cursor-pointer">
-    <input
-      type="checkbox"
-      className="sr-only peer"
-      checked={isToggled}
-      onChange={() => setIsToggled(!isToggled)}
-    />
-    <span className="block w-full h-full bg-white rounded-full peer-checked:bg-white transition-colors"></span>
-    <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md peer-checked:translate-x-[1.25rem] transition-transform"></span>
-  </label>
+<label className="relative inline-block w-10 h-5 cursor-pointer">
+  <input
+    type="checkbox"
+    className="sr-only peer"
+    checked={isToggled}
+    onChange={() => setIsToggled(!isToggled)}
+  />
+
+  {/* Track */}
+  <span className="block w-full h-full bg-gray-400 peer-checked:bg-white rounded-full transition-colors duration-200"></span>
+
+  {/* Knob */}
+  <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-[1.25rem]"></span>
+</label>
 
   {/* Info Button */}
   <button
@@ -1260,33 +1359,41 @@ const hasActivePosition = userPositions.some(
 </div>
 
 {/* Center Big Zero */}
-<div className="flex flex-col items-center mt-2">
+{/* <div className="flex flex-col items-center mt-2"> */}
+<div className="flex flex-col items-center mt-2 w-full px-4">
   <input
     type="number"
     min="0"
     placeholder="0"
-    value={transactionAmount || ""} // blank if empty
+    value={transactionAmount || ""}
     onChange={(e) => setTransactionAmount(e.target.value)}
     autoFocus
-    className="bg-transparent text-white text-6xl text-center outline-none w-48 h-20
-               appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+    className="bg-transparent text-white text-3xl text-center outline-none
+               w-full max-w-[400px] h-12
+               appearance-none
+               [&::-webkit-inner-spin-button]:appearance-none
+               [&::-webkit-outer-spin-button]:appearance-none
+               overflow-x-auto"
   />
   <span className="text-gray-300 text-xs font-normal mt-1">TRUST</span>
 
-  {/* Min Button */}
-  <button
-    type="button"
-    onClick={() => setTransactionAmount("0.01")}
-    className="mt-4 px-2 py-1 text-xs text-white bg-[#0A2D4D] rounded-full border border-white hover:bg-[#123a63] hover:border-[#8B3EFE] transition-colors"
-  >
-    Min
-  </button>
+{/* Max Button */}
+<button
+  type="button"
+  onClick={() => {
+    const max = Number(displayedShares) / 10 ** 18;
+    setTransactionAmount(max.toString());
+  }}
+  className="mt-4 px-2 py-1 text-xs text-white bg-[#0A2D4D] rounded-full border border-white hover:bg-[#123a63] hover:border-[#8B3EFE] transition-colors"
+>
+  Max
+</button>
 </div>
 
 
     {/* Review Deposit Button */}
 <button
-  className={`mx-auto block px-6 py-2.5 rounded-3xl mt-4 text-sm transition-colors ${
+  className={`mx-auto block px-5 py-1.5 rounded-3xl mt-4 text-sm transition-colors ${
     transactionAmount &&
     Number(transactionAmount) > 0 &&
     Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
@@ -1297,22 +1404,21 @@ const hasActivePosition = userPositions.some(
   disabled={
     !transactionAmount ||
     Number(transactionAmount) <= 0 ||
-    Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
+    Number(transactionAmount) > maxRedeemable
   }
 >
-{transactionAmount &&
-  Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
-    ? "Check Your Balance"
-    : transactionAmount && Number(transactionAmount) > 0
-    ? "Review Redeem"
+  {transactionAmount
+    ? Number(transactionAmount) > maxRedeemable
+      ? "Check Your Position"
+      : "Review Redeem"
     : "Enter an Amount"}
 </button>
 
 {/* Optional small red warning below button */}
 {transactionAmount &&
- Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
+ Number(transactionAmount) > maxRedeemable && (
   <span className="text-red-500 text-xs mt-1 block text-center">
-    Insufficient balance
+    "You only have {maxRedeemable} shares"
   </span>
 )}
   </div>
@@ -1334,7 +1440,7 @@ const hasActivePosition = userPositions.some(
 
 {/* Back Button */}
 <button
-  className="absolute -top-1 pb-2 left-2 text-white font-extrabold text-2xl px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
+  className="absolute -top-1 pb-2 left-2 text-white text-2xl px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
   onClick={() => {
     setShowReviewDepositModal(false);
     setModalStep("review");
@@ -1345,9 +1451,9 @@ const hasActivePosition = userPositions.some(
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white font-bold text-base mt-2">Stake</h2>
+        <h2 className="text-white text-base mt-2">Stake</h2>
 <span
-  className="bg-[#0A2D4D] text-white border border-white text-xs font-semibold px-2 py-0.5 mt-2 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+  className="bg-[#0A2D4D] text-white border border-white text-xs px-2 py-0.5 mt-2 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
 >
   {opposeMode ? "Oppose" : "Support"}
 </span>
@@ -1362,18 +1468,18 @@ const hasActivePosition = userPositions.some(
         <>
           <div className="flex flex-col items-center my-6">
             <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white font-semibold">Review...</span>
+            <span className="text-white">Review...</span>
           </div>
 
           <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-            <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
-            <span className="text-white font-bold">
+            <span className="text-gray-300 text-sm">Total Cost</span>
+            <span className="text-white">
               {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
             </span>
           </div>
 
 <button
-  className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl font-semibold text-sm"
+  className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl text-sm"
   onClick={() => {
     handleClaimAction("deposit");
     setShowModal(false);
@@ -1389,16 +1495,16 @@ const hasActivePosition = userPositions.some(
         <>
           <div className="flex flex-col items-center my-6">
             <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white font-semibold">Awaiting...</span>
+            <span className="text-white">Awaiting...</span>
           </div>
 
           <div className="flex items-center justify-center gap-2 bg-[#110A2B] border border-[#393B60] rounded-2xl px-4 py-2 mx-4">
             <img src="/wallet.png" alt="Wallet Icon" className="w-5 h-5" />
-            <span className="text-white font-semibold text-sm">
+            <span className="text-white text-sm">
               Awaiting wallet approval
             </span>
             <div className="relative group">
-              <span className="text-gray-400 font-bold cursor-pointer text-sm">
+              <span className="text-gray-400 cursor-pointer text-sm">
                 ?
               </span>
               <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -1413,15 +1519,15 @@ const hasActivePosition = userPositions.some(
       {modalStep === "success" && (
         <div className="flex flex-col items-center my-8">
           <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">✓</span>
+            <span className="text-white text-2xl">✓</span>
           </div>
 
-          <span className="text-white font-semibold mb-6">
+          <span className="text-white mb-6">
             Successfully {opposeMode ? "opposed" : "supported"}!
           </span>
 
           <button
-            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
+            className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
             onClick={() => {
               setShowReviewDepositModal(false);
               setModalStep("review");
@@ -1436,15 +1542,15 @@ const hasActivePosition = userPositions.some(
       {modalStep === "failed" && (
         <div className="flex flex-col items-center my-8">
           <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">✕</span>
+            <span className="text-white text-2xl">✕</span>
           </div>
 
-          <span className="text-white font-semibold mb-6">
+          <span className="text-white mb-6">
             Transaction Failed
           </span>
 
           <button
-            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
+            className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
             onClick={() => setModalStep("review")}
           >
             Try Again
@@ -1460,126 +1566,75 @@ const hasActivePosition = userPositions.some(
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
     <div className="bg-[#070315] w-full max-w-md mx-4 p-3 rounded-xl relative border-2 border-[#8B3EFE]">
 
-      {/* Back Button */}
-<button
-  className="absolute -top-1 pb-2 left-2 text-white font-extrabold text-2xl px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
-  onClick={() => {
-    setShowReviewDepositModal(false);
-    setModalStep("review");
-  }}
->
-  ←
-</button>
+      {/* Close Button */}
+      <button
+        className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl"
+        onClick={() => setShowReviewRedeemModal(false)}
+      >
+        ×
+      </button>
 
       {/* Title + Support Tag */}
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white font-bold text-base mt-2">Stake</h2>
-<span
-  className="bg-[#0A2D4D] text-white border border-white text-xs font-semibold px-2 py-0.5 mt-2 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
->
-  {opposeMode ? "Oppose" : "Support"}
-</span>
+        <h2 className="text-white text-base">Stake</h2>
+        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm">
+          Support
+        </span>
       </div>
 
+      {/* Subtitle */}
       <p className="text-gray-400 text-sm mb-6">
         Staking on a Triple enhances its discoverability in the Intuition system
       </p>
 
+      {/* Centered Spinner + Label */}
+      <div className="flex flex-col items-center my-6">
+        <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2 animate-spin" />
+        <span className="text-white">Review...</span>
+      </div>
 
-      {/* REVIEW */}
-      {modalStep === "review" && (
-        <>
-          <div className="flex flex-col items-center my-6">
-            <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white font-semibold">Review...</span>
-          </div>
-
-          <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-            <span className="text-gray-300 text-sm font-semibold">Total Cost</span>
-            <span className="text-white font-bold">
+{/* Total Cost */}
+<div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
+            <span className="text-gray-300 text-sm">Total Cost</span>
+            <span className="text-white">
               {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
             </span>
           </div>
 
+      {/* Redeem TRUST Label */}
+      <span className="text-gray-300 mb-2 block">Redeem TRUST from Claim</span>
+
+{/* Statement */}
+<div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center gap-2">
+  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded inline-flex items-center gap-2 max-w-[150px] truncate">
+    <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
+    {activeClaim.term.triple.subject.label}
+  </span>
+
+  <span>{activeClaim.term.triple.predicate.label}</span>
+
+  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded max-w-[150px] truncate">
+    {activeClaim.term.triple.object.label}
+  </span>
+</div>
+
+      {/* Amount Input */}
+<div className="mb-4">
+  <label className="text-gray-300 text-sm mb-1 block">Amount (in TRUST)</label>
+  <input
+    type="text"
+    value={transactionAmount}
+    onChange={(e) => setTransactionAmount(e.target.value)}
+    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+  />
+</div>
+{/* Redeem / Deposit Button */}
 <button
-  className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl font-semibold text-sm"
-  onClick={() => {
-    handleClaimAction("deposit");
-    setShowModal(false);
-  }}
+  className="w-full bg-white text-black py-2.5 rounded-3xl text-sm"
+  onClick={() => handleClaimAction("redeem")}
 >
-  Confirm
+  Redeem
 </button>
-        </>
-      )}
-
-      {/* AWAITING */}
-      {modalStep === "awaiting" && (
-        <>
-          <div className="flex flex-col items-center my-6">
-            <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white font-semibold">Awaiting...</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 bg-[#110A2B] border border-[#393B60] rounded-2xl px-4 py-2 mx-4">
-            <img src="/wallet.png" alt="Wallet Icon" className="w-5 h-5" />
-            <span className="text-white font-semibold text-sm">
-              Awaiting wallet approval
-            </span>
-            <div className="relative group">
-              <span className="text-gray-400 font-bold cursor-pointer text-sm">
-                ?
-              </span>
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Approve this transaction in your wallet
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* SUCCESS */}
-      {modalStep === "success" && (
-        <div className="flex flex-col items-center my-8">
-          <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">✓</span>
-          </div>
-
-          <span className="text-white font-semibold mb-6">
-            Successfully {opposeMode ? "opposed" : "supported"}!
-          </span>
-
-          <button
-            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
-            onClick={() => {
-              setShowReviewDepositModal(false);
-              setModalStep("review");
-            }}
-          >
-            Done
-          </button>
-        </div>
-      )}
-
-      {/* FAILED */}
-      {modalStep === "failed" && (
-        <div className="flex flex-col items-center my-8">
-          <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">✕</span>
-          </div>
-
-          <span className="text-white font-semibold mb-6">
-            Transaction Failed
-          </span>
-
-          <button
-            className="bg-white text-black px-6 py-2 rounded-3xl font-semibold text-sm"
-            onClick={() => setModalStep("review")}
-          >
-            Try Again
-          </button>
-        </div>
-      )}
     </div>
   </div>
 )}

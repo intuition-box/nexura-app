@@ -5,8 +5,9 @@ import { Card } from "../ui/card";
 import { Link, useLocation } from "wouter";
 import { projectApiRequest } from "../../lib/projectApi";
 import { useToast } from "../../hooks/use-toast";
-import { RefreshCw, Trash2, XCircle, Loader2 } from "lucide-react";
+import { RefreshCw, Trash2, XCircle, Loader2, Clock } from "lucide-react";
 import { Button } from "../ui/button";
+import { apiRequestV2 } from "../../lib/queryClient";
 import {
   Dialog,
   DialogContent,
@@ -31,14 +32,23 @@ interface Campaign {
 type PendingAction = { type: "delete" | "close"; id: string; title: string } | null;
 
 export default function CampaignsTab() {
-  const [activeTab, setActiveTab] = useState<"all" | "active" | "drafts" | "completed">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "active" | "upcoming" | "drafts" | "completed">("all");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [serverOffset, setServerOffset] = useState<number>(0);
+  const [countdowns, setCountdowns] = useState<Record<string, string>>({});
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Fetch server time offset once
+  useEffect(() => {
+    apiRequestV2("GET", `/api/server-time`)
+      .then((res: any) => setServerOffset(res.serverTime - Date.now()))
+      .catch(() => {});
+  }, []);
 
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
@@ -98,30 +108,70 @@ export default function CampaignsTab() {
   const now = new Date();
 
   const isDraft = (c: Campaign) => c.status === "Save" || !c.status;
+  const isScheduled = (c: Campaign) => c.status === "Scheduled";
+
+  // Countdown ticker for scheduled campaigns
+  useEffect(() => {
+    const scheduled = campaigns.filter((c) => isScheduled(c) && c.starts_at);
+    if (scheduled.length === 0) return;
+
+    const tick = () => {
+      const nowMs = Date.now() + serverOffset;
+      const newCountdowns: Record<string, string> = {};
+      let anyExpired = false;
+
+      for (const c of scheduled) {
+        const diff = new Date(c.starts_at).getTime() - nowMs;
+        if (diff <= 0) {
+          anyExpired = true;
+          newCountdowns[c._id] = "Starting...";
+        } else {
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          newCountdowns[c._id] = d > 0 ? `${d}d ${h}h ${m}m ${s}s` : h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+        }
+      }
+
+      setCountdowns(newCountdowns);
+      if (anyExpired) fetchCampaigns();
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [campaigns, serverOffset]);
 
   const filteredCampaigns = campaigns.filter((c) => {
     if (activeTab === "all") return true;
-    if (activeTab === "active") return !isDraft(c) && new Date(c.ends_at) > now;
-    if (activeTab === "completed") return !isDraft(c) && new Date(c.ends_at) <= now;
+    if (activeTab === "active") return c.status === "Active" && new Date(c.ends_at) > now;
+    if (activeTab === "upcoming") return isScheduled(c);
+    if (activeTab === "completed") return !isDraft(c) && !isScheduled(c) && new Date(c.ends_at) <= now;
     if (activeTab === "drafts") return isDraft(c);
     return true;
   });
 
   const tabs = [
     { id: "all", label: "All Campaigns", count: campaigns.length },
-    { id: "active", label: "Active", count: campaigns.filter(c => !isDraft(c) && new Date(c.ends_at) > now).length },
+    { id: "active", label: "Active", count: campaigns.filter(c => c.status === "Active" && new Date(c.ends_at) > now).length },
+    { id: "upcoming", label: "Upcoming", count: campaigns.filter(c => isScheduled(c)).length },
     { id: "drafts", label: "Drafts", count: campaigns.filter(c => isDraft(c)).length },
-    { id: "completed", label: "Completed", count: campaigns.filter(c => !isDraft(c) && new Date(c.ends_at) <= now).length },
+    { id: "completed", label: "Completed", count: campaigns.filter(c => !isDraft(c) && !isScheduled(c) && new Date(c.ends_at) <= now).length },
   ];
 
   const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
     const draft = isDraft(campaign);
+    const scheduled = isScheduled(campaign);
     let status = "Published";
     let statusColor = "bg-green-500";
 
     if (draft) {
       status = "Draft";
       statusColor = "bg-yellow-500";
+    } else if (scheduled) {
+      status = "Upcoming";
+      statusColor = "bg-blue-500";
     } else if (new Date(campaign.ends_at) <= now) {
       status = "Completed";
       statusColor = "bg-gray-500";
@@ -132,30 +182,30 @@ export default function CampaignsTab() {
       return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
     };
 
-    const isActive = !draft && new Date(campaign.ends_at) > now;
+    const isActive = !draft && !scheduled && new Date(campaign.ends_at) > now;
 
     return (
-      <Card className="w-full bg-gray-900 text-white rounded-2xl overflow-hidden shadow-lg flex flex-col">
+      <Card className="w-full bg-gray-900 text-white rounded-xl overflow-hidden shadow-lg flex flex-col">
         {campaign.projectCoverImage ? (
-          <img src={campaign.projectCoverImage} alt={campaign.title} className="w-full h-40 object-cover" />
+          <img src={campaign.projectCoverImage} alt={campaign.title} className="w-full h-28 object-cover" />
         ) : (
-          <div className="w-full h-40 bg-gray-700 flex items-center justify-center">
-            <span className="text-white/50 text-sm">No Image</span>
+          <div className="w-full h-28 bg-gray-700 flex items-center justify-center">
+            <span className="text-white/50 text-xs">No Image</span>
           </div>
         )}
 
-        <div className="p-4 flex flex-col gap-2">
-          <h3 className="font-bold text-lg">{campaign.title}</h3>
-          <p className="text-white/70 text-sm">
+        <div className="p-3 flex flex-col gap-1.5">
+          <h3 className="font-bold text-sm">{campaign.title}</h3>
+          <p className="text-white/70 text-xs">
             {formatDate(campaign.starts_at)} – {formatDate(campaign.ends_at)}
           </p>
           {campaign.reward?.pool !== undefined && (
-            <p className="text-purple-400 font-medium">Reward Pool: {campaign.reward.pool} TRUST</p>
+            <p className="text-purple-400 text-xs font-medium">Reward Pool: {campaign.reward.pool} TRUST</p>
           )}
 
-          <div className="flex gap-2 mt-2 flex-wrap">
+          <div className="flex gap-1.5 mt-1.5 flex-wrap">
             <button
-              className="flex-1 px-3 py-2 text-sm bg-purple-600 rounded-lg hover:bg-purple-700 transition"
+              className="flex-1 px-2 py-1.5 text-xs bg-purple-600 rounded-lg hover:bg-purple-700 transition"
               onClick={() => setLocation(`/studio-dashboard/create-new-campaign?edit=${campaign._id}`)}
             >
               View Details
@@ -163,7 +213,7 @@ export default function CampaignsTab() {
             {isActive && (
               <button
                 title="Close campaign"
-                className="px-3 py-2 text-sm bg-yellow-600/20 text-yellow-400 rounded-lg hover:bg-yellow-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 py-1.5 text-xs bg-yellow-600/20 text-yellow-400 rounded-lg hover:bg-yellow-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => setPendingAction({ type: "close", id: campaign._id, title: campaign.title })}
                 disabled={closingId === campaign._id || deletingId === campaign._id}
               >
@@ -174,7 +224,7 @@ export default function CampaignsTab() {
             )}
             <button
               title="Delete campaign"
-              className="px-3 py-2 text-sm bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1.5 text-xs bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => setPendingAction({ type: "delete", id: campaign._id, title: campaign.title })}
               disabled={deletingId === campaign._id || closingId === campaign._id}
             >
@@ -184,7 +234,14 @@ export default function CampaignsTab() {
             </button>
           </div>
 
-          <span className={`px-2 py-1 text-xs rounded mt-2 self-start ${statusColor}`}>{status}</span>
+          {scheduled ? (
+            <div className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded mt-1 self-start bg-black/40 border border-purple-500/30">
+              <Clock className="w-3 h-3 text-purple-400 animate-pulse" />
+              <span className="text-purple-300 font-mono font-semibold">{countdowns[campaign._id] || "Loading..."}</span>
+            </div>
+          ) : (
+            <span className={`px-2 py-0.5 text-[10px] rounded mt-1 self-start ${statusColor}`}>{status}</span>
+          )}
         </div>
       </Card>
     );

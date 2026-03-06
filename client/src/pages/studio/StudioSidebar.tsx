@@ -3,7 +3,7 @@ import { Zap, Shield, Users, LogOut } from "lucide-react";
 import { useLocation } from "wouter";
 import AnimatedBackground from "../../components/AnimatedBackground";
 import { useEffect, useState } from "react";
-import { getStoredProjectInfo, clearProjectSession } from "../../lib/projectApi";
+import { getStoredProjectInfo, clearProjectSession, projectApiRequest, getStoredProjectToken, storeProjectSession } from "../../lib/projectApi";
 
 type TabType = "campaignSubmissions" | "adminManagement" | "campaignsTab";
 
@@ -33,6 +33,26 @@ export default function StudioSidebar({
       const name = (info.name ?? info.email ?? "Project") as string;
       setProjectHandle(name);
       if (info.logo) setProjectLogo(info.logo as string);
+    }
+
+    // If stored info is missing name/logo, try fetching from /hub/me
+    if (!info?.logo || !info?.name) {
+      projectApiRequest<{ hub: Record<string, any> }>({ method: "GET", endpoint: "/hub/me" })
+        .then(({ hub }) => {
+          if (hub) {
+            const hubName = (hub.name ?? info?.name ?? info?.email ?? "Project") as string;
+            const hubLogo = (hub.logo ?? "") as string;
+            setProjectHandle(hubName);
+            if (hubLogo) setProjectLogo(hubLogo);
+
+            // Persist so future mounts don't need the extra fetch
+            const token = getStoredProjectToken();
+            if (token) {
+              storeProjectSession(token, { ...(info ?? {}), name: hubName, logo: hubLogo });
+            }
+          }
+        })
+        .catch(() => { /* ignore — offline or no hub yet */ });
     }
   }, []);
 

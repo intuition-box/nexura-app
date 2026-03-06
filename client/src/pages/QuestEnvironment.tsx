@@ -229,7 +229,11 @@ export default function QuestEnvironment() {
 
   const visitQuest = (quest: Quest) => {
     if (!visitedQuests.includes(quest._id)) setVisitedQuests([...visitedQuests, quest._id]);
-    if (quest.link) window.open(quest.link, "_blank");
+    if (quest.link) {
+      let url = quest.link.trim();
+      if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+      window.open(url, "_blank");
+    }
 
     if (quest.status === "retry") {
       setRetryQuests([...retryQuests, quest._id]);

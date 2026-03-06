@@ -77,6 +77,8 @@ export type Term = {
 export type Position = {
   shares: string;
   curve_id: number;
+  account_id: string;
+  direction: string;
   account: {
     id: Address;
     label: string;

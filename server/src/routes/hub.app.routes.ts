@@ -18,7 +18,8 @@ import {
   updateHub,
   updateIds,
   createHub,
-  getHub
+  getHub,
+  savePaymentHash
 } from "@/controllers/hub.controller";
 import { Router } from "express";
 import { upload } from "@/config/multer";
@@ -36,6 +37,7 @@ router
   .delete("/remove-admin", removeHubAdmin)
   .post("/create-hub", upload.single("logo"), createHub)
   .patch("/update-hub", upload.single("logo"), updateHub)
+  .patch("/save-payment-hash", savePaymentHash)
   .post("/add-admin", addHubAdmin)
   .post("/create-campaign", upload.single("coverImage"), createCampaign)
   .delete("/delete-campaign-quest", deleteCampaignQuest)

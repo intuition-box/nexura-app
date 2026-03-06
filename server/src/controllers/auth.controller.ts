@@ -286,9 +286,10 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 		});
 
 		res.status(200).json({ message: "signed in", accessToken, user: userExists });
-	} catch (error) {
+	} catch (error: any) {
 		logger.error(error);
-		res.status(INTERNAL_SERVER_ERROR).json({ error: "Error signing user in" });
+		const isDuplicate = error?.code === 11000;
+		res.status(isDuplicate ? BAD_REQUEST : INTERNAL_SERVER_ERROR).json({ error: isDuplicate ? "Account already exists for this wallet" : (error?.message || "Error signing user in") });
 	}
 };
 
