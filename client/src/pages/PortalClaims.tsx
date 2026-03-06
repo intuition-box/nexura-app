@@ -36,7 +36,7 @@ export default function PortalClaims() {
   const [termId, setTermId] = useState("");
   const [activeTab, setActiveTab] = useState<"deposit" | "redeem">("deposit");
   const [isToggled, setIsToggled] = useState(false);
-  const [positions, setPositions] = useState<Position[]>([]); 
+  const [positions, setPositions] = useState<Position[]>([]);
   const [userPositions, setUserPositions] = useState<Position[]>([]);
   const [totalPostions, setTotalPositions] = useState("0");
   const [visibleClaims, setVisibleClaims] = useState<Claim[]>([]);
@@ -47,234 +47,234 @@ export default function PortalClaims() {
   const [showModal, setShowModal] = useState(false);
   const [showReviewRedeemModal, setShowReviewRedeemModal] = useState(false);
   const [showReviewDepositModal, setShowReviewDepositModal] = useState(false);
-    const [transactionMode, setTransactionMode] = useState("redeem");
-    const [opposeMode, setOpposeMode] = useState(false);
-    const [transactionAmount, setTransactionAmount] = useState("");
-      // Wallet & Blockchain
-    const [tTrustBalance, setTTrustBalance] = useState<bigint>(0n);
-    const [inputValue, setInputValue] = useState(0);
-    const [sortedClaims, setSortedClaims] = useState(visibleClaims);
-    const [showCurveInfo, setShowCurveInfo] = useState(false);
-    const [activePosition, setActivePosition] = useState<bigint>(0n);
-    const [modalStep, setModalStep] = useState<
-  "review" | "awaiting" | "success" | "failed"
->("review");
-// Example state to store totals
-const [userShares, setUserShares] = useState<{ support: bigint; oppose: bigint }>({ support: 0n, oppose: 0n });
-    
-// localstorage stuff
-const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>(() => {
-  const saved = localStorage.getItem("actionState");
-  return saved ? JSON.parse(saved) : {};
-});
- const [userSharesByCurve, setUserSharesByCurve] = useState<{
-  support: { linear: bigint; exponential: bigint };
-  oppose: { linear: bigint; exponential: bigint };
-}>({
-  support: { linear: 0n, exponential: 0n },
-  oppose: { linear: 0n, exponential: 0n },
-});
-const [supportShares, setSupportShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
-const [opposeShares, setOpposeShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
+  const [transactionMode, setTransactionMode] = useState("redeem");
+  const [opposeMode, setOpposeMode] = useState(false);
+  const [transactionAmount, setTransactionAmount] = useState("");
+  // Wallet & Blockchain
+  const [tTrustBalance, setTTrustBalance] = useState<bigint>(0n);
+  const [inputValue, setInputValue] = useState(0);
+  const [sortedClaims, setSortedClaims] = useState(visibleClaims);
+  const [showCurveInfo, setShowCurveInfo] = useState(false);
+  const [activePosition, setActivePosition] = useState<bigint>(0n);
+  const [modalStep, setModalStep] = useState<
+    "review" | "awaiting" | "success" | "failed"
+  >("review");
+  // Example state to store totals
+  const [userShares, setUserShares] = useState<{ support: bigint; oppose: bigint }>({ support: 0n, oppose: 0n });
 
-// Whenever state changes, we save it
-useEffect(() => {
-  localStorage.setItem("actionState", JSON.stringify(actionState));
-}, [actionState]);
+  // localstorage stuff
+  const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>(() => {
+    const saved = localStorage.getItem("actionState");
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [userSharesByCurve, setUserSharesByCurve] = useState<{
+    support: { linear: bigint; exponential: bigint };
+    oppose: { linear: bigint; exponential: bigint };
+  }>({
+    support: { linear: 0n, exponential: 0n },
+    oppose: { linear: 0n, exponential: 0n },
+  });
+  const [supportShares, setSupportShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
+  const [opposeShares, setOpposeShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
 
-    async function fetchWalletBalance(address: Address) {
-  const publicClient = getPublicClient();
-  const balance = await publicClient.getBalance({ address });
-  return balance ?? 0n;
-}
+  // Whenever state changes, we save it
+  useEffect(() => {
+    localStorage.setItem("actionState", JSON.stringify(actionState));
+  }, [actionState]);
 
-useEffect(() => {
-  (async () => {
-    if (!user?.address) return;
+  async function fetchWalletBalance(address: Address) {
+    const publicClient = getPublicClient();
+    const balance = await publicClient.getBalance({ address });
+    return balance ?? 0n;
+  }
 
-    try {
-      const balance = await fetchWalletBalance(user.address);
-      setTTrustBalance(balance);
-    } catch (err) {
-      console.error("Failed to fetch wallet balance:", err);
-    }
-  })();
-}, [user?.address]);
+  useEffect(() => {
+    (async () => {
+      if (!user?.address) return;
 
-useEffect(() => {
-  setSortedClaims(sortClaims(visibleClaims, sortOption));
-}, [visibleClaims, sortOption]);
+      try {
+        const balance = await fetchWalletBalance(user.address);
+        setTTrustBalance(balance);
+      } catch (err) {
+        console.error("Failed to fetch wallet balance:", err);
+      }
+    })();
+  }, [user?.address]);
 
-      // Returns true if claim matches search
-const claimMatchesSearch = (claim: Claim, term: string) => {
-  const lower = term.toLowerCase();
-  return (
-    claim.term.triple.subject.label.toLowerCase().includes(lower) ||
-    claim.term.triple.predicate.label.toLowerCase().includes(lower) ||
-    claim.term.triple.object.label.toLowerCase().includes(lower)
-  );
-};
+  useEffect(() => {
+    setSortedClaims(sortClaims(visibleClaims, sortOption));
+  }, [visibleClaims, sortOption]);
 
-const highlightMatch = (text: string, term: string) => {
-  if (!term) return text;
-  const regex = new RegExp(`(${term})`, "gi");
-  return text.split(regex).map((part, i) =>
-    regex.test(part) ? (
-      <span key={i} className="bg-yellow-400 text-black px-0.5 rounded">{part}</span>
-    ) : (
-      part
-    )
-  );
-};
+  // Returns true if claim matches search
+  const claimMatchesSearch = (claim: Claim, term: string) => {
+    const lower = term.toLowerCase();
+    return (
+      claim.term.triple.subject.label.toLowerCase().includes(lower) ||
+      claim.term.triple.predicate.label.toLowerCase().includes(lower) ||
+      claim.term.triple.object.label.toLowerCase().includes(lower)
+    );
+  };
+
+  const highlightMatch = (text: string, term: string) => {
+    if (!term) return text;
+    const regex = new RegExp(`(${term})`, "gi");
+    return text.split(regex).map((part, i) =>
+      regex.test(part) ? (
+        <span key={i} className="bg-yellow-400 text-black px-0.5 rounded">{part}</span>
+      ) : (
+        part
+      )
+    );
+  };
 
   const { toast } = useToast();
 
   const LIMIT = 50;
 
-//   // ----------------- Utility Function -----------------
-// const fetchUserPositionsForClaim = (claim: Claim, user: User) => {
-//   if (!user) return { positions: [], sharesByCurve: { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } } };
+  //   // ----------------- Utility Function -----------------
+  // const fetchUserPositionsForClaim = (claim: Claim, user: User) => {
+  //   if (!user) return { positions: [], sharesByCurve: { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } } };
 
-//   const positions: Position[] = [];
+  //   const positions: Position[] = [];
 
-//   // --- Support ---
-//   claim.term.vaults?.forEach((vault) => {
-//     (vault.userPosition ?? []).forEach((p) => {
-//       positions.push({
-//         account: p.account_id,
-//         shares: p.shares,
-//         curve: vault.curve_id,
-//         direction: "support",
-//       });
-//       console.log("SUPPORT POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
-//     });
-//   });
+  //   // --- Support ---
+  //   claim.term.vaults?.forEach((vault) => {
+  //     (vault.userPosition ?? []).forEach((p) => {
+  //       positions.push({
+  //         account: p.account_id,
+  //         shares: p.shares,
+  //         curve: vault.curve_id,
+  //         direction: "support",
+  //       });
+  //       console.log("SUPPORT POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
+  //     });
+  //   });
 
-//   // --- Oppose ---
-//   claim.counter_term.vaults?.forEach((vault) => {
-//     (vault.userPosition ?? []).forEach((p) => {
-//       positions.push({
-//         account: p.account_id,
-//         shares: p.shares,
-//         curve: vault.curve_id,
-//         direction: "oppose",
-//       });
-//       console.log("OPPOSE POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
-//     });
-//   });
+  //   // --- Oppose ---
+  //   claim.counter_term.vaults?.forEach((vault) => {
+  //     (vault.userPosition ?? []).forEach((p) => {
+  //       positions.push({
+  //         account: p.account_id,
+  //         shares: p.shares,
+  //         curve: vault.curve_id,
+  //         direction: "oppose",
+  //       });
+  //       console.log("OPPOSE POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
+  //     });
+  //   });
 
-//   // Compute shares by curve
-//   const sharesByCurve = positions.reduce(
-//     (acc, p) => {
-//       const s = BigInt(p.shares ?? 0);
-//       if (p.direction === "support") {
-//         p.curve === "1" ? (acc.support.linear += s) : (acc.support.exponential += s);
-//       } else {
-//         p.curve === "1" ? (acc.oppose.linear += s) : (acc.oppose.exponential += s);
-//       }
-//       return acc;
-//     },
-//     { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } }
-//   );
+  //   // Compute shares by curve
+  //   const sharesByCurve = positions.reduce(
+  //     (acc, p) => {
+  //       const s = BigInt(p.shares ?? 0);
+  //       if (p.direction === "support") {
+  //         p.curve === "1" ? (acc.support.linear += s) : (acc.support.exponential += s);
+  //       } else {
+  //         p.curve === "1" ? (acc.oppose.linear += s) : (acc.oppose.exponential += s);
+  //       }
+  //       return acc;
+  //     },
+  //     { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } }
+  //   );
 
-//   console.log(`Normalized user positions for claim: ${claim.id}`, positions);
-//   console.log(`Shares by curve for claim: ${claim.id}`, sharesByCurve);
+  //   console.log(`Normalized user positions for claim: ${claim.id}`, positions);
+  //   console.log(`Shares by curve for claim: ${claim.id}`, sharesByCurve);
 
-//   return { positions, sharesByCurve };
-// };
+  //   return { positions, sharesByCurve };
+  // };
 
-const loadMore = async () => {
-  if (loading || !hasMore) return;
-  setLoading(true);
-
-  try {
-    const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
-    const { claims } = await apiRequestV2(
-      "GET",
-      `/api/get-claims?filter=${sortOption}&offset=${offset}${searchQuery}`
-    );
-
-    if (!user) {
-      setUserPositions([]);
-      setActivePosition(0n);
-      setUserSharesByCurve({
-        support: { linear: 0n, exponential: 0n },
-        oppose: { linear: 0n, exponential: 0n },
-      });
-      console.log("No user signed in, resetting positions and sharesByCurve");
-      return;
-    }
-
-if (claims.length > 0) {
-  // const { positions, sharesByCurve } = fetchUserPositionsForClaim(claims[0], user);
-  setUserPositions(positions);
-  setUserSharesByCurve(userSharesByCurve);
-  console.log("Updated userPositions and userSharesByCurve state");
-}
-    // Handle pagination
-    if (claims.length === 0 || claims.length < LIMIT) {
-      setHasMore(false);
-      console.log("No more claims to load, hasMore set to false");
-    } else {
-      setOffset(prev => prev + claims.length);
-      console.log(`Incrementing offset by ${claims.length}, new offset: ${offset + claims.length}`);
-    }
-
-  } catch (err) {
-    console.error("Failed to load positions:", err);
-  } finally {
-    setLoading(false);
-    // console.log("Loading finished, loading state set to false");
-  }
-};
-
-
-// Call whenever user changes
-useEffect(() => {
-  if (user) {
-    setOffset(0);
-    setUserPositions([]);
-    setHasMore(true);
-    loadMore();
-  } else {
-    setUserPositions([]);
-    setActivePosition(0n);
-  }
-}, [user]);
-
-useEffect(() => {
-  const resetAndLoad = async () => {
+  const loadMore = async () => {
+    if (loading || !hasMore) return;
     setLoading(true);
-    setOffset(0);
-    setHasMore(true);
 
     try {
-      const searchQuery = searchTerm
-        ? `&search=${encodeURIComponent(searchTerm)}`
-        : "";
-
+      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
       const { claims } = await apiRequestV2(
         "GET",
-        `/api/get-claims?filter=${sortOption}&offset=0${searchQuery}`
+        `/api/get-claims?filter=${sortOption}&offset=${offset}${searchQuery}`
       );
 
-      const filteredClaims = claims.filter((claim: Claim) =>
-        claimMatchesSearch(claim, searchTerm)
-      );
+      if (!user) {
+        setUserPositions([]);
+        setActivePosition(0n);
+        setUserSharesByCurve({
+          support: { linear: 0n, exponential: 0n },
+          oppose: { linear: 0n, exponential: 0n },
+        });
+        console.log("No user signed in, resetting positions and sharesByCurve");
+        return;
+      }
 
-      setVisibleClaims(filteredClaims);
-      setOffset(LIMIT);
-      setHasMore(filteredClaims.length >= LIMIT);
+      if (claims.length > 0) {
+        // const { positions, sharesByCurve } = fetchUserPositionsForClaim(claims[0], user);
+        setUserPositions(positions);
+        setUserSharesByCurve(userSharesByCurve);
+        console.log("Updated userPositions and userSharesByCurve state");
+      }
+      // Handle pagination
+      if (claims.length === 0 || claims.length < LIMIT) {
+        setHasMore(false);
+        console.log("No more claims to load, hasMore set to false");
+      } else {
+        setOffset(prev => prev + claims.length);
+        console.log(`Incrementing offset by ${claims.length}, new offset: ${offset + claims.length}`);
+      }
+
     } catch (err) {
-      console.error(err);
-      setHasMore(false);
+      console.error("Failed to load positions:", err);
     } finally {
       setLoading(false);
+      // console.log("Loading finished, loading state set to false");
     }
   };
 
-  resetAndLoad();
-}, [sortOption, searchTerm]);
+
+  // Call whenever user changes
+  useEffect(() => {
+    if (user) {
+      setOffset(0);
+      setUserPositions([]);
+      setHasMore(true);
+      loadMore();
+    } else {
+      setUserPositions([]);
+      setActivePosition(0n);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const resetAndLoad = async () => {
+      setLoading(true);
+      setOffset(0);
+      setHasMore(true);
+
+      try {
+        const searchQuery = searchTerm
+          ? `&search=${encodeURIComponent(searchTerm)}`
+          : "";
+
+        const { claims } = await apiRequestV2(
+          "GET",
+          `/api/get-claims?filter=${sortOption}&offset=0${searchQuery}`
+        );
+
+        const filteredClaims = claims.filter((claim: Claim) =>
+          claimMatchesSearch(claim, searchTerm)
+        );
+
+        setVisibleClaims(filteredClaims);
+        setOffset(LIMIT);
+        setHasMore(filteredClaims.length >= LIMIT);
+      } catch (err) {
+        console.error(err);
+        setHasMore(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    resetAndLoad();
+  }, [sortOption, searchTerm]);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
@@ -302,204 +302,204 @@ useEffect(() => {
     loadMore();
   }, [sortOption]);
 
-const inputRef = useRef(null);
+  const inputRef = useRef(null);
 
-// optional: focus programmatically if you need more control
-useEffect(() => {
-  if (showModal && inputRef.current) {
-    inputRef.current.focus();
-  }
-}, [showModal]);
+  // optional: focus programmatically if you need more control
+  useEffect(() => {
+    if (showModal && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [showModal]);
 
-const formatTrust = (shares: bigint, decimals = 18, precision = 2) => {
-  const divisor = 10n ** BigInt(decimals);
-  const formatted = Number(shares) / Number(divisor);
-  return formatted.toFixed(precision);
-};
+  const formatTrust = (shares: bigint, decimals = 18, precision = 2) => {
+    const divisor = 10n ** BigInt(decimals);
+    const formatted = Number(shares) / Number(divisor);
+    return formatted.toFixed(precision);
+  };
 
   // ---------------- Handlers ----------------
-const handleSupportClick = (claim: Claim) => {
-  if (!user) return;
+  const handleSupportClick = (claim: Claim) => {
+    if (!user) return;
 
-  setActiveClaim(claim);
-  setTermId(claim.term.id);
-  setOpposeMode(false);
-  setTransactionAmount("");
-
-  let linear = 0n;
-  let exponential = 0n;
-
-  claim.term.vaults?.forEach((vault) => {
-    const curveId = String(vault.curve_id).trim();
-
-    (vault.userPosition ?? []).forEach((p) => {
-      if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
-        const shares = BigInt(p.shares);
-        if (curveId === "1") linear += shares;
-        if (curveId === "2") exponential += shares;
-      }
-    });
-  });
-
-  console.log("Support Linear:", linear.toString(), "Exponential:", exponential.toString());
-
-  setSupportShares({ linear, exponential });
-
-  // Set active position to the currently toggled curve
-  setActivePosition(isToggled ? exponential : linear);
-
-  setShowModal(true);
-};
-
-const handleOpposeClick = (claim: Claim) => {
-  if (!user) return;
-
-  setActiveClaim(claim);
-  setTermId(claim.counter_term.id);
-  setTransactionMode("redeem");
-  setActiveTab("deposit");
-  setOpposeMode(true);
-  setTransactionAmount("");
-
-  let linear = 0n;
-  let exponential = 0n;
-
-  claim.counter_term.vaults?.forEach((vault) => {
-    const curveId = String(vault.curve_id).trim();
-
-    (vault.userPosition ?? []).forEach((p) => {
-      if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
-        const shares = BigInt(p.shares);
-        if (curveId === "1") linear += shares;
-        if (curveId === "2") exponential += shares;
-      }
-    });
-  });
-
-  console.log("Oppose Linear:", linear.toString(), "Exponential:", exponential.toString());
-
-  setOpposeShares({ linear, exponential });
-
-  // Set active position to currently toggled curve
-  setActivePosition(isToggled ? exponential : linear);
-
-  setShowModal(true);
-};
-
-const displayedShares = opposeMode
-  ? (isToggled ? opposeShares.exponential : opposeShares.linear)
-  : (isToggled ? supportShares.exponential : supportShares.linear);
-
-    const handleCloseModal = () => {
-      setActiveClaim(null);
-      setShowModal(false);
-      setOpposeMode(false);
-    };
-
-    const maxRedeemable = Number(displayedShares) / 10 ** 18;
-
-const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
-  if (!termId || !user?.address) return;
-
-  try {
-    setModalStep("awaiting");
-
-    const addressTermId = termId as Address;
-
-    if (action === "deposit") {
-      await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
-    } else {
-      await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
-    }
-
-    // Refresh wallet balance after transaction
-    const balance = await fetchWalletBalance(user.address);
-    setTTrustBalance(balance); // update state
-
-    const actionText = opposeMode ? "opposed" : "supported";
-
-    toast({
-      title: "Success",
-      description: (
-        <div className="flex items-center gap-2">
-          <img src="/check.png" alt="success" className="w-4 h-4" />
-          <span>Successfully {actionText} a claim!</span>
-        </div>
-      ),
-    });
-
-    setActionState(prev => ({
-      ...prev,
-      [termId]: opposeMode ? "opposed" : "supported"
-    }));
-
+    setActiveClaim(claim);
+    setTermId(claim.term.id);
+    setOpposeMode(false);
     setTransactionAmount("");
-    setModalStep("success");
 
-  } catch (err: any) {
-    console.error(err);
+    let linear = 0n;
+    let exponential = 0n;
 
-    setModalStep("failed");
+    claim.term.vaults?.forEach((vault) => {
+      const curveId = String(vault.curve_id).trim();
 
-    toast({
-      title: "Error",
-      description: err?.message || "Transaction failed",
-      variant: "destructive",
+      (vault.userPosition ?? []).forEach((p) => {
+        if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
+          const shares = BigInt(p.shares);
+          if (curveId === "1") linear += shares;
+          if (curveId === "2") exponential += shares;
+        }
+      });
     });
-  }
-};
 
-// Sorting function
-const sortClaims = (claims, option) => {
-  const sorted = [...claims]; // clone to avoid mutating original
-  switch (option) {
-    case "totalMarketCap_desc":
-      return sorted.sort((a, b) => Number(b.total_market_cap) - Number(a.total_market_cap));
-    case "totalMarketCap_asc":
-      return sorted.sort((a, b) => Number(a.total_market_cap) - Number(b.total_market_cap));
-    case "supportMarketCap_desc":
-      return sorted.sort((a, b) =>
-        Number(b.term.total_assets) - Number(a.term.total_assets)
-      );
-    case "supportMarketCap_asc":
-      return sorted.sort((a, b) =>
-        Number(a.term.total_assets) - Number(b.term.total_assets)
-      );
-    case "opposeMarketCap_desc":
-      return sorted.sort((a, b) =>
-        Number(b.counter_term.total_assets) - Number(a.counter_term.total_assets)
-      );
-    case "opposeMarketCap_asc":
-      return sorted.sort((a, b) =>
-        Number(a.counter_term.total_assets) - Number(b.counter_term.total_assets)
-      );
-    case "positions_desc":
-      return sorted.sort(
-        (a, b) =>
-          (b.total_position_count || 0) - (a.total_position_count || 0)
-      );
-    case "positions_asc":
-      return sorted.sort(
-        (a, b) =>
-          (a.total_position_count || 0) - (b.total_position_count || 0)
-      );
-    case "createdAt_desc":
-      return sorted.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
-    case "createdAt_asc":
-      return sorted.sort(
-        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
-      );
-    default:
-      return claims;
-  }
-};
+    console.log("Support Linear:", linear.toString(), "Exponential:", exponential.toString());
 
-// Determine if the user has any active shares in the current direction
-const hasAnyPosition =
-  (supportShares.linear + supportShares.exponential > 0n) ||
-  (opposeShares.linear + opposeShares.exponential > 0n);
+    setSupportShares({ linear, exponential });
+
+    // Set active position to the currently toggled curve
+    setActivePosition(isToggled ? exponential : linear);
+
+    setShowModal(true);
+  };
+
+  const handleOpposeClick = (claim: Claim) => {
+    if (!user) return;
+
+    setActiveClaim(claim);
+    setTermId(claim.counter_term.id);
+    setTransactionMode("redeem");
+    setActiveTab("deposit");
+    setOpposeMode(true);
+    setTransactionAmount("");
+
+    let linear = 0n;
+    let exponential = 0n;
+
+    claim.counter_term.vaults?.forEach((vault) => {
+      const curveId = String(vault.curve_id).trim();
+
+      (vault.userPosition ?? []).forEach((p) => {
+        if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
+          const shares = BigInt(p.shares);
+          if (curveId === "1") linear += shares;
+          if (curveId === "2") exponential += shares;
+        }
+      });
+    });
+
+    console.log("Oppose Linear:", linear.toString(), "Exponential:", exponential.toString());
+
+    setOpposeShares({ linear, exponential });
+
+    // Set active position to currently toggled curve
+    setActivePosition(isToggled ? exponential : linear);
+
+    setShowModal(true);
+  };
+
+  const displayedShares = opposeMode
+    ? (isToggled ? opposeShares.exponential : opposeShares.linear)
+    : (isToggled ? supportShares.exponential : supportShares.linear);
+
+  const handleCloseModal = () => {
+    setActiveClaim(null);
+    setShowModal(false);
+    setOpposeMode(false);
+  };
+
+  const maxRedeemable = Number(displayedShares) / 10 ** 18;
+
+  const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
+    if (!termId || !user?.address) return;
+
+    try {
+      setModalStep("awaiting");
+
+      const addressTermId = termId as Address;
+
+      if (action === "deposit") {
+        await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+      } else {
+        await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+      }
+
+      // Refresh wallet balance after transaction
+      const balance = await fetchWalletBalance(user.address);
+      setTTrustBalance(balance); // update state
+
+      const actionText = opposeMode ? "opposed" : "supported";
+
+      toast({
+        title: "Success",
+        description: (
+          <div className="flex items-center gap-2">
+            <img src="/check.png" alt="success" className="w-4 h-4" />
+            <span>Successfully {action === "deposit" ? "bought" : "sold"} a claim!</span>
+          </div>
+        ),
+      });
+
+      setActionState(prev => ({
+        ...prev,
+        [termId]: opposeMode ? "opposed" : "supported"
+      }));
+
+      setTransactionAmount("");
+      setModalStep("success");
+
+    } catch (err: any) {
+      console.error(err);
+
+      setModalStep("failed");
+
+      toast({
+        title: "Error",
+        description: err?.message || "Transaction failed",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Sorting function
+  const sortClaims = (claims, option) => {
+    const sorted = [...claims]; // clone to avoid mutating original
+    switch (option) {
+      case "totalMarketCap_desc":
+        return sorted.sort((a, b) => Number(b.total_market_cap) - Number(a.total_market_cap));
+      case "totalMarketCap_asc":
+        return sorted.sort((a, b) => Number(a.total_market_cap) - Number(b.total_market_cap));
+      case "supportMarketCap_desc":
+        return sorted.sort((a, b) =>
+          Number(b.term.total_assets) - Number(a.term.total_assets)
+        );
+      case "supportMarketCap_asc":
+        return sorted.sort((a, b) =>
+          Number(a.term.total_assets) - Number(b.term.total_assets)
+        );
+      case "opposeMarketCap_desc":
+        return sorted.sort((a, b) =>
+          Number(b.counter_term.total_assets) - Number(a.counter_term.total_assets)
+        );
+      case "opposeMarketCap_asc":
+        return sorted.sort((a, b) =>
+          Number(a.counter_term.total_assets) - Number(b.counter_term.total_assets)
+        );
+      case "positions_desc":
+        return sorted.sort(
+          (a, b) =>
+            (b.total_position_count || 0) - (a.total_position_count || 0)
+        );
+      case "positions_asc":
+        return sorted.sort(
+          (a, b) =>
+            (a.total_position_count || 0) - (b.total_position_count || 0)
+        );
+      case "createdAt_desc":
+        return sorted.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+      case "createdAt_asc":
+        return sorted.sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+        );
+      default:
+        return claims;
+    }
+  };
+
+  // Determine if the user has any active shares in the current direction
+  const hasAnyPosition =
+    (supportShares.linear + supportShares.exponential > 0n) ||
+    (opposeShares.linear + opposeShares.exponential > 0n);
   // console.log("Has any position:", hasAnyPosition, supportShares, opposeShares);
 
   return (
@@ -517,12 +517,12 @@ const hasAnyPosition =
         {/* Search */}
         <div className="flex-1 min-w-[250px]">
           <input
-  type="text"
-  placeholder="Search claims by subject, predicate, or object.."
-  value={searchTerm}
-  onChange={(e) => setSearchTerm(e.target.value)}
-  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-/>
+            type="text"
+            placeholder="Search claims by subject, predicate, or object.."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+          />
         </div>
 
         {/* Grid/List Toggle */}
@@ -592,1052 +592,1047 @@ const hasAnyPosition =
                   </thead>
 
                   <tbody className="text-xs">
-  {sortedClaims.map((claim, index) => (
-    <tr
-      key={index}
-      className="bg-[#060210] hover:bg-[#1a0f2e] cursor-pointer"
-    >
-      {/* Claim cell: clickable to navigate */}
-      <td
-        className="px-4 py-3"
-        onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-{/* Subject */}
-<span
-  className="bg-[#22193A] px-2.5 py-1 rounded flex items-center gap-2 max-w-[240px] truncate cursor-pointer hover:bg-[#2f2350] transition-colors duration-200 text-sm sm:text-base"
->
-  <img
-    src={claim.term.triple.subject.image}
-    className="w-5 h-5 flex-shrink-0"
-  />
-  <span className="truncate">
-    {highlightMatch(claim.term.triple.subject.label, searchTerm)}
-  </span>
-</span>
+                    {sortedClaims.map((claim, index) => (
+                      <tr
+                        key={index}
+                        className="bg-[#060210] hover:bg-[#1a0f2e] cursor-pointer"
+                      >
+                        {/* Claim cell: clickable to navigate */}
+                        <td
+                          className="px-4 py-3"
+                          onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Subject */}
+                            <span
+                              className="bg-[#22193A] px-2.5 py-1 rounded flex items-center gap-2 max-w-[240px] truncate cursor-pointer hover:bg-[#2f2350] transition-colors duration-200 text-sm sm:text-base"
+                            >
+                              <img
+                                src={claim.term.triple.subject.image}
+                                className="w-5 h-5 flex-shrink-0"
+                              />
+                              <span className="truncate">
+                                {highlightMatch(claim.term.triple.subject.label, searchTerm)}
+                              </span>
+                            </span>
 
-{/* Predicate */}
-<span
-  className="text-xs px-1 cursor-pointer hover:text-white transition-colors duration-200"
->
-  {highlightMatch(claim.term.triple.predicate.label, searchTerm)}
-</span>
+                            {/* Predicate */}
+                            <span
+                              className="text-xs px-1 cursor-pointer hover:text-white transition-colors duration-200"
+                            >
+                              {highlightMatch(claim.term.triple.predicate.label, searchTerm)}
+                            </span>
 
-{/* Object */}
-<span
-  className="bg-[#22193A] px-2.5 py-1 rounded max-w-[280px] truncate cursor-pointer hover:bg-[#2f2350] transition-colors duration-200 text-sm sm:text-base"
->
-  {highlightMatch(claim.term.triple.object.label, searchTerm)}
-</span>
-</div>
-      </td>
+                            {/* Object */}
+                            <span
+                              className="bg-[#22193A] px-2.5 py-1 rounded max-w-[280px] truncate cursor-pointer hover:bg-[#2f2350] transition-colors duration-200 text-sm sm:text-base"
+                            >
+                              {highlightMatch(claim.term.triple.object.label, searchTerm)}
+                            </span>
+                          </div>
+                        </td>
 
-      {/* Market Cap */}
-      <td className="px-4 py-3">
-        {formatNumber(parseFloat(formatEther(BigInt(claim.total_market_cap))))} TRUST
-      </td>
+                        {/* Market Cap */}
+                        <td className="px-4 py-3">
+                          {formatNumber(parseFloat(formatEther(BigInt(claim.total_market_cap))))} TRUST
+                        </td>
 
-      {/* Support / Oppose Stats */}
-      <td className="px-4 py-3 text-blue-400">
-        <div className="flex items-center gap-2">
-          <img src="/user.png" className="w-4 h-4" />
-          {formatNumber(claim.term.positions_aggregate.aggregate.count, "user")}
-        </div>
-      </td>
-      <td className="px-4 py-3 text-[#F19C03] ">
-        <div className="flex items-center gap-2">
-          <img src="/user-red.png" className="w-4 h-4" />
-          {formatNumber(claim.counter_term.positions_aggregate.aggregate.count, "user")}
-        </div>
-      </td>
+                        {/* Support / Oppose Stats */}
+                        <td className="px-4 py-3 text-blue-400">
+                          <div className="flex items-center gap-2">
+                            <img src="/user.png" className="w-4 h-4" />
+                            {formatNumber(claim.term.positions_aggregate.aggregate.count, "user")}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-[#F19C03] ">
+                          <div className="flex items-center gap-2">
+                            <img src="/user-red.png" className="w-4 h-4" />
+                            {formatNumber(claim.counter_term.positions_aggregate.aggregate.count, "user")}
+                          </div>
+                        </td>
 
-      {/* Actions: buttons only */}
-      <td className="px-4 py-3 text-center text-xs">
-  <div className="flex justify-center gap-2">
-{/* Support Button */}
-<button
-  className={`px-4 py-2 rounded-lg text-xs transition-all
-    ${
-      actionState[claim.term.id] === "supported"
-        ? "bg-transparent text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white" // hovered reverts
-        : "bg-blue-600 text-white hover:brightness-110"
-    }`}
-  onClick={(e) => {
-    e.stopPropagation();
-    handleSupportClick(claim);
-  }}
->
-  {actionState[claim.term.id] === "supported" ? "Supported" : "Support"}
-</button>
+                        {/* Actions: buttons only */}
+                        <td className="px-4 py-3 text-center text-xs">
+                          <div className="flex justify-center gap-2">
+                            {/* Support Button */}
+                            <button
+                              className={`px-4 py-2 rounded-lg text-xs transition-all
+    ${actionState[claim.term.id] === "supported"
+                                  ? "bg-transparent text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white" // hovered reverts
+                                  : "bg-blue-600 text-white hover:brightness-110"
+                                }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSupportClick(claim);
+                              }}
+                            >
+                              {actionState[claim.term.id] === "supported" ? "Supported" : "Support"}
+                            </button>
 
-{/* Oppose Button */}
-<button
-  className={`px-4 py-2 rounded-lg text-xs transition-all
-    ${
-      actionState[claim.counter_term.id] === "opposed"
-        ? "bg-transparent text-[#F19C03] border border-[#F19C03] hover:bg-[#F19C03] hover:text-white"
-        : "bg-[#F19C03] text-white hover:brightness-110"
-    }`}
-  onClick={(e) => {
-    e.stopPropagation();
-    handleOpposeClick(claim);
-  }}
->
-  {actionState[claim.counter_term.id] === "opposed" ? "Opposed" : "Oppose"}
-</button>
-  </div>
-</td>
-    </tr>
-  ))}
-</tbody>
+                            {/* Oppose Button */}
+                            <button
+                              className={`px-4 py-2 rounded-lg text-xs transition-all
+    ${actionState[claim.counter_term.id] === "opposed"
+                                  ? "bg-transparent text-[#F19C03] border border-[#F19C03] hover:bg-[#F19C03] hover:text-white"
+                                  : "bg-[#F19C03] text-white hover:brightness-110"
+                                }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpposeClick(claim);
+                              }}
+                            >
+                              {actionState[claim.counter_term.id] === "opposed" ? "Opposed" : "Oppose"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
 
-{/* ================= MOBILE STACKED CARDS ================= */}
-<div className="md:hidden flex flex-col gap-3 px-1">
-  {sortedClaims.map((claim, index) => {
-    const supportCount = claim.term.positions_aggregate.aggregate.count;
-    const opposeCount = claim.counter_term.positions_aggregate.aggregate.count;
-    const total = supportCount + opposeCount;
-    const supportPercent = total ? Math.round((supportCount / total) * 100) : 0;
-    const opposePercent = total ? 100 - supportPercent : 0;
+              {/* ================= MOBILE STACKED CARDS ================= */}
+              <div className="md:hidden flex flex-col gap-3 px-1">
+                {sortedClaims.map((claim, index) => {
+                  const supportCount = claim.term.positions_aggregate.aggregate.count;
+                  const opposeCount = claim.counter_term.positions_aggregate.aggregate.count;
+                  const total = supportCount + opposeCount;
+                  const supportPercent = total ? Math.round((supportCount / total) * 100) : 0;
+                  const opposePercent = total ? 100 - supportPercent : 0;
 
-    return (
-      <div
-        key={index}
-        className="bg-[#060210] border border-gray-700 rounded-xl p-3 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all cursor-pointer mx-auto w-full max-w-[95vw]"
-        onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
-      >
-        {/* Claim Statement */}
-{/* Claim Statement */}
-<div
-  className="mb-2 flex items-center gap-1 text-xs sm:text-sm w-full whitespace-nowrap overflow-hidden"
-  style={{ cursor: 'pointer' }}
->
-  {/* Subject */}
-  <span
-    className="px-2 py-0.5 rounded truncate transition-colors duration-200"
-    style={{
-      flex: '0 0 20%',
-      minWidth: 0,
-      backgroundColor: '#1c122e', // slightly lighter than original
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2b1f45')}
-    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1c122e')}
-  >
-    {claim.term.triple.subject.label}
-  </span>
+                  return (
+                    <div
+                      key={index}
+                      className="bg-[#060210] border border-gray-700 rounded-xl p-3 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all cursor-pointer mx-auto w-full max-w-[95vw]"
+                      onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
+                    >
+                      {/* Claim Statement */}
+                      {/* Claim Statement */}
+                      <div
+                        className="mb-2 flex items-center gap-1 text-xs sm:text-sm w-full whitespace-nowrap overflow-hidden"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {/* Subject */}
+                        <span
+                          className="px-2 py-0.5 rounded truncate transition-colors duration-200"
+                          style={{
+                            flex: '0 0 20%',
+                            minWidth: 0,
+                            backgroundColor: '#1c122e', // slightly lighter than original
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2b1f45')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1c122e')}
+                        >
+                          {claim.term.triple.subject.label}
+                        </span>
 
-  {/* Predicate */}
-  <span
-    className="truncate text-center"
-    style={{ flex: '0 0 10%', minWidth: 0 }}
-  >
-    {claim.term.triple.predicate.label}
-  </span>
+                        {/* Predicate */}
+                        <span
+                          className="truncate text-center"
+                          style={{ flex: '0 0 10%', minWidth: 0 }}
+                        >
+                          {claim.term.triple.predicate.label}
+                        </span>
 
-  {/* Object */}
-  <span
-    className="px-2 py-0.5 rounded truncate transition-colors duration-200"
-    style={{
-      flex: '0 0 20%',
-      minWidth: 0,
-      backgroundColor: '#1c122e', // match subject
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2b1f45')}
-    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1c122e')}
-  >
-    {claim.term.triple.object.label}
-  </span>
-</div>
+                        {/* Object */}
+                        <span
+                          className="px-2 py-0.5 rounded truncate transition-colors duration-200"
+                          style={{
+                            flex: '0 0 20%',
+                            minWidth: 0,
+                            backgroundColor: '#1c122e', // match subject
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2b1f45')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1c122e')}
+                        >
+                          {claim.term.triple.object.label}
+                        </span>
+                      </div>
 
-        {/* Support / Oppose Stats */}
-        <div className="flex justify-between items-center text-xs sm:text-sm mb-3 w-full">
-          <div className="flex flex-col" style={{ flex: '0 0 45%' }}>
-            <span className="text-blue-400">Support: {supportCount}</span>
-            <span className="text-blue-400 text-[10px]">{supportPercent}%</span>
-          </div>
-          <div className="flex flex-col items-end" style={{ flex: '0 0 45%' }}>
-            <span className="text-[#F19C03]">Oppose: {opposeCount}</span>
-            <span className="text-[#F19C03] text-[10px]">{opposePercent}%</span>
-          </div>
-        </div>
+                      {/* Support / Oppose Stats */}
+                      <div className="flex justify-between items-center text-xs sm:text-sm mb-3 w-full">
+                        <div className="flex flex-col" style={{ flex: '0 0 45%' }}>
+                          <span className="text-blue-400">Support: {supportCount}</span>
+                          <span className="text-blue-400 text-[10px]">{supportPercent}%</span>
+                        </div>
+                        <div className="flex flex-col items-end" style={{ flex: '0 0 45%' }}>
+                          <span className="text-[#F19C03]">Oppose: {opposeCount}</span>
+                          <span className="text-[#F19C03] text-[10px]">{opposePercent}%</span>
+                        </div>
+                      </div>
 
-        {/* Action Buttons & Market Cap */}
-        <div className="flex justify-between items-center gap-2 w-full flex-wrap">
-          <div className="flex gap-2" style={{ flex: '0 0 45%' }}>
-            <button
-              onClick={() => handleSupportClick(claim)}
-              className="flex-1 h-10 sm:h-12 bg-blue-600 text-white rounded-xl hover:bg-blue-700 hover:scale-105 transition-transform"
-            >
-              Support
-            </button>
-            <button
-              onClick={() => handleOpposeClick(claim)}
-              className="flex-1 h-10 sm:h-12 bg-[#F19C03] text-white rounded-xl hover:bg-[#e59400] hover:scale-105 transition-transform"
-            >
-              Oppose
-            </button>
-          </div>
-          <div className="text-gray-400 text-xs sm:text-sm text-right" style={{ flex: '0 0 45%' }}>
-            {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
-          </div>
-        </div>
-      </div>
-    );
-  })}
-</div>
+                      {/* Action Buttons & Market Cap */}
+                      <div className="flex justify-between items-center gap-2 w-full flex-wrap">
+                        <div className="flex gap-2" style={{ flex: '0 0 45%' }}>
+                          <button
+                            onClick={() => handleSupportClick(claim)}
+                            className="flex-1 h-10 sm:h-12 bg-blue-600 text-white rounded-xl hover:bg-blue-700 hover:scale-105 transition-transform"
+                          >
+                            Support
+                          </button>
+                          <button
+                            onClick={() => handleOpposeClick(claim)}
+                            className="flex-1 h-10 sm:h-12 bg-[#F19C03] text-white rounded-xl hover:bg-[#e59400] hover:scale-105 transition-transform"
+                          >
+                            Oppose
+                          </button>
+                        </div>
+                        <div className="text-gray-400 text-xs sm:text-sm text-right" style={{ flex: '0 0 45%' }}>
+                          {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </>
           )}
-                    {view === "grid" && (
-  <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-3">
-    {sortedClaims.map((claim) => {
-      const supportCount = Number(claim.term.positions_aggregate.aggregate.count);
-      const opposeCount = Number(claim.counter_term.positions_aggregate.aggregate.count);
-      const total = supportCount + opposeCount;
-      const supportPercent = total > 0 ? (supportCount / total) * 100 : 0;
-      const opposePercent = total > 0 ? (opposeCount / total) * 100 : 0;
+          {view === "grid" && (
+            <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-3">
+              {sortedClaims.map((claim) => {
+                const supportCount = Number(claim.term.positions_aggregate.aggregate.count);
+                const opposeCount = Number(claim.counter_term.positions_aggregate.aggregate.count);
+                const total = supportCount + opposeCount;
+                const supportPercent = total > 0 ? (supportCount / total) * 100 : 0;
+                const opposePercent = total > 0 ? (opposeCount / total) * 100 : 0;
 
-      return (
-        <div
-          key={claim.term_id}
-          className="bg-[#060210] border border-gray-700 rounded-xl p-3 hover:bg-[#2c0738] transition cursor-pointer"
-          onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
-        >
-          {/* Statement */}
-          <div className="text-gray-300 mb-2 flex flex-wrap items-center gap-1 text-sm">
-            <span className="bg-[#0b0618] px-2 py-0.5 rounded max-w-[40%] truncate text-xs">
-              {claim.term.triple.subject.label}
-            </span>
-            <span className="text-xs">{claim.term.triple.predicate.label}</span>
-            <span className="bg-[#0b0618] px-2 py-0.5 rounded max-w-[40%] truncate text-xs">
-              {claim.term.triple.object.label}
-            </span>
-          </div>
+                return (
+                  <div
+                    key={claim.term_id}
+                    className="bg-[#060210] border border-gray-700 rounded-xl p-3 hover:bg-[#2c0738] transition cursor-pointer"
+                    onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
+                  >
+                    {/* Statement */}
+                    <div className="text-gray-300 mb-2 flex flex-wrap items-center gap-1 text-sm">
+                      <span className="bg-[#0b0618] px-2 py-0.5 rounded max-w-[40%] truncate text-xs">
+                        {claim.term.triple.subject.label}
+                      </span>
+                      <span className="text-xs">{claim.term.triple.predicate.label}</span>
+                      <span className="bg-[#0b0618] px-2 py-0.5 rounded max-w-[40%] truncate text-xs">
+                        {claim.term.triple.object.label}
+                      </span>
+                    </div>
 
-          {/* Stats Section */}
-          <div className="flex overflow-hidden rounded-md text-xs">
-            {/* Support */}
-            <div className="flex-1 flex flex-col p-1 gap-0.5">
-              <span className="text-blue-400">Support</span>
-              <div className="flex items-center justify-between">
-                <span>{toFixed(formatEther(BigInt(claim.term.total_assets)))} TRUST</span>
-                <div className="flex items-center gap-1 text-blue-400">
-                  <span>{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
-                  <img src="/user.png" alt="User Icon" className="w-3 h-3" />
-                </div>
-              </div>
+                    {/* Stats Section */}
+                    <div className="flex overflow-hidden rounded-md text-xs">
+                      {/* Support */}
+                      <div className="flex-1 flex flex-col p-1 gap-0.5">
+                        <span className="text-blue-400">Support</span>
+                        <div className="flex items-center justify-between">
+                          <span>{toFixed(formatEther(BigInt(claim.term.total_assets)))} TRUST</span>
+                          <div className="flex items-center gap-1 text-blue-400">
+                            <span>{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
+                            <img src="/user.png" alt="User Icon" className="w-3 h-3" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Vertical Separator */}
+                      <div className="w-px bg-white"></div>
+
+                      {/* Oppose */}
+                      <div className="flex-1 flex flex-col p-1 gap-0.5">
+                        <span className="text-[#F19C03]">Oppose</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[#F19C03]">{toFixed(formatEther(BigInt(claim.counter_term.total_assets)))} TRUST</span>
+                          <div className="flex items-center gap-1 text-[#F19C03]">
+                            <span>{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
+                            <img
+                              src="/user-red.png"
+                              alt="User Icon"
+                              className="w-3 h-3"
+                              style={{ filter: "invert(51%) sepia(90%) saturate(4515%) hue-rotate(2deg) brightness(97%) contrast(96%)" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Percent Bar */}
+                    <div className="w-full h-3 bg-gray-700 rounded-lg overflow-hidden mt-1 relative">
+                      <div className="flex h-full text-white text-xs">
+                        {supportPercent > 0 && (
+                          <div
+                            className="bg-blue-600 flex items-center justify-center transition-all duration-500"
+                            style={{ width: `${supportPercent}%` }}
+                          >
+                            {supportPercent > 8 && `${supportPercent.toFixed(1)}%`}
+                          </div>
+                        )}
+                        {opposePercent > 0 && (
+                          <div
+                            className="bg-[#F19C03] flex items-center justify-center transition-all duration-500"
+                            style={{ width: `${opposePercent}%` }}
+                          >
+                            {opposePercent > 8 && `${opposePercent.toFixed(1)}%`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-700 text-xs">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          className="bg-blue-600 px-3 py-1 rounded-lg text-xs pointer-events-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSupportClick(claim);
+                          }}
+                        >
+                          Support
+                        </button>
+                        <button
+                          className="bg-[#F19C03] px-3 py-1 rounded-lg text-xs pointer-events-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpposeClick(claim);
+                          }}
+                        >
+                          Oppose
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col items-end text-gray-300">
+                        <span>Total Market Cap</span>
+                        <span className="text-white text-sm">
+                          {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
-            {/* Vertical Separator */}
-            <div className="w-px bg-white"></div>
-
-            {/* Oppose */}
-            <div className="flex-1 flex flex-col p-1 gap-0.5">
-              <span className="text-[#F19C03]">Oppose</span>
-              <div className="flex items-center gap-1">
-                <span className="text-[#F19C03]">{toFixed(formatEther(BigInt(claim.counter_term.total_assets)))} TRUST</span>
-                <div className="flex items-center gap-1 text-[#F19C03]">
-                  <span>{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
-                  <img
-                    src="/user-red.png"
-                    alt="User Icon"
-                    className="w-3 h-3"
-                    style={{ filter: "invert(51%) sepia(90%) saturate(4515%) hue-rotate(2deg) brightness(97%) contrast(96%)" }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Percent Bar */}
-          <div className="w-full h-3 bg-gray-700 rounded-lg overflow-hidden mt-1 relative">
-            <div className="flex h-full text-white text-xs">
-              {supportPercent > 0 && (
-                <div
-                  className="bg-blue-600 flex items-center justify-center transition-all duration-500"
-                  style={{ width: `${supportPercent}%` }}
-                >
-                  {supportPercent > 8 && `${supportPercent.toFixed(1)}%`}
-                </div>
-              )}
-              {opposePercent > 0 && (
-                <div
-                  className="bg-[#F19C03] flex items-center justify-center transition-all duration-500"
-                  style={{ width: `${opposePercent}%` }}
-                >
-                  {opposePercent > 8 && `${opposePercent.toFixed(1)}%`}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-700 text-xs">
-            <div className="flex justify-center gap-2">
-              <button
-                className="bg-blue-600 px-3 py-1 rounded-lg text-xs pointer-events-auto"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSupportClick(claim);
-                }}
-              >
-                Support
-              </button>
-              <button
-                className="bg-[#F19C03] px-3 py-1 rounded-lg text-xs pointer-events-auto"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpposeClick(claim);
-                }}
-              >
-                Oppose
-              </button>
-            </div>
-
-            <div className="flex flex-col items-end text-gray-300">
-              <span>Total Market Cap</span>
-              <span className="text-white text-sm">
-                {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
-              </span>
-            </div>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-)}
+          )}
 
           {/* Modal */}
-  {showModal && activeClaim && (
-  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-<div className="bg-[#070315] max-w-2xl w-full mx-4 p-6 rounded-lg relative border h-[calc(100vh-8rem)] overflow-y-auto">
+          {showModal && activeClaim && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+              <div className="bg-[#070315] max-w-2xl w-full mx-4 p-6 rounded-lg relative border h-[calc(100vh-8rem)] overflow-y-auto">
 
-      {/* Title + Support Tag */}
-      <div className="flex items-center gap-2 mb-1 p-2 pb-1">
-        <h2 className="text-white font text-base">Stake</h2>
-<div className="flex items-center gap-1 group relative">
-  <span
-    className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
-  >
-    {opposeMode ? "Oppose" : "Support"}
-  </span>
+                {/* Title + Support Tag */}
+                <div className="flex items-center gap-2 mb-1 p-2 pb-1">
+                  <h2 className="text-white font text-base">Stake</h2>
+                  <div className="flex items-center gap-1 group relative">
+                    <span
+                      className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+                    >
+                      {opposeMode ? "Oppose" : "Support"}
+                    </span>
 
-  <span className="text-[10px] bg-gray-300 text-black rounded-full w-3 h-3 flex items-center justify-center cursor-default">
-    ?
-  </span>
+                    <span className="text-[10px] bg-gray-300 text-black rounded-full w-3 h-3 flex items-center justify-center cursor-default">
+                      ?
+                    </span>
 
-  {/* Tooltip */}
-  <div className="absolute left-0 top-5 w-56 text-[10px] bg-black text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-    Staking on a Triple signifies a belief in the relevancy of the respective Triple and enhances its discoverability in the Intuition system.
-  </div>
-</div>
-      </div>
+                    {/* Tooltip */}
+                    <div className="absolute left-0 top-5 w-56 text-[10px] bg-black text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      Staking on a Triple signifies a belief in the relevancy of the respective Triple and enhances its discoverability in the Intuition system.
+                    </div>
+                  </div>
+                </div>
 
-      {/* Subtitle */}
-      <p className="text-gray-400 text-xs mb-12 -pt-2">
-        Staking on a Triple enhances its discoverability in the Intuition system
-      </p>
+                {/* Subtitle */}
+                <p className="text-gray-400 text-xs mb-12 -pt-2">
+                  Staking on a Triple enhances its discoverability in the Intuition system
+                </p>
 
-{/* Statement */}
-<div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center justify-center gap-2 text-sm">
-  <span className="bg-[#1a1230] hover:bg-[#241744] cursor-pointer transition-colors duration-200 px-3 py-1.5 rounded inline-flex items-center gap-2 max-w-[200px] truncate">
-    <img
-      src={activeClaim.term.triple.subject.image}
-      alt="Claim Icon"
-      className="w-5 h-5 object-contain"
-    />
-    {activeClaim.term.triple.subject.label}
-  </span>
+                {/* Statement */}
+                <div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center justify-center gap-2 text-sm">
+                  <span className="bg-[#1a1230] hover:bg-[#241744] cursor-pointer transition-colors duration-200 px-3 py-1.5 rounded inline-flex items-center gap-2 max-w-[200px] truncate">
+                    <img
+                      src={activeClaim.term.triple.subject.image}
+                      alt="Claim Icon"
+                      className="w-5 h-5 object-contain"
+                    />
+                    {activeClaim.term.triple.subject.label}
+                  </span>
 
-  <span>{activeClaim.term.triple.predicate.label}</span>
+                  <span>{activeClaim.term.triple.predicate.label}</span>
 
-  <span className="bg-[#1a1230] hover:bg-[#241744] cursor-pointer transition-colors duration-200 px-3 py-1.5 rounded max-w-[200px] truncate">
-    {activeClaim.term.triple.object.label}
-  </span>
-</div>
+                  <span className="bg-[#1a1230] hover:bg-[#241744] cursor-pointer transition-colors duration-200 px-3 py-1.5 rounded max-w-[200px] truncate">
+                    {activeClaim.term.triple.object.label}
+                  </span>
+                </div>
 
-{/* Tabs */}
-<div className="flex justify-center mb-5">
-  <div className="flex gap-12 relative">
+                {/* Tabs */}
+                <div className="flex justify-center mb-5">
+                  <div className="flex gap-12 relative">
 
-    {/* Deposit Tab */}
-    <button
-      className={`relative px-6 py-3 text-base font-medium ${
-        activeTab === "deposit" ? "text-white" : "text-gray-400"
-      }`}
-      onClick={() => setActiveTab("deposit")}
-    >
-      Deposit
-      {activeTab === "deposit" && (
-        <span
-          className="absolute left-1/2 bottom-0 w-48 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
-        ></span>
-      )}
-    </button>
+                    {/* Deposit Tab */}
+                    <button
+                      className={`relative px-6 py-3 text-base font-medium ${activeTab === "deposit" ? "text-white" : "text-gray-400"
+                        }`}
+                      onClick={() => setActiveTab("deposit")}
+                    >
+                      Deposit
+                      {activeTab === "deposit" && (
+                        <span
+                          className="absolute left-1/2 bottom-0 w-48 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
+                        ></span>
+                      )}
+                    </button>
 
-{/* Redeem Tab */}
-<button
-  className={`relative px-6 py-3 text-base font-medium transition-colors duration-200
-    ${hasAnyPosition 
-      ? activeTab === "redeem"
-        ? "text-white" 
-        : "text-gray-400 hover:text-white cursor-pointer"
-      : "text-gray-600 cursor-not-allowed pointer-events-none"
-    }`}
-  onClick={() => hasAnyPosition && setActiveTab("redeem")}
->
-  Redeem
-  {hasAnyPosition && activeTab === "redeem" && (
-    <span
-      className="absolute left-1/2 bottom-0 w-48 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
-    ></span>
-  )}
-</button>
+                    {/* Redeem Tab */}
+                    <button
+                      className={`relative px-6 py-3 text-base font-medium transition-colors duration-200
+    ${hasAnyPosition
+                          ? activeTab === "redeem"
+                            ? "text-white"
+                            : "text-gray-400 hover:text-white cursor-pointer"
+                          : "text-gray-600 cursor-not-allowed pointer-events-none"
+                        }`}
+                      onClick={() => hasAnyPosition && setActiveTab("redeem")}
+                    >
+                      Redeem
+                      {hasAnyPosition && activeTab === "redeem" && (
+                        <span
+                          className="absolute left-1/2 bottom-0 w-48 h-0.5 transform -translate-x-1/2 bg-blue-500 rounded-full"
+                        ></span>
+                      )}
+                    </button>
 
-  </div>
-</div>
+                  </div>
+                </div>
 
 
-{/* Tab Content */}
-{activeTab === "deposit" && (
-  <div className="px-4 md:px-12">
-{/* Main Card: Active Position */}
-<div className="flex justify-center mb-4">
-  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 mt-4 w-[380px]">
-    
-    <span className="text-gray-300 text-xs whitespace-nowrap">
-      Your Active Position
-    </span>
+                {/* Tab Content */}
+                {activeTab === "deposit" && (
+                  <div className="px-4 md:px-12">
+                    {/* Main Card: Active Position */}
+                    <div className="flex justify-center mb-4">
+                      <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 mt-4 w-[380px]">
 
-    <div className="flex items-center gap-2">
-      <span
-  className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
->
-  {opposeMode ? "Oppose" : "Support"}
-</span>
+                        <span className="text-gray-300 text-xs whitespace-nowrap">
+                          Your Active Position
+                        </span>
 
-<span className="text-xs whitespace-nowrap">
-  {displayedShares > 0n
-    ? `${formatTrust(displayedShares)} TRUST`
-    : "No active position"}
-</span>
-    </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+                          >
+                            {opposeMode ? "Oppose" : "Support"}
+                          </span>
 
-  </div>
-</div>
+                          <span className="text-xs whitespace-nowrap">
+                            {displayedShares > 0n
+                              ? `${formatTrust(displayedShares)} TRUST`
+                              : "No active position"}
+                          </span>
+                        </div>
 
-{/* Wallet + Curve Row */}
-<div className="flex justify-center">
-  <div className="flex items-center gap-6 mb-3 w-[380px]"> {/* fixed width matching tabs/card */}
+                      </div>
+                    </div>
 
-{/* LEFT: Wallet */}
-<div className="flex flex-col">
-  <div className="bg-[#110A2B] border border-[#393B60] rounded-2xl px-3 py-1.5 flex items-center gap-2 text-xs">
-    <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
-    <span className="text-white">
-      {Number(tTrustBalance) / 10 ** 18 >= 0
-        ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
-        : "0.00"} TRUST
-    </span>
-  </div>
+                    {/* Wallet + Curve Row */}
+                    <div className="flex justify-center">
+                      <div className="flex items-center gap-6 mb-3 w-[380px]"> {/* fixed width matching tabs/card */}
 
-  {/* Insufficient Funds Warning */}
-  {transactionAmount &&
-   Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
-    <span className="text-red-500 text-xs mt-1">
-      Insufficient funds
-    </span>
-  )}
-</div>
+                        {/* LEFT: Wallet */}
+                        <div className="flex flex-col">
+                          <div className="bg-[#110A2B] border border-[#393B60] rounded-2xl px-3 py-1.5 flex items-center gap-2 text-xs">
+                            <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+                            <span className="text-white">
+                              {Number(tTrustBalance) / 10 ** 18 >= 0
+                                ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
+                                : "0.00"} TRUST
+                            </span>
+                          </div>
 
-    {/* Right-aligned Cluster: Curve Info + Toggle + Info */}
-<div className="flex items-center gap-1 ml-auto"> {/* ml-auto pushes the whole cluster to far right, gap-1 keeps them tight */}
-  
-  {/* Curve Info Text */}
-  <div className="flex flex-col justify-center text-right"> {/* text-right aligns text toward toggle */}
-    <span className="text-white text-xs">
-      {isToggled ? "Exponential Curve" : "Linear Curve"}
-    </span>
-    <span className="text-[0.6rem] text-gray-300">
-      {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
-    </span>
-  </div>
+                          {/* Insufficient Funds Warning */}
+                          {transactionAmount &&
+                            Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
+                              <span className="text-red-500 text-xs mt-1">
+                                Insufficient funds
+                              </span>
+                            )}
+                        </div>
 
-{/* Toggle */}
-<label className="relative inline-block w-10 h-5 cursor-pointer">
-  <input
-    type="checkbox"
-    className="sr-only peer"
-    checked={isToggled}
-    onChange={() => setIsToggled(!isToggled)}
-  />
+                        {/* Right-aligned Cluster: Curve Info + Toggle + Info */}
+                        <div className="flex items-center gap-1 ml-auto"> {/* ml-auto pushes the whole cluster to far right, gap-1 keeps them tight */}
 
-  {/* Track */}
-  <span className="block w-full h-full bg-gray-400 peer-checked:bg-white rounded-full transition-colors duration-200"></span>
+                          {/* Curve Info Text */}
+                          <div className="flex flex-col justify-center text-right"> {/* text-right aligns text toward toggle */}
+                            <span className="text-white text-xs">
+                              {isToggled ? "Exponential Curve" : "Linear Curve"}
+                            </span>
+                            <span className="text-[0.6rem] text-gray-300">
+                              {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
+                            </span>
+                          </div>
 
-  {/* Knob */}
-  <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-[1.25rem]"></span>
-</label>
+                          {/* Toggle */}
+                          <label className="relative inline-block w-10 h-5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={isToggled}
+                              onChange={() => setIsToggled(!isToggled)}
+                            />
 
-  {/* Info Button */}
-  <button
-    onClick={() => setShowCurveInfo(true)}
-    className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
-  >
-    i
-  </button>
+                            {/* Track */}
+                            <span className="block w-full h-full bg-gray-400 peer-checked:bg-white rounded-full transition-colors duration-200"></span>
 
-        {/* Slide-in Modal (Fixed Right) */}
-        {showCurveInfo && (
-          <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
-            
-            {/* Close Button */}
-            <button
-              onClick={() => setShowCurveInfo(false)}
-              className="absolute top-3 right-3 text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
+                            {/* Knob */}
+                            <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-[1.25rem]"></span>
+                          </label>
 
-            {/* Main Heading */}
-            <h2 className="text-white text-lg text-center mb-2">
-              How Bonding Curves Work
-            </h2>
-            <p className="text-gray-300 text-sm text-left mb-6">
-              Intuition uses bonding curves to automatically set identity and claim prices based on supply and demand, rewarding early curation of valuable information.
-            </p>
+                          {/* Info Button */}
+                          <button
+                            onClick={() => setShowCurveInfo(true)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
+                          >
+                            i
+                          </button>
 
-            {/* Linear Curve Section */}
-            <img
-              src="/linear-curve.svg"
-              alt="Linear Curve"
-              className="w-full mb-4 rounded"
-            />
-            <div className="text-left mb-6">
-              <h4 className="text-white mb-1">Linear Curve (Safe)</h4>
-              <p className="text-gray-300 text-sm mb-2">
-                The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
-              </p>
-              <p className="text-gray-400 text-sm">
-                In other words, minus the fees, you will get back your original deposit value, plus any portion of the fees collected.
-              </p>
-            </div>
+                          {/* Slide-in Modal (Fixed Right) */}
+                          {showCurveInfo && (
+                            <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
 
-            {/* Exponential Curve Section */}
-            <img
-              src="/exponential.svg"
-              alt="Exponential Curve"
-              className="w-full mb-4 rounded"
-            />
-            <div className="text-left mb-6">
-              <h4 className="text-white mb-1">Exponential Curve (Riskier)</h4>
-              <p className="text-gray-300 text-sm mb-2">
-                The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
-              </p>
-              <p className="text-gray-300 text-sm">
-                Choose based on your risk tolerance and timing. It's riskier but can yield higher returns; however, if you deposit later, you will pay more for the same amount of shares.
-              </p>
-            </div>
-          </div>
-        )}
-    </div>
-</div>
-</div>
+                              {/* Close Button */}
+                              <button
+                                onClick={() => setShowCurveInfo(false)}
+                                className="absolute top-3 right-3 text-gray-400 hover:text-white"
+                              >
+                                ✕
+                              </button>
 
-{/* Center Big Zero */}
-{/* <div className="flex flex-col items-center mt-2"> */}
-<div className="flex flex-col items-center mt-2 w-full px-4">
-  <input
-    type="number"
-    min="0"
-    placeholder="0"
-    value={transactionAmount || ""}
-    onChange={(e) => setTransactionAmount(e.target.value)}
-    autoFocus
-    className="bg-transparent text-white text-3xl text-center outline-none
+                              {/* Main Heading */}
+                              <h2 className="text-white text-lg text-center mb-2">
+                                How Bonding Curves Work
+                              </h2>
+                              <p className="text-gray-300 text-sm text-left mb-6">
+                                Intuition uses bonding curves to automatically set identity and claim prices based on supply and demand, rewarding early curation of valuable information.
+                              </p>
+
+                              {/* Linear Curve Section */}
+                              <img
+                                src="/linear-curve.svg"
+                                alt="Linear Curve"
+                                className="w-full mb-4 rounded"
+                              />
+                              <div className="text-left mb-6">
+                                <h4 className="text-white mb-1">Linear Curve (Safe)</h4>
+                                <p className="text-gray-300 text-sm mb-2">
+                                  The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
+                                </p>
+                                <p className="text-gray-400 text-sm">
+                                  In other words, minus the fees, you will get back your original deposit value, plus any portion of the fees collected.
+                                </p>
+                              </div>
+
+                              {/* Exponential Curve Section */}
+                              <img
+                                src="/exponential.svg"
+                                alt="Exponential Curve"
+                                className="w-full mb-4 rounded"
+                              />
+                              <div className="text-left mb-6">
+                                <h4 className="text-white mb-1">Exponential Curve (Riskier)</h4>
+                                <p className="text-gray-300 text-sm mb-2">
+                                  The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
+                                </p>
+                                <p className="text-gray-300 text-sm">
+                                  Choose based on your risk tolerance and timing. It's riskier but can yield higher returns; however, if you deposit later, you will pay more for the same amount of shares.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Center Big Zero */}
+                    {/* <div className="flex flex-col items-center mt-2"> */}
+                    <div className="flex flex-col items-center mt-2 w-full px-4">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={transactionAmount || ""}
+                        onChange={(e) => setTransactionAmount(e.target.value)}
+                        autoFocus
+                        className="bg-transparent text-white text-3xl text-center outline-none
                w-full max-w-[400px] h-12
                appearance-none
                [&::-webkit-inner-spin-button]:appearance-none
                [&::-webkit-outer-spin-button]:appearance-none
                overflow-x-auto"
-  />
+                      />
 
-  <span className="text-gray-300 text-xs font-normal mt-1">TRUST</span>
+                      <span className="text-gray-300 text-xs font-normal mt-1">TRUST</span>
 
-  {/* Min Button */}
-  <button
-    type="button"
-    onClick={() => setTransactionAmount("0.01")}
-    className="mt-4 px-2 py-1 text-xs text-white bg-[#0A2D4D] rounded-full border border-white hover:bg-[#123a63] hover:border-[#8B3EFE] transition-colors"
-  >
-    Min
-  </button>
-</div>
-
-
-{/* Review Deposit Button */}
-<button
-  className={`mx-auto block px-6 py-2.5 rounded-3xl mt-4 text-sm transition-colors ${
-    transactionAmount &&
-    Number(transactionAmount) > 0 &&
-    Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
-      ? "bg-white text-black hover:bg-gray-200"
-      : "bg-gray-700 text-gray-400 cursor-not-allowed"
-  }`}
-  onClick={() => setShowReviewDepositModal(true)}
-  disabled={
-    !transactionAmount ||
-    Number(transactionAmount) <= 0 ||
-    Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
-  }
->
-  {transactionAmount &&
-  Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
-    ? "Check Your Balance"
-    : transactionAmount && Number(transactionAmount) > 0
-    ? "Review Deposit"
-    : "Enter an Amount"}
-</button>
-
-{/* Optional small red warning below button */}
-{transactionAmount &&
- Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
-  <span className="text-red-500 text-xs mt-1 block text-center">
-    Insufficient balance
-  </span>
-)}
-  </div>
-)}
+                      {/* Min Button */}
+                      <button
+                        type="button"
+                        onClick={() => setTransactionAmount("0.01")}
+                        className="mt-4 px-2 py-1 text-xs text-white bg-[#0A2D4D] rounded-full border border-white hover:bg-[#123a63] hover:border-[#8B3EFE] transition-colors"
+                      >
+                        Min
+                      </button>
+                    </div>
 
 
-{/* Tab Content */}
-{activeTab === "redeem" && (
-  <div className="px-4 md:px-12">
-{/* Main Card: Active Position */}
-<div className="flex justify-center mb-4">
-  <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 mt-4 w-[380px]">
-    
-    <span className="text-gray-300 text-xs whitespace-nowrap">
-      Your Active Position
-    </span>
+                    {/* Review Deposit Button */}
+                    <button
+                      className={`mx-auto block px-6 py-2.5 rounded-3xl mt-4 text-sm transition-colors ${transactionAmount &&
+                          Number(transactionAmount) > 0 &&
+                          Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
+                          ? "bg-white text-black hover:bg-gray-200"
+                          : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                        }`}
+                      onClick={() => setShowReviewDepositModal(true)}
+                      disabled={
+                        !transactionAmount ||
+                        Number(transactionAmount) <= 0 ||
+                        Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
+                      }
+                    >
+                      {transactionAmount &&
+                        Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18
+                        ? "Check Your Balance"
+                        : transactionAmount && Number(transactionAmount) > 0
+                          ? "Review Deposit"
+                          : "Enter an Amount"}
+                    </button>
 
-    <div className="flex items-center gap-2">
-      <span
-  className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
->
-  {opposeMode ? "Oppose" : "Support"}
-</span>
+                    {/* Optional small red warning below button */}
+                    {transactionAmount &&
+                      Number(transactionAmount) > Number(tTrustBalance) / 10 ** 18 && (
+                        <span className="text-red-500 text-xs mt-1 block text-center">
+                          Insufficient balance
+                        </span>
+                      )}
+                  </div>
+                )}
 
-  {/* Active Curve Amount */}
-  <span className="text-xs whitespace-nowrap">
-  {displayedShares > 0n
-    ? `${formatTrust(displayedShares)} TRUST`
-    : "No active position"}
-</span>
-    </div>
 
-  </div>
-</div>
+                {/* Tab Content */}
+                {activeTab === "redeem" && (
+                  <div className="px-4 md:px-12">
+                    {/* Main Card: Active Position */}
+                    <div className="flex justify-center mb-4">
+                      <div className="bg-[#110A2B] border-2 border-[#393B60] p-2 rounded-lg flex items-center justify-between gap-6 mt-4 w-[380px]">
 
-{/* Wallet + Curve Row */}
-<div className="flex justify-center">
-  <div className="flex items-center gap-6 mb-3 w-[380px]"> {/* fixed width matching tabs/card */}
+                        <span className="text-gray-300 text-xs whitespace-nowrap">
+                          Your Active Position
+                        </span>
 
-{/* LEFT: Wallet */}
-<div className="flex flex-col">
-  <div className="bg-[#110A2B] border border-[#393B60] rounded-2xl px-3 py-1.5 flex items-center gap-2 text-xs">
-    <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
-    <span className="text-white">
-      {Number(tTrustBalance) / 10 ** 18 >= 0
-        ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
-        : "0.00"} TRUST
-    </span>
-  </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+                          >
+                            {opposeMode ? "Oppose" : "Support"}
+                          </span>
 
-  {/* Insufficient Funds Warning */}
-  {transactionAmount &&
-  Number(transactionAmount) > maxRedeemable && (
-    <span className="text-red-500 text-xs mt-1">
-      Insufficient funds
-    </span>
-  )}
-</div>
+                          {/* Active Curve Amount */}
+                          <span className="text-xs whitespace-nowrap">
+                            {displayedShares > 0n
+                              ? `${formatTrust(displayedShares)} TRUST`
+                              : "No active position"}
+                          </span>
+                        </div>
 
-    {/* Right-aligned Cluster: Curve Info + Toggle + Info */}
-<div className="flex items-center gap-1 ml-auto"> {/* ml-auto pushes the whole cluster to far right, gap-1 keeps them tight */}
-  
-  {/* Curve Info Text */}
-  <div className="flex flex-col justify-center text-right"> {/* text-right aligns text toward toggle */}
-    <span className="text-white text-xs">
-      {isToggled ? "Exponential Curve" : "Linear Curve"}
-    </span>
-    <span className="text-[0.6rem] text-gray-300">
-      {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
-    </span>
-  </div>
+                      </div>
+                    </div>
 
-  {/* Toggle */}
-<label className="relative inline-block w-10 h-5 cursor-pointer">
-  <input
-    type="checkbox"
-    className="sr-only peer"
-    checked={isToggled}
-    onChange={() => setIsToggled(!isToggled)}
-  />
+                    {/* Wallet + Curve Row */}
+                    <div className="flex justify-center">
+                      <div className="flex items-center gap-6 mb-3 w-[380px]"> {/* fixed width matching tabs/card */}
 
-  {/* Track */}
-  <span className="block w-full h-full bg-gray-400 peer-checked:bg-white rounded-full transition-colors duration-200"></span>
+                        {/* LEFT: Wallet */}
+                        <div className="flex flex-col">
+                          <div className="bg-[#110A2B] border border-[#393B60] rounded-2xl px-3 py-1.5 flex items-center gap-2 text-xs">
+                            <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+                            <span className="text-white">
+                              {Number(tTrustBalance) / 10 ** 18 >= 0
+                                ? (Number(tTrustBalance) / 10 ** 18).toFixed(2)
+                                : "0.00"} TRUST
+                            </span>
+                          </div>
 
-  {/* Knob */}
-  <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-[1.25rem]"></span>
-</label>
+                          {/* Insufficient Funds Warning */}
+                          {transactionAmount &&
+                            Number(transactionAmount) > maxRedeemable && (
+                              <span className="text-red-500 text-xs mt-1">
+                                Insufficient funds
+                              </span>
+                            )}
+                        </div>
 
-  {/* Info Button */}
-  <button
-    onClick={() => setShowCurveInfo(true)}
-    className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
-  >
-    i
-  </button>
+                        {/* Right-aligned Cluster: Curve Info + Toggle + Info */}
+                        <div className="flex items-center gap-1 ml-auto"> {/* ml-auto pushes the whole cluster to far right, gap-1 keeps them tight */}
 
-        {/* Slide-in Modal (Fixed Right) */}
-        {showCurveInfo && (
-          <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
-            
-            {/* Close Button */}
-            <button
-              onClick={() => setShowCurveInfo(false)}
-              className="absolute top-3 right-3 text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
+                          {/* Curve Info Text */}
+                          <div className="flex flex-col justify-center text-right"> {/* text-right aligns text toward toggle */}
+                            <span className="text-white text-xs">
+                              {isToggled ? "Exponential Curve" : "Linear Curve"}
+                            </span>
+                            <span className="text-[0.6rem] text-gray-300">
+                              {isToggled ? "High Risk, High Reward" : "Low Risk, Low Reward"}
+                            </span>
+                          </div>
 
-            {/* Main Heading */}
-            <h2 className="text-white text-lg text-center mb-2">
-              How Bonding Curves Work
-            </h2>
-            <p className="text-gray-300 text-sm text-left mb-6">
-              Intuition uses bonding curves to automatically set identity and claim prices based on supply and demand, rewarding early curation of valuable information.
-            </p>
+                          {/* Toggle */}
+                          <label className="relative inline-block w-10 h-5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={isToggled}
+                              onChange={() => setIsToggled(!isToggled)}
+                            />
 
-            {/* Linear Curve Section */}
-            <img
-              src="/linear-curve.svg"
-              alt="Linear Curve"
-              className="w-full mb-4 rounded"
-            />
-            <div className="text-left mb-6">
-              <h4 className="text-white mb-1">Linear Curve (Safe)</h4>
-              <p className="text-gray-300 text-sm mb-2">
-                The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
-              </p>
-              <p className="text-gray-400 text-sm">
-                In other words, minus the fees, you will get back your original deposit value, plus any portion of the fees collected.
-              </p>
-            </div>
+                            {/* Track */}
+                            <span className="block w-full h-full bg-gray-400 peer-checked:bg-white rounded-full transition-colors duration-200"></span>
 
-            {/* Exponential Curve Section */}
-            <img
-              src="/exponential.svg"
-              alt="Exponential Curve"
-              className="w-full mb-4 rounded"
-            />
-            <div className="text-left mb-6">
-              <h4 className="text-white mb-1">Exponential Curve (Riskier)</h4>
-              <p className="text-gray-300 text-sm mb-2">
-                The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
-              </p>
-              <p className="text-gray-300 text-sm">
-                Choose based on your risk tolerance and timing. It's riskier but can yield higher returns; however, if you deposit later, you will pay more for the same amount of shares.
-              </p>
-            </div>
-          </div>
-        )}
-    </div>
-</div>
-</div>
+                            {/* Knob */}
+                            <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-black rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-[1.25rem]"></span>
+                          </label>
 
-{/* Center Big Zero */}
-{/* <div className="flex flex-col items-center mt-2"> */}
-<div className="flex flex-col items-center mt-2 w-full px-4">
-  <input
-    type="number"
-    min="0"
-    placeholder="0"
-    value={transactionAmount || ""}
-    onChange={(e) => setTransactionAmount(e.target.value)}
-    autoFocus
-    className="bg-transparent text-white text-3xl text-center outline-none
+                          {/* Info Button */}
+                          <button
+                            onClick={() => setShowCurveInfo(true)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
+                          >
+                            i
+                          </button>
+
+                          {/* Slide-in Modal (Fixed Right) */}
+                          {showCurveInfo && (
+                            <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
+
+                              {/* Close Button */}
+                              <button
+                                onClick={() => setShowCurveInfo(false)}
+                                className="absolute top-3 right-3 text-gray-400 hover:text-white"
+                              >
+                                ✕
+                              </button>
+
+                              {/* Main Heading */}
+                              <h2 className="text-white text-lg text-center mb-2">
+                                How Bonding Curves Work
+                              </h2>
+                              <p className="text-gray-300 text-sm text-left mb-6">
+                                Intuition uses bonding curves to automatically set identity and claim prices based on supply and demand, rewarding early curation of valuable information.
+                              </p>
+
+                              {/* Linear Curve Section */}
+                              <img
+                                src="/linear-curve.svg"
+                                alt="Linear Curve"
+                                className="w-full mb-4 rounded"
+                              />
+                              <div className="text-left mb-6">
+                                <h4 className="text-white mb-1">Linear Curve (Safe)</h4>
+                                <p className="text-gray-300 text-sm mb-2">
+                                  The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
+                                </p>
+                                <p className="text-gray-400 text-sm">
+                                  In other words, minus the fees, you will get back your original deposit value, plus any portion of the fees collected.
+                                </p>
+                              </div>
+
+                              {/* Exponential Curve Section */}
+                              <img
+                                src="/exponential.svg"
+                                alt="Exponential Curve"
+                                className="w-full mb-4 rounded"
+                              />
+                              <div className="text-left mb-6">
+                                <h4 className="text-white mb-1">Exponential Curve (Riskier)</h4>
+                                <p className="text-gray-300 text-sm mb-2">
+                                  The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
+                                </p>
+                                <p className="text-gray-300 text-sm">
+                                  Choose based on your risk tolerance and timing. It's riskier but can yield higher returns; however, if you deposit later, you will pay more for the same amount of shares.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Center Big Zero */}
+                    {/* <div className="flex flex-col items-center mt-2"> */}
+                    <div className="flex flex-col items-center mt-2 w-full px-4">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={transactionAmount || ""}
+                        onChange={(e) => setTransactionAmount(e.target.value)}
+                        autoFocus
+                        className="bg-transparent text-white text-3xl text-center outline-none
                w-full max-w-[400px] h-12
                appearance-none
                [&::-webkit-inner-spin-button]:appearance-none
                [&::-webkit-outer-spin-button]:appearance-none
                overflow-x-auto"
-  />
-  <span className="text-gray-300 text-xs font-normal mt-1">TRUST</span>
+                      />
+                      <span className="text-gray-300 text-xs font-normal mt-1">TRUST</span>
 
-{/* Max Button */}
-<button
-  type="button"
-  onClick={() => {
-    const max = Number(displayedShares) / 10 ** 18;
-    setTransactionAmount(max.toString());
-  }}
-  className="mt-4 px-2 py-1 text-xs text-white bg-[#0A2D4D] rounded-full border border-white hover:bg-[#123a63] hover:border-[#8B3EFE] transition-colors"
->
-  Max
-</button>
-</div>
+                      {/* Max Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const max = Number(displayedShares) / 10 ** 18;
+                          setTransactionAmount(max.toString());
+                        }}
+                        className="mt-4 px-2 py-1 text-xs text-white bg-[#0A2D4D] rounded-full border border-white hover:bg-[#123a63] hover:border-[#8B3EFE] transition-colors"
+                      >
+                        Max
+                      </button>
+                    </div>
 
 
-    {/* Review Deposit Button */}
-<button
-  className={`mx-auto block px-5 py-1.5 rounded-3xl mt-4 text-sm transition-colors ${
-    transactionAmount &&
-    Number(transactionAmount) > 0 &&
-    Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
-      ? "bg-white text-black hover:bg-gray-200"
-      : "bg-gray-700 text-gray-400 cursor-not-allowed"
-  }`}
-  onClick={() => setShowReviewDepositModal(true)}
-  disabled={
-    !transactionAmount ||
-    Number(transactionAmount) <= 0 ||
-    Number(transactionAmount) > maxRedeemable
-  }
->
-  {transactionAmount
-    ? Number(transactionAmount) > maxRedeemable
-      ? "Check Your Position"
-      : "Review Redeem"
-    : "Enter an Amount"}
-</button>
+                    {/* Review Deposit Button */}
+                    <button
+                      className={`mx-auto block px-5 py-1.5 rounded-3xl mt-4 text-sm transition-colors ${transactionAmount &&
+                          Number(transactionAmount) > 0 &&
+                          Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
+                          ? "bg-white text-black hover:bg-gray-200"
+                          : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                        }`}
+                      onClick={() => setShowReviewRedeemModal(true)}
+                      disabled={
+                        !transactionAmount ||
+                        Number(transactionAmount) <= 0 ||
+                        Number(transactionAmount) > maxRedeemable
+                      }
+                    >
+                      {transactionAmount
+                        ? Number(transactionAmount) > maxRedeemable
+                          ? "Check Your Position"
+                          : "Review Redeem"
+                        : "Enter an Amount"}
+                    </button>
 
-{/* Optional small red warning below button */}
-{transactionAmount &&
- Number(transactionAmount) > maxRedeemable && (
-  <span className="text-red-500 text-xs mt-1 block text-center">
-    "You only have {maxRedeemable} shares"
-  </span>
-)}
-  </div>
-)}
-      {/* Close Button */}
-      <button
-        className="absolute top-2 right-2 text-gray-400 hover:text-white"
-        onClick={handleCloseModal}
-      >
-        ×
-      </button>
-    </div>
-  </div>
-)}
-
-{showReviewDepositModal && activeClaim && (
-  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-    <div className="bg-[#070315] w-full max-w-md mx-4 p-3 rounded-xl relative border-2 border-[#8B3EFE]">
-
-{/* Back Button */}
-<button
-  className="absolute -top-1 pb-2 left-2 text-white text-2xl px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
-  onClick={() => {
-    setShowReviewDepositModal(false);
-    setModalStep("review");
-  }}
->
-  ←
-</button>
-
-      {/* Title + Support Tag */}
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white text-base mt-2">Stake</h2>
-<span
-  className="bg-[#0A2D4D] text-white border border-white text-xs px-2 py-0.5 mt-2 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
->
-  {opposeMode ? "Oppose" : "Support"}
-</span>
-      </div>
-
-      <p className="text-gray-400 text-sm mb-6">
-        Staking on a Triple enhances its discoverability in the Intuition system
-      </p>
-
-      {/* REVIEW */}
-      {modalStep === "review" && (
-        <>
-          <div className="flex flex-col items-center my-6">
-            <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white">Review...</span>
-          </div>
-
-          <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-            <span className="text-gray-300 text-sm">Total Cost</span>
-            <span className="text-white">
-              {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
-            </span>
-          </div>
-
-<button
-  className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl text-sm"
-  onClick={() => {
-    handleClaimAction("deposit");
-    setShowModal(false);
-  }}
->
-  Confirm
-</button>
-        </>
-      )}
-
-      {/* AWAITING */}
-      {modalStep === "awaiting" && (
-        <>
-          <div className="flex flex-col items-center my-6">
-            <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
-            <span className="text-white">Awaiting...</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 bg-[#110A2B] border border-[#393B60] rounded-2xl px-4 py-2 mx-4">
-            <img src="/wallet.png" alt="Wallet Icon" className="w-5 h-5" />
-            <span className="text-white text-sm">
-              Awaiting wallet approval
-            </span>
-            <div className="relative group">
-              <span className="text-gray-400 cursor-pointer text-sm">
-                ?
-              </span>
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Approve this transaction in your wallet
+                    {/* Optional small red warning below button */}
+                    {transactionAmount &&
+                      Number(transactionAmount) > maxRedeemable && (
+                        <span className="text-red-500 text-xs mt-1 block text-center">
+                          "You only have {maxRedeemable} shares"
+                        </span>
+                      )}
+                  </div>
+                )}
+                {/* Close Button */}
+                <button
+                  className="absolute top-2 right-2 text-gray-400 hover:text-white"
+                  onClick={handleCloseModal}
+                >
+                  ×
+                </button>
               </div>
             </div>
-          </div>
-        </>
-      )}
+          )}
 
-      {/* SUCCESS */}
-      {modalStep === "success" && (
-        <div className="flex flex-col items-center my-8">
-          <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl">✓</span>
-          </div>
+          {showReviewDepositModal && activeClaim && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <div className="bg-[#070315] w-full max-w-md mx-4 p-3 rounded-xl relative border-2 border-[#8B3EFE]">
 
-          <span className="text-white mb-6">
-            Successfully {opposeMode ? "opposed" : "supported"}!
-          </span>
+                {/* Back Button */}
+                <button
+                  className="absolute -top-1 pb-2 left-2 text-white text-2xl px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
+                  onClick={() => {
+                    setShowReviewDepositModal(false);
+                    setModalStep("review");
+                  }}
+                >
+                  ←
+                </button>
 
-          <button
-            className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
-            onClick={() => {
-              setShowReviewDepositModal(false);
-              setModalStep("review");
-            }}
-          >
-            Done
-          </button>
-        </div>
-      )}
+                {/* Title + Support Tag */}
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-white text-base mt-2">Stake</h2>
+                  <span
+                    className="bg-[#0A2D4D] text-white border border-white text-xs px-2 py-0.5 mt-2 rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+                  >
+                    {opposeMode ? "Oppose" : "Support"}
+                  </span>
+                </div>
 
-      {/* FAILED */}
-      {modalStep === "failed" && (
-        <div className="flex flex-col items-center my-8">
-          <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
-            <span className="text-white text-2xl">✕</span>
-          </div>
+                <p className="text-gray-400 text-sm mb-6">
+                  Staking on a Triple enhances its discoverability in the Intuition system
+                </p>
 
-          <span className="text-white mb-6">
-            Transaction Failed
-          </span>
+                {/* REVIEW */}
+                {modalStep === "review" && (
+                  <>
+                    <div className="flex flex-col items-center my-6">
+                      <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
+                      <span className="text-white">Review...</span>
+                    </div>
 
-          <button
-            className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
-            onClick={() => setModalStep("review")}
-          >
-            Try Again
-          </button>
-        </div>
-      )}
+                    <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
+                      <span className="text-gray-300 text-sm">Total Cost</span>
+                      <span className="text-white">
+                        {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
+                      </span>
+                    </div>
 
-    </div>
-  </div>
-)}
+                    <button
+                      className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl text-sm"
+                      onClick={() => {
+                        handleClaimAction("deposit");
+                        setShowModal(false);
+                      }}
+                    >
+                      Confirm
+                    </button>
+                  </>
+                )}
 
-{showReviewRedeemModal && activeClaim && (
-  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-    <div className="bg-[#070315] w-full max-w-md mx-4 p-3 rounded-xl relative border-2 border-[#8B3EFE]">
+                {/* AWAITING */}
+                {modalStep === "awaiting" && (
+                  <>
+                    <div className="flex flex-col items-center my-6">
+                      <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
+                      <span className="text-white">Awaiting...</span>
+                    </div>
 
-      {/* Close Button */}
-      <button
-        className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl"
-        onClick={() => setShowReviewRedeemModal(false)}
-      >
-        ×
-      </button>
+                    <div className="flex items-center justify-center gap-2 bg-[#110A2B] border border-[#393B60] rounded-2xl px-4 py-2 mx-4">
+                      <img src="/wallet.png" alt="Wallet Icon" className="w-5 h-5" />
+                      <span className="text-white text-sm">
+                        Awaiting wallet approval
+                      </span>
+                      <div className="relative group">
+                        <span className="text-gray-400 cursor-pointer text-sm">
+                          ?
+                        </span>
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                          Approve this transaction in your wallet
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
 
-      {/* Title + Support Tag */}
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-white text-base">Stake</h2>
-        <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm">
-          Support
-        </span>
-      </div>
+                {/* SUCCESS */}
+                {modalStep === "success" && (
+                  <div className="flex flex-col items-center my-8">
+                    <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
+                      <span className="text-white text-2xl">✓</span>
+                    </div>
 
-      {/* Subtitle */}
-      <p className="text-gray-400 text-sm mb-6">
-        Staking on a Triple enhances its discoverability in the Intuition system
-      </p>
+                    <span className="text-white mb-6">
+                      Successfully {opposeMode ? "opposed" : "supported"}!
+                    </span>
 
-      {/* Centered Spinner + Label */}
-      <div className="flex flex-col items-center my-6">
-        <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2 animate-spin" />
-        <span className="text-white">Review...</span>
-      </div>
+                    <button
+                      className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
+                      onClick={() => {
+                        setShowReviewDepositModal(false);
+                        setModalStep("review");
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
 
-{/* Total Cost */}
-<div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-            <span className="text-gray-300 text-sm">Total Cost</span>
-            <span className="text-white">
-              {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
-            </span>
-          </div>
+                {/* FAILED */}
+                {modalStep === "failed" && (
+                  <div className="flex flex-col items-center my-8">
+                    <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
+                      <span className="text-white text-2xl">✕</span>
+                    </div>
 
-      {/* Redeem TRUST Label */}
-      <span className="text-gray-300 mb-2 block">Redeem TRUST from Claim</span>
+                    <span className="text-white mb-6">
+                      Transaction Failed
+                    </span>
 
-{/* Statement */}
-<div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center gap-2">
-  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded inline-flex items-center gap-2 max-w-[150px] truncate">
-    <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
-    {activeClaim.term.triple.subject.label}
-  </span>
+                    <button
+                      className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
+                      onClick={() => setModalStep("review")}
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                )}
 
-  <span>{activeClaim.term.triple.predicate.label}</span>
+              </div>
+            </div>
+          )}
 
-  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded max-w-[150px] truncate">
-    {activeClaim.term.triple.object.label}
-  </span>
-</div>
+          {showReviewRedeemModal && activeClaim && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <div className="bg-[#070315] w-full max-w-md mx-4 p-3 rounded-xl relative border-2 border-[#8B3EFE]">
 
-      {/* Amount Input */}
-<div className="mb-4">
-  <label className="text-gray-300 text-sm mb-1 block">Amount (in TRUST)</label>
-  <input
-    type="text"
-    value={transactionAmount}
-    onChange={(e) => setTransactionAmount(e.target.value)}
-    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-  />
-</div>
-{/* Redeem / Deposit Button */}
-<button
-  className="w-full bg-white text-black py-2.5 rounded-3xl text-sm"
-  onClick={() => handleClaimAction("redeem")}
->
-  Redeem
-</button>
-    </div>
-  </div>
-)}
+                {/* Close Button */}
+                <button
+                  className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl"
+                  onClick={() => setShowReviewRedeemModal(false)}
+                >
+                  ×
+                </button>
+
+                {/* Title + Support Tag */}
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-white text-base">Stake</h2>
+                  <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm">
+                    Support
+                  </span>
+                </div>
+
+                {/* Subtitle */}
+                <p className="text-gray-400 text-sm mb-6">
+                  Staking on a Triple enhances its discoverability in the Intuition system
+                </p>
+
+                {/* Centered Spinner + Label */}
+                <div className="flex flex-col items-center my-6">
+                  <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2 animate-spin" />
+                  <span className="text-white">Review...</span>
+                </div>
+
+                {/* Total Cost */}
+                <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
+                  <span className="text-gray-300 text-sm">Total Cost</span>
+                  <span className="text-white">
+                    {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
+                  </span>
+                </div>
+
+                {/* Redeem TRUST Label */}
+                <span className="text-gray-300 mb-2 block">Redeem TRUST from Claim</span>
+
+                {/* Statement */}
+                <div className="text-gray-300 mb-6 px-6 flex flex-wrap items-center gap-2">
+                  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded inline-flex items-center gap-2 max-w-[150px] truncate">
+                    <img src={activeClaim.term.triple.subject.image} alt="Claim Icon" className="w-5 h-5 object-contain" />
+                    {activeClaim.term.triple.subject.label}
+                  </span>
+
+                  <span>{activeClaim.term.triple.predicate.label}</span>
+
+                  <span className="bg-[#0b0618] hover:bg-[#140a25] transition-colors duration-200 px-2 py-1 rounded max-w-[150px] truncate">
+                    {activeClaim.term.triple.object.label}
+                  </span>
+                </div>
+
+                {/* Amount Input */}
+                <div className="mb-4">
+                  <label className="text-gray-300 text-sm mb-1 block">Amount (in TRUST)</label>
+                  <input
+                    type="text"
+                    value={transactionAmount}
+                    onChange={(e) => setTransactionAmount(e.target.value)}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                {/* Redeem / Deposit Button */}
+                <button
+                  className="w-full bg-white text-black py-2.5 rounded-3xl text-sm"
+                  onClick={() => handleClaimAction("redeem")}
+                >
+                  Redeem
+                </button>
+              </div>
+            </div>
+          )}
           {loading && (
             <div className="flex justify-center py-6">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
