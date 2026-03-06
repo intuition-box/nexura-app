@@ -1040,420 +1040,421 @@ export default function ClaimDetails() {
                   }`}
               />
 
-            {/* Info Button */}
-            <button
-              onClick={() => setShowCurveInfo(true)}
-              className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
-            >
-              i
-            </button>
+              {/* Info Button */}
+              <button
+                onClick={() => setShowCurveInfo(true)}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
+              >
+                i
+              </button>
 
-            {/* Slide-in Modal (Fixed Right) */}
-            {showCurveInfo && (
-              <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
+              {/* Slide-in Modal (Fixed Right) */}
+              {showCurveInfo && (
+                <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
 
-                {/* Close Button */}
-                <button
-                  onClick={() => setShowCurveInfo(false)}
-                  className="absolute top-3 right-3 text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setShowCurveInfo(false)}
+                    className="absolute top-3 right-3 text-gray-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
 
-                {/* Main Heading */}
-                <h2 className="text-white text-lg text-center mb-2">
-                  How Bonding Curves Work
-                </h2>
-                <p className="text-gray-300 text-sm text-left mb-6">
-                  Intuition uses bonding curves to automatically set identity and claim prices based on supply and demand, rewarding early curation of valuable information.
-                </p>
-
-                {/* Linear Curve Section */}
-                <img
-                  src="/linear-curve.svg"
-                  alt="Linear Curve"
-                  className="w-full mb-4 rounded"
-                />
-                <div className="text-left mb-6">
-                  <h4 className="text-white mb-1">Linear Curve (Safe)</h4>
-                  <p className="text-gray-300 text-sm mb-2">
-                    The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
+                  {/* Main Heading */}
+                  <h2 className="text-white text-lg text-center mb-2">
+                    How Bonding Curves Work
+                  </h2>
+                  <p className="text-gray-300 text-sm text-left mb-6">
+                    Intuition uses bonding curves to automatically set identity and claim prices based on supply and demand, rewarding early curation of valuable information.
                   </p>
-                  <p className="text-gray-400 text-sm">
-                    In other words, minus the fees, you will get back your original deposit value, plus any portion of the fees collected.
-                  </p>
+
+                  {/* Linear Curve Section */}
+                  <img
+                    src="/linear-curve.svg"
+                    alt="Linear Curve"
+                    className="w-full mb-4 rounded"
+                  />
+                  <div className="text-left mb-6">
+                    <h4 className="text-white mb-1">Linear Curve (Safe)</h4>
+                    <p className="text-gray-300 text-sm mb-2">
+                      The Linear curve keeps pricing stable with gradual increases—your stake value increases or decreases proportionally as more people stake or redeem, making it predictable and lower-risk.
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      In other words, minus the fees, you will get back your original deposit value, plus any portion of the fees collected.
+                    </p>
+                  </div>
+
+                  {/* Exponential Curve Section */}
+                  <img
+                    src="/exponential.svg"
+                    alt="Exponential Curve"
+                    className="w-full mb-4 rounded"
+                  />
+                  <div className="text-left mb-6">
+                    <h4 className="text-white mb-1">Exponential Curve (Riskier)</h4>
+                    <p className="text-gray-300 text-sm mb-2">
+                      The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
+                    </p>
+                    <p className="text-gray-300 text-sm">
+                      Choose based on your risk tolerance and timing. It's riskier but can yield higher returns; however, if you deposit later, you will pay more for the same amount of shares.
+                    </p>
+                  </div>
                 </div>
-
-                {/* Exponential Curve Section */}
-                <img
-                  src="/exponential.svg"
-                  alt="Exponential Curve"
-                  className="w-full mb-4 rounded"
-                />
-                <div className="text-left mb-6">
-                  <h4 className="text-white mb-1">Exponential Curve (Riskier)</h4>
-                  <p className="text-gray-300 text-sm mb-2">
-                    The Exponential curve (OffsetProgressive) rewards early stakers significantly more, as each new deposit increases the share price at an increasing rate, creating higher potential returns for curators who stake earliest, but greater potential losses as stakers redeem.
-                  </p>
-                  <p className="text-gray-300 text-sm">
-                    Choose based on your risk tolerance and timing. It's riskier but can yield higher returns; however, if you deposit later, you will pay more for the same amount of shares.
-                  </p>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Amount Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 w-full">
-          <span className="text-gray-400 text-xs">Amount:</span>
-          <span className="text-gray-400 flex items-center gap-1 justify-end text-xs">
-            <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
-            {isBuy
-              ? `${Math.floor(Number(balance) * 100) / 100} TRUST`
-              : `${Math.floor(Number(userShares) * 100) / 100} shares`}
-          </span>
-        </div>
-
-        {/* Input */}
-        <div className="flex w-full items-center px-2 py-1 bg-gray-800 border border-[#833AFD] rounded-md gap-2">
-          <input
-            type="text"
-            placeholder="0.1"
-            disabled={tradeLocked}
-            value={currentAmount}
-            onChange={e => {
-              const val = e.target.value;
-              if (/^\d*\.?\d*$/.test(val)) {
-                isBuy ? setBuyAmount(val) : setSellAmount(val);
-                setLoadingAmount(true);
-                if (receiveTimeoutRef.current) clearTimeout(receiveTimeoutRef.current);
-                receiveTimeoutRef.current = setTimeout(() => setLoadingAmount(false), 2000);
-              }
-            }}
-            className={`flex-1 bg-gray-800 text-gray-300 placeholder-gray-500 text-sm p-2 outline-none ${tradeLocked ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-          />
-
-          {/* Min / Max Button */}
-          <button
-            disabled={tradeLocked}
-            className={`text-xs px-2 py-1 rounded-full transition-colors duration-200 ${tradeLocked
-              ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-              : "bg-[#0A2D4D] hover:bg-[#123a63] text-white"
-              }`}
-            onClick={() => {
-              if (tradeLocked) return;
-              if (isBuy) setBuyAmount("0.01");
-              else setSellAmount(userShares.toString());
-            }}
-          >
-            {isBuy ? "min" : "max"}
-          </button>
-        </div>
-
-        {/* Warnings */}
-        {isBuy && currentAmount && Number(currentAmount) < 0.01 && (
-          <div className="mt-1 flex items-center gap-1 text-red-400 text-xs">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z" />
-            </svg>
-            Minimum deposit is 0.010000 TRUST
-          </div>
-        )}
-
-        {!hasBalance && <div className="mt-2 text-xs text-red-400">You shall NOT pass! Get some TRUST.</div>}
-
-        {hasOppositePosition && (
-          <div className="mt-1 flex items-center gap-1 text-red-400 text-xs">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z" />
-            </svg>
-            {`You already have a ${mainTab === "support" ? "oppose" : "support"} position on this curve`}
-          </div>
-        )}
-
-        {/* You Receive */}
-        <div className="flex w-full justify-between items-center px-3 py-1.5 bg-gray-800 border border-[#833AFD] rounded-md text-white text-xs mt-2">
-          <span>You receive</span>
-          <div className="flex items-center gap-1">
-            {loadingAmount ? (
-              <div className="flex items-center gap-1">
-                <svg className="w-4 h-4 animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
-                <span className="text-gray-400 text-xs">Loading...</span>
-              </div>
-            ) : (
-              <span>
-                {amountToReceive && Number(currentAmount) > 0
-                  ? `${Math.floor(Number(amountToReceive) * 100) / 100} ${isBuy ? "shares" : "TRUST"}`
-                  : "--"}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Connect / Buy / Sell Button */}
-        <div className="mt-3 flex flex-col gap-2 w-full">
-          {currentAmount && Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares)) && (
-            <span className="text-red-400 text-xs">
-              You cannot {isBuy ? "buy more than your balance" : "sell more than your shares"}!
+          {/* Amount Section */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 w-full">
+            <span className="text-gray-400 text-xs">Amount:</span>
+            <span className="text-gray-400 flex items-center gap-1 justify-end text-xs">
+              <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+              {isBuy
+                ? `${Math.floor(Number(balance) * 100) / 100} TRUST`
+                : `${Math.floor(Number(userShares) * 100) / 100} shares`}
             </span>
+          </div>
+
+          {/* Input */}
+          <div className="flex w-full items-center px-2 py-1 bg-gray-800 border border-[#833AFD] rounded-md gap-2">
+            <input
+              type="text"
+              placeholder="0.1"
+              disabled={tradeLocked}
+              value={currentAmount}
+              onChange={e => {
+                const val = e.target.value;
+                if (/^\d*\.?\d*$/.test(val)) {
+                  isBuy ? setBuyAmount(val) : setSellAmount(val);
+                  setLoadingAmount(true);
+                  if (receiveTimeoutRef.current) clearTimeout(receiveTimeoutRef.current);
+                  receiveTimeoutRef.current = setTimeout(() => setLoadingAmount(false), 2000);
+                }
+              }}
+              className={`flex-1 bg-gray-800 text-gray-300 placeholder-gray-500 text-sm p-2 outline-none ${tradeLocked ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+            />
+
+            {/* Min / Max Button */}
+            <button
+              disabled={tradeLocked}
+              className={`text-xs px-2 py-1 rounded-full transition-colors duration-200 ${tradeLocked
+                ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                : "bg-[#0A2D4D] hover:bg-[#123a63] text-white"
+                }`}
+              onClick={() => {
+                if (tradeLocked) return;
+                if (isBuy) setBuyAmount("0.01");
+                else setSellAmount(userShares.toString());
+              }}
+            >
+              {isBuy ? "min" : "max"}
+            </button>
+          </div>
+
+          {/* Warnings */}
+          {isBuy && currentAmount && Number(currentAmount) < 0.01 && (
+            <div className="mt-1 flex items-center gap-1 text-red-400 text-xs">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z" />
+              </svg>
+              Minimum deposit is 0.010000 TRUST
+            </div>
           )}
 
-          <button
-            onClick={async () => {
-              if (!user) { await handleConnectWallet(); return; }
-              if (!currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares))) return;
-              await handleClaimAction();
-              isBuy ? setBuyAmount("") : setSellAmount("");
-            }}
-            disabled={!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares))}
-            className={`flex items-center justify-center gap-2 py-2 w-full text-sm rounded-3xl transition-all duration-200 ${!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares))
-              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-              : "bg-gradient-to-r from-[#8B3EFE] to-[#B57EFF] text-white hover:from-[#B57EFF] hover:to-[#8B3EFE] hover:scale-105"
-              }`}
-          >
-            {!user && <img src="/key.png" alt="Key Icon" className="w-4 h-4" />}
-            {!user ? "Connect Wallet" : !currentAmount || Number(currentAmount) <= 0 ? "Enter Amount" : isBuy ? buying ? "Buying shares" : "Buy Shares" : selling ? "Selling shares" : "Sell Shares"}
-          </button>
-        </div>
-      </div>
+          {!hasBalance && <div className="mt-2 text-xs text-red-400">You shall NOT pass! Get some TRUST.</div>}
 
-      {/* Your Position Card */}
-      <div className="bg-[#110A2B] rounded-xl p-4 flex flex-col gap-3 w-full">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-white text-sm sm:text-base w-full">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <span>Your Position</span>
-            <div className="w-6 h-[3px] bg-[#AD77FF] rounded-full"></div>
-          </div>
-
-          {/* Positions Info */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-gray-300 flex-wrap">
-            {userPositions.length > 0 ? (
-              (() => {
-                const supportPosition = userPositions.find(p => p.direction === "support");
-                const opposePosition = userPositions.find(p => p.direction === "oppose");
-
-                if (supportPosition) {
-                  const totalSupport = toFixed(
-                    (userPositions
-                      .filter(p => p.direction === "support")
-                      .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
-                  );
-                  return <span className="whitespace-nowrap">Support: <span className="text-white">{totalSupport} TRUST</span></span>;
-                } else if (opposePosition) {
-                  const totalOppose = toFixed(
-                    (userPositions
-                      .filter(p => p.direction === "oppose")
-                      .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
-                  );
-                  return <span className="whitespace-nowrap">Oppose: <span className="text-white">{totalOppose} TRUST</span></span>;
-                } else {
-                  return <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>;
-                }
-              })()
-            ) : (
-              <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>
-            )}
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="h-px w-full bg-white opacity-80"></div>
-      </div>
-
-      {/* Positions on this Claim Section */}
-      <div className="bg-[#110A2B] rounded-xl p-4 sm:p-5 text-white flex flex-col gap-4 w-full">
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-2 justify-start sm:justify-start">
-          <button
-            className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "all"
-              ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
-              : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
-              }`}
-            onClick={() => setActiveTab("all")}
-          >
-            All Positions
-          </button>
-
-          <button
-            className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "my"
-              ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
-              : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
-              }`}
-            onClick={() => setActiveTab("my")}
-          >
-            My Position
-          </button>
-        </div>
-      </div>
-
-      {/* Header + Controls */}
-      <div className="flex flex-col gap-3">
-
-        {/* Dynamic Heading */}
-        <h3 className="text-sm sm:text-base text-white font-semibold">
-          {activeTab === "all"
-            ? "All Positions on this Claim"
-            : "My Position on this Claim"}
-        </h3>
-
-        {/* Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
-
-          {/* Search */}
-          <input
-            type="text"
-            placeholder="Search positions"
-            className="w-full sm:w-[35%] bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-sm"
-          />
-
-          {/* Right Side Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-
-            {/* Positions */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-white text-sm whitespace-nowrap">Positions:</span>
-
-              <div className="relative w-full sm:w-36">
-                <select
-                  value={positionsOption}
-                  onChange={(e) => setPositionsOption(e.target.value)}
-                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
-                >
-                  <option value="all">All</option>
-                  <option value="linear">Linear</option>
-                  <option value="exponential">Exponential</option>
-                  <option value="support">Support</option>
-                  <option value="oppose">Oppose</option>
-                </select>
-
-                <img
-                  src="/up-down.png"
-                  alt="Dropdown"
-                  className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                />
-              </div>
+          {hasOppositePosition && (
+            <div className="mt-1 flex items-center gap-1 text-red-400 text-xs">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z" />
+              </svg>
+              {`You already have a ${mainTab === "support" ? "oppose" : "support"} position on this curve`}
             </div>
+          )}
 
-            {/* Sort */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-white text-sm whitespace-nowrap">Sort:</span>
-
-              <div className="relative w-full sm:w-40">
-                <select
-                  value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value)}
-                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
-                >
-                  <option value="highest_shares">Highest Shares</option>
-                  <option value="lowest_shares">Lowest Shares</option>
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="a_to_z">A - Z</option>
-                  <option value="z_to_a">Z - A</option>
-                </select>
-
-                <img
-                  src="/up-down.png"
-                  alt="Dropdown"
-                  className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* TABLE */}
-        <div className="overflow-x-auto w-full">
-          <div className="min-w-[320px] sm:min-w-[700px]">
-            {processedPositions.length === 0 ? (
-              <div className="text-gray-400 text-center py-4 text-sm">No positions found</div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {/* Table Header */}
-                <div className="hidden sm:flex bg-[#060210] p-3 rounded-md text-gray-400 text-xs sm:text-sm">
-                  <div className="w-[5%] text-center">#</div>
-                  <div className="w-[35%]">Account</div>
-                  <div className="w-[15%] text-center">Curve</div>
-                  <div className="w-[15%] text-center">Direction</div>
-                  <div className="w-[20%] text-right">Shares</div>
+          {/* You Receive */}
+          <div className="flex w-full justify-between items-center px-3 py-1.5 bg-gray-800 border border-[#833AFD] rounded-md text-white text-xs mt-2">
+            <span>You receive</span>
+            <div className="flex items-center gap-1">
+              {loadingAmount ? (
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  <span className="text-gray-400 text-xs">Loading...</span>
                 </div>
+              ) : (
+                <span>
+                  {amountToReceive && Number(currentAmount) > 0
+                    ? `${Math.floor(Number(amountToReceive) * 100) / 100} ${isBuy ? "shares" : "TRUST"}`
+                    : "--"}
+                </span>
+              )}
+            </div>
+          </div>
 
-                {/* Table Rows */}
-                {processedPositions.map((pos, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-sm sm:text-base gap-2 sm:gap-0"
+          {/* Connect / Buy / Sell Button */}
+          <div className="mt-3 flex flex-col gap-2 w-full">
+            {currentAmount && Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares)) && (
+              <span className="text-red-400 text-xs">
+                You cannot {isBuy ? "buy more than your balance" : "sell more than your shares"}!
+              </span>
+            )}
+
+            <button
+              onClick={async () => {
+                if (!user) { await handleConnectWallet(); return; }
+                if (!currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares))) return;
+                await handleClaimAction();
+                isBuy ? setBuyAmount("") : setSellAmount("");
+              }}
+              disabled={!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares))}
+              className={`flex items-center justify-center gap-2 py-2 w-full text-sm rounded-3xl transition-all duration-200 ${!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares))
+                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-[#8B3EFE] to-[#B57EFF] text-white hover:from-[#B57EFF] hover:to-[#8B3EFE] hover:scale-105"
+                }`}
+            >
+              {!user && <img src="/key.png" alt="Key Icon" className="w-4 h-4" />}
+              {!user ? "Connect Wallet" : !currentAmount || Number(currentAmount) <= 0 ? "Enter Amount" : isBuy ? buying ? "Buying shares" : "Buy Shares" : selling ? "Selling shares" : "Sell Shares"}
+            </button>
+          </div>
+        </div>
+
+        {/* Your Position Card */}
+        <div className="bg-[#110A2B] rounded-xl p-4 flex flex-col gap-3 w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-white text-sm sm:text-base w-full">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <span>Your Position</span>
+              <div className="w-6 h-[3px] bg-[#AD77FF] rounded-full"></div>
+            </div>
+
+            {/* Positions Info */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-gray-300 flex-wrap">
+              {userPositions.length > 0 ? (
+                (() => {
+                  const supportPosition = userPositions.find(p => p.direction === "support");
+                  const opposePosition = userPositions.find(p => p.direction === "oppose");
+
+                  if (supportPosition) {
+                    const totalSupport = toFixed(
+                      (userPositions
+                        .filter(p => p.direction === "support")
+                        .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
+                    );
+                    return <span className="whitespace-nowrap">Support: <span className="text-white">{totalSupport} TRUST</span></span>;
+                  } else if (opposePosition) {
+                    const totalOppose = toFixed(
+                      (userPositions
+                        .filter(p => p.direction === "oppose")
+                        .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
+                    );
+                    return <span className="whitespace-nowrap">Oppose: <span className="text-white">{totalOppose} TRUST</span></span>;
+                  } else {
+                    return <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>;
+                  }
+                })()
+              ) : (
+                <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>
+              )}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px w-full bg-white opacity-80"></div>
+        </div>
+
+        {/* Positions on this Claim Section */}
+        <div className="bg-[#110A2B] rounded-xl p-4 sm:p-5 text-white flex flex-col gap-4 w-full">
+          {/* Tabs */}
+          <div className="flex flex-wrap gap-2 mb-2 justify-start sm:justify-start">
+            <button
+              className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "all"
+                ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
+                : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
+                }`}
+              onClick={() => setActiveTab("all")}
+            >
+              All Positions
+            </button>
+
+            <button
+              className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "my"
+                ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
+                : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
+                }`}
+              onClick={() => setActiveTab("my")}
+            >
+              My Position
+            </button>
+          </div>
+        </div>
+
+        {/* Header + Controls */}
+        <div className="flex flex-col gap-3">
+
+          {/* Dynamic Heading */}
+          <h3 className="text-sm sm:text-base text-white font-semibold">
+            {activeTab === "all"
+              ? "All Positions on this Claim"
+              : "My Position on this Claim"}
+          </h3>
+
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+
+            {/* Search */}
+            <input
+              type="text"
+              placeholder="Search positions"
+              className="w-full sm:w-[35%] bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-sm"
+            />
+
+            {/* Right Side Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+
+              {/* Positions */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-white text-sm whitespace-nowrap">Positions:</span>
+
+                <div className="relative w-full sm:w-36">
+                  <select
+                    value={positionsOption}
+                    onChange={(e) => setPositionsOption(e.target.value)}
+                    className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
                   >
-                    {/* Index */}
-                    <div className="flex sm:w-[5%] w-full text-gray-400 justify-between sm:justify-center items-center">
-                      <span className="sm:hidden font-semibold">#:</span>
-                      <span>{idx + 1}</span>
-                    </div>
+                    <option value="all">All</option>
+                    <option value="linear">Linear</option>
+                    <option value="exponential">Exponential</option>
+                    <option value="support">Support</option>
+                    <option value="oppose">Oppose</option>
+                  </select>
 
-                    {/* Account */}
-                    <div className="flex sm:w-[35%] w-full items-center gap-2 truncate">
-                      {pos.account?.image && (
-                        <img
-                          src={pos.account.image}
-                          alt={pos.account.label ?? "User"}
-                          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-                        />
-                      )}
-                      <span className="truncate">{pos.account?.label ?? pos.account?.id ?? "Anonymous"}</span>
-                    </div>
+                  <img
+                    src="/up-down.png"
+                    alt="Dropdown"
+                    className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  />
+                </div>
+              </div>
 
-                    {/* Curve */}
-                    <div className="flex sm:w-[15%] w-full text-gray-400 justify-between sm:justify-center items-center">
-                      <span className="sm:hidden font-semibold">Curve:</span>
-                      <span>
-                        {Number(pos.curve_id) === 1
-                          ? "Linear"
-                          : Number(pos.curve_id) === 2
-                            ? "Exponential"
-                            : "—"}
-                      </span>
-                    </div>
+              {/* Sort */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-white text-sm whitespace-nowrap">Sort:</span>
 
-                    {/* Direction */}
-                    <div className="flex sm:w-[15%] w-full justify-between sm:justify-center items-center">
-                      <span className="sm:hidden font-semibold">Direction:</span>
-                      <span>
-                        {pos.direction?.toLowerCase() === "support"
-                          ? "Support"
-                          : pos.direction?.toLowerCase() === "oppose"
-                            ? "Oppose"
-                            : "—"}
-                      </span>
-                    </div>
+                <div className="relative w-full sm:w-40">
+                  <select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value)}
+                    className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
+                  >
+                    <option value="highest_shares">Highest Shares</option>
+                    <option value="lowest_shares">Lowest Shares</option>
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                    <option value="a_to_z">A - Z</option>
+                    <option value="z_to_a">Z - A</option>
+                  </select>
 
-                    {/* Shares */}
-                    <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right items-center">
-                      <span className="sm:hidden font-semibold">Shares:</span>
-                      <span>{pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : "—"}</span>
-                    </div>
+                  <img
+                    src="/up-down.png"
+                    alt="Dropdown"
+                    className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* TABLE */}
+          <div className="overflow-x-auto w-full">
+            <div className="min-w-[320px] sm:min-w-[700px]">
+              {processedPositions.length === 0 ? (
+                <div className="text-gray-400 text-center py-4 text-sm">No positions found</div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {/* Table Header */}
+                  <div className="hidden sm:flex bg-[#060210] p-3 rounded-md text-gray-400 text-xs sm:text-sm">
+                    <div className="w-[5%] text-center">#</div>
+                    <div className="w-[35%]">Account</div>
+                    <div className="w-[15%] text-center">Curve</div>
+                    <div className="w-[15%] text-center">Direction</div>
+                    <div className="w-[20%] text-right">Shares</div>
                   </div>
-                ))}
-              </div>
-            )}
 
-            {/* Observer div for infinite scroll */}
-            <div ref={observerRef} className="h-10"></div>
+                  {/* Table Rows */}
+                  {processedPositions.map((pos, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-sm sm:text-base gap-2 sm:gap-0"
+                    >
+                      {/* Index */}
+                      <div className="flex sm:w-[5%] w-full text-gray-400 justify-between sm:justify-center items-center">
+                        <span className="sm:hidden font-semibold">#:</span>
+                        <span>{idx + 1}</span>
+                      </div>
 
-            {/* Spinner */}
-            {loading && (
-              <div className="flex justify-center my-4">
-                <div className="loader"></div>
-              </div>
-            )}
+                      {/* Account */}
+                      <div className="flex sm:w-[35%] w-full items-center gap-2 truncate">
+                        {pos.account?.image && (
+                          <img
+                            src={pos.account.image}
+                            alt={pos.account.label ?? "User"}
+                            className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                          />
+                        )}
+                        <span className="truncate">{pos.account?.label ?? pos.account?.id ?? "Anonymous"}</span>
+                      </div>
+
+                      {/* Curve */}
+                      <div className="flex sm:w-[15%] w-full text-gray-400 justify-between sm:justify-center items-center">
+                        <span className="sm:hidden font-semibold">Curve:</span>
+                        <span>
+                          {Number(pos.curve_id) === 1
+                            ? "Linear"
+                            : Number(pos.curve_id) === 2
+                              ? "Exponential"
+                              : "—"}
+                        </span>
+                      </div>
+
+                      {/* Direction */}
+                      <div className="flex sm:w-[15%] w-full justify-between sm:justify-center items-center">
+                        <span className="sm:hidden font-semibold">Direction:</span>
+                        <span>
+                          {pos.direction?.toLowerCase() === "support"
+                            ? "Support"
+                            : pos.direction?.toLowerCase() === "oppose"
+                              ? "Oppose"
+                              : "—"}
+                        </span>
+                      </div>
+
+                      {/* Shares */}
+                      <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right items-center">
+                        <span className="sm:hidden font-semibold">Shares:</span>
+                        <span>{pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : "—"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Observer div for infinite scroll */}
+              <div ref={observerRef} className="h-10"></div>
+
+              {/* Spinner */}
+              {loading && (
+                <div className="flex justify-center my-4">
+                  <div className="loader"></div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
