@@ -399,7 +399,7 @@ const displayedShares = opposeMode
     const maxRedeemable = Number(displayedShares) / 10 ** 18;
 
 const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
-  if (!termId) return;
+  if (!termId || !user?.address) return;
 
   try {
     setModalStep("awaiting");
@@ -411,8 +411,10 @@ const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
     } else {
       await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
     }
-    
-    await fetchTrustBalance();
+
+    // Refresh wallet balance after transaction
+    const balance = await fetchWalletBalance(user.address);
+    setTTrustBalance(balance); // update state
 
     const actionText = opposeMode ? "opposed" : "supported";
 
@@ -601,28 +603,32 @@ const hasAnyPosition =
         onClick={() => setLocation(`/portal-claims/${claim.term_id}`)}
       >
         <div className="flex flex-wrap items-center gap-2">
-  {/* Subject */}
-  <span
-    className="bg-[#1a1328] px-2 py-1 rounded flex items-center gap-1 max-w-[200px] truncate cursor-pointer hover:bg-[#2b1f45] transition-colors duration-200"
-  >
-    <img
-      src={claim.term.triple.subject.image}
-      className="w-5 h-5 flex-shrink-0"
-    />
-    <span className="truncate">
-      {highlightMatch(claim.term.triple.subject.label, searchTerm)}
-    </span>
+{/* Subject */}
+<span
+  className="bg-[#22193A] px-2.5 py-1 rounded flex items-center gap-2 max-w-[240px] truncate cursor-pointer hover:bg-[#2f2350] transition-colors duration-200 text-sm sm:text-base"
+>
+  <img
+    src={claim.term.triple.subject.image}
+    className="w-5 h-5 flex-shrink-0"
+  />
+  <span className="truncate">
+    {highlightMatch(claim.term.triple.subject.label, searchTerm)}
   </span>
+</span>
 
-  {/* Predicate */}
-  <span className="text-xs">{highlightMatch(claim.term.triple.predicate.label, searchTerm)}</span>
+{/* Predicate */}
+<span
+  className="text-xs px-1 cursor-pointer hover:text-white transition-colors duration-200"
+>
+  {highlightMatch(claim.term.triple.predicate.label, searchTerm)}
+</span>
 
-  {/* Object */}
-  <span
-    className="bg-[#1a1328] px-2 py-1 rounded max-w-[250px] truncate cursor-pointer hover:bg-[#2b1f45] transition-colors duration-200"
-  >
-    {highlightMatch(claim.term.triple.object.label, searchTerm)}
-  </span>
+{/* Object */}
+<span
+  className="bg-[#22193A] px-2.5 py-1 rounded max-w-[280px] truncate cursor-pointer hover:bg-[#2f2350] transition-colors duration-200 text-sm sm:text-base"
+>
+  {highlightMatch(claim.term.triple.object.label, searchTerm)}
+</span>
 </div>
       </td>
 
@@ -748,11 +754,11 @@ const hasAnyPosition =
         {/* Support / Oppose Stats */}
         <div className="flex justify-between items-center text-xs sm:text-sm mb-3 w-full">
           <div className="flex flex-col" style={{ flex: '0 0 45%' }}>
-            <span className="text-blue-400 font-semibold">Support: {supportCount}</span>
+            <span className="text-blue-400">Support: {supportCount}</span>
             <span className="text-blue-400 text-[10px]">{supportPercent}%</span>
           </div>
           <div className="flex flex-col items-end" style={{ flex: '0 0 45%' }}>
-            <span className="text-[#F19C03] font-semibold">Oppose: {opposeCount}</span>
+            <span className="text-[#F19C03]">Oppose: {opposeCount}</span>
             <span className="text-[#F19C03] text-[10px]">{opposePercent}%</span>
           </div>
         </div>
@@ -762,18 +768,18 @@ const hasAnyPosition =
           <div className="flex gap-2" style={{ flex: '0 0 45%' }}>
             <button
               onClick={() => handleSupportClick(claim)}
-              className="flex-1 h-10 sm:h-12 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 hover:scale-105 transition-transform"
+              className="flex-1 h-10 sm:h-12 bg-blue-600 text-white rounded-xl hover:bg-blue-700 hover:scale-105 transition-transform"
             >
               Support
             </button>
             <button
               onClick={() => handleOpposeClick(claim)}
-              className="flex-1 h-10 sm:h-12 bg-[#F19C03] text-white font-semibold rounded-xl hover:bg-[#e59400] hover:scale-105 transition-transform"
+              className="flex-1 h-10 sm:h-12 bg-[#F19C03] text-white rounded-xl hover:bg-[#e59400] hover:scale-105 transition-transform"
             >
               Oppose
             </button>
           </div>
-          <div className="text-gray-400 text-xs sm:text-sm font-semibold text-right" style={{ flex: '0 0 45%' }}>
+          <div className="text-gray-400 text-xs sm:text-sm text-right" style={{ flex: '0 0 45%' }}>
             {toFixed(formatEther(BigInt(claim.total_market_cap)))} TRUST
           </div>
         </div>

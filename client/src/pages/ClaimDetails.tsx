@@ -16,28 +16,6 @@ import { multiVaultPreviewDeposit, multiVaultPreviewRedeem, getMultiVaultAddress
 import Chart from "react-apexcharts";
 import html2canvas from "html2canvas";
 
-function generateChartData(claim: any, growthType: string) {
-  const dates = ["20/01", "25/01", "30/01", "05/02", "10/02", "15/02", "20/02"];
-  let values: number[] = [];
-
-  if (growthType === "linear") {
-    const basePrice = 1.06;
-    values = dates.map(() => +(basePrice + (Math.random() - 0.5) * 0.01).toFixed(4));
-  } else if (growthType === "exponential") {
-    const basePrice = 80;
-    const maxPrice = 90.69;
-
-    values = dates.map((_, i) => {
-      let val = basePrice * Math.pow(1.05, i);
-      if (val > maxPrice) val = maxPrice;
-      val += (Math.random() - 0.5) * 0.5;
-      return +val.toFixed(2);
-    });
-  }
-
-  return dates.map((date, i) => ({ date, value: values[i] }));
-}
-
 
 export default function ClaimDetails() {
   const { id } = useParams();
@@ -667,6 +645,50 @@ const handleDownload = async () => {
     window.open(xUrl, "_blank");
   };
 
+  function generateChartData(claim: any, growthType: string) {
+  const days = 7;
+  const dates: string[] = [];
+  const today = new Date();
+
+  // Generate last 7 dates in DD/MM format
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const day = d.getDate().toString().padStart(2, "0");
+    const month = (d.getMonth() + 1).toString().padStart(2, "0");
+    dates.push(`${day}/${month}`);
+  }
+
+  const todayPrice = Number(getPrice()); // final/current share price
+  const values: number[] = [];
+  let lastValue = todayPrice;
+
+  // Generate previous values
+  for (let i = days - 1; i >= 0; i--) {
+    let fluctuation: number;
+
+    if (growthType === "linear") {
+      fluctuation = (Math.random() - 0.5) * 0.02; 
+    } else {
+      fluctuation = (Math.random() - 0.5) * 0.1; 
+    }
+
+    let value = lastValue - Math.abs(fluctuation); 
+
+    // Clamp values
+    if (todayPrice <= 1) {
+      value = Math.max(-1, Math.min(1, value));
+    } else {
+      value = Math.max(todayPrice * 0.9, Math.min(todayPrice * 1.1, value));
+    }
+
+    values.unshift(parseFloat(value.toFixed(2)));
+    lastValue = value;
+  }
+
+  return dates.map((date, i) => ({ date, value: values[i] }));
+}
+
   if (!claim) return <div className="p-3 text-white">
     <div className="flex items-center justify-center w-full h-full">
   <svg
@@ -699,9 +721,9 @@ const handleDownload = async () => {
 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-lg">
   <img src={term.triple.subject.image} alt="Claim Icon" className="w-12 h-12 sm:w-16 sm:h-16" />
   <div className="flex flex-wrap gap-1 sm:gap-2 items-center">
-    <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[100px] sm:max-w-[150px] truncate">{term.triple.subject.label}</span>
+    <span className="bg-[#0b0618] px-2 py-1 rounded">{term.triple.subject.label}</span>
     <span>{term.triple.predicate.label}</span>
-    <span className="bg-[#0b0618] px-2 py-1 rounded max-w-[100px] sm:max-w-[150px] truncate">{term.triple.object.label}</span>
+    <span className="bg-[#0b0618] px-2 py-1 rounded">{term.triple.object.label}</span>
   </div>
 </div>
       <div>
@@ -868,38 +890,38 @@ const handleDownload = async () => {
 
 
       <div className="flex flex-col lg:flex-row gap-3 mt-3">
-  {/* Graph Placeholder (70%) */}
-  <div className="w-full lg:w-[73%] bg-gradient-to-br from-[#1A0A2B] to-[#0B0515] rounded-xl p-3 sm:p-4 shadow-lg">
+{/* Graph Container */}
+<div className="w-full lg:max-w-[1200px] mx-auto bg-gradient-to-br from-[#1A0A2B] to-[#0B0515] rounded-xl p-3 sm:p-4 shadow-lg items-center">
 
-    {/* Chart Header */}
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-        <span className="text-xs sm:text-sm text-gray-400">Share Price</span>
-        <div className="text-lg sm:text-2xl text-white">{getPrice()} TRUST</div>
-      </div>
+  {/* Chart Header */}
+  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+      <span className="text-xs sm:text-sm text-gray-400">Share Price</span>
+      <div className="text-lg sm:text-2xl text-white">{getPrice()} TRUST</div>
+    </div>
 
-      {/* Toggle Linear / Exponential */}
-      <div className="flex flex-wrap gap-1 sm:gap-2 rounded-full bg-[#1F123A] p-1 mt-2 sm:mt-0">
-        {["linear", "exponential"].map(type => (
-          <button
-            key={type}
-            onClick={() => setGrowthType(type)}
-            className={`px-2 sm:px-4 py-1 rounded-full text-xs sm:text-sm transition-all duration-300 ${
-              growthType === type
-                ? "bg-[#392D5F] text-white"
-                : "text-gray-400 hover:text-white"
-            }`}
-          >
-            {type.charAt(0).toUpperCase() + type.slice(1)}
-          </button>
-        ))}
-      </div>
+    {/* Toggle Linear / Exponential */}
+    <div className="flex flex-wrap gap-1 sm:gap-2 rounded-full bg-[#1F123A] p-1 mt-2 sm:mt-0">
+      {["linear", "exponential"].map((type) => (
+        <button
+          key={type}
+          onClick={() => setGrowthType(type)}
+          className={`px-2 sm:px-4 py-1 rounded-full text-xs sm:text-sm transition-all duration-300 ${
+            growthType === type
+              ? "bg-[#392D5F] text-white"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          {type.charAt(0).toUpperCase() + type.slice(1)}
+        </button>
+      ))}
+    </div>
     </div>
 
     {/* ApexCharts Area Graph */}
     <Chart
       type="area"
-      height={220} // slightly smaller for mobile
+      height={280} // slightly smaller for mobile
       series={[
         {
           name: "Share Price",
@@ -1001,15 +1023,19 @@ const handleDownload = async () => {
   </div>
 
  {/* Curve Section */}
-  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full">
-    <div className="flex-1">
-      <h3 className="text-white text-sm">
-        {growthType === "exponential" ? "Exponential Curve" : "Linear Curve"}
-      </h3>
-      <p className="text-gray-400 text-[0.65rem]">
-        {growthType === "exponential" ? "High Risk, High Reward" : "Low Risk, Low Reward"}
-      </p>
-    </div>
+<div className="flex items-center justify-between w-full gap-2">
+
+  {/* Left: Curve Info */}
+  <div className="flex flex-col min-w-0">
+    <h3 className="text-white text-sm truncate">
+      {growthType === "exponential" ? "Exponential Curve" : "Linear Curve"}
+    </h3>
+    <p className="text-gray-400 text-[0.65rem] truncate">
+      {growthType === "exponential"
+        ? "High Risk, High Reward"
+        : "Low Risk, Low Reward"}
+    </p>
+  </div>
 
     <div className="flex items-center gap-2 mt-2 sm:mt-0">
       {/* Toggle Button */}
@@ -1018,21 +1044,16 @@ const handleDownload = async () => {
         className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${
           growthType === "exponential" ? "bg-purple-400" : "bg-gray-700"
         }`}
-      >
-        <span
-          className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${
-            growthType === "exponential" ? "left-6" : "left-0.5"
-          }`}
-        ></span>
-      </button>
+      />
+    </button>
 
-      {/* Info Button */}
-      <button
-        onClick={() => setShowCurveInfo(true)}
-        className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
-      >
-        i
-      </button>
+    {/* Info Button */}
+    <button
+      onClick={() => setShowCurveInfo(true)}
+      className="w-8 h-8 flex items-center justify-center rounded-full border border-[#393B60] text-gray-300 text-sm hover:bg-[#1a133d] hover:text-white transition-colors"
+    >
+      i
+    </button>
 
         {/* Slide-in Modal (Fixed Right) */}
         {showCurveInfo && (
@@ -1256,12 +1277,12 @@ const handleDownload = async () => {
   <div className="h-px w-full bg-white opacity-80"></div>
 </div>
 
-      {/* Positions on this Claim Section */}
+{/* Positions on this Claim Section */}
 <div className="bg-[#110A2B] rounded-xl p-4 sm:p-5 text-white flex flex-col gap-4 w-full">
   {/* Tabs */}
-  <div className="flex flex-wrap gap-2 mb-2 justify-start">
+  <div className="flex flex-wrap gap-2 mb-2 justify-start sm:justify-start">
     <button
-      className={`flex-1 sm:flex-auto text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${
+      className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${
         activeTab === "all"
           ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
           : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
@@ -1272,7 +1293,7 @@ const handleDownload = async () => {
     </button>
 
     <button
-      className={`flex-1 sm:flex-auto text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${
+      className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${
         activeTab === "my"
           ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
           : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
@@ -1284,74 +1305,81 @@ const handleDownload = async () => {
   </div>
 </div>
 
-{/* Dynamic Heading */}
-<h3 className="text-sm sm:text-base text-white font-semibold">
-  {activeTab === "all"
-    ? "All Positions on this Claim"
-    : "My Position on this Claim"}
-</h3>
+{/* Header + Controls */}
+<div className="flex flex-col gap-3">
 
-<div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
-  {/* Search Positions Input */}
-  <input
-    type="text"
-    placeholder="Search positions"
-    className="w-full sm:w-1/2 bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-sm"
-  />
+  {/* Dynamic Heading */}
+  <h3 className="text-sm sm:text-base text-white font-semibold">
+    {activeTab === "all"
+      ? "All Positions on this Claim"
+      : "My Position on this Claim"}
+  </h3>
 
-  {/* Positions / Sort Dropdown */}
-  <div className="flex items-center gap-2 w-full sm:w-auto">
-    <span className="text-white text-sm whitespace-nowrap">Positions:</span>
+  {/* Controls */}
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
 
-    <div className="relative flex-1 sm:flex-auto">
-      <select
-        value={positionsOption}
-        onChange={(e) => setPositionsOption(e.target.value)}
-        className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
-      >
-        <option value="all">All</option>
-        <option value="linear">Linear</option>
-        <option value="exponential">Exponential</option>
-        <option value="support">Support</option>
-        <option value="oppose">Oppose</option>
-      </select>
-
-      {/* Icon inside the select */}
-      <img
-        src="/up-down.png"
-        alt="Dropdown"
-        className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-      />
-    </div>
-  </div>
-
-{/* Sort Dropdown */}
-<div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
-  <span className="text-white text-sm sm:text-base whitespace-nowrap">Sort:</span>
-
-  <div className="relative flex-1 sm:flex-auto w-full sm:w-auto">
-    <select
-      value={sortOption}
-      onChange={(e) => setSortOption(e.target.value)}
-      className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm sm:text-base focus:outline-none"
-    >
-      <option value="highest_shares">Highest Shares</option>
-      <option value="lowest_shares">Lowest Shares</option>
-      <option value="newest">Newest</option>
-      <option value="oldest">Oldest</option>
-      <option value="a_to_z">A - Z</option>
-      <option value="z_to_a">Z - A</option>
-    </select>
-
-    {/* Dropdown Icon */}
-    <img
-      src="/up-down.png"
-      alt="Dropdown"
-      className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+    {/* Search */}
+    <input
+      type="text"
+      placeholder="Search positions"
+      className="w-full sm:w-[35%] bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-sm"
     />
-  </div>
-</div>
 
+    {/* Right Side Controls */}
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+
+      {/* Positions */}
+      <div className="flex items-center gap-2 w-full sm:w-auto">
+        <span className="text-white text-sm whitespace-nowrap">Positions:</span>
+
+        <div className="relative w-full sm:w-36">
+          <select
+            value={positionsOption}
+            onChange={(e) => setPositionsOption(e.target.value)}
+            className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
+          >
+            <option value="all">All</option>
+            <option value="linear">Linear</option>
+            <option value="exponential">Exponential</option>
+            <option value="support">Support</option>
+            <option value="oppose">Oppose</option>
+          </select>
+
+          <img
+            src="/up-down.png"
+            alt="Dropdown"
+            className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          />
+        </div>
+      </div>
+
+      {/* Sort */}
+      <div className="flex items-center gap-2 w-full sm:w-auto">
+        <span className="text-white text-sm whitespace-nowrap">Sort:</span>
+
+        <div className="relative w-full sm:w-40">
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+            className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
+          >
+            <option value="highest_shares">Highest Shares</option>
+            <option value="lowest_shares">Lowest Shares</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="a_to_z">A - Z</option>
+            <option value="z_to_a">Z - A</option>
+          </select>
+
+          <img
+            src="/up-down.png"
+            alt="Dropdown"
+            className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          />
+        </div>
+      </div>
+      </div>
+    </div>
 
        {/* TABLE */}
 <div className="overflow-x-auto w-full">
@@ -1369,52 +1397,61 @@ const handleDownload = async () => {
           <div className="w-[20%] text-right">Shares</div>
         </div>
 
-        {/* Table Rows */}
-        {processedPositions.map((pos, idx) => (
-          <div
-            key={idx}
-            className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-sm sm:text-base gap-2 sm:gap-0"
-          >
-            {/* Index */}
-            <div className="flex sm:w-[5%] w-full text-gray-400 text-center sm:text-center justify-between sm:justify-center">
-              <span className="sm:hidden font-semibold">#:</span> {idx + 1}
-            </div>
+{/* Table Rows */}
+{processedPositions.map((pos, idx) => (
+  <div
+    key={idx}
+    className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-sm sm:text-base gap-2 sm:gap-0"
+  >
+    {/* Index */}
+    <div className="flex sm:w-[5%] w-full text-gray-400 justify-between sm:justify-center items-center">
+      <span className="sm:hidden font-semibold">#:</span>
+      <span>{idx + 1}</span>
+    </div>
 
-            {/* Account */}
-            <div className="flex sm:w-[35%] w-full items-center gap-2 truncate">
-              {pos.account?.image && (
-                <img
-                  src={pos.account.image}
-                  alt={pos.account.label ?? "User"}
-                  className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-                />
-              )}
-              <span className="truncate">{pos.account?.label ?? pos.account?.id ?? "Anonymous"}</span>
-            </div>
+    {/* Account */}
+    <div className="flex sm:w-[35%] w-full items-center gap-2 truncate">
+      {pos.account?.image && (
+        <img
+          src={pos.account.image}
+          alt={pos.account.label ?? "User"}
+          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+        />
+      )}
+      <span className="truncate">{pos.account?.label ?? pos.account?.id ?? "Anonymous"}</span>
+    </div>
 
-            {/* Curve */}
-            <div className="flex sm:w-[15%] w-full text-gray-400 sm:text-center justify-between sm:justify-center">
-              <span className="sm:hidden font-semibold">Curve:</span>
-              {Number(pos.curve_id) === 1 ? "Linear" : Number(pos.curve_id) === 2 ? "Exponential" : "—"}
-            </div>
+    {/* Curve */}
+    <div className="flex sm:w-[15%] w-full text-gray-400 justify-between sm:justify-center items-center">
+      <span className="sm:hidden font-semibold">Curve:</span>
+      <span>
+        {Number(pos.curve_id) === 1
+          ? "Linear"
+          : Number(pos.curve_id) === 2
+          ? "Exponential"
+          : "—"}
+      </span>
+    </div>
 
-            {/* Direction */}
-            <div className="flex sm:w-[15%] w-full justify-between sm:justify-center">
-              <span className="sm:hidden font-semibold">Direction:</span>
-              {pos.direction?.toLowerCase() === "support"
-                ? "Support"
-                : pos.direction?.toLowerCase() === "oppose"
-                ? "Oppose"
-                : "—"}
-            </div>
+    {/* Direction */}
+    <div className="flex sm:w-[15%] w-full justify-between sm:justify-center items-center">
+      <span className="sm:hidden font-semibold">Direction:</span>
+      <span>
+        {pos.direction?.toLowerCase() === "support"
+          ? "Support"
+          : pos.direction?.toLowerCase() === "oppose"
+          ? "Oppose"
+          : "—"}
+      </span>
+    </div>
 
-            {/* Shares */}
-            <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right">
-              <span className="sm:hidden font-semibold">Shares:</span>
-              {pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : ""}
-            </div>
-          </div>
-        ))}
+    {/* Shares */}
+    <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right items-center">
+      <span className="sm:hidden font-semibold">Shares:</span>
+      <span>{pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : "—"}</span>
+    </div>
+  </div>
+))}
       </div>
     )}
 
