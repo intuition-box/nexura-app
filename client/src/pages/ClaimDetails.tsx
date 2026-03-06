@@ -47,7 +47,7 @@ export default function ClaimDetails() {
   const [positionType, setPositionType] = useState("support");
   const [growthType, setGrowthType] = useState("linear");
   const [loading, setLoading] = useState(false);
-  const [positions, setPositions] = useState<Position[]>([]); 
+  const [positions, setPositions] = useState<Position[]>([]);
   const [userPositions, setUserPositions] = useState<Position[]>([]);
   const [visiblePositions, setVisiblePositions] = useState<Position[]>([]); // paginated slice
   const [page, setPage] = useState(1);
@@ -145,11 +145,11 @@ const currentAmount = isBuy ? buyAmount : sellAmount;
     (async () => {
       const curveId = growthType === "linear" ? 1n : 2n;
       const publicClient = getPublicClient();
-      
+
       const walletClient = await getWalletClient();
 
       await walletClient.switchChain({ id: chain.id });
-      
+
       const address = getMultiVaultAddressFromChainId(walletClient.chain?.id!);
 
       let sharesAmount = 0n;
@@ -313,7 +313,7 @@ const hasOppositePosition = useMemo(() => {
   if (!user || !userPositions.length) return false;
 
   // Opposite tab direction
-  const oppositeDirection = activeTab === "support" ? "oppose" : "support";
+  const oppositeDirection = mainTab === "support" ? "oppose" : "support";
 
   // Block if user has any shares in the opposite tab, ignore curve
   return userPositions.some(
@@ -321,7 +321,7 @@ const hasOppositePosition = useMemo(() => {
       pos.direction === oppositeDirection &&
       Number(formatEther(BigInt(pos.shares ?? 0))) > 0
   );
-}, [userPositions, activeTab, user]);
+}, [userPositions, mainTab, user]);
 
 function getPrice() {
   let sharePrice = "0";
@@ -345,11 +345,11 @@ function getPrice() {
   }
 
   // Use formatEther to convert BigInt string → human-readable decimal
-  const formattedPrice = parseFloat(formatEther(sharePrice)).toFixed(2);
+  const formattedPrice = parseFloat(formatEther(BigInt(sharePrice))).toFixed(2);
   console.log("Calculated sharePrice (formatted):", formattedPrice);
 
   return formattedPrice;
-}  
+}
 
  const getUserShares = async () => {
   if (!user) return;
@@ -387,9 +387,9 @@ const refreshUserData = async () => {
   const updatedBalance = await getBalance();
   setBalance(updatedBalance);
 
-  await fetchClaim(); 
+  await fetchClaim();
 
-  
+
 };
 
 const handleClaimAction = async () => {
@@ -411,7 +411,7 @@ const handleClaimAction = async () => {
   }
 
   const curveId = growthType === "linear" ? 1n : 2n;
-  const address = activeTab === "support" ? id : claim.counter_term_id;
+  const address = mainTab === "support" ? id : claim.counter_term_id;
 
   try {
     if (isBuy) setBuying(true);
@@ -424,7 +424,7 @@ const handleClaimAction = async () => {
     const vaultAddress = getMultiVaultAddressFromChainId(walletClient.chain?.id!);
 
     let previewShares = 0n;
-    let updatedSharePrice = "0";
+    let updatedSharePrice = 0n;
 
     if (isBuy && buyAmount) {
       const [shares, price] = await multiVaultPreviewDeposit(
@@ -446,13 +446,13 @@ const handleClaimAction = async () => {
 
     // -------------------- Optimistically update user positions --------------------
     setUserPositions(prev => {
-      const dir = activeTab; // "support" or "oppose"
+      const dir = mainTab; // "support" or "oppose"
       const existing = prev.find(p => p.direction === dir && p.account.id === user.address);
 
       if (existing) {
-        existing.shares = isBuy
-          ? existing.shares + sharesFloat
-          : Math.max(existing.shares - sharesFloat, 0);
+        existing.shares = (isBuy
+          ? Number(existing.shares) + sharesFloat
+          : Math.max(Number(existing.shares) - sharesFloat, 0)).toString();
         return [...prev];
       }
 
@@ -477,10 +477,10 @@ const handleClaimAction = async () => {
 
     // -------------------- Update vault price --------------------
     const vaultIndex = growthType === "linear" ? 0 : 1;
-    if (activeTab === "support") {
-      term.vaults[vaultIndex].current_share_price = updatedSharePrice;
+    if (mainTab === "support") {
+      term.vaults[vaultIndex].current_share_price = updatedSharePrice.toString();
     } else {
-      counterTerm.vaults[vaultIndex].current_share_price = updatedSharePrice;
+      counterTerm.vaults[vaultIndex].current_share_price = updatedSharePrice.toString();
     }
 
     // -------------------- Execute transaction --------------------
@@ -534,12 +534,10 @@ const handleClaimAction = async () => {
 
     return formatEther(balance ?? 0n);
   }
-  
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////
   const sourcePositions = activeTab === "my" ? userPositions : positions;
-
-
 
   const processedPositions = useMemo(() => {
   // Decide source based on active tab
@@ -754,7 +752,7 @@ const handleDownload = async () => {
 {isShareModalOpen && (
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 sm:p-0">
     <div className="bg-[#070315] rounded-xl p-4 sm:p-6 w-full max-w-md sm:max-w-lg relative">
-      
+
       {/* Close Button */}
       <button
         onClick={() => setIsShareModalOpen(false)}
@@ -765,7 +763,7 @@ const handleDownload = async () => {
 
       {/* Card Container */}
       <div ref={cardRef} className="relative flex flex-col gap-4">
-        
+
         {/* Overlay for Generating Image */}
         {generatingImage && (
           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white z-10 gap-2">
@@ -790,18 +788,18 @@ const handleDownload = async () => {
               <div className="flex-1 bg-[#006CD233] border border-[#393B60] rounded-xl p-3 flex flex-col gap-2">
                 <span className="text-sm sm:text-lg text-[#006CD2]">SUPPORT</span>
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
-                  <span>{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
+                  <span>{toFixed(formatEther(BigInt(claim.term.total_assets)))}</span>
                   <img src="/intuition-icon.png" className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-blue-400">{claim.support}</span>
+                  <span className="text-blue-400">{formatNumber(claim.term.positions_aggregate.aggregate.count)}</span>
                 </div>
               </div>
 
               <div className="flex-1 bg-[#F19C0333] border border-[#393B60] rounded-xl p-3 flex flex-col gap-2">
                 <span className="text-sm sm:text-lg text-[#F19C03]">OPPOSE</span>
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
-                  <span>{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
+                  <span>{toFixed(formatEther(BigInt(claim.counter_term.total_assets)))}</span>
                   <img src="/intuition-icon.png" className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-[#F19C03]">{claim.oppose}</span>
+                  <span className="text-[#F19C03]">{formatNumber(claim.counter_term.positions_aggregate.aggregate.count)}</span>
                 </div>
               </div>
             </div>
@@ -868,11 +866,11 @@ const handleDownload = async () => {
         </div>
       </div>
 
-      
+
       <div className="flex flex-col lg:flex-row gap-3 mt-3">
   {/* Graph Placeholder (70%) */}
   <div className="w-full lg:w-[73%] bg-gradient-to-br from-[#1A0A2B] to-[#0B0515] rounded-xl p-3 sm:p-4 shadow-lg">
-    
+
     {/* Chart Header */}
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
@@ -1016,7 +1014,7 @@ const handleDownload = async () => {
     <div className="flex items-center gap-2 mt-2 sm:mt-0">
       {/* Toggle Button */}
       <button
-        onClick={() => setGrowthType(growthType === "linear" ? "exponential" : "linear")}
+        onClick={() => setGrowthType(growthType !== "linear" ? "exponential" : "linear")}
         className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${
           growthType === "exponential" ? "bg-purple-400" : "bg-gray-700"
         }`}
@@ -1039,7 +1037,7 @@ const handleDownload = async () => {
         {/* Slide-in Modal (Fixed Right) */}
         {showCurveInfo && (
           <div className="fixed top-0 right-0 h-full w-96 bg-[#110A2B] border-l-2 border-[#393B60] p-4 z-50 animate-slideIn overflow-y-auto">
-            
+
             {/* Close Button */}
             <button
               onClick={() => setShowCurveInfo(false)}
@@ -1187,7 +1185,7 @@ const handleDownload = async () => {
 
 {/* Connect / Buy / Sell Button */}
   <div className="mt-3 flex flex-col gap-2 w-full">
-    {currentAmount && Number(currentAmount) > (isBuy ? balance : userShares) && (
+    {currentAmount && Number(currentAmount) > (isBuy ? Number(balance) : userShares) && (
       <span className="text-red-400 text-xs">
         You cannot {isBuy ? "buy more than your balance" : "sell more than your shares"}!
       </span>
@@ -1196,13 +1194,13 @@ const handleDownload = async () => {
     <button
       onClick={async () => {
         if (!user) { await handleConnectWallet(); return; }
-        if (!currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? balance : userShares)) return;
+        if (!currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : userShares)) return;
         await handleClaimAction();
         isBuy ? setBuyAmount("") : setSellAmount("");
       }}
-      disabled={!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? balance : userShares)}
+      disabled={!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : userShares)}
       className={`flex items-center justify-center gap-2 py-2 w-full text-sm rounded-3xl transition-all duration-200 ${
-        !user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? balance : userShares)
+        !user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : userShares)
           ? "bg-gray-600 text-gray-400 cursor-not-allowed"
           : "bg-gradient-to-r from-[#8B3EFE] to-[#B57EFF] text-white hover:from-[#B57EFF] hover:to-[#8B3EFE] hover:scale-105"
       }`}
@@ -1232,16 +1230,16 @@ const handleDownload = async () => {
 
           if (supportPosition) {
             const totalSupport = toFixed(
-              userPositions
+             (userPositions
                 .filter(p => p.direction === "support")
-                .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)
+                .reduce((sum, p) => parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
             );
             return <span className="whitespace-nowrap">Support: <span className="text-white">{totalSupport} TRUST</span></span>;
           } else if (opposePosition) {
             const totalOppose = toFixed(
-              userPositions
+             (userPositions
                 .filter(p => p.direction === "oppose")
-                .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)
+                .reduce((sum, p) => parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
             );
             return <span className="whitespace-nowrap">Oppose: <span className="text-white">{totalOppose} TRUST</span></span>;
           } else {
@@ -1396,7 +1394,7 @@ const handleDownload = async () => {
 
             {/* Curve */}
             <div className="flex sm:w-[15%] w-full text-gray-400 sm:text-center justify-between sm:justify-center">
-              <span className="sm:hidden font-semibold">Curve:</span> 
+              <span className="sm:hidden font-semibold">Curve:</span>
               {Number(pos.curve_id) === 1 ? "Linear" : Number(pos.curve_id) === 2 ? "Exponential" : "—"}
             </div>
 
