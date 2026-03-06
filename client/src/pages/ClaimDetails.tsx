@@ -222,7 +222,7 @@ export default function ClaimDetails() {
         ...(fetched.counter_term.vaults?.[0]?.userPosition ?? []).map(p => ({
           ...p,
           direction: "oppose",
-          curve_id: 1, // linear
+          curve_id: 1, // Linear
           account: {
             id: p.account_id,
             label: p.account_id,
@@ -232,7 +232,7 @@ export default function ClaimDetails() {
         ...(fetched.counter_term.vaults?.[1]?.userPosition ?? []).map(p => ({
           ...p,
           direction: "oppose",
-          curve_id: 2, // exponential
+          curve_id: 2,
           account: {
             id: p.account_id,
             label: p.account_id,
@@ -277,15 +277,18 @@ export default function ClaimDetails() {
   }, [term, counterTerm]);
 
   const userShares = useMemo(() => {
-    if (!user) return "0";
+    if (!user) return 0;
 
     // Find the entry for the logged-in user
     const up = userPositions.find(
-      pos => pos.account_id.toLowerCase() === user.address.toLowerCase() && Number(pos.curve_id) === (growthType === "linear" ? 1 : 2),
+      pos =>
+        pos?.account_id.toLowerCase() === user.address.toLowerCase() &&
+        Number(pos?.curve_id) === (growthType === "linear" ? 1 : 2) &&
+        pos?.direction === mainTab
     );
 
-    return up ? formatEther(BigInt(up.shares)) : "0";
-  }, [userPositions, user, growthType]);
+    return up ? Number(formatEther(BigInt(up.shares))) : 0;
+  }, [userPositions, user, growthType, mainTab]);
 
   const hasOppositePosition = useMemo(() => {
     if (!user || !userPositions.length) return false;
@@ -366,7 +369,6 @@ export default function ClaimDetails() {
     setBalance(updatedBalance);
 
     await fetchClaim();
-
 
   };
 
@@ -907,8 +909,8 @@ export default function ClaimDetails() {
                   key={type}
                   onClick={() => setGrowthType(type)}
                   className={`px-2 sm:px-4 py-1 rounded-full text-xs sm:text-sm transition-all duration-300 ${growthType === type
-                    ? "bg-[#392D5F] text-white"
-                    : "text-gray-400 hover:text-white"
+                      ? "bg-[#392D5F] text-white"
+                      : "text-gray-400 hover:text-white"
                     }`}
                 >
                   {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -979,8 +981,8 @@ export default function ClaimDetails() {
           <div className="flex flex-col sm:flex-row gap-2">
             <button
               className={`flex-1 rounded-md py-2 text-sm transition-colors duration-200 ${mainTab === "support"
-                ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
-                : "bg-gray-800 border border-gray-700 text-gray-400"
+                  ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
+                  : "bg-gray-800 border border-gray-700 text-gray-400"
                 }`}
               onClick={() => setMainTab("support")}
             >
@@ -989,8 +991,8 @@ export default function ClaimDetails() {
 
             <button
               className={`flex-1 rounded-md py-2 text-sm transition-colors duration-200 ${mainTab === "oppose"
-                ? "bg-[#FFA31A] border border-[#F19C03] text-white"
-                : "bg-gray-800 border border-gray-700 text-gray-400"
+                  ? "bg-[#FFA31A] border border-[#F19C03] text-white"
+                  : "bg-gray-800 border border-gray-700 text-gray-400"
                 }`}
               onClick={() => setMainTab("oppose")}
             >
@@ -1032,13 +1034,22 @@ export default function ClaimDetails() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 mt-2 sm:mt-0">
+            {/* Right: Controls */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+
               {/* Toggle Button */}
               <button
-                onClick={() => setGrowthType(growthType === "linear" ? "exponential" : "linear")}
+                onClick={() =>
+                  setGrowthType(growthType === "linear" ? "exponential" : "linear")
+                }
                 className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${growthType === "exponential" ? "bg-purple-400" : "bg-gray-700"
                   }`}
-              />
+              >
+                <span
+                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${growthType === "exponential" ? "left-6" : "left-0.5"
+                    }`}
+                />
+              </button>
 
               {/* Info Button */}
               <button
@@ -1139,8 +1150,8 @@ export default function ClaimDetails() {
             <button
               disabled={tradeLocked}
               className={`text-xs px-2 py-1 rounded-full transition-colors duration-200 ${tradeLocked
-                ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                : "bg-[#0A2D4D] hover:bg-[#123a63] text-white"
+                  ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                  : "bg-[#0A2D4D] hover:bg-[#123a63] text-white"
                 }`}
               onClick={() => {
                 if (tradeLocked) return;
@@ -1197,7 +1208,7 @@ export default function ClaimDetails() {
 
           {/* Connect / Buy / Sell Button */}
           <div className="mt-3 flex flex-col gap-2 w-full">
-            {currentAmount && Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares)) && (
+            {currentAmount && Number(currentAmount) > (isBuy ? Number(balance) : userShares) && (
               <span className="text-red-400 text-xs">
                 You cannot {isBuy ? "buy more than your balance" : "sell more than your shares"}!
               </span>
@@ -1206,14 +1217,14 @@ export default function ClaimDetails() {
             <button
               onClick={async () => {
                 if (!user) { await handleConnectWallet(); return; }
-                if (!currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares))) return;
+                if (!currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : userShares)) return;
                 await handleClaimAction();
                 isBuy ? setBuyAmount("") : setSellAmount("");
               }}
-              disabled={!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares))}
-              className={`flex items-center justify-center gap-2 py-2 w-full text-sm rounded-3xl transition-all duration-200 ${!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : Number(userShares))
-                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-[#8B3EFE] to-[#B57EFF] text-white hover:from-[#B57EFF] hover:to-[#8B3EFE] hover:scale-105"
+              disabled={!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : userShares)}
+              className={`flex items-center justify-center gap-2 py-2 w-full text-sm rounded-3xl transition-all duration-200 ${!user || !currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > (isBuy ? Number(balance) : userShares)
+                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-[#8B3EFE] to-[#B57EFF] text-white hover:from-[#B57EFF] hover:to-[#8B3EFE] hover:scale-105"
                 }`}
             >
               {!user && <img src="/key.png" alt="Key Icon" className="w-4 h-4" />}
@@ -1221,240 +1232,240 @@ export default function ClaimDetails() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Your Position Card */}
-        <div className="bg-[#110A2B] rounded-xl p-4 flex flex-col gap-3 w-full">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-white text-sm sm:text-base w-full">
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <span>Your Position</span>
-              <div className="w-6 h-[3px] bg-[#AD77FF] rounded-full"></div>
-            </div>
-
-            {/* Positions Info */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-gray-300 flex-wrap">
-              {userPositions.length > 0 ? (
-                (() => {
-                  const supportPosition = userPositions.find(p => p.direction === "support");
-                  const opposePosition = userPositions.find(p => p.direction === "oppose");
-
-                  if (supportPosition) {
-                    const totalSupport = toFixed(
-                      (userPositions
-                        .filter(p => p.direction === "support")
-                        .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
-                    );
-                    return <span className="whitespace-nowrap">Support: <span className="text-white">{totalSupport} TRUST</span></span>;
-                  } else if (opposePosition) {
-                    const totalOppose = toFixed(
-                      (userPositions
-                        .filter(p => p.direction === "oppose")
-                        .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
-                    );
-                    return <span className="whitespace-nowrap">Oppose: <span className="text-white">{totalOppose} TRUST</span></span>;
-                  } else {
-                    return <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>;
-                  }
-                })()
-              ) : (
-                <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>
-              )}
-            </div>
+      {/* Your Position Card */}
+      <div className="bg-[#110A2B] rounded-xl p-4 flex flex-col gap-3 w-full">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-white text-sm sm:text-base w-full">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <span>Your Position</span>
+            <div className="w-6 h-[3px] bg-[#AD77FF] rounded-full"></div>
           </div>
 
-          {/* Divider */}
-          <div className="h-px w-full bg-white opacity-80"></div>
-        </div>
+          {/* Positions Info */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-gray-300 flex-wrap">
+            {userPositions.length > 0 ? (
+              (() => {
+                const supportPosition = userPositions.find(p => p.direction === "support");
+                const opposePosition = userPositions.find(p => p.direction === "oppose");
 
-        {/* Positions on this Claim Section */}
-        <div className="bg-[#110A2B] rounded-xl p-4 sm:p-5 text-white flex flex-col gap-4 w-full">
-          {/* Tabs */}
-          <div className="flex flex-wrap gap-2 mb-2 justify-start sm:justify-start">
-            <button
-              className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "all"
-                ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
-                : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
-                }`}
-              onClick={() => setActiveTab("all")}
-            >
-              All Positions
-            </button>
-
-            <button
-              className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "my"
-                ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
-                : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
-                }`}
-              onClick={() => setActiveTab("my")}
-            >
-              My Position
-            </button>
+                if (supportPosition) {
+                  const totalSupport = toFixed(
+                    (userPositions
+                      .filter(p => p.direction === "support")
+                      .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
+                  );
+                  return <span className="whitespace-nowrap">Support: <span className="text-white">{totalSupport} TRUST</span></span>;
+                } else if (opposePosition) {
+                  const totalOppose = toFixed(
+                    (userPositions
+                      .filter(p => p.direction === "oppose")
+                      .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
+                  );
+                  return <span className="whitespace-nowrap">Oppose: <span className="text-white">{totalOppose} TRUST</span></span>;
+                } else {
+                  return <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>;
+                }
+              })()
+            ) : (
+              <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>
+            )}
           </div>
         </div>
 
-        {/* Header + Controls */}
-        <div className="flex flex-col gap-3">
+        {/* Divider */}
+        <div className="h-px w-full bg-white opacity-80"></div>
+      </div>
 
-          {/* Dynamic Heading */}
-          <h3 className="text-sm sm:text-base text-white font-semibold">
-            {activeTab === "all"
-              ? "All Positions on this Claim"
-              : "My Position on this Claim"}
-          </h3>
+      {/* Positions on this Claim Section */}
+      <div className="bg-[#110A2B] rounded-xl p-4 sm:p-5 text-white flex flex-col gap-4 w-full">
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-2 mb-2 justify-start sm:justify-start">
+          <button
+            className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "all"
+                ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
+                : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
+              }`}
+            onClick={() => setActiveTab("all")}
+          >
+            All Positions
+          </button>
 
-          {/* Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+          <button
+            className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "my"
+                ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
+                : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
+              }`}
+            onClick={() => setActiveTab("my")}
+          >
+            My Position
+          </button>
+        </div>
+      </div>
 
-            {/* Search */}
-            <input
-              type="text"
-              placeholder="Search positions"
-              className="w-full sm:w-[35%] bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-sm"
-            />
+      {/* Header + Controls */}
+      <div className="flex flex-col gap-3">
 
-            {/* Right Side Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+        {/* Dynamic Heading */}
+        <h3 className="text-sm sm:text-base text-white font-semibold">
+          {activeTab === "all"
+            ? "All Positions on this Claim"
+            : "My Position on this Claim"}
+        </h3>
 
-              {/* Positions */}
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="text-white text-sm whitespace-nowrap">Positions:</span>
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
 
-                <div className="relative w-full sm:w-36">
-                  <select
-                    value={positionsOption}
-                    onChange={(e) => setPositionsOption(e.target.value)}
-                    className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
-                  >
-                    <option value="all">All</option>
-                    <option value="linear">Linear</option>
-                    <option value="exponential">Exponential</option>
-                    <option value="support">Support</option>
-                    <option value="oppose">Oppose</option>
-                  </select>
+          {/* Search */}
+          <input
+            type="text"
+            placeholder="Search positions"
+            className="w-full sm:w-[35%] bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-sm"
+          />
 
-                  <img
-                    src="/up-down.png"
-                    alt="Dropdown"
-                    className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                  />
-                </div>
+          {/* Right Side Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+
+            {/* Positions */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-white text-sm whitespace-nowrap">Positions:</span>
+
+              <div className="relative w-full sm:w-36">
+                <select
+                  value={positionsOption}
+                  onChange={(e) => setPositionsOption(e.target.value)}
+                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
+                >
+                  <option value="all">All</option>
+                  <option value="linear">Linear</option>
+                  <option value="exponential">Exponential</option>
+                  <option value="support">Support</option>
+                  <option value="oppose">Oppose</option>
+                </select>
+
+                <img
+                  src="/up-down.png"
+                  alt="Dropdown"
+                  className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                />
               </div>
+            </div>
 
-              {/* Sort */}
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="text-white text-sm whitespace-nowrap">Sort:</span>
+            {/* Sort */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-white text-sm whitespace-nowrap">Sort:</span>
 
-                <div className="relative w-full sm:w-40">
-                  <select
-                    value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value)}
-                    className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
-                  >
-                    <option value="highest_shares">Highest Shares</option>
-                    <option value="lowest_shares">Lowest Shares</option>
-                    <option value="newest">Newest</option>
-                    <option value="oldest">Oldest</option>
-                    <option value="a_to_z">A - Z</option>
-                    <option value="z_to_a">Z - A</option>
-                  </select>
+              <div className="relative w-full sm:w-40">
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
+                >
+                  <option value="highest_shares">Highest Shares</option>
+                  <option value="lowest_shares">Lowest Shares</option>
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="a_to_z">A - Z</option>
+                  <option value="z_to_a">Z - A</option>
+                </select>
 
-                  <img
-                    src="/up-down.png"
-                    alt="Dropdown"
-                    className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                  />
-                </div>
+                <img
+                  src="/up-down.png"
+                  alt="Dropdown"
+                  className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                />
               </div>
             </div>
           </div>
+        </div>
 
-          {/* TABLE */}
-          <div className="overflow-x-auto w-full">
-            <div className="min-w-[320px] sm:min-w-[700px]">
-              {processedPositions.length === 0 ? (
-                <div className="text-gray-400 text-center py-4 text-sm">No positions found</div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {/* Table Header */}
-                  <div className="hidden sm:flex bg-[#060210] p-3 rounded-md text-gray-400 text-xs sm:text-sm">
-                    <div className="w-[5%] text-center">#</div>
-                    <div className="w-[35%]">Account</div>
-                    <div className="w-[15%] text-center">Curve</div>
-                    <div className="w-[15%] text-center">Direction</div>
-                    <div className="w-[20%] text-right">Shares</div>
-                  </div>
+        {/* TABLE */}
+        <div className="overflow-x-auto w-full">
+          <div className="min-w-[320px] sm:min-w-[700px]">
+            {processedPositions.length === 0 ? (
+              <div className="text-gray-400 text-center py-4 text-sm">No positions found</div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {/* Table Header */}
+                <div className="hidden sm:flex bg-[#060210] p-3 rounded-md text-gray-400 text-xs sm:text-sm">
+                  <div className="w-[5%] text-center">#</div>
+                  <div className="w-[35%]">Account</div>
+                  <div className="w-[15%] text-center">Curve</div>
+                  <div className="w-[15%] text-center">Direction</div>
+                  <div className="w-[20%] text-right">Shares</div>
+                </div>
 
-                  {/* Table Rows */}
-                  {processedPositions.map((pos, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-sm sm:text-base gap-2 sm:gap-0"
-                    >
-                      {/* Index */}
-                      <div className="flex sm:w-[5%] w-full text-gray-400 justify-between sm:justify-center items-center">
-                        <span className="sm:hidden font-semibold">#:</span>
-                        <span>{idx + 1}</span>
-                      </div>
-
-                      {/* Account */}
-                      <div className="flex sm:w-[35%] w-full items-center gap-2 truncate">
-                        {pos.account?.image && (
-                          <img
-                            src={pos.account.image}
-                            alt={pos.account.label ?? "User"}
-                            className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-                          />
-                        )}
-                        <span className="truncate">{pos.account?.label ?? pos.account?.id ?? "Anonymous"}</span>
-                      </div>
-
-                      {/* Curve */}
-                      <div className="flex sm:w-[15%] w-full text-gray-400 justify-between sm:justify-center items-center">
-                        <span className="sm:hidden font-semibold">Curve:</span>
-                        <span>
-                          {Number(pos.curve_id) === 1
-                            ? "Linear"
-                            : Number(pos.curve_id) === 2
-                              ? "Exponential"
-                              : "—"}
-                        </span>
-                      </div>
-
-                      {/* Direction */}
-                      <div className="flex sm:w-[15%] w-full justify-between sm:justify-center items-center">
-                        <span className="sm:hidden font-semibold">Direction:</span>
-                        <span>
-                          {pos.direction?.toLowerCase() === "support"
-                            ? "Support"
-                            : pos.direction?.toLowerCase() === "oppose"
-                              ? "Oppose"
-                              : "—"}
-                        </span>
-                      </div>
-
-                      {/* Shares */}
-                      <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right items-center">
-                        <span className="sm:hidden font-semibold">Shares:</span>
-                        <span>{pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : "—"}</span>
-                      </div>
+                {/* Table Rows */}
+                {processedPositions.map((pos, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-sm sm:text-base gap-2 sm:gap-0"
+                  >
+                    {/* Index */}
+                    <div className="flex sm:w-[5%] w-full text-gray-400 justify-between sm:justify-center items-center">
+                      <span className="sm:hidden font-semibold">#:</span>
+                      <span>{idx + 1}</span>
                     </div>
-                  ))}
-                </div>
-              )}
 
-              {/* Observer div for infinite scroll */}
-              <div ref={observerRef} className="h-10"></div>
+                    {/* Account */}
+                    <div className="flex sm:w-[35%] w-full items-center gap-2 truncate">
+                      {pos.account?.image && (
+                        <img
+                          src={pos.account.image}
+                          alt={pos.account.label ?? "User"}
+                          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                        />
+                      )}
+                      <span className="truncate">{pos.account?.label ?? pos.account?.id ?? "Anonymous"}</span>
+                    </div>
 
-              {/* Spinner */}
-              {loading && (
-                <div className="flex justify-center my-4">
-                  <div className="loader"></div>
-                </div>
-              )}
-            </div>
+                    {/* Curve */}
+                    <div className="flex sm:w-[15%] w-full text-gray-400 justify-between sm:justify-center items-center">
+                      <span className="sm:hidden font-semibold">Curve:</span>
+                      <span>
+                        {Number(pos.curve_id) === 1
+                          ? "Linear"
+                          : Number(pos.curve_id) === 2
+                            ? "Exponential"
+                            : "—"}
+                      </span>
+                    </div>
+
+                    {/* Direction */}
+                    <div className="flex sm:w-[15%] w-full justify-between sm:justify-center items-center">
+                      <span className="sm:hidden font-semibold">Direction:</span>
+                      <span>
+                        {pos.direction?.toLowerCase() === "support"
+                          ? "Support"
+                          : pos.direction?.toLowerCase() === "oppose"
+                            ? "Oppose"
+                            : "—"}
+                      </span>
+                    </div>
+
+                    {/* Shares */}
+                    <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right items-center">
+                      <span className="sm:hidden font-semibold">Shares:</span>
+                      <span>{pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : "—"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Observer div for infinite scroll */}
+            <div ref={observerRef} className="h-10"></div>
+
+            {/* Spinner */}
+            {loading && (
+              <div className="flex justify-center my-4">
+                <div className="loader"></div>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-};
+}

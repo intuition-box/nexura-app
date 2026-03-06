@@ -63,10 +63,28 @@ export default function PortalClaims() {
   const [userShares, setUserShares] = useState<{ support: bigint; oppose: bigint }>({ support: 0n, oppose: 0n });
 
   // localstorage stuff
-  const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>(() => {
-    const saved = localStorage.getItem("actionState");
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>({});
+
+  const storageKey = user?.address
+    ? `actionState_${user.address.toLowerCase()}`
+    : null;
+
+  // load wallet state
+  useEffect(() => {
+    if (!storageKey) return;
+
+    const saved = localStorage.getItem(storageKey);
+    setActionState(saved ? JSON.parse(saved) : {});
+  }, [storageKey]);
+
+  // save wallet state
+  useEffect(() => {
+    if (!storageKey) return;
+
+    localStorage.setItem(storageKey, JSON.stringify(actionState));
+  }, [actionState, storageKey]);
+
+
   const [userSharesByCurve, setUserSharesByCurve] = useState<{
     support: { linear: bigint; exponential: bigint };
     oppose: { linear: bigint; exponential: bigint };
@@ -77,10 +95,6 @@ export default function PortalClaims() {
   const [supportShares, setSupportShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
   const [opposeShares, setOpposeShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
 
-  // Whenever state changes, we save it
-  useEffect(() => {
-    localStorage.setItem("actionState", JSON.stringify(actionState));
-  }, [actionState]);
 
   async function fetchWalletBalance(address: Address) {
     const publicClient = getPublicClient();
@@ -130,58 +144,6 @@ export default function PortalClaims() {
   const { toast } = useToast();
 
   const LIMIT = 50;
-
-  //   // ----------------- Utility Function -----------------
-  // const fetchUserPositionsForClaim = (claim: Claim, user: User) => {
-  //   if (!user) return { positions: [], sharesByCurve: { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } } };
-
-  //   const positions: Position[] = [];
-
-  //   // --- Support ---
-  //   claim.term.vaults?.forEach((vault) => {
-  //     (vault.userPosition ?? []).forEach((p) => {
-  //       positions.push({
-  //         account: p.account_id,
-  //         shares: p.shares,
-  //         curve: vault.curve_id,
-  //         direction: "support",
-  //       });
-  //       console.log("SUPPORT POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
-  //     });
-  //   });
-
-  //   // --- Oppose ---
-  //   claim.counter_term.vaults?.forEach((vault) => {
-  //     (vault.userPosition ?? []).forEach((p) => {
-  //       positions.push({
-  //         account: p.account_id,
-  //         shares: p.shares,
-  //         curve: vault.curve_id,
-  //         direction: "oppose",
-  //       });
-  //       console.log("OPPOSE POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
-  //     });
-  //   });
-
-  //   // Compute shares by curve
-  //   const sharesByCurve = positions.reduce(
-  //     (acc, p) => {
-  //       const s = BigInt(p.shares ?? 0);
-  //       if (p.direction === "support") {
-  //         p.curve === "1" ? (acc.support.linear += s) : (acc.support.exponential += s);
-  //       } else {
-  //         p.curve === "1" ? (acc.oppose.linear += s) : (acc.oppose.exponential += s);
-  //       }
-  //       return acc;
-  //     },
-  //     { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } }
-  //   );
-
-  //   console.log(`Normalized user positions for claim: ${claim.id}`, positions);
-  //   console.log(`Shares by curve for claim: ${claim.id}`, sharesByCurve);
-
-  //   return { positions, sharesByCurve };
-  // };
 
   const loadMore = async () => {
     if (loading || !hasMore) return;
@@ -314,7 +276,33 @@ export default function PortalClaims() {
   const formatTrust = (shares: bigint, decimals = 18, precision = 2) => {
     const divisor = 10n ** BigInt(decimals);
     const formatted = Number(shares) / Number(divisor);
-    return formatted.toFixed(precision);
+
+    const factor = 10 ** precision;
+    const truncated = Math.floor(formatted * factor) / factor;
+
+    return truncated.toFixed(precision);
+  };
+
+
+  //// ------------------- Update Automatically.. active position--------
+  const calculateUserShares = (claim: Claim, userAddress: string) => {
+    let linear = 0n;
+    let exponential = 0n;
+
+    claim.term.vaults?.forEach((vault) => {
+      const curveId = String(vault.curve_id).trim();
+
+      (vault.userPosition ?? []).forEach((p) => {
+        if (p?.account_id.toLowerCase() === userAddress.toLowerCase()) {
+          const shares = BigInt(p.shares ?? 0);
+
+          if (curveId === "1") linear += shares;
+          if (curveId === "2") exponential += shares;
+        }
+      });
+    });
+
+    return { linear, exponential };
   };
 
   // ---------------- Handlers ----------------
@@ -326,20 +314,7 @@ export default function PortalClaims() {
     setOpposeMode(false);
     setTransactionAmount("");
 
-    let linear = 0n;
-    let exponential = 0n;
-
-    claim.term.vaults?.forEach((vault) => {
-      const curveId = String(vault.curve_id).trim();
-
-      (vault.userPosition ?? []).forEach((p) => {
-        if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
-          const shares = BigInt(p.shares);
-          if (curveId === "1") linear += shares;
-          if (curveId === "2") exponential += shares;
-        }
-      });
-    });
+    const { linear, exponential } = calculateUserShares(claim, user.address);
 
     console.log("Support Linear:", linear.toString(), "Exponential:", exponential.toString());
 
@@ -368,8 +343,8 @@ export default function PortalClaims() {
       const curveId = String(vault.curve_id).trim();
 
       (vault.userPosition ?? []).forEach((p) => {
-        if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
-          const shares = BigInt(p.shares);
+        if (p?.account_id.toLowerCase() === user.address.toLowerCase()) {
+          const shares = BigInt(p.shares ?? 0);
           if (curveId === "1") linear += shares;
           if (curveId === "2") exponential += shares;
         }
@@ -414,7 +389,21 @@ export default function PortalClaims() {
 
       // Refresh wallet balance after transaction
       const balance = await fetchWalletBalance(user.address);
-      setTTrustBalance(balance); // update state
+      setTTrustBalance(balance);
+
+      // ---------------- Recalculate shares after transaction ----------------
+      if (activeClaim) {
+        const { linear, exponential } = calculateUserShares(activeClaim, user.address);
+
+        if (opposeMode) {
+          setOpposeShares({ linear, exponential });
+        } else {
+          setSupportShares({ linear, exponential });
+        }
+
+        setActivePosition(isToggled ? exponential : linear);
+      }
+      // -----------------------------------------------------------------------
 
       const actionText = opposeMode ? "opposed" : "supported";
 
@@ -1176,10 +1165,10 @@ export default function PortalClaims() {
                     {/* Review Deposit Button */}
                     <button
                       className={`mx-auto block px-6 py-2.5 rounded-3xl mt-4 text-sm transition-colors ${transactionAmount &&
-                          Number(transactionAmount) > 0 &&
-                          Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
-                          ? "bg-white text-black hover:bg-gray-200"
-                          : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                        Number(transactionAmount) > 0 &&
+                        Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
+                        ? "bg-white text-black hover:bg-gray-200"
+                        : "bg-gray-700 text-gray-400 cursor-not-allowed"
                         }`}
                       onClick={() => setShowReviewDepositModal(true)}
                       disabled={
@@ -1250,14 +1239,6 @@ export default function PortalClaims() {
                                 : "0.00"} TRUST
                             </span>
                           </div>
-
-                          {/* Insufficient Funds Warning */}
-                          {transactionAmount &&
-                            Number(transactionAmount) > maxRedeemable && (
-                              <span className="text-red-500 text-xs mt-1">
-                                Insufficient funds
-                              </span>
-                            )}
                         </div>
 
                         {/* Right-aligned Cluster: Curve Info + Toggle + Info */}
@@ -1390,10 +1371,10 @@ export default function PortalClaims() {
                     {/* Review Deposit Button */}
                     <button
                       className={`mx-auto block px-5 py-1.5 rounded-3xl mt-4 text-sm transition-colors ${transactionAmount &&
-                          Number(transactionAmount) > 0 &&
-                          Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
-                          ? "bg-white text-black hover:bg-gray-200"
-                          : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                        Number(transactionAmount) > 0 &&
+                        Number(transactionAmount) <= Number(tTrustBalance) / 10 ** 18
+                        ? "bg-white text-black hover:bg-gray-200"
+                        : "bg-gray-700 text-gray-400 cursor-not-allowed"
                         }`}
                       onClick={() => setShowReviewRedeemModal(true)}
                       disabled={
@@ -1464,13 +1445,6 @@ export default function PortalClaims() {
                     <div className="flex flex-col items-center my-6">
                       <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
                       <span className="text-white">Review...</span>
-                    </div>
-
-                    <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-                      <span className="text-gray-300 text-sm">Total Cost</span>
-                      <span className="text-white">
-                        {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
-                      </span>
                     </div>
 
                     <button
@@ -1584,16 +1558,8 @@ export default function PortalClaims() {
 
                 {/* Centered Spinner + Label */}
                 <div className="flex flex-col items-center my-6">
-                  <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2 animate-spin" />
+                  <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
                   <span className="text-white">Review...</span>
-                </div>
-
-                {/* Total Cost */}
-                <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-                  <span className="text-gray-300 text-sm">Total Cost</span>
-                  <span className="text-white">
-                    {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
-                  </span>
                 </div>
 
                 {/* Redeem TRUST Label */}
