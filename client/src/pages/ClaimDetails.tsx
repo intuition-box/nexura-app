@@ -1232,14 +1232,14 @@ const handleDownload = async () => {
             const totalSupport = toFixed(
              (userPositions
                 .filter(p => p.direction === "support")
-                .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)).toString()
+                .reduce((sum, p) => parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
             );
             return <span className="whitespace-nowrap">Support: <span className="text-white">{totalSupport} TRUST</span></span>;
           } else if (opposePosition) {
             const totalOppose = toFixed(
              (userPositions
                 .filter(p => p.direction === "oppose")
-                .reduce((sum, p) => sum + parseFloat(formatEther(p.shares)), 0)).toString()
+                .reduce((sum, p) => parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
             );
             return <span className="whitespace-nowrap">Oppose: <span className="text-white">{totalOppose} TRUST</span></span>;
           } else {
@@ -1411,7 +1411,7 @@ const handleDownload = async () => {
             {/* Shares */}
             <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right">
               <span className="sm:hidden font-semibold">Shares:</span>
-              {pos.shares ? `${toFixed(pos.shares)}` : ""}
+              {pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : ""}
             </div>
           </div>
         ))}
