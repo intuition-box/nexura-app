@@ -63,10 +63,28 @@ export default function PortalClaims() {
   const [userShares, setUserShares] = useState<{ support: bigint; oppose: bigint }>({ support: 0n, oppose: 0n });
 
   // localstorage stuff
-  const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>(() => {
-    const saved = localStorage.getItem("actionState");
-    return saved ? JSON.parse(saved) : {};
-  });
+const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>({});
+
+const storageKey = user?.address
+  ? `actionState_${user.address.toLowerCase()}`
+  : null;
+
+// load wallet state
+useEffect(() => {
+  if (!storageKey) return;
+
+  const saved = localStorage.getItem(storageKey);
+  setActionState(saved ? JSON.parse(saved) : {});
+}, [storageKey]);
+
+// save wallet state
+useEffect(() => {
+  if (!storageKey) return;
+
+  localStorage.setItem(storageKey, JSON.stringify(actionState));
+}, [actionState, storageKey]);
+
+
   const [userSharesByCurve, setUserSharesByCurve] = useState<{
     support: { linear: bigint; exponential: bigint };
     oppose: { linear: bigint; exponential: bigint };
@@ -77,10 +95,6 @@ export default function PortalClaims() {
   const [supportShares, setSupportShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
   const [opposeShares, setOpposeShares] = useState<{ linear: bigint; exponential: bigint }>({ linear: 0n, exponential: 0n });
 
-  // Whenever state changes, we save it
-  useEffect(() => {
-    localStorage.setItem("actionState", JSON.stringify(actionState));
-  }, [actionState]);
 
   async function fetchWalletBalance(address: Address) {
     const publicClient = getPublicClient();
@@ -130,58 +144,6 @@ export default function PortalClaims() {
   const { toast } = useToast();
 
   const LIMIT = 50;
-
-  //   // ----------------- Utility Function -----------------
-  // const fetchUserPositionsForClaim = (claim: Claim, user: User) => {
-  //   if (!user) return { positions: [], sharesByCurve: { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } } };
-
-  //   const positions: Position[] = [];
-
-  //   // --- Support ---
-  //   claim.term.vaults?.forEach((vault) => {
-  //     (vault.userPosition ?? []).forEach((p) => {
-  //       positions.push({
-  //         account: p.account_id,
-  //         shares: p.shares,
-  //         curve: vault.curve_id,
-  //         direction: "support",
-  //       });
-  //       console.log("SUPPORT POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
-  //     });
-  //   });
-
-  //   // --- Oppose ---
-  //   claim.counter_term.vaults?.forEach((vault) => {
-  //     (vault.userPosition ?? []).forEach((p) => {
-  //       positions.push({
-  //         account: p.account_id,
-  //         shares: p.shares,
-  //         curve: vault.curve_id,
-  //         direction: "oppose",
-  //       });
-  //       console.log("OPPOSE POSITION", { account: p.account_id, shares: p.shares, curve: vault.curve_id });
-  //     });
-  //   });
-
-  //   // Compute shares by curve
-  //   const sharesByCurve = positions.reduce(
-  //     (acc, p) => {
-  //       const s = BigInt(p.shares ?? 0);
-  //       if (p.direction === "support") {
-  //         p.curve === "1" ? (acc.support.linear += s) : (acc.support.exponential += s);
-  //       } else {
-  //         p.curve === "1" ? (acc.oppose.linear += s) : (acc.oppose.exponential += s);
-  //       }
-  //       return acc;
-  //     },
-  //     { support: { linear: 0n, exponential: 0n }, oppose: { linear: 0n, exponential: 0n } }
-  //   );
-
-  //   console.log(`Normalized user positions for claim: ${claim.id}`, positions);
-  //   console.log(`Shares by curve for claim: ${claim.id}`, sharesByCurve);
-
-  //   return { positions, sharesByCurve };
-  // };
 
   const loadMore = async () => {
     if (loading || !hasMore) return;
@@ -311,143 +273,170 @@ export default function PortalClaims() {
     }
   }, [showModal]);
 
-  const formatTrust = (shares: bigint, decimals = 18, precision = 2) => {
-    const divisor = 10n ** BigInt(decimals);
-    const formatted = Number(shares) / Number(divisor);
-    return formatted.toFixed(precision);
-  };
+const formatTrust = (shares: bigint, decimals = 18, precision = 2) => {
+  const divisor = 10n ** BigInt(decimals);
+  const formatted = Number(shares) / Number(divisor);
 
-  // ---------------- Handlers ----------------
-  const handleSupportClick = (claim: Claim) => {
-    if (!user) return;
+  const factor = 10 ** precision;
+  const truncated = Math.floor(formatted * factor) / factor;
 
-    setActiveClaim(claim);
-    setTermId(claim.term.id);
-    setOpposeMode(false);
-    setTransactionAmount("");
+  return truncated.toFixed(precision);
+};
 
-    let linear = 0n;
-    let exponential = 0n;
 
-    claim.term.vaults?.forEach((vault) => {
-      const curveId = String(vault.curve_id).trim();
+//// ------------------- Update Automatically.. active position--------
+const calculateUserShares = (claim: Claim, userAddress: string) => {
+  let linear = 0n;
+  let exponential = 0n;
 
-      (vault.userPosition ?? []).forEach((p) => {
-        if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
-          const shares = BigInt(p.shares);
-          if (curveId === "1") linear += shares;
-          if (curveId === "2") exponential += shares;
-        }
-      });
+  claim.term.vaults?.forEach((vault) => {
+    const curveId = String(vault.curve_id).trim();
+
+    (vault.userPosition ?? []).forEach((p) => {
+      if (p.account_id.toLowerCase() === userAddress.toLowerCase()) {
+        const shares = BigInt(p.shares);
+
+        if (curveId === "1") linear += shares;
+        if (curveId === "2") exponential += shares;
+      }
     });
+  });
 
-    console.log("Support Linear:", linear.toString(), "Exponential:", exponential.toString());
+  return { linear, exponential };
+};
 
-    setSupportShares({ linear, exponential });
+// ---------------- Handlers ----------------
+const handleSupportClick = (claim: Claim) => {
+  if (!user) return;
 
-    // Set active position to the currently toggled curve
-    setActivePosition(isToggled ? exponential : linear);
+  setActiveClaim(claim);
+  setTermId(claim.term.id);
+  setOpposeMode(false);
+  setTransactionAmount("");
 
-    setShowModal(true);
-  };
+  const { linear, exponential } = calculateUserShares(claim, user.address);
 
-  const handleOpposeClick = (claim: Claim) => {
-    if (!user) return;
+  console.log("Support Linear:", linear.toString(), "Exponential:", exponential.toString());
 
-    setActiveClaim(claim);
-    setTermId(claim.counter_term.id);
-    setTransactionMode("redeem");
-    setActiveTab("deposit");
-    setOpposeMode(true);
-    setTransactionAmount("");
+  setSupportShares({ linear, exponential });
 
-    let linear = 0n;
-    let exponential = 0n;
+  // Set active position to the currently toggled curve
+  setActivePosition(isToggled ? exponential : linear);
 
-    claim.counter_term.vaults?.forEach((vault) => {
-      const curveId = String(vault.curve_id).trim();
+  setShowModal(true);
+};
 
-      (vault.userPosition ?? []).forEach((p) => {
-        if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
-          const shares = BigInt(p.shares);
-          if (curveId === "1") linear += shares;
-          if (curveId === "2") exponential += shares;
-        }
-      });
+const handleOpposeClick = (claim: Claim) => {
+  if (!user) return;
+
+  setActiveClaim(claim);
+  setTermId(claim.counter_term.id);
+  setTransactionMode("redeem");
+  setActiveTab("deposit");
+  setOpposeMode(true);
+  setTransactionAmount("");
+
+  let linear = 0n;
+  let exponential = 0n;
+
+  claim.counter_term.vaults?.forEach((vault) => {
+    const curveId = String(vault.curve_id).trim();
+
+    (vault.userPosition ?? []).forEach((p) => {
+      if (p.account_id.toLowerCase() === user.address.toLowerCase()) {
+        const shares = BigInt(p.shares);
+        if (curveId === "1") linear += shares;
+        if (curveId === "2") exponential += shares;
+      }
     });
+  });
 
-    console.log("Oppose Linear:", linear.toString(), "Exponential:", exponential.toString());
+  console.log("Oppose Linear:", linear.toString(), "Exponential:", exponential.toString());
 
-    setOpposeShares({ linear, exponential });
+  setOpposeShares({ linear, exponential });
 
-    // Set active position to currently toggled curve
-    setActivePosition(isToggled ? exponential : linear);
+  // Set active position to currently toggled curve
+  setActivePosition(isToggled ? exponential : linear);
 
-    setShowModal(true);
-  };
+  setShowModal(true);
+};
 
-  const displayedShares = opposeMode
-    ? (isToggled ? opposeShares.exponential : opposeShares.linear)
-    : (isToggled ? supportShares.exponential : supportShares.linear);
+const displayedShares = opposeMode
+  ? (isToggled ? opposeShares.exponential : opposeShares.linear)
+  : (isToggled ? supportShares.exponential : supportShares.linear);
 
-  const handleCloseModal = () => {
-    setActiveClaim(null);
-    setShowModal(false);
-    setOpposeMode(false);
-  };
+const handleCloseModal = () => {
+  setActiveClaim(null);
+  setShowModal(false);
+  setOpposeMode(false);
+};
 
-  const maxRedeemable = Number(displayedShares) / 10 ** 18;
+const maxRedeemable = Number(displayedShares) / 10 ** 18;
 
-  const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
-    if (!termId || !user?.address) return;
+const handleClaimAction = async (action: "deposit" | "redeem" = "deposit") => {
+  if (!termId || !user?.address) return;
 
-    try {
-      setModalStep("awaiting");
+  try {
+    setModalStep("awaiting");
 
-      const addressTermId = termId as Address;
+    const addressTermId = termId as Address;
 
-      if (action === "deposit") {
-        await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+    if (action === "deposit") {
+      await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+    } else {
+      await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+    }
+
+    // Refresh wallet balance after transaction
+    const balance = await fetchWalletBalance(user.address);
+    setTTrustBalance(balance);
+
+    // ---------------- Recalculate shares after transaction ----------------
+    if (activeClaim) {
+      const { linear, exponential } = calculateUserShares(activeClaim, user.address);
+
+      if (opposeMode) {
+        setOpposeShares({ linear, exponential });
       } else {
-        await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+        setSupportShares({ linear, exponential });
       }
 
-      // Refresh wallet balance after transaction
-      const balance = await fetchWalletBalance(user.address);
-      setTTrustBalance(balance); // update state
-
-      const actionText = opposeMode ? "opposed" : "supported";
-
-      toast({
-        title: "Success",
-        description: (
-          <div className="flex items-center gap-2">
-            <img src="/check.png" alt="success" className="w-4 h-4" />
-            <span>Successfully {action === "deposit" ? "bought" : "sold"} a claim!</span>
-          </div>
-        ),
-      });
-
-      setActionState(prev => ({
-        ...prev,
-        [termId]: opposeMode ? "opposed" : "supported"
-      }));
-
-      setTransactionAmount("");
-      setModalStep("success");
-
-    } catch (err: any) {
-      console.error(err);
-
-      setModalStep("failed");
-
-      toast({
-        title: "Error",
-        description: err?.message || "Transaction failed",
-        variant: "destructive",
-      });
+      setActivePosition(isToggled ? exponential : linear);
     }
-  };
+    // -----------------------------------------------------------------------
+
+    const actionText = opposeMode ? "opposed" : "supported";
+
+    toast({
+      title: "Success",
+      description: (
+        <div className="flex items-center gap-2">
+          <img src="/check.png" alt="success" className="w-4 h-4" />
+          <span>Successfully {action === "deposit" ? "bought" : "sold"} a claim!</span>
+        </div>
+      ),
+    });
+
+    setActionState(prev => ({
+      ...prev,
+      [termId]: opposeMode ? "opposed" : "supported"
+    }));
+
+    setTransactionAmount("");
+    setModalStep("success");
+
+  } catch (err: any) {
+    console.error(err);
+
+    setModalStep("failed");
+
+    toast({
+      title: "Error",
+      description: err?.message || "Transaction failed",
+      variant: "destructive",
+    });
+  }
+};
 
   // Sorting function
   const sortClaims = (claims, option) => {
@@ -1250,14 +1239,6 @@ export default function PortalClaims() {
                                 : "0.00"} TRUST
                             </span>
                           </div>
-
-                          {/* Insufficient Funds Warning */}
-                          {transactionAmount &&
-                            Number(transactionAmount) > maxRedeemable && (
-                              <span className="text-red-500 text-xs mt-1">
-                                Insufficient funds
-                              </span>
-                            )}
                         </div>
 
                         {/* Right-aligned Cluster: Curve Info + Toggle + Info */}
@@ -1466,13 +1447,6 @@ export default function PortalClaims() {
                       <span className="text-white">Review...</span>
                     </div>
 
-                    <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-                      <span className="text-gray-300 text-sm">Total Cost</span>
-                      <span className="text-white">
-                        {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
-                      </span>
-                    </div>
-
                     <button
                       className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl text-sm"
                       onClick={() => {
@@ -1584,16 +1558,8 @@ export default function PortalClaims() {
 
                 {/* Centered Spinner + Label */}
                 <div className="flex flex-col items-center my-6">
-                  <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2 animate-spin" />
+                  <img src="/spinner.png" alt="Spinner" className="w-16 h-16 mb-2" />
                   <span className="text-white">Review...</span>
-                </div>
-
-                {/* Total Cost */}
-                <div className="bg-[#110A2B] border-2 border-[#393B60] rounded-3xl flex justify-between items-center px-4 py-2 mb-3 mx-4">
-                  <span className="text-gray-300 text-sm">Total Cost</span>
-                  <span className="text-white">
-                    {transactionAmount ? Number(transactionAmount).toFixed(2) : "0.00"}
-                  </span>
                 </div>
 
                 {/* Redeem TRUST Label */}
