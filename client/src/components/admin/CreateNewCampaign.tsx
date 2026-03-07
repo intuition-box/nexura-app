@@ -46,10 +46,11 @@ export default function CreateNewCampaigns() {
   const [showModal, setShowModal] = useState(false);
   const [validationType, setValidationType] = useState("manual");
   const { toast } = useToast();
-  type Task = { type: string; platform: string; handleOrUrl: string; description: string; evidence: string; validation: string; verificationMode: string; };
+  type Task = { _id: string | undefined; type: string; platform: string; handleOrUrl: string; description: string; evidence: string; validation: string; verificationMode: string; };
 
 const [tasks, setTasks] = useState<Task[]>([]); 
   const [newTask, setNewTask] = useState({
+    _id: undefined as string | undefined,
   type: "",
   platform: "",
   handleOrUrl: "",
@@ -146,6 +147,7 @@ useEffect(() => {
         };
         if (qRes.campaignQuests) {
           setTasks(qRes.campaignQuests.map((q: any) => ({
+            _id: q._id,
             type: tagToType(q.tag),
             platform: catToPlatform(q.category),
             handleOrUrl: q.link ?? "",
@@ -199,6 +201,7 @@ const buildCampaignFormData = (isDraft: boolean): FormData => {
   if (isDraft) fd.append("isDraft", "true");
   fd.append("campaignQuests", JSON.stringify(
     tasks.map(t => ({
+      _id: t._id,
       quest: t.description || t.type,
       link: t.handleOrUrl || "https://nexura.io",
       tag: typeToTag(t.type),
@@ -280,7 +283,7 @@ const handleSaveTask = () => {
     setTasks([...tasks, newTask]);
   }
 
-  setNewTask({ type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation", verificationMode: "" });
+  setNewTask({ _id: undefined, type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation", verificationMode: "" });
   setShowModal(false);
   setError("");
 };
