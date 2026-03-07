@@ -855,7 +855,7 @@ const isActive =
 
         {/* Task Description */}
         <div className="mb-4">
-          <label className="text-sm text-white/70 mb-2 block">{newTask.type === "Give Feedback" ? "Feedback Prompt" : "Task Description"}</label>
+          <label className="text-sm text-white/70 mb-2 block">{newTask.type === "Give Feedback" ? "Task Description" : "Task Description"}</label>
           <input
             type="text"
             placeholder={newTask.type === "Give Feedback" ? "e.g. Tell us what you think about our platform" : "..."}
