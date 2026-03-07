@@ -62,7 +62,17 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 			maxAge: 30 * 24 * 60 * 60,
 		});
 
-		res.status(OK).json({ message: "signed in!", accessToken });
+		res.status(OK).json({
+			message: "signed in!",
+			accessToken,
+			admin: {
+				_id: adminExists._id,
+				name: adminExists.name,
+				email: adminExists.email,
+				role: adminExists.role,
+				hub: adminExists.hub,
+			},
+		});
 	} catch (error) {
 		logger.error(error);
 		res
@@ -228,7 +238,8 @@ export const hubAdminSignUp = async (req: GlobalRequest, res: GlobalResponse) =>
 		}
 
 		req.body.hub = otp.hubId;
-		req.body.role = "admin";
+		req.body.role = otp.role || "admin";
+		req.body.password = await hashPassword(req.body.password);
 
 		const admin = await hubAdmin.create(req.body);
 
@@ -245,7 +256,17 @@ export const hubAdminSignUp = async (req: GlobalRequest, res: GlobalResponse) =>
 
 		await OTP.deleteOne({ code });
 
-		res.status(OK).json({ message: "hub admin signed up!", accessToken });
+		res.status(OK).json({
+			message: "hub admin signed up!",
+			accessToken,
+			admin: {
+				_id: admin._id,
+				name: admin.name,
+				email: admin.email,
+				role: admin.role,
+				hub: admin.hub,
+			},
+		});
 	} catch (error) {
 		logger.error(error);
 		res

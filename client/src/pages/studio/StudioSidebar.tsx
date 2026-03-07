@@ -16,16 +16,19 @@ export default function StudioSidebar({
   activeTab,
   setActiveTab,
 }: StudioSidebarProps) {
-  const sidebarItems = [
-    { title: "Campaigns", icon: Users, id: "campaignsTab" as TabType },
-    { title: "Dashboard", icon: Zap, id: "campaignSubmissions" as TabType },
-    { title: "Admin Management", icon: Shield, id: "adminManagement" as TabType },
-  ];
   const [, setLocation] = useLocation();
 
   // State to hold project info
   const [projectLogo, setProjectLogo] = useState("/default-project-logo.png");
   const [projectHandle, setProjectHandle] = useState("@project");
+  const [adminRole, setAdminRole] = useState<string>("");
+  const [adminName, setAdminName] = useState<string>("Administrator");
+
+  const sidebarItems = [
+    { title: "Campaigns", icon: Users, id: "campaignsTab" as TabType },
+    { title: "Dashboard", icon: Zap, id: "campaignSubmissions" as TabType },
+    ...(adminRole === "superadmin" ? [{ title: "Admin Management", icon: Shield, id: "adminManagement" as TabType }] : []),
+  ];
 
   useEffect(() => {
     const info = getStoredProjectInfo();
@@ -33,27 +36,33 @@ export default function StudioSidebar({
       const name = (info.name ?? info.email ?? "Project") as string;
       setProjectHandle(name);
       if (info.logo) setProjectLogo(info.logo as string);
+      if (info.role) setAdminRole(info.role as string);
+      if (info.name) setAdminName(info.name as string);
     }
 
-    // If stored info is missing name/logo, try fetching from /hub/me
-    if (!info?.logo || !info?.name) {
-      projectApiRequest<{ hub: Record<string, any> }>({ method: "GET", endpoint: "/hub/me" })
-        .then(({ hub }) => {
+    // Always fetch /hub/me to get latest admin role + hub info
+    projectApiRequest<{ hub: Record<string, any>; admin?: Record<string, any> }>({ method: "GET", endpoint: "/hub/me" })
+      .then(({ hub, admin }) => {
           if (hub) {
             const hubName = (hub.name ?? info?.name ?? info?.email ?? "Project") as string;
             const hubLogo = (hub.logo ?? "") as string;
             setProjectHandle(hubName);
             if (hubLogo) setProjectLogo(hubLogo);
 
+            // Store admin role from server
+            if (admin?.role) {
+              setAdminRole(admin.role as string);
+              setAdminName(admin.name as string);
+            }
+
             // Persist so future mounts don't need the extra fetch
             const token = getStoredProjectToken();
             if (token) {
-              storeProjectSession(token, { ...(info ?? {}), name: hubName, logo: hubLogo });
+              storeProjectSession(token, { ...(info ?? {}), name: hubName, logo: hubLogo, role: admin?.role ?? info?.role ?? "admin", adminId: admin?._id ?? info?.adminId ?? "" });
             }
           }
         })
         .catch(() => { /* ignore — offline or no hub yet */ });
-    }
   }, []);
 
   const navigate = (id: TabType) => {
@@ -72,8 +81,11 @@ export default function StudioSidebar({
             <img src="/nexura-logo.png" alt="Nexura" className="w-40 h-auto" />
           </div>
 
-          {/* Project pill — full width with truncation */}
-          <div className="flex items-center gap-3 border-2 border-purple-500 rounded-2xl px-3 py-2 relative z-10 w-full min-w-0">
+          {/* Project pill — clickable, navigates to hub profile */}
+          <button
+            onClick={() => setLocation("/studio-dashboard/hub-profile")}
+            className="flex items-center gap-3 border-2 border-purple-500 rounded-2xl px-3 py-2 relative z-10 w-full min-w-0 hover:bg-white/5 transition-colors cursor-pointer text-left"
+          >
             <div className="w-10 h-10 rounded-2xl overflow-hidden flex-shrink-0">
               <img
                 src={projectLogo}
@@ -87,7 +99,7 @@ export default function StudioSidebar({
                 {projectHandle}
               </span>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Navigation tabs */}
@@ -120,11 +132,11 @@ export default function StudioSidebar({
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-purple-400 font-bold">
-              A
+              {adminName.charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-white truncate">Administrator</span>
-              <span className="text-xs text-white/50">Online</span>
+              <span className="text-sm font-medium text-white truncate">{adminName}</span>
+              <span className="text-xs text-white/50">{adminRole === "superadmin" ? "Super Admin" : "Admin"}</span>
             </div>
           </div>
         </div>
@@ -133,12 +145,15 @@ export default function StudioSidebar({
       {/* ── Mobile top bar ── */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-xl border-b border-white/10">
         <img src="/nexura-logo.png" alt="Nexura" className="h-7 w-auto" />
-        <div className="flex items-center gap-2 border border-purple-500 rounded-xl px-2 py-1 max-w-[55%] min-w-0">
+        <button
+          onClick={() => setLocation("/studio-dashboard/hub-profile")}
+          className="flex items-center gap-2 border border-purple-500 rounded-xl px-2 py-1 max-w-[55%] min-w-0 hover:bg-white/10 transition-colors cursor-pointer"
+        >
           <div className="w-6 h-6 rounded-lg overflow-hidden flex-shrink-0">
             <img src={projectLogo} alt="Logo" className="w-full h-full object-cover" />
           </div>
           <span className="text-white text-xs font-semibold truncate">{projectHandle}</span>
-        </div>
+        </button>
       </div>
 
       {/* ── Mobile bottom nav bar ── */}

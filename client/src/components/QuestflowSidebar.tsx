@@ -114,8 +114,10 @@ export default function NexuraSidebar() {
 
         <div className="w-full flex flex-col gap-1 px-2 py-1 border-t border-border/40">
   {/* Discord */}
-  <Link
+  <a
     href="https://discord.gg/ezBvGZVWU"
+    target="_blank"
+    rel="noopener noreferrer"
     className="flex items-center gap-1 min-h-[28px] group-data-[collapsible=icon]:justify-center hover:bg-gray-700 rounded px-1 transition-colors"
   >
     <img
@@ -126,11 +128,13 @@ export default function NexuraSidebar() {
     <span className="text-xs font-semibold text-white transition-all duration-300 overflow-hidden max-w-[110px] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
       Discord
     </span>
-  </Link>
+  </a>
 
   {/* X */}
-  <Link
+  <a
     href="https://x.com/NexuraXYZ"
+    target="_blank"
+    rel="noopener noreferrer"
     className="flex items-center gap-1 min-h-[28px] group-data-[collapsible=icon]:justify-center hover:bg-gray-700 rounded px-1 transition-colors"
   >
     <img
@@ -141,11 +145,13 @@ export default function NexuraSidebar() {
     <span className="text-xs font-semibold text-white transition-all duration-300 overflow-hidden max-w-[110px] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
       Twitter (X)
     </span>
-  </Link>
+  </a>
 
   {/* Docs */}
-  <Link
+  <a
     href="https://docsnexura.vercel.app"
+    target="_blank"
+    rel="noopener noreferrer"
     className="flex items-center gap-1 min-h-[28px] group-data-[collapsible=icon]:justify-center hover:bg-gray-700 rounded px-1 transition-colors"
   >
     <img
@@ -156,7 +162,7 @@ export default function NexuraSidebar() {
     <span className="text-xs font-semibold text-white transition-all duration-300 overflow-hidden max-w-[110px] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
       Docs
     </span>
-  </Link>
+  </a>
 </div>
       </SidebarContent>
     </Sidebar>

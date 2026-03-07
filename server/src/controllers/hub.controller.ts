@@ -2,6 +2,7 @@ import { OTP } from '@/models/otp.model';
 import { hub, hubAdmin } from '@/models/hub.model';
 import { addHubAdminEmail } from '@/utils/sendMail';
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR, CREATED, OK, NO_CONTENT, NOT_FOUND } from '@/utils/status.utils';
+import { CLIENT_URL } from '@/utils/env.utils';
 import { generateOTP, validateHubData, getMissingFields, validateCampaignData, validateCampaignQuestData, validateSaveCampaignData } from '@/utils/utils';
 import logger from '@/config/logger';
 import { submission } from '@/models/submission.model';
@@ -69,7 +70,8 @@ export const getHub = async (req: GlobalRequest, res: GlobalResponse) => {
     // If hub exists but pendingTxHash isn't on it, fall back to admin's stored hash
     const adminHash = (req.admin as any).pendingTxHash ?? null;
     const pendingTxHash = hubFound?.pendingTxHash ?? adminHash;
-    res.status(OK).json({ hub: hubFound ? { ...hubFound, pendingTxHash } : { pendingTxHash } });
+    const adminInfo = { _id: req.id, name: req.admin.name, email: req.admin.email, role: req.admin.role };
+    res.status(OK).json({ hub: hubFound ? { ...hubFound, pendingTxHash } : { pendingTxHash }, admin: adminInfo });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "Error getting hub" });
@@ -108,7 +110,7 @@ export const updateIds = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const addHubAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { email, role } = req.body;
+    const { email, role, clientUrl } = req.body;
     if (!email) {
       res.status(BAD_REQUEST).json({ error: "admin email is required" });
       return;
@@ -119,11 +121,15 @@ export const addHubAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
+    const validRole = role === "superadmin" ? "superadmin" : "admin";
+
     const code = generateOTP();
 
-    await OTP.create({ email, code, hubId: req.admin.hub });
+    await OTP.create({ email, code, hubId: req.admin.hub, role: validRole });
 
-    await addHubAdminEmail(email, code);
+    // Use the client's origin for the invite link so it works in dev/prod
+    const origin = clientUrl || CLIENT_URL;
+    await addHubAdminEmail(email, code, origin);
 
     res.status(OK).json({ message: "otp sent" });
   } catch (error) {
@@ -184,12 +190,128 @@ export const removeHubAdmin = async (req: GlobalRequest, res: GlobalResponse) =>
       return;
     }
 
+    if (id === req.id) {
+      res.status(BAD_REQUEST).json({ error: "you cannot remove yourself" });
+      return;
+    }
+
+    // Only allow removing admins from the same hub
+    const target = await hubAdmin.findById(id).lean();
+    if (!target || String(target.hub) !== String(req.admin.hub)) {
+      res.status(NOT_FOUND).json({ error: "admin not found in your hub" });
+      return;
+    }
+
     await hubAdmin.findByIdAndDelete(id);
 
     res.status(NO_CONTENT).send();
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error removing admin" })
+  }
+};
+
+export const getHubAdmins = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    if (!req.admin.hub) {
+      res.status(BAD_REQUEST).json({ error: "no hub found" });
+      return;
+    }
+
+    const admins = await hubAdmin.find({ hub: req.admin.hub }).select("_id name email role createdAt").lean();
+
+    // Also fetch pending invites for this hub
+    const pendingInvites = await OTP.find({ hubId: String(req.admin.hub) }).select("_id email role createdAt expiresAt").lean();
+
+    res.status(OK).json({ admins, pendingInvites });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching hub admins" });
+  }
+};
+
+export const resendInvite = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { inviteId, clientUrl } = req.body;
+    if (!inviteId) {
+      res.status(BAD_REQUEST).json({ error: "inviteId is required" });
+      return;
+    }
+
+    const existingOtp = await OTP.findById(inviteId);
+    if (!existingOtp || String(existingOtp.hubId) !== String(req.admin.hub)) {
+      res.status(NOT_FOUND).json({ error: "invite not found" });
+      return;
+    }
+
+    // Generate a fresh code and reset expiry
+    const newCode = generateOTP();
+    existingOtp.code = newCode;
+    existingOtp.expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    await existingOtp.save();
+
+    const origin = clientUrl || CLIENT_URL;
+    await addHubAdminEmail(existingOtp.email, newCode, origin);
+
+    res.status(OK).json({ message: "invite resent" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Failed to resend invite" });
+  }
+};
+
+export const deleteInvite = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { id } = req.query;
+    if (!id) {
+      res.status(BAD_REQUEST).json({ error: "invite id is required" });
+      return;
+    }
+
+    const invite = await OTP.findById(id);
+    if (!invite || String(invite.hubId) !== String(req.admin.hub)) {
+      res.status(NOT_FOUND).json({ error: "invite not found" });
+      return;
+    }
+
+    await OTP.findByIdAndDelete(id);
+    res.status(OK).json({ message: "invite deleted" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Failed to delete invite" });
+  }
+};
+
+export const updateHubAdminRole = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { adminId, newRole } = req.body;
+    if (!adminId || !newRole) {
+      res.status(BAD_REQUEST).json({ error: "adminId and newRole are required" });
+      return;
+    }
+
+    if (!["admin", "superadmin"].includes(newRole)) {
+      res.status(BAD_REQUEST).json({ error: "role must be admin or superadmin" });
+      return;
+    }
+
+    if (adminId === req.id) {
+      res.status(BAD_REQUEST).json({ error: "you cannot change your own role" });
+      return;
+    }
+
+    const target = await hubAdmin.findById(adminId).lean();
+    if (!target || String(target.hub) !== String(req.admin.hub)) {
+      res.status(NOT_FOUND).json({ error: "admin not found in your hub" });
+      return;
+    }
+
+    await hubAdmin.findByIdAndUpdate(adminId, { role: newRole });
+
+    res.status(OK).json({ message: `admin role updated to ${newRole}` });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating admin role" });
   }
 };
 

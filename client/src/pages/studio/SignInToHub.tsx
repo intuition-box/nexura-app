@@ -28,7 +28,7 @@ export default function SignInToHub() {
 
     setLoading(true);
     try {
-      const res = await projectApiRequest<{ message?: string; accessToken?: string; token?: string; project?: Record<string, unknown> }>({
+      const res = await projectApiRequest<{ message?: string; accessToken?: string; token?: string; project?: Record<string, unknown>; admin?: { _id: string; name: string; email: string; role: string; hub?: string } }>({
         method: "POST",
         endpoint: "/hub/sign-in",
         data: { email, password, role: "project" },
@@ -38,7 +38,7 @@ export default function SignInToHub() {
       if (!token) throw new Error("No access token received");
 
       // Store token first so subsequent authenticated requests work
-      storeProjectSession(token, { email });
+      storeProjectSession(token, { email, role: res.admin?.role ?? "admin", adminId: res.admin?._id ?? "" });
 
       // Fetch project profile to get name and logo
       try {
@@ -46,7 +46,7 @@ export default function SignInToHub() {
           method: "GET",
           endpoint: "/hub/me",
         });
-        storeProjectSession(token, { email, name: hub.name ?? email, logo: hub.logo ?? "" });
+        storeProjectSession(token, { email, name: hub.name ?? email, logo: hub.logo ?? "", role: res.admin?.role ?? "admin", adminId: res.admin?._id ?? "" });
       } catch {
         // profile fetch failed — keep email as name
       }

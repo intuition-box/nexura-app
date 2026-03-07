@@ -12,15 +12,19 @@ import {
 } from "@/controllers/hub.auth.controller";
 import { authenticateHubAdmin, authenticateHubAdmin2 } from "@/middlewares/auth.middleware";
 import { fetchHubCampaigns } from "@/controllers/campaign.controller";
-import { validateCampaignSubmissions, getCampaignSubmissions } from "@/controllers/hub.controller";
+import { validateCampaignSubmissions, getCampaignSubmissions, getHub, getHubAdmins } from "@/controllers/hub.controller";
 import hubAppRoutes from "./hub.app.routes";
 
 const router = Router();
 
 router
+  // --- Any-admin routes (authenticateHubAdmin2) ---
   .get("/get-campaigns", authenticateHubAdmin2, fetchHubCampaigns)
   .get("/campaign-submissions", authenticateHubAdmin2, getCampaignSubmissions)
   .post("/validate-campaign-submissions", authenticateHubAdmin2, validateCampaignSubmissions)
+  .get("/me", authenticateHubAdmin2, getHub)
+  .get("/hub-admins", authenticateHubAdmin2, getHubAdmins)
+  // --- Public routes ---
   .post("/sign-in", signIn)
   .post("/logout", authenticateHubAdmin2, logout)
   .post("/reset-password", resetPassword)
@@ -30,6 +34,7 @@ router
   .get("/get-roles", fetchRoles)
   .get("/get-servers", fetchServers)
   .post("/admin/sign-up", hubAdminSignUp)
+  // --- Superadmin-only routes ---
   .use("/", authenticateHubAdmin, hubAppRoutes)
 
 export default router;

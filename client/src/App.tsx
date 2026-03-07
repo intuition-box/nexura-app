@@ -50,6 +50,7 @@ import CreateNewCampaigns from "./components/admin/CreateNewCampaign.tsx";
 import MyCampaign from "./components/admin/MyCampaign.tsx"
 import AdminManagement from "./components/admin/AdminManagement.tsx";
 import AdminSignUp from "./pages/studio/AdminSignUp.tsx";
+import HubProfile from "./pages/studio/HubProfile.tsx";
 import ClaimDetails from "./pages/ClaimDetails";
 import ConnectDiscord from "./pages/studio/ConnectDiscord.tsx";
 
@@ -124,6 +125,11 @@ function Router() {
 <Route path="/studio-dashboard/my-campaign">
   <StudioLayout title="My Campaign" onLogout={handleLogout}>
     <MyCampaign />
+  </StudioLayout>
+</Route>
+<Route path="/studio-dashboard/hub-profile">
+  <StudioLayout title="Hub Profile" onLogout={handleLogout}>
+    <HubProfile />
   </StudioLayout>
 </Route>
 

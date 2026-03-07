@@ -408,7 +408,8 @@ export default function CampaignEnvironment() {
         <div className="space-y-4 sm:space-y-6">
           {quests.length > 0 ? (
             quests.map((quest) => {
-              const requiresProof = ["comment", "follow", "comment-x", "follow-x", "repost-x"].includes(quest.tag);
+              const requiresProof = ["comment", "follow", "comment-x", "follow-x", "repost-x", "feedback"].includes(quest.tag);
+              const isFeedback = quest.tag === "feedback";
               const visited = visitedQuests.includes(quest._id);
               const claimed = quest.done || claimedQuests.includes(quest._id);
               const pending = quest.status === "pending" || pendingQuests.includes(quest._id);
@@ -460,7 +461,7 @@ export default function CampaignEnvironment() {
                           onClick={() => setExpandedQuestId(isExpanded ? null : quest._id)}
                           className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold bg-purple-700 hover:bg-purple-800"
                         >
-                          Submit Proof
+                          {isFeedback ? "Give Feedback" : "Submit Proof"}
                         </button>
                       )}
 
@@ -488,18 +489,42 @@ export default function CampaignEnvironment() {
                       <p className="text-xs text-white/70">
                         ⚠️ It may take 10 minutes up to 24 hours to validate your submission.
                       </p>
-                      <input
-                        type="url"
-                        placeholder="Paste your comment link or twitter username here"
-                        value={proofLinks[quest._id] || ""}
-                        onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
-                        className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
-                      />
+                      {isFeedback ? (
+                        <>
+                          <textarea
+                            placeholder="Write your feedback here (minimum 200 characters)..."
+                            value={proofLinks[quest._id] || ""}
+                            onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
+                            rows={5}
+                            maxLength={2000}
+                            className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500 resize-none"
+                          />
+                          <div className="flex items-center justify-between">
+                            <p className={`text-xs ${(proofLinks[quest._id]?.length || 0) < 200 ? "text-red-400" : "text-green-400"}`}>
+                              {proofLinks[quest._id]?.length || 0}/200 characters minimum
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <input
+                          type="url"
+                          placeholder="Paste your comment link or twitter username here"
+                          value={proofLinks[quest._id] || ""}
+                          onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
+                          className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
+                        />
+                      )}
                       <button
-                        onClick={() => retryQuests.includes(quest._id) ? retryQuest(quest) : submitCommentProof(quest)}
-                        className="w-full bg-gradient-to-r from-purple-700 via-purple-800 to-indigo-900 hover:from-purple-600 hover:via-purple-700 hover:to-indigo-800 text-white font-semibold py-2.5 rounded-lg transition"
+                        onClick={() => {
+                          if (isFeedback && (proofLinks[quest._id]?.length || 0) < 200) {
+                            return;
+                          }
+                          retryQuests.includes(quest._id) ? retryQuest(quest) : submitCommentProof(quest);
+                        }}
+                        disabled={isFeedback && (proofLinks[quest._id]?.length || 0) < 200}
+                        className="w-full bg-gradient-to-r from-purple-700 via-purple-800 to-indigo-900 hover:from-purple-600 hover:via-purple-700 hover:to-indigo-800 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Submit for Review
+                        {isFeedback ? "Submit Feedback" : "Submit for Review"}
                       </button>
                     </div>
                   )}

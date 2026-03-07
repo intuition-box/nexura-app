@@ -283,7 +283,15 @@ const fetchBannedUsers = async () => {
                 <div className="text-white capitalize">{selectedTask.taskType}</div>
               </div>
 
-              {selectedTask.taskType && ["follow", "like"].includes(selectedTask.taskType.toLowerCase()) ? (
+              {selectedTask.taskType && selectedTask.taskType.toLowerCase() === "feedback" ? (
+                <div className="grid gap-2">
+                  <Label className="text-white/70">User Feedback</Label>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4 max-h-60 overflow-y-auto">
+                    <p className="text-white text-sm whitespace-pre-wrap leading-relaxed">{selectedTask.submissionLink}</p>
+                  </div>
+                  <p className="text-xs text-white/40">{selectedTask.submissionLink.length} characters</p>
+                </div>
+              ) : selectedTask.taskType && ["follow", "like"].includes(selectedTask.taskType.toLowerCase()) ? (
                 <div className="grid gap-2">
                   <Label className="text-white/70">Username to {selectedTask.taskType}</Label>
                   <div className="flex gap-2">

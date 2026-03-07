@@ -215,6 +215,13 @@ const completedTasks = tasks.filter(task =>
             <span className="text-white/60">Task</span>
             <span className="text-white text-right">{submission.taskType}</span>
           </div>
+          {submission.taskType?.toLowerCase() === "feedback" && (
+            <div className="mt-2 bg-white/5 border border-white/10 rounded-lg p-3 max-h-24 overflow-y-auto">
+              <p className="text-white/80 text-xs whitespace-pre-wrap leading-relaxed">
+                {submission.submissionLink.length > 150 ? submission.submissionLink.slice(0, 150) + "…" : submission.submissionLink}
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <span className="text-white/60">Validated By</span>
             <span className="text-white">{submission.validatedBy}</span>

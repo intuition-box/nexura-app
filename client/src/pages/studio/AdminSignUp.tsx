@@ -56,6 +56,7 @@ export default function AdminSignUp() {
         message?: string;
         accessToken?: string;
         token?: string;
+        admin?: { _id: string; name: string; email: string; role: string; hub?: string };
       }>({
         method: "POST",
         endpoint: "/hub/admin/sign-up",
@@ -65,7 +66,7 @@ export default function AdminSignUp() {
       const token = (res.token ?? res.accessToken) as string | undefined;
       if (!token) throw new Error("No access token received");
 
-      storeProjectSession(token, { email, name });
+      storeProjectSession(token, { email, name, role: res.admin?.role ?? "admin", adminId: res.admin?._id ?? "" });
       toast({
         title: "Account created!",
         description: "Welcome to Nexura Studio. You now have admin access.",

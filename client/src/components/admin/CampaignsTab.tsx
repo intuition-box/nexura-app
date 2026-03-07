@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card } from "../ui/card";
 import { Link, useLocation } from "wouter";
 import { projectApiRequest } from "../../lib/projectApi";
+import { getStoredProjectInfo } from "../../lib/projectApi";
 import { useToast } from "../../hooks/use-toast";
 import { RefreshCw, Trash2, XCircle, Loader2, Clock } from "lucide-react";
 import { Button } from "../ui/button";
@@ -20,6 +21,7 @@ import {
 interface Campaign {
   _id: string;
   title: string;
+  description?: string;
   nameOfProject?: string;
   projectCoverImage?: string;
   starts_at: string;
@@ -42,6 +44,9 @@ export default function CampaignsTab() {
   const [countdowns, setCountdowns] = useState<Record<string, string>>({});
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+
+  const info = getStoredProjectInfo();
+  const isSuperAdmin = (info?.role as string) === "superadmin";
 
   // Fetch server time offset once
   useEffect(() => {
@@ -209,9 +214,9 @@ export default function CampaignsTab() {
                 className="flex-1 px-2 py-1.5 text-xs bg-purple-600 rounded-lg hover:bg-purple-700 transition"
                 onClick={() => setLocation(`/studio-dashboard/create-new-campaign?edit=${campaign._id}`)}
               >
-                View Details
+                {isSuperAdmin ? "View Details" : "View"}
               </button>
-              {isActive && (
+              {isSuperAdmin && isActive && (
                 <button
                   title="Close campaign"
                   className="px-2 py-1.5 text-xs bg-yellow-600/20 text-yellow-400 rounded-lg hover:bg-yellow-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -223,6 +228,7 @@ export default function CampaignsTab() {
                     : <XCircle className="w-4 h-4" />}
                 </button>
               )}
+              {isSuperAdmin && (
               <button
                 title="Delete campaign"
                 className="px-2 py-1.5 text-xs bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -233,6 +239,7 @@ export default function CampaignsTab() {
                   ? <Loader2 className="w-4 h-4 animate-spin" />
                   : <Trash2 className="w-4 h-4" />}
               </button>
+              )}
             </div>
 
             {scheduled ? (
@@ -293,8 +300,8 @@ export default function CampaignsTab() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {/* "Create New Campaign" Card (only on "all" tab) */}
-            {activeTab === "all" && (
+            {/* "Create New Campaign" Card (only on "all" tab, superadmin only) */}
+            {activeTab === "all" && isSuperAdmin && (
               <Link
                 href="/studio-dashboard/create-new-campaign"
                 className="w-full p-6 flex flex-col items-center justify-center gap-3

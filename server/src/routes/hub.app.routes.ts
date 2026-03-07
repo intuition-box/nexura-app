@@ -18,8 +18,10 @@ import {
   updateHub,
   updateIds,
   createHub,
-  getHub,
-  savePaymentHash
+  savePaymentHash,
+  updateHubAdminRole,
+  resendInvite,
+  deleteInvite
 } from "@/controllers/hub.controller";
 import { Router } from "express";
 import { upload } from "@/config/multer";
@@ -27,18 +29,19 @@ import { upload } from "@/config/multer";
 const router = Router();
 
 router
-  // .get("/me", getProjectProfile)
   .patch("/save-campaign-quests", upload.single("coverImage"), saveCampaignWithQuests)
   .patch("/save-campaign", upload.single("coverImage"), saveCampaign)
   .get("/get-campaign", getCampaign)
   .delete("/delete-hub", deleteHub)
   .patch("/update-ids", updateIds)
-  .get("/me", getHub)
   .delete("/remove-admin", removeHubAdmin)
   .post("/create-hub", upload.single("logo"), createHub)
   .patch("/update-hub", upload.single("logo"), updateHub)
   .patch("/save-payment-hash", savePaymentHash)
   .post("/add-admin", addHubAdmin)
+  .post("/resend-invite", resendInvite)
+  .delete("/delete-invite", deleteInvite)
+  .patch("/update-admin-role", updateHubAdminRole)
   .post("/create-campaign", upload.single("coverImage"), createCampaign)
   .delete("/delete-campaign-quest", deleteCampaignQuest)
   .delete("/delete-campaign", deleteCampaign)

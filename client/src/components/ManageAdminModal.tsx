@@ -19,50 +19,44 @@ import {
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Shield, UserCog, UserMinus } from "lucide-react";
-import { apiRequest } from "../lib/config.ts";
+import { projectApiRequest } from "../lib/projectApi";
+import { useToast } from "../hooks/use-toast";
 
 interface ManageAdminModalProps {
   children: React.ReactNode;
+  adminId: string;
   name: string;
-  role: "Super Admin" | "Admin" | "Moderator";
+  email?: string;
+  role: "superadmin" | "admin";
   onSuccess?: () => void;
 }
 
-export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdminModalProps) {
+export function ManageAdminModal({ children, adminId, name, email, role, onSuccess }: ManageAdminModalProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<string>((role || "Admin").toLowerCase().replace(" ", "_"));
+  const [selectedRole, setSelectedRole] = useState<string>(role);
+  const { toast } = useToast();
 
-  // TODO: server needs POST /api/admin/update-role and POST /api/admin/demote-admin routes.
+  const formatRole = (r: string) => r === "superadmin" ? "Super Admin" : "Admin";
+
   const handleUpdateRole = async () => {
-    setLoading(true);
-    try {
-      await apiRequest<{ message?: string }>({
-        endpoint: "/api/admin/update-role",
-        method: "POST",
-        data: { adminName: name, newRole: selectedRole },
-      });
-      onSuccess?.();
-      setOpen(false);
-    } catch (error) {
-      console.error("Failed to update admin role:", error);
-    } finally {
-      setLoading(false);
+    if (selectedRole === role) {
+      toast({ title: "No change", description: "The role is already set to this value." });
+      return;
     }
-  };
-
-  const handleDemote = async () => {
     setLoading(true);
     try {
-      await apiRequest<{ message?: string }>({
-        endpoint: "/api/admin/demote-admin",
-        method: "POST",
-        data: { adminName: name },
+      await projectApiRequest({
+        endpoint: "/hub/update-admin-role",
+        method: "PATCH",
+        data: { adminId, newRole: selectedRole },
       });
+      toast({ title: "Role updated", description: `${name} is now a ${formatRole(selectedRole)}.` });
       onSuccess?.();
       setOpen(false);
-    } catch (error) {
-      console.error("Failed to demote admin:", error);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update role.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -71,15 +65,17 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
   const handleRevoke = async () => {
     setLoading(true);
     try {
-      await apiRequest<{ message?: string }>({
-        endpoint: "/api/admin/remove-admin",
-        method: "POST",
-        data: { adminName: name },
+      await projectApiRequest({
+        endpoint: "/hub/remove-admin",
+        method: "DELETE",
+        params: { id: adminId },
       });
+      toast({ title: "Admin removed", description: `${name} has been removed from the hub.` });
       onSuccess?.();
       setOpen(false);
-    } catch (error) {
-      console.error("Failed to revoke admin access:", error);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to remove admin.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -97,7 +93,7 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
             Manage Access
           </DialogTitle>
           <DialogDescription className="text-white/50">
-            Upgrade, temporarily remove access, or revoke this admin completely.
+            Change this admin's role or remove them from the hub.
           </DialogDescription>
         </DialogHeader>
 
@@ -108,7 +104,8 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
             </div>
             <div>
               <p className="text-white font-semibold">{name || "Unknown Admin"}</p>
-              <p className="text-white/60 text-sm">Current Role: {role || "Admin"}</p>
+              {email && <p className="text-white/40 text-sm">{email}</p>}
+              <p className="text-white/60 text-sm">Current Role: {formatRole(role)}</p>
             </div>
           </div>
 
@@ -119,9 +116,8 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                <SelectItem value="super_admin" className="focus:bg-white/10 focus:text-white">Super Admin</SelectItem>
+                <SelectItem value="superadmin" className="focus:bg-white/10 focus:text-white">Super Admin</SelectItem>
                 <SelectItem value="admin" className="focus:bg-white/10 focus:text-white">Admin</SelectItem>
-                <SelectItem value="moderator" className="focus:bg-white/10 focus:text-white">Moderator</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -134,20 +130,13 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
           <button
             type="button"
             onClick={handleUpdateRole}
-            disabled={loading}
+            disabled={loading || selectedRole === role}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
           >
             <Shield className="w-4 h-4" />
-            Update Role
-          </button>
-          <button
-            type="button"
-            onClick={handleDemote}
-            disabled={loading}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/10 hover:border-yellow-400/60 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <UserCog className="w-4 h-4" />
-            Demote
+            {selectedRole !== role
+              ? (selectedRole === "superadmin" ? "Promote to Super Admin" : "Demote to Admin")
+              : "Update Role"}
           </button>
           <button
             type="button"
@@ -156,7 +145,7 @@ export function ManageAdminModal({ children, name, role, onSuccess }: ManageAdmi
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/40 text-red-400 hover:bg-red-500/10 hover:border-red-400/60 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <UserMinus className="w-4 h-4" />
-            Revoke Access
+            Remove Admin
           </button>
         </DialogFooter>
       </DialogContent>

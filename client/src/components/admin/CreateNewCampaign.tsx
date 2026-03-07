@@ -133,6 +133,7 @@ useEffect(() => {
           if (tag === "follow" || tag === "follow-x") return "Follow us on X";
           if (tag === "join" || tag === "join-discord") return "Join Us On Discord";
           if (tag === "portal") return "Check Out the Portal Claims";
+          if (tag === "feedback") return "Give Feedback";
           return "others";
         };
         const catToPlatform = (cat: string) => {
@@ -173,6 +174,7 @@ const typeToTag = (type: string) => {
   if (type === "Follow us on X") return "follow-x";
   if (type === "Join Us On Discord") return "join-discord";
   if (type === "Check Out the Portal Claims") return "portal";
+  if (type === "Give Feedback") return "feedback";
   return "other";
 };
 const platformToCategory = (platform: string) => {
@@ -269,7 +271,7 @@ const convertToBase64 = (file: File): Promise<string> => {
 
 
 const handleSaveTask = () => {
-  const requiresPlatform = newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others";
+  const requiresPlatform = newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback";
   if (!newTask.type || (requiresPlatform && !newTask.platform) || !newTask.handleOrUrl || !newTask.description) {
     return setError("All fields are required.");
   }
@@ -768,13 +770,14 @@ const isActive =
               const isTwitter = type === "Comment on our X post" || type === "Follow us on X";
               const isPortal = type === "Check Out the Portal Claims";
               const isOther = type === "others";
+              const isFeedback = type === "Give Feedback";
               setNewTask({
                 ...newTask,
                 type,
-                platform: isDiscord ? "Discord" : isTwitter ? "Twitter" : (isPortal || isOther) ? "" : newTask.platform,
-                evidence: isDiscord || isPortal ? "" : isTwitter ? "submit_link" : newTask.evidence,
-                validation: isDiscord ? "Discord Auth" : isPortal ? "Auto Verified" : (newTask.validation === "Discord Auth" || newTask.validation === "Auto Verified" ? "Manual Validation" : newTask.validation),
-                verificationMode: "",
+                platform: isDiscord ? "Discord" : isTwitter ? "Twitter" : (isPortal || isOther || isFeedback) ? "" : newTask.platform,
+                evidence: isDiscord || isPortal ? "" : isTwitter ? "submit_link" : isFeedback ? "" : newTask.evidence,
+                validation: isDiscord ? "Discord Auth" : isPortal ? "Auto Verified" : isFeedback ? "Manual Validation" : (newTask.validation === "Discord Auth" || newTask.validation === "Auto Verified" ? "Manual Validation" : newTask.validation),
+                verificationMode: isFeedback ? "feedback" : "",
               });
             }}
           >
@@ -783,12 +786,13 @@ const isActive =
             <option value="Follow us on X">Follow on X</option>
             <option value="Join Us On Discord">Join Discord</option>
             <option value="Check Out the Portal Claims">Portal Claims</option>
+            <option value="Give Feedback">Give Feedback</option>
             <option value="others">Others</option>
           </select>
         </div>
 
         {/* Platform */}
-        {newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && (
+        {newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback" && (
         <div>
           <label className="text-sm text-white/70 mb-2 block">Platform</label>
           <div className="flex gap-3">
@@ -830,11 +834,11 @@ const isActive =
         {/* Handle or URL */}
         <div className="mb-4">
           <label className="text-sm text-white/70 mb-2 block">
-            {newTask.platform === "Discord" ? "Discord Invite Link" : newTask.type === "Comment on our X post" ? "Post URL" : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "Profile URL" : "Handle or URL"}
+            {newTask.type === "Give Feedback" ? "Website URL" : newTask.platform === "Discord" ? "Discord Invite Link" : newTask.type === "Comment on our X post" ? "Post URL" : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "Profile URL" : "Handle or URL"}
           </label>
           <input
             type="text"
-            placeholder={newTask.platform === "Discord" ? "https://discord.gg/..." : newTask.type === "Comment on our X post" ? "https://x.com/username/status/..." : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "https://x.com/username" : "..."}
+            placeholder={newTask.type === "Give Feedback" ? "https://example.com" : newTask.platform === "Discord" ? "https://discord.gg/..." : newTask.type === "Comment on our X post" ? "https://x.com/username/status/..." : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "https://x.com/username" : "..."}
             value={newTask.handleOrUrl}
             onChange={(e) =>
               setNewTask({ ...newTask, handleOrUrl: e.target.value })
@@ -845,10 +849,10 @@ const isActive =
 
         {/* Task Description */}
         <div className="mb-4">
-          <label className="text-sm text-white/70 mb-2 block">Task Description</label>
+          <label className="text-sm text-white/70 mb-2 block">{newTask.type === "Give Feedback" ? "Feedback Prompt" : "Task Description"}</label>
           <input
             type="text"
-            placeholder="..."
+            placeholder={newTask.type === "Give Feedback" ? "e.g. Tell us what you think about our platform" : "..."}
             value={newTask.description}
             onChange={(e) =>
               setNewTask({ ...newTask, description: e.target.value })
@@ -876,6 +880,16 @@ const isActive =
             <div>
               <p className="text-sm text-purple-300 font-medium">Auto-verified via Portal</p>
               <p className="text-xs text-white/50 mt-0.5">Completion is verified automatically after the user completes the task.</p>
+            </div>
+          </div>
+        ) : newTask.type === "Give Feedback" ? (
+          <div className="flex items-center gap-3 rounded-lg bg-emerald-900/50 border border-emerald-500/50 px-4 py-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-emerald-400 flex-shrink-0">
+              <path fillRule="evenodd" d="M4.848 2.771A49.144 49.144 0 0 1 12 2.25c2.43 0 4.817.178 7.152.52 1.978.29 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.68-3.348 3.97a48.901 48.901 0 0 1-3.476.383.39.39 0 0 0-.297.17l-2.755 4.133a.75.75 0 0 1-1.248 0l-2.755-4.133a.39.39 0 0 0-.297-.17 48.9 48.9 0 0 1-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.741c0-1.946 1.37-3.68 3.348-3.97Z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="text-sm text-emerald-300 font-medium">User Feedback Submission</p>
+              <p className="text-xs text-white/50 mt-0.5">Users will visit the website and submit written feedback (min. 200 characters). Reviewed manually.</p>
             </div>
           </div>
         ) : newTask.type === "others" ? (

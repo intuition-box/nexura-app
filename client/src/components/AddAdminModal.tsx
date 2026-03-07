@@ -50,7 +50,7 @@ export function AddAdminModal({ children, onSuccess }: AddAdminModalProps) {
       await projectApiRequest({
         method: "POST",
         endpoint: "/hub/add-admin",
-        data: { email, role },
+        data: { email, role, clientUrl: window.location.origin },
       });
       toast({ title: "Invitation sent!", description: `An OTP has been sent to ${email}. The ${role === "superadmin" ? "Super Admin" : "Admin"} can now sign up.` });
       setEmail("");

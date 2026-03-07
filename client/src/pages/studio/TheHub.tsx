@@ -38,6 +38,11 @@ export default function TheHub() {
       return;
     }
 
+    if (description.length > 0 && description.length < 150) {
+      toast({ title: "Description too short", description: "Minimum 150 characters required.", variant: "destructive" });
+      return;
+    }
+
     if (!imageFile) {
       toast({ title: "Missing Logo", description: "Please upload a project logo.", variant: "destructive" });
       return;
@@ -163,18 +168,25 @@ export default function TheHub() {
           </div>
 
           {/* Description */}
-          <div className="space-y-2 relative">
-            <CardTitle className="text-lg">Description</CardTitle>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Description</CardTitle>
+              <span className={`text-xs ${description.length > 0 && description.length < 150 ? "text-red-400" : "text-white/40"}`}>
+                {description.length}/300
+              </span>
+            </div>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your project or community"
-              maxLength={200}
+              placeholder="Describe your project or community (150–300 characters)"
+              maxLength={300}
               className="bg-gray-800 border-purple-500 text-white resize-none h-32"
             />
-            <span className="absolute bottom-2 right-3 text-xs text-white/40">
-              200
-            </span>
+            {description.length > 0 && description.length < 150 && (
+              <p className="text-xs text-red-400">
+                Minimum 150 characters — {150 - description.length} more needed
+              </p>
+            )}
           </div>
 
           {/* Logo Upload */}
