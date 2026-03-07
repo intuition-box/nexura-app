@@ -8,6 +8,7 @@ import AnimatedBackground from "../components/AnimatedBackground";
 import { apiRequestV2 } from "../lib/queryClient";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../lib/auth";
+import { useWallet } from "../hooks/use-wallet";
 
 interface Campaign {
   _id: string;
@@ -16,10 +17,12 @@ interface Campaign {
   project_name: string;
   projectCoverImage: string;
   participants: number;
+  maxParticipants?: number;
   starts_at?: string;
   ends_at?: string;
   metadata?: string;
-  reward: { trustTokens: number; xp: number; pool?: number };
+  totalTrustAvailable?: number;
+  reward: { trustTokens?: number; trust?: number; xp: number; pool?: number };
   joined: boolean;
   status?: string;
 }
@@ -89,6 +92,7 @@ export const DEV_CAMPAIGNS: Campaign[] = [
 
 export default function Campaigns() {
   const { user } = useAuth();
+  const { isConnected: walletConnected, connectWallet } = useWallet();
 
   const [, setLocation] = useLocation();
   const [campaigns, setCampaigns] = useState<Campaign[]>([TASKS_CARD]);
@@ -167,13 +171,17 @@ export default function Campaigns() {
   const goToCampaign = async (campaign: Campaign, active: boolean) => {
     if (!active) return;
 
-    if (!user) {
-      toast({ title: "Error", description: "Please log in to continue", variant: "destructive" });
-      return;
-    }
-
     try {
       setLoadingCampaign(campaign._id);
+
+      if (!walletConnected || !user) {
+        const connectedAddress = await connectWallet({ noReload: true });
+        if (!connectedAddress) {
+          setLoadingCampaign(null);
+          toast({ title: "Wallet required", description: "Please connect and sign in with your wallet to join campaigns.", variant: "destructive" });
+          return;
+        }
+      }
 
       if (campaign.joined) {
         setLocation(`/campaign/${campaign._id}`);
@@ -210,18 +218,30 @@ export default function Campaigns() {
     const ends_atFormatted = campaign.ends_at
       ? new Date(campaign.ends_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })
       : "TBA";
+    const allowedParticipants = campaign.maxParticipants && campaign.maxParticipants > 0
+      ? campaign.maxParticipants
+      : campaign.participants;
+    const trustReward = (campaign.reward?.trustTokens && campaign.reward.trustTokens > 0)
+      ? campaign.reward.trustTokens
+      : (campaign.reward?.trust && campaign.reward.trust > 0)
+      ? campaign.reward.trust
+      : (campaign.reward?.pool && allowedParticipants > 0)
+      ? Number((campaign.reward.pool / allowedParticipants).toFixed(2))
+      : (campaign.totalTrustAvailable && allowedParticipants > 0)
+      ? Number((campaign.totalTrustAvailable / allowedParticipants).toFixed(2))
+      : 0;
 
     return (
       <Card
         key={campaign._id}
-        className="bg-[#0d1117] border border-white/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition flex flex-col"
+        className="bg-[#0d1117] h-full border border-white/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition flex flex-col"
       >
         {/* Campaign Banner */}
         <div className="relative h-36 bg-black w-full">
           {campaign.projectCoverImage && (
             <img
               src={campaign.projectCoverImage}
-              alt={campaign.title}
+              alt={campaign.description || campaign.title}
               className="w-full h-full object-cover rounded-t-2xl"
             />
           )}
@@ -252,9 +272,8 @@ export default function Campaigns() {
         </div>
 
         {/* Campaign Details */}
-        <div className="p-3 sm:p-4 flex flex-col space-y-1.5">
-          <h2 className="text-sm font-semibold text-white">{campaign.title}</h2>
-          <p className="text-xs text-gray-400">{campaign.description}</p>
+        <div className="p-3 sm:p-4 flex flex-1 flex-col space-y-1.5">
+          <h2 className="text-sm font-semibold text-white">{campaign.description || campaign.title}</h2>
 
           <div className="flex flex-row justify-between text-xs gap-1">
             <span className="text-gray-500">Project:</span>
@@ -265,14 +284,14 @@ export default function Campaigns() {
             <span className="text-gray-500">Participants:</span>
             <span className="text-white flex items-center gap-1">
               <Users className="w-3 h-3" />
-              {campaign.participants.toLocaleString()}
+              {allowedParticipants.toLocaleString()}
             </span>
           </div>
 
           <div className="flex flex-row justify-between text-xs items-center">
             <span className="text-gray-500">Reward:</span>
             <span className="text-white flex items-center gap-1">
-              {`${campaign.reward.trustTokens} TRUST + ${campaign.reward.xp} XP`}
+              {`${trustReward} TRUST + ${campaign.reward.xp} XP`}
             </span>
           </div>
 
@@ -296,7 +315,7 @@ export default function Campaigns() {
           )}
 
           <Button
-            className={`w-full mt-2 py-2 text-xs font-medium rounded-xl ${loadingCampaign === campaign._id
+            className={`w-full mt-auto pt-2 py-2 text-xs font-medium rounded-xl ${loadingCampaign === campaign._id
               ? "bg-gray-600 cursor-not-allowed text-gray-300"
               : isActive
                 ? "bg-[#1f6feb] hover:bg-[#388bfd] text-white"
@@ -310,6 +329,8 @@ export default function Campaigns() {
           >
             {loadingCampaign === campaign._id ? (
               <>Joining...</>
+            ) : isActive && (!walletConnected || !user) ? (
+              <>Connect Wallet</>
             ) : isActive ? (
               <>
                 <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />

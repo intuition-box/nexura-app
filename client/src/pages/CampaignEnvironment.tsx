@@ -57,9 +57,13 @@ export default function CampaignEnvironment() {
   const [title, setTitle] = useState("");
   const [subTitle, setSubTitle] = useState("");
   const [trustClaimed, setTrustClaimed] = useState(0);
+  const [totalTrustAvailable, setTotalTrustAvailable] = useState(0);
+  const [maxParticipants, setMaxParticipants] = useState(0);
   const [projectName, setProjectName] = useState("");
+  const [projectImage, setProjectImage] = useState("");
+  const [hubDescription, setHubDescription] = useState("");
   const [campaignNumber, setCampaignNumber] = useState("000");
-  const [reward, setReward] = useState<{ trustTokens: number; xp: number }>({ trustTokens: 0, xp: 0 });
+  const [reward, setReward] = useState<{ trustTokens?: number; trust?: number; xp: number; pool?: number }>({ trustTokens: 0, xp: 0 });
   const [campaignAddress, setCampaignAddress] = useState("");
   const [campaignHub, setCampaignHub] = useState("");
 
@@ -97,9 +101,13 @@ export default function CampaignEnvironment() {
       setTitle(res.title || "");
       setSubTitle(res.sub_title || "");
       setProjectName(res.project_name || "");
+      setProjectImage(res.project_image || "");
+      setHubDescription(res.hubDescription || "");
       setCampaignNumber(res.campaignNumber || "000");
       setReward(res.reward || { trustTokens: 0, xp: 0 });
       setTrustClaimed(res.trustClaimed || 0);
+      setTotalTrustAvailable(res.totalTrustAvailable || 0);
+      setMaxParticipants(res.maxParticipants || 0);
       setQuestsCompleted(res.campaignCompleted?.questsCompleted || false);
       setCampaignHub(res.hub?.toString() || "");
 
@@ -311,9 +319,21 @@ export default function CampaignEnvironment() {
         {/* Banner with Progress */}
         <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <p className="uppercase text-[0.6rem] sm:text-xs opacity-60">{title}</p>
-              <p className="text-lg sm:text-xl font-semibold">{subTitle}</p>
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-white/10 border border-white/10 shrink-0">
+                {projectImage ? (
+                  <img
+                    src={projectImage}
+                    alt={projectName || "Hub image"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : null}
+              </div>
+              <div className="min-w-0">
+                <p className="uppercase text-[0.6rem] sm:text-xs opacity-60">Hub</p>
+                <p className="text-lg sm:text-xl font-semibold truncate">{projectName || "Unknown Hub"}</p>
+                <p className="text-sm opacity-80 mt-1 line-clamp-2">{hubDescription || "No hub description available."}</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
@@ -348,18 +368,26 @@ export default function CampaignEnvironment() {
               <div>
                 <p className="text-xs opacity-50 uppercase mb-1">{projectName}</p>
                 <p className="text-lg md:text-xl font-bold leading-tight">
-                  Campaign {campaignNumber}:<br />{subTitle}
+                  {description || subTitle || title || `Campaign ${campaignNumber}`}
                 </p>
 
                 <div className="mt-4">
-                  <p className="uppercase text-xs opacity-50">Start Campaign</p>
+                  <p className="uppercase text-xs opacity-50">Campaign Description</p>
                   <p className="text-sm opacity-80 leading-relaxed mt-1">
-                    Complete quests in this campaign and earn rewards.
+                    {title || subTitle || description || "Complete quests in this campaign and earn rewards."}
                   </p>
                 </div>
                 <div className="mt-3 space-y-1">
                   <p className="text-xs opacity-50 uppercase">Rewards</p>
-                  <p className="text-sm">{reward.xp} XP + {reward.trustTokens} Trust</p>
+                  <p className="text-sm">{reward.xp} XP + {(reward.trustTokens && reward.trustTokens > 0)
+                    ? reward.trustTokens
+                    : (reward.trust && reward.trust > 0)
+                    ? reward.trust
+                    : (reward.pool && maxParticipants > 0)
+                    ? Number((reward.pool / maxParticipants).toFixed(2))
+                    : (totalTrustAvailable && maxParticipants > 0)
+                    ? Number((totalTrustAvailable / maxParticipants).toFixed(2))
+                    : 0} $TRUST</p>
                 </div>
               </div>
 
@@ -428,20 +456,12 @@ export default function CampaignEnvironment() {
                         </button>
                       )}
                       {visited && !claimed && requiresProof && !pending && (
-                        <>
-                          <button
-                            onClick={() => markQuestAsVisited(quest)}
-                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/20"
-                          >
-                            View Link
-                          </button>
-                          <button
-                            onClick={() => setExpandedQuestId(isExpanded ? null : quest._id)}
-                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-700 hover:bg-purple-800"
-                          >
-                            Submit Proof
-                          </button>
-                        </>
+                        <button
+                          onClick={() => setExpandedQuestId(isExpanded ? null : quest._id)}
+                          className="px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-700 hover:bg-purple-800"
+                        >
+                          Submit Proof
+                        </button>
                       )}
 
                       {claimed && (

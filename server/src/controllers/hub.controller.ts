@@ -339,7 +339,7 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
         project_name: projectDoc?.name ?? req.body.nameOfProject ?? "",
         sub_title: req.body.description ?? "",
         totalXpAvailable: reward.xp ?? 0,
-        totalTrustAvailable: reward.trust ?? 0,
+        totalTrustAvailable: reward.pool ?? 0,
         campaignNumber: campaignCount + 1,
         projectCoverImage: req.body.coverImage ?? "pending",
         creator: req.id,

@@ -297,7 +297,7 @@ export const updateCampaign = async (
       });
 		}
 
-		for (const field of ["description", "title", "ends_at", "starts_at", "projectCoverImage", "reward"]) {
+		for (const field of ["description", "title", "ends_at", "starts_at", "projectCoverImage", "reward", "maxParticipants"]) {
 			const value = req.body[field];
 			if (field !== "ends_at") {
 				campaignUpdateData[field] = value;

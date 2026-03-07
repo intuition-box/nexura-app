@@ -173,6 +173,8 @@ export const fetchCampaignQuests = async (
 			return;
 		}
 
+		const currentHub = await hub.findById(currentCampaign.hub).lean();
+
 		const quests = await campaignQuest.find({ campaign: id }).lean();
 
 		const campaignQuestsCompleted = await campaignQuestCompleted.find({
@@ -230,6 +232,11 @@ export const fetchCampaignQuests = async (
 			title: currentCampaign.title,
 			trustClaimed: currentCampaign.trustClaimed,
 			reward: currentCampaign.reward,
+			totalTrustAvailable: currentCampaign.totalTrustAvailable,
+			maxParticipants: (currentCampaign as any).maxParticipants ?? currentCampaign.participants,
+			project_name: currentCampaign.project_name,
+			project_image: currentCampaign.project_image,
+			hubDescription: currentHub?.description ?? "",
 			sub_title: currentCampaign.sub_title,
 			projectCoverImage: currentCampaign.projectCoverImage,
 			joined,

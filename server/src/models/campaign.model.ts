@@ -45,6 +45,10 @@ const campaignSchema = new Schema({
 		type: Number,
 		default: 0,
 	},
+	maxParticipants: {
+		type: Number,
+		default: 0,
+	},
 	sub_title: {
 		type: String,
 		required: true,
