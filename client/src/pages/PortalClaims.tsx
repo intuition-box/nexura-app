@@ -2,13 +2,15 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Address, formatEther } from "viem";
 import { buyShares, sellShares } from "../services/web3";
 import { apiRequestV2 } from "../lib/queryClient";
-// import type { Term } from "../types/types";
 import { useToast } from "../hooks/use-toast";
 import { formatNumber } from "../lib/utils";
 import { useLocation } from "wouter";
 import { getPublicClient } from "../lib/viem";
 import { useAuth } from "../lib/auth";
+import { network } from "../lib/constants";
 import { Term, Position } from "../types/types";
+
+const explorer = network === "testnet" ? "https://testnet.explorer.intuition.systems" : "https://explorer.intuition.systems";
 
 interface Claim {
   user: { address: Address };
@@ -50,6 +52,7 @@ export default function PortalClaims() {
   const [transactionMode, setTransactionMode] = useState("redeem");
   const [opposeMode, setOpposeMode] = useState(false);
   const [transactionAmount, setTransactionAmount] = useState("");
+  const [transactionLink, setTransactionLink] = useState("");
   // Wallet & Blockchain
   const [tTrustBalance, setTTrustBalance] = useState<bigint>(0n);
   const [inputValue, setInputValue] = useState(0);
@@ -358,12 +361,16 @@ export default function PortalClaims() {
       setModalStep("awaiting");
 
       const addressTermId = termId as Address;
+      
+      let txHash: string = "";
 
       if (action === "deposit") {
-        await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+        txHash = await buyShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
       } else {
-        await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
+        txHash = await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
       }
+
+      setTransactionLink(`${explorer}/tx/${txHash}`);
 
       // Refresh wallet balance after transaction
       const balance = await fetchWalletBalance(user.address);
@@ -395,10 +402,10 @@ export default function PortalClaims() {
         ),
       });
 
-      setActionState(prev => ({
-        ...prev,
-        [termId]: opposeMode ? "opposed" : "supported"
-      }));
+      // setActionState(prev => ({
+      //   ...prev,
+      //   [termId]: opposeMode ? "opposed" : "supported"
+      // }));
 
       setTransactionAmount("");
       setModalStep("success");
@@ -1550,7 +1557,7 @@ export default function PortalClaims() {
                     <button
                       className="mx-auto block bg-white text-black px-6 py-1.5 rounded-3xl text-sm"
                       onClick={() => {
-                        handleClaimAction("deposit");
+                        handleClaimAction("redeem");
                         setShowModal(false);
                       }}
                     >
@@ -1598,7 +1605,7 @@ export default function PortalClaims() {
                     <button
                       className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
                       onClick={() => {
-                        setShowReviewDepositModal(false);
+                        setShowReviewRedeemModal(false);
                         setModalStep("review");
                       }}
                     >

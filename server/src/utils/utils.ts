@@ -7,6 +7,7 @@ import { ethers } from "ethers";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import chain from "./chain.utils";
+import { formatEther } from "viem";
 
 export const padNumber = (numberToBePadded: number) => {
 	return numberToBePadded.toString().padStart(3, "0");
@@ -331,4 +332,15 @@ export const checkPayment = async (txHash: string) => {
 	}
 
 	return Number(totalCampaigns);
+}
+
+export const getAmountPaid = async (txHash: string) => {
+	const provider = new ethers.JsonRpcProvider(chain.rpcUrls.default.http[0]);
+
+	const tx = await provider.getTransaction(txHash);
+	if (!tx) {
+		throw new Error("Transaction not found");
+	}
+
+	return { from: tx.from, value: formatEther(tx.value) };
 }

@@ -2,7 +2,8 @@ import { Router } from "express";
 import {
 	fetchUser,
 	referralInfo,
-	updateUser,
+  updateUser,
+  claimDepositXp,
 	claimReferreralReward,
 	updateBadge,
 	performDailySignIn
@@ -16,7 +17,8 @@ const router = Router();
 router
 	.get("/profile", authenticateUser, fetchUser)
 	.post("/claim-referral-reward", authenticateUser, claimReferreralReward)
-	.patch("/update-badge", authenticateUser, updateBadge)
+  .patch("/update-badge", authenticateUser, updateBadge)
+	.post("/claim-deposit-xp", authenticateUser, claimDepositXp)
 	.get("/referral-info", authenticateUser, referralInfo)
 	.post("/logout", authenticateUser, logout)
 	.post("/sign-in", signIn)

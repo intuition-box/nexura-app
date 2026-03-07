@@ -32,8 +32,7 @@ import { GraphQLClient } from "graphql-request";
 import { checksumAddress } from "viem";
 import { campaign, campaignCompleted } from "@/models/campaign.model";
 import { dailySignIn } from "@/models/dailySignIn.model";
-import { startOfDayUTC, updateLevel } from "@/utils/utils";
-import { toNumber } from "ethers";
+import { startOfDayUTC, updateLevel, getAmountPaid } from "@/utils/utils";
 
 const client = new GraphQLClient(GRAPHQL_API_URL);
 
@@ -84,24 +83,31 @@ export const updateUser = async (req: GlobalRequest, res: GlobalResponse) => {
   }
 }
 
-export const getClaimXp = async (req: GlobalRequest, res: GlobalResponse) => {
+export const claimDepositXp = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { transactionHash, trustAmount } = req.body;
+    const { transactionHash } = req.body;
     const { id } = req;
 
-    if (!transactionHash || !trustAmount) {
+    if (!transactionHash) {
       res.status(BAD_REQUEST).json({ error: "transaction hash and trust amount are required" });
       return;
     }
 
-    if (Number(trustAmount) < 200) {
-      res.status(BAD_REQUEST).json({ error: "trust amount must be at least 200 to claim xp" });
+    const { value, from } = await getAmountPaid(transactionHash);
+
+    if (Number(value) < 200) {
+      res.status(FORBIDDEN).json({ error: "amount paid must be at least 200 to claim xp" });
       return;
     }
 
     const trustUser = await user.findById(id);
     if (!trustUser) {
       res.status(BAD_REQUEST).json({ error: "user not found" });
+      return;
+    }
+
+    if (trustUser.address !== from.toLowerCase()) {
+      res.status(FORBIDDEN).json({ error: "transaction must be from the user's address" });
       return;
     }
 
@@ -117,7 +123,7 @@ export const getClaimXp = async (req: GlobalRequest, res: GlobalResponse) => {
     trustUser.xp += 20;
 
     await trustUser.save();
-    
+
     res.status(OK).json({ message: "xp claim successful" });
   } catch (error) {
     logger.error(error);

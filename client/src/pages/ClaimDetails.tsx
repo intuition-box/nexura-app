@@ -405,12 +405,22 @@ export default function ClaimDetails() {
       if (isBuy) setBuying(true);
       else setSelling(true);
 
+      let transactionHash: string | undefined;
+
       // -------------------- Execute transaction --------------------
-      if (isBuy) console.log(await buyShares(buyAmount, address as Address, curveId));
-      else await sellShares(sellAmount, address as Address, curveId);
+      if (isBuy) {
+        transactionHash = await buyShares(buyAmount, address as Address, curveId);
+      } else {
+        await sellShares(sellAmount, address as Address, curveId);
+      }
 
       // -------------------- Refresh user data --------------------
       await refreshUserData();
+
+      if (isBuy && amountNum >= 200) {
+        const { success } = await apiRequestV2("POST", "/api/user/claim-deposit-xp", { transactionHash });
+        if (!success) return;
+      }
 
       toast({
         title: "Success",
@@ -1142,7 +1152,7 @@ export default function ClaimDetails() {
               ) : (
                 <span>
                   {amountToReceive && Number(currentAmount) > 0
-                    ? `${Math.floor(Number(amountToReceive) * 100) / 100} ${isBuy ? "shares" : "TRUST"}`
+                    ? `${Number(amountToReceive).toFixed(6)} ${isBuy ? "shares" : "TRUST"}`
                     : "--"}
                 </span>
               )}
