@@ -412,7 +412,7 @@ export default function PortalClaims() {
         description: (
           <div className="flex items-center gap-2">
             <img src="/check.png" alt="success" className="w-4 h-4" />
-            <span>Successfully {action === "deposit" ? "bought" : "sold"} a claim!</span>
+            <span>Successfully {action === "deposit" ? "bought a claim!" : "sold shares"}</span>
           </div>
         ),
       });
@@ -432,7 +432,7 @@ export default function PortalClaims() {
 
       toast({
         title: "Error",
-        description: err?.message || "Transaction failed",
+        description: "Transaction failed",
         variant: "destructive",
       });
     }

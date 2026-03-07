@@ -287,7 +287,7 @@ export default function ClaimDetails() {
         pos?.direction === mainTab
     );
 
-    return up ? Number(formatEther(BigInt(up.shares))) : 0;
+    return up ? Number(formatEther(BigInt(parseInt(up.shares) > 0 ? up.shares : 0))) : 0;
   }, [userPositions, user, growthType, mainTab]);
 
   const hasOppositePosition = useMemo(() => {
@@ -397,72 +397,6 @@ export default function ClaimDetails() {
       if (isBuy) setBuying(true);
       else setSelling(true);
 
-      // -------------------- Preview Shares --------------------
-      const publicClient = getPublicClient();
-      const walletClient = await getWalletClient();
-      await walletClient.switchChain({ id: chain.id });
-      const vaultAddress = getMultiVaultAddressFromChainId(walletClient.chain?.id!);
-
-      let previewShares = 0n;
-      let updatedSharePrice = 0n;
-
-      if (isBuy && buyAmount) {
-        const [shares, price] = await multiVaultPreviewDeposit(
-          { address: vaultAddress, walletClient, publicClient },
-          { args: [id as "0x", curveId, parseEther(buyAmount)] }
-        );
-        previewShares = shares;
-        updatedSharePrice = price;
-      } else if (!isBuy && sellAmount) {
-        const [shares, price] = await multiVaultPreviewRedeem(
-          { address: vaultAddress, walletClient, publicClient },
-          { args: [id as "0x", curveId, parseEther(sellAmount)] }
-        );
-        previewShares = shares;
-        updatedSharePrice = price;
-      }
-
-      const sharesFloat = parseFloat(formatEther(previewShares));
-
-      // -------------------- Optimistically update user positions --------------------
-      setUserPositions(prev => {
-        const dir = mainTab; // "support" or "oppose"
-        const existing = prev.find(p => p.direction === dir && p.account.id === user.address);
-
-        if (existing) {
-          existing.shares = (isBuy
-            ? Number(existing.shares) + sharesFloat
-            : Math.max(Number(existing.shares) - sharesFloat, 0)).toString();
-          return [...prev];
-        }
-
-        if (isBuy) {
-          return [
-            ...prev,
-            {
-              direction: dir,
-              shares: sharesFloat,
-              account: {
-                id: user.address,
-                label: user.address,
-                image: user.image ?? null,
-              },
-              curve_id: growthType === "linear" ? 1 : 2,
-            },
-          ];
-        }
-
-        return prev;
-      });
-
-      // -------------------- Update vault price --------------------
-      const vaultIndex = growthType === "linear" ? 0 : 1;
-      if (mainTab === "support") {
-        term.vaults[vaultIndex].current_share_price = updatedSharePrice.toString();
-      } else {
-        counterTerm.vaults[vaultIndex].current_share_price = updatedSharePrice.toString();
-      }
-
       // -------------------- Execute transaction --------------------
       if (isBuy) await buyShares(buyAmount, address as Address, curveId);
       else await sellShares(sellAmount, address as Address, curveId);
@@ -494,7 +428,7 @@ export default function ClaimDetails() {
       console.error(err);
       toast({
         title: "Error",
-        description: err.message || `Failed ${isBuy ? "buying" : "selling"} shares`,
+        description: `Failed ${isBuy ? "buying" : "selling"} shares`,
         variant: "destructive",
       });
     } finally {
