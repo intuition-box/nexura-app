@@ -1169,55 +1169,84 @@ export default function ClaimDetails() {
       </div>
 
       {/* Your Position Card */}
-      <div className="bg-[#110A2B] rounded-xl p-4 flex flex-col gap-3 w-full">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-white text-sm sm:text-base w-full">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <span>Your Position</span>
-            <div className="w-6 h-[3px] bg-[#AD77FF] rounded-full"></div>
-          </div>
+<div className="bg-[#110A2B] rounded-xl p-4 flex flex-col gap-3 w-full">
+  {/* Header */}
+  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-white text-sm sm:text-base w-full">
+    
+    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <span>Your Position</span>
+      <div className="w-3 h-[3px] bg-[#AD77FF] rounded-full"></div>
+    </div>
 
-          {/* Positions Info */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-gray-300 flex-wrap">
-            {userPositions.length > 0 ? (
-              (() => {
-                const supportPosition = userPositions.find(p => p.direction === "support");
-                const opposePosition = userPositions.find(p => p.direction === "oppose");
+    {/* Positions Info */}
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-gray-300 flex-wrap">
+      {userPositions.length > 0 ? (
+        (() => {
+          const supportTotal = userPositions
+            .filter(p => p.direction === "support")
+            .reduce(
+              (sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))),
+              0
+            );
 
-                if (supportPosition) {
-                  const totalSupport = toFixed(
-                    (userPositions
-                      .filter(p => p.direction === "support")
-                      .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
-                  );
-                  return <span className="whitespace-nowrap">Support: <span className="text-white">{totalSupport} TRUST</span></span>;
-                } else if (opposePosition) {
-                  const totalOppose = toFixed(
-                    (userPositions
-                      .filter(p => p.direction === "oppose")
-                      .reduce((sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))), 0)).toString()
-                  );
-                  return <span className="whitespace-nowrap">Oppose: <span className="text-white">{totalOppose} TRUST</span></span>;
-                } else {
-                  return <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>;
-                }
-              })()
-            ) : (
-              <span className="text-gray-400 text-xs sm:text-sm">No positions found</span>
-            )}
-          </div>
-        </div>
+          const opposeTotal = userPositions
+            .filter(p => p.direction === "oppose")
+            .reduce(
+              (sum, p) => sum + parseFloat(formatEther(BigInt(p.shares))),
+              0
+            );
+
+          if (supportTotal > 0) {
+            return (
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                <span className="px-2 py-[2px] text-[10px] rounded bg-blue-500/20 text-blue-400 cursor-pointer hover:bg-white hover:text-blue-500 transition">
+                  Support
+                </span>
+                <span className="text-white">
+                  {toFixed(supportTotal.toString())} TRUST
+                </span>
+              </div>
+            );
+          }
+
+          if (opposeTotal > 0) {
+            return (
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                <span className="px-2 py-[2px] text-[10px] rounded bg-blue-500/20 text-blue-400 cursor-pointer hover:bg-white hover:text-blue-500 transition">
+                  Oppose
+                </span>
+                <span className="text-white">
+                  {toFixed(opposeTotal.toString())} TRUST
+                </span>
+              </div>
+            );
+          }
+
+          return (
+            <span className="text-gray-400 text-xs sm:text-sm">
+              No positions found
+            </span>
+          );
+        })()
+      ) : (
+        <span className="text-gray-400 text-xs sm:text-sm">
+          No positions found
+        </span>
+      )}
+    </div>
+  </div>
+
 
         {/* Divider */}
         <div className="h-px w-full bg-white opacity-80"></div>
       </div>
 
       {/* Positions on this Claim Section */}
-      <div className="bg-[#110A2B] rounded-xl p-4 sm:p-5 text-white flex flex-col gap-4 w-full">
+      <div className="bg-[#110A2B] rounded-xl p-4 sm:p-5 text-white flex flex-col gap-4 w-full text-xs">
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-2 justify-start sm:justify-start">
           <button
-            className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "all"
+            className={`text-xs sm:text-xs text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "all"
                 ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
                 : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
               }`}
@@ -1227,7 +1256,7 @@ export default function ClaimDetails() {
           </button>
 
           <button
-            className={`text-sm sm:text-base text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "my"
+            className={`text-sm sm:text-xs text-center rounded-md py-2 px-3 sm:px-4 transition-colors duration-200 ${activeTab === "my"
                 ? "bg-[#0A2D4D] border border-[#006CD2] text-white"
                 : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
               }`}
@@ -1242,7 +1271,7 @@ export default function ClaimDetails() {
       <div className="flex flex-col gap-3">
 
         {/* Dynamic Heading */}
-        <h3 className="text-sm sm:text-base text-white font-semibold">
+        <h3 className="text-xs sm:text-xs text-white font-semibold">
           {activeTab === "all"
             ? "All Positions on this Claim"
             : "My Position on this Claim"}
@@ -1255,7 +1284,7 @@ export default function ClaimDetails() {
           <input
             type="text"
             placeholder="Search positions"
-            className="w-full sm:w-[35%] bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-sm"
+            className="w-full sm:w-[35%] bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-xs"
           />
 
           {/* Right Side Controls */}
@@ -1263,13 +1292,13 @@ export default function ClaimDetails() {
 
             {/* Positions */}
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-white text-sm whitespace-nowrap">Positions:</span>
+              <span className="text-white text-xs whitespace-nowrap">Positions:</span>
 
               <div className="relative w-full sm:w-36">
                 <select
                   value={positionsOption}
                   onChange={(e) => setPositionsOption(e.target.value)}
-                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
+                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-xs focus:outline-none"
                 >
                   <option value="all">All</option>
                   <option value="linear">Linear</option>
@@ -1288,13 +1317,13 @@ export default function ClaimDetails() {
 
             {/* Sort */}
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-white text-sm whitespace-nowrap">Sort:</span>
+              <span className="text-white text-xs whitespace-nowrap">Sort:</span>
 
               <div className="relative w-full sm:w-40">
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value)}
-                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-sm focus:outline-none"
+                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-xs focus:outline-none"
                 >
                   <option value="highest_shares">Highest Shares</option>
                   <option value="lowest_shares">Lowest Shares</option>
@@ -1315,10 +1344,10 @@ export default function ClaimDetails() {
         </div>
 
         {/* TABLE */}
-        <div className="overflow-x-auto w-full">
+        <div className="overflow-x-auto w-full text-xs">
           <div className="min-w-[320px] sm:min-w-[700px]">
             {processedPositions.length === 0 ? (
-              <div className="text-gray-400 text-center py-4 text-sm">No positions found</div>
+              <div className="text-gray-400 text-center py-4 text-xs">No positions found</div>
             ) : (
               <div className="flex flex-col gap-2">
                 {/* Table Header */}
@@ -1334,16 +1363,16 @@ export default function ClaimDetails() {
                 {processedPositions.map((pos, idx) => (
                   <div
                     key={idx}
-                    className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-sm sm:text-base gap-2 sm:gap-0"
+                    className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-xs sm:text-base gap-2 sm:gap-0"
                   >
                     {/* Index */}
-                    <div className="flex sm:w-[5%] w-full text-gray-400 justify-between sm:justify-center items-center">
-                      <span className="sm:hidden font-semibold">#:</span>
+                    <div className="flex sm:w-[5%] w-full text-gray-400 justify-between sm:justify-center items-center text-xs">
+                      <span className="sm:hidden">#:</span>
                       <span>{idx + 1}</span>
                     </div>
 
                     {/* Account */}
-                    <div className="flex sm:w-[35%] w-full items-center gap-2 truncate">
+                    <div className="flex sm:w-[35%] w-full items-center gap-2 text-xs truncate">
                       {pos.account?.image && (
                         <img
                           src={pos.account.image}
@@ -1355,8 +1384,8 @@ export default function ClaimDetails() {
                     </div>
 
                     {/* Curve */}
-                    <div className="flex sm:w-[15%] w-full text-gray-400 justify-between sm:justify-center items-center">
-                      <span className="sm:hidden font-semibold">Curve:</span>
+                    <div className="flex sm:w-[15%] w-full text-gray-400 justify-between sm:justify-center items-center text-xs">
+                      <span className="sm:hidden">Curve:</span>
                       <span>
                         {Number(pos.curve_id) === 1
                           ? "Linear"
@@ -1367,8 +1396,8 @@ export default function ClaimDetails() {
                     </div>
 
                     {/* Direction */}
-                    <div className="flex sm:w-[15%] w-full justify-between sm:justify-center items-center">
-                      <span className="sm:hidden font-semibold">Direction:</span>
+                    <div className="flex sm:w-[15%] w-full justify-between sm:justify-center items-center text-xs">
+                      <span className="sm:hidden">Direction:</span>
                       <span>
                         {pos.direction?.toLowerCase() === "support"
                           ? "Support"
@@ -1379,8 +1408,8 @@ export default function ClaimDetails() {
                     </div>
 
                     {/* Shares */}
-                    <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right items-center">
-                      <span className="sm:hidden font-semibold">Shares:</span>
+                    <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right items-center text-xs">
+                      <span className="sm:hidden">Shares:</span>
                       <span>{pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : "—"}</span>
                     </div>
                   </div>
