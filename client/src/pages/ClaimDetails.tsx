@@ -58,6 +58,7 @@ export default function ClaimDetails() {
   const receiveTimeoutRef = useRef(null);
   const [showCurveInfo, setShowCurveInfo] = useState(false);
   // const [userShares, setUserShares] = useState("")
+  const [actionState, setActionState] = useState("")
 
   const currentAmount = isBuy ? buyAmount : sellAmount;
 
@@ -164,6 +165,18 @@ export default function ClaimDetails() {
     if (!user) return;
     fetchClaim();
   }, [user]);
+
+  const formatTrustExact = (value: bigint) => {
+  const str = (Number(value) / 1e18).toString();
+  const [whole, decimal = ""] = str.split(".");
+  return `${whole}.${decimal.padEnd(4, "0").slice(0, 4)}`;
+};
+
+const format4 = (value: number | string) => {
+  const str = String(value);
+  const [whole, decimal = ""] = str.split(".");
+  return `${whole}.${decimal.padEnd(4, "0").slice(0, 4)}`;
+};
 
   async function fetchClaim() {
     const fetched = await apiRequestV2("GET", "/api/get-triple?termId=" + id);
@@ -1053,11 +1066,11 @@ export default function ClaimDetails() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 w-full">
             <span className="text-gray-400 text-xs">Amount:</span>
             <span className="text-gray-400 flex items-center gap-1 justify-end text-xs">
-              <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
-              {isBuy
-                ? `${Math.floor(Number(balance) * 100) / 100} TRUST`
-                : `${Math.floor(Number(userShares) * 100) / 100} shares`}
-            </span>
+  <img src="/wallet.png" alt="Wallet Icon" className="w-4 h-4" />
+  {isBuy
+    ? `${format4(balance)} TRUST`
+    : `${format4(userShares)} shares`}
+</span>
           </div>
 
           {/* Input */}
@@ -1197,30 +1210,30 @@ export default function ClaimDetails() {
             );
 
           if (supportTotal > 0) {
-            return (
-              <div className="flex items-center gap-2 whitespace-nowrap">
-                <span className="px-2 py-[2px] text-[10px] rounded bg-blue-500/20 text-blue-400 cursor-pointer hover:bg-white hover:text-blue-500 transition">
-                  Support
-                </span>
-                <span className="text-white">
-                  {toFixed(supportTotal.toString())} TRUST
-                </span>
-              </div>
-            );
-          }
+  return (
+    <div className="flex items-center gap-2 whitespace-nowrap">
+      <span className="px-2 py-[2px] text-[10px] bg-blue-500/50 rounded-3xl text-blue-400 cursor-pointer transition">
+        Support
+      </span>
+      <span className="text-white text-xs">
+        {formatTrustExact(supportTotal)} TRUST
+      </span>
+    </div>
+  );
+}
 
-          if (opposeTotal > 0) {
-            return (
-              <div className="flex items-center gap-2 whitespace-nowrap">
-                <span className="px-2 py-[2px] text-[10px] rounded bg-blue-500/20 text-blue-400 cursor-pointer hover:bg-white hover:text-blue-500 transition">
-                  Oppose
-                </span>
-                <span className="text-white">
-                  {toFixed(opposeTotal.toString())} TRUST
-                </span>
-              </div>
-            );
-          }
+if (opposeTotal > 0) {
+  return (
+    <div className="flex items-center gap-2 whitespace-nowrap">
+      <span className="px-2 py-[2px] text-[10px] bg-[#F19C03] rounded-3xl text-blue-400 cursor-pointer transition">
+        Oppose
+      </span>
+      <span className="text-white text-xs">
+        {formatTrustExact(opposeTotal)} TRUST
+      </span>
+    </div>
+  );
+}
 
           return (
             <span className="text-gray-400 text-xs sm:text-sm">
@@ -1268,154 +1281,157 @@ export default function ClaimDetails() {
       </div>
 
       {/* Header + Controls */}
-      <div className="flex flex-col gap-3">
+<div className="flex flex-col gap-2">
 
-        {/* Dynamic Heading */}
-        <h3 className="text-xs sm:text-xs text-white font-semibold">
-          {activeTab === "all"
-            ? "All Positions on this Claim"
-            : "My Position on this Claim"}
-        </h3>
+  {/* Dynamic Heading */}
+  <h3 className="text-[11px] text-white font-semibold">
+    {activeTab === "all"
+      ? "All Positions on this Claim"
+      : "My Position on this Claim"}
+  </h3>
 
-        {/* Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+  {/* Controls */}
+  <div className="flex flex-col sm:flex-row sm:items-center w-full px-2 sm:px-3">
 
-          {/* Search */}
-          <input
-            type="text"
-            placeholder="Search positions"
-            className="w-full sm:w-[35%] bg-[#06021A] border border-[#393B60] text-white p-2 rounded-2xl outline-none text-xs"
-          />
+    {/* Search (60%) */}
+    <div className="w-full sm:w-[60%]">
+      <input
+        type="text"
+        placeholder="Search positions"
+        className="w-full bg-[#06021A] border border-[#393B60] text-white p-1.5 rounded-xl outline-none text-[11px]"
+      />
+    </div>
 
-          {/* Right Side Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+    {/* Positions (20%) */}
+    <div className="flex items-center gap-1.5 w-full sm:w-[20%] sm:pl-3">
+      <span className="text-white text-[11px] whitespace-nowrap">Positions:</span>
 
-            {/* Positions */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-white text-xs whitespace-nowrap">Positions:</span>
+      <div className="relative w-full">
+        <select
+          value={positionsOption}
+          onChange={(e) => setPositionsOption(e.target.value)}
+          className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-xl px-3 py-1.5 pr-8 text-white text-[11px] focus:outline-none"
+        >
+          <option value="all">All</option>
+          <option value="linear">Linear</option>
+          <option value="exponential">Exponential</option>
+          <option value="support">Support</option>
+          <option value="oppose">Oppose</option>
+        </select>
 
-              <div className="relative w-full sm:w-36">
-                <select
-                  value={positionsOption}
-                  onChange={(e) => setPositionsOption(e.target.value)}
-                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-xs focus:outline-none"
-                >
-                  <option value="all">All</option>
-                  <option value="linear">Linear</option>
-                  <option value="exponential">Exponential</option>
-                  <option value="support">Support</option>
-                  <option value="oppose">Oppose</option>
-                </select>
+        <img
+          src="/up-down.png"
+          alt="Dropdown"
+          className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+        />
+      </div>
+    </div>
 
-                <img
-                  src="/up-down.png"
-                  alt="Dropdown"
-                  className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                />
-              </div>
-            </div>
+    {/* Sort (20%) */}
+    <div className="flex items-center gap-1.5 w-full sm:w-[20%] sm:pl-3">
+      <span className="text-white text-[11px] whitespace-nowrap">Sort:</span>
 
-            {/* Sort */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-white text-xs whitespace-nowrap">Sort:</span>
+      <div className="relative w-full">
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+          className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-xl px-3 py-1.5 pr-8 text-white text-[11px] focus:outline-none"
+        >
+          <option value="highest_shares">Highest Shares</option>
+          <option value="lowest_shares">Lowest Shares</option>
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="a_to_z">A - Z</option>
+          <option value="z_to_a">Z - A</option>
+        </select>
 
-              <div className="relative w-full sm:w-40">
-                <select
-                  value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value)}
-                  className="appearance-none w-full bg-[#06021A] border border-[#393B60] rounded-2xl px-4 py-2 pr-10 text-white text-xs focus:outline-none"
-                >
-                  <option value="highest_shares">Highest Shares</option>
-                  <option value="lowest_shares">Lowest Shares</option>
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="a_to_z">A - Z</option>
-                  <option value="z_to_a">Z - A</option>
-                </select>
+        <img
+          src="/up-down.png"
+          alt="Dropdown"
+          className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+        />
+      </div>
+    </div>
+  </div>
 
-                <img
-                  src="/up-down.png"
-                  alt="Dropdown"
-                  className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                />
-              </div>
-            </div>
+  {/* TABLE */}
+  <div className="overflow-x-auto w-full text-[11px]">
+    <div className="min-w-[320px] sm:min-w-[650px]">
+      {processedPositions.length === 0 ? (
+        <div className="text-gray-400 text-center py-3 text-[11px]">No positions found</div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+
+          {/* Table Header */}
+          <div className="hidden sm:flex bg-[#060210] px-3 py-2 rounded-md text-gray-400 text-[11px]">
+            <div className="w-[5%] text-center">#</div>
+            <div className="w-[35%] text-center">Account</div>
+            <div className="w-[15%] text-center">Curve</div>
+            <div className="w-[15%] text-center">Direction</div>
+            <div className="w-[20%] text-right">Shares</div>
           </div>
-        </div>
 
-        {/* TABLE */}
-        <div className="overflow-x-auto w-full text-xs">
-          <div className="min-w-[320px] sm:min-w-[700px]">
-            {processedPositions.length === 0 ? (
-              <div className="text-gray-400 text-center py-4 text-xs">No positions found</div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {/* Table Header */}
-                <div className="hidden sm:flex bg-[#060210] p-3 rounded-md text-gray-400 text-xs sm:text-sm">
-                  <div className="w-[5%] text-center">#</div>
-                  <div className="w-[35%]">Account</div>
-                  <div className="w-[15%] text-center">Curve</div>
-                  <div className="w-[15%] text-center">Direction</div>
-                  <div className="w-[20%] text-right">Shares</div>
-                </div>
-
-                {/* Table Rows */}
-                {processedPositions.map((pos, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[#110A2B] p-3 sm:p-4 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-xs sm:text-base gap-2 sm:gap-0"
-                  >
-                    {/* Index */}
-                    <div className="flex sm:w-[5%] w-full text-gray-400 justify-between sm:justify-center items-center text-xs">
-                      <span className="sm:hidden">#:</span>
-                      <span>{idx + 1}</span>
-                    </div>
-
-                    {/* Account */}
-                    <div className="flex sm:w-[35%] w-full items-center gap-2 text-xs truncate">
-                      {pos.account?.image && (
-                        <img
-                          src={pos.account.image}
-                          alt={pos.account.label ?? "User"}
-                          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-                        />
-                      )}
-                      <span className="truncate">{pos.account?.label ?? pos.account?.id ?? "Anonymous"}</span>
-                    </div>
-
-                    {/* Curve */}
-                    <div className="flex sm:w-[15%] w-full text-gray-400 justify-between sm:justify-center items-center text-xs">
-                      <span className="sm:hidden">Curve:</span>
-                      <span>
-                        {Number(pos.curve_id) === 1
-                          ? "Linear"
-                          : Number(pos.curve_id) === 2
-                            ? "Exponential"
-                            : "—"}
-                      </span>
-                    </div>
-
-                    {/* Direction */}
-                    <div className="flex sm:w-[15%] w-full justify-between sm:justify-center items-center text-xs">
-                      <span className="sm:hidden">Direction:</span>
-                      <span>
-                        {pos.direction?.toLowerCase() === "support"
-                          ? "Support"
-                          : pos.direction?.toLowerCase() === "oppose"
-                            ? "Oppose"
-                            : "—"}
-                      </span>
-                    </div>
-
-                    {/* Shares */}
-                    <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right items-center text-xs">
-                      <span className="sm:hidden">Shares:</span>
-                      <span>{pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : "—"}</span>
-                    </div>
-                  </div>
-                ))}
+          {/* Table Rows */}
+          {processedPositions.map((pos, idx) => (
+            <div
+              key={idx}
+              className="bg-[#110A2B] px-3 py-2 rounded-md flex flex-col sm:flex-row sm:items-center text-white text-[11px] gap-1.5 sm:gap-0"
+            >
+              {/* Index */}
+              <div className="flex sm:w-[5%] w-full text-gray-400 justify-between sm:justify-center items-center text-[11px]">
+                <span className="sm:hidden">#:</span>
+                <span>{idx + 1}</span>
               </div>
-            )}
+
+              {/* Account */}
+              <div className="flex sm:w-[35%] w-full items-center gap-1.5 text-[11px] truncate">
+                {pos.account?.image && (
+                  <img
+                    src={pos.account.image}
+                    alt={pos.account.label ?? "User"}
+                    className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                  />
+                )}
+                <span className="truncate">
+                  {pos.account?.label ?? pos.account?.id ?? "Anonymous"}
+                </span>
+              </div>
+
+              {/* Curve */}
+              <div className="flex sm:w-[15%] w-full text-gray-400 justify-between sm:justify-center items-center text-[11px]">
+                <span className="sm:hidden">Curve:</span>
+                <span>
+                  {Number(pos.curve_id) === 1
+                    ? "Linear"
+                    : Number(pos.curve_id) === 2
+                    ? "Exponential"
+                    : "—"}
+                </span>
+              </div>
+
+              {/* Direction */}
+              <div className="flex sm:w-[15%] rounded w-full justify-between sm:justify-center items-center text-[11px]">
+                <span className="sm:hidden">Direction:</span>
+                <span className="bg-blue-500/50 px-1 py-1 rounded-3xl">
+                  {pos.direction?.toLowerCase() === "support"
+                    ? "Support"
+                    : pos.direction?.toLowerCase() === "oppose"
+                    ? "Oppose"
+                    : "—"}
+                </span>
+              </div>
+
+              {/* Shares */}
+              <div className="flex sm:w-[20%] w-full justify-between sm:justify-end text-right items-center text-[11px]">
+                <span className="sm:hidden">Shares:</span>
+                <span>
+                  {pos.shares ? `${toFixed(formatEther(BigInt(pos.shares)))}` : "—"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
             {/* Observer div for infinite scroll */}
             <div ref={observerRef} className="h-10"></div>
