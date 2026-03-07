@@ -6,9 +6,7 @@ import React from "react"
 import { Card, CardTitle, CardDescription, CardFooter } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { Link } from "wouter";
-import StudioSidebar from "../../pages/studio/StudioSidebar";
-import AnimatedBackground from "../AnimatedBackground";
+
 import { projectApiRequest } from "../../lib/projectApi";
 import { payStudioHubFee } from "../../lib/performOnchainAction";
 import { useToast } from "../../hooks/use-toast";
@@ -48,10 +46,11 @@ export default function CreateNewCampaigns() {
   const [showModal, setShowModal] = useState(false);
   const [validationType, setValidationType] = useState("manual");
   const { toast } = useToast();
-  type Task = { type: string; platform: string; handleOrUrl: string; description: string; evidence: string; validation: string; verificationMode: string; };
+  type Task = { _id: string | undefined; type: string; platform: string; handleOrUrl: string; description: string; evidence: string; validation: string; verificationMode: string; };
 
 const [tasks, setTasks] = useState<Task[]>([]); 
   const [newTask, setNewTask] = useState({
+    _id: undefined as string | undefined,
   type: "",
   platform: "",
   handleOrUrl: "",
@@ -115,6 +114,11 @@ useEffect(() => {
       setEndDate(e.date);
       setEndTime(e.time);
       setRewardPool(String(found.reward?.pool ?? ""));
+      setParticipants(found.maxParticipants !== undefined && found.maxParticipants !== null
+        ? String(found.maxParticipants)
+        : found.participants !== undefined && found.participants !== null
+          ? String(found.participants)
+          : "");
       setXpRewards("200");
       if (found.projectCoverImage) setCoverImagePreview(found.projectCoverImage);
       // Pre-fill tasks from saved quests
@@ -125,9 +129,9 @@ useEffect(() => {
           params: { id: editId },
         });
         const tagToType = (tag: string) => {
-          if (tag === "comment") return "Comment on our X post";
-          if (tag === "follow") return "Follow us on X";
-          if (tag === "join") return "Join Us On Discord";
+          if (tag === "comment" || tag === "comment-x") return "Comment on our X post";
+          if (tag === "follow" || tag === "follow-x") return "Follow us on X";
+          if (tag === "join" || tag === "join-discord") return "Join Us On Discord";
           if (tag === "portal") return "Check Out the Portal Claims";
           return "others";
         };
@@ -137,12 +141,13 @@ useEffect(() => {
           return "";
         };
         const tagToValidation = (tag: string) => {
-          if (tag === "join") return "Discord Auth";
+          if (tag === "join" || tag === "join-discord") return "Discord Auth";
           if (tag === "portal") return "Auto Verified";
           return "Manual Validation";
         };
         if (qRes.campaignQuests) {
           setTasks(qRes.campaignQuests.map((q: any) => ({
+            _id: q._id,
             type: tagToType(q.tag),
             platform: catToPlatform(q.category),
             handleOrUrl: q.link ?? "",
@@ -164,9 +169,9 @@ const formatDate = (dateStr: string) => {
 
 
 const typeToTag = (type: string) => {
-  if (type === "Comment on our X post") return "comment";
-  if (type === "Follow us on X") return "follow";
-  if (type === "Join Us On Discord") return "join";
+  if (type === "Comment on our X post") return "comment-x";
+  if (type === "Follow us on X") return "follow-x";
+  if (type === "Join Us On Discord") return "join-discord";
   if (type === "Check Out the Portal Claims") return "portal";
   return "other";
 };
@@ -178,16 +183,25 @@ const platformToCategory = (platform: string) => {
 
 const buildCampaignFormData = (isDraft: boolean): FormData => {
   const fd = new FormData();
+  const perParticipantTrust = rewardPool && participants && Number(participants) > 0
+    ? Number((Number(rewardPool) / Number(participants)).toFixed(2))
+    : 0;
   fd.append("title", campaignTitle);
   fd.append("description", campaignName);
   fd.append("nameOfProject", campaignName);
   fd.append("starts_at", startDate && startTime ? `${startDate}T${startTime}` : startDate);
   fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
-  fd.append("reward", JSON.stringify({ xp: Number(xpRewards) || 0, pool: Number(rewardPool) || 0 }));
+  fd.append("maxParticipants", participants);
+  fd.append("reward", JSON.stringify({
+    xp: Number(xpRewards) || 0,
+    pool: Number(rewardPool) || 0,
+    trust: perParticipantTrust,
+  }));
   if (coverImage instanceof File) fd.append("coverImage", coverImage);
   if (isDraft) fd.append("isDraft", "true");
   fd.append("campaignQuests", JSON.stringify(
     tasks.map(t => ({
+      _id: t._id,
       quest: t.description || t.type,
       link: t.handleOrUrl || "https://nexura.io",
       tag: typeToTag(t.type),
@@ -198,10 +212,10 @@ const buildCampaignFormData = (isDraft: boolean): FormData => {
   return fd;
 };
 
-const handleSaveDraft = async (thenNavigate?: string) => {
+const handleSaveDraft = async (thenNavigate?: string): Promise<string | null> => {
   if (!campaignTitle) {
-    toast({ title: "Missing title", description: "Please enter a campaign title.", variant: "destructive" });
-    return;
+    toast({ title: "Missing description", description: "Please enter a campaign description.", variant: "destructive" });
+    return null;
   }
   setSaveLoading(true);
   try {
@@ -214,12 +228,15 @@ const handleSaveDraft = async (thenNavigate?: string) => {
       formData: fd,
       params,
     });
+    const savedCampaignId = res.campaignId ?? campaignId;
     if (res.campaignId) setCampaignId(res.campaignId);
     toast({ title: "Campaign saved!", description: "Draft saved successfully." });
     if (thenNavigate) setActiveTab(thenNavigate);
+    return savedCampaignId ?? null;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to save campaign.";
     toast({ title: "Save failed", description: msg, variant: "destructive" });
+    return null;
   } finally {
     setSaveLoading(false);
   }
@@ -266,7 +283,7 @@ const handleSaveTask = () => {
     setTasks([...tasks, newTask]);
   }
 
-  setNewTask({ type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation", verificationMode: "" });
+  setNewTask({ _id: undefined, type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation", verificationMode: "" });
   setShowModal(false);
   setError("");
 };
@@ -291,6 +308,33 @@ const handleSubmit = (e: React.FormEvent) => {
   handleSaveDraft("tasks");
 };
 
+const handleUpdateCampaign = async () => {
+  if (!campaignTitle || !campaignName) {
+    toast({ title: "Incomplete details", description: "Please fill in campaign name and description.", variant: "destructive" });
+    return;
+  }
+  if (tasks.length === 0) {
+    toast({ title: "No tasks", description: "Please add at least one task.", variant: "destructive" });
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const savedCampaignId = campaignId ?? await handleSaveDraft();
+    if (!savedCampaignId) return;
+
+    setCampaignId(savedCampaignId);
+    toast({ title: "Campaign updated!", description: "Your campaign changes have been saved." });
+    setPublishedCampaign({ title: campaignName, description: campaignTitle, name: campaignName, rewardPool, coverImage: coverImagePreview ?? undefined });
+    setShowSuccessModal(true);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to update campaign.";
+    toast({ title: "Update failed", description: msg, variant: "destructive" });
+  } finally {
+    setLoading(false);
+  }
+};
+
 const isActive =
   publishedCampaign &&
   new Date(publishedCampaign.endDate) > new Date();
@@ -298,21 +342,6 @@ const isActive =
 
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      <div className="relative z-10 flex h-screen">
-        <AnimatedBackground />
-
-<StudioSidebar
-  activeTab="campaignsTab"
-  setActiveTab={(tab) => {
-    if (tab === "campaignSubmissions") setLocation("/studio-dashboard");
-    if (tab === "campaignsTab") setLocation("/studio-dashboard");
-    if (tab === "adminManagement") setLocation("/studio-dashboard");
-  }}
-/>
-
-
-        <div className="flex-1 flex flex-col overflow-hidden backdrop-blur-xl">
           <main className="flex-1 overflow-y-auto p-4 md:p-8 pt-16 md:pt-8 pb-24 md:pb-8 text-white">
             <div className="max-w-5xl mx-auto space-y-8">
 
@@ -410,13 +439,13 @@ const isActive =
 />
                     </div>
 
-                    {/* Campaign Title */}
+                    {/* Campaign Description */}
                     <div>
                       <label className="block mb-2 text-sm font-medium">
-                        Campaign Title
+                        Campaign Description
                       </label>
 <Input
-  placeholder="Enter campaign title..."
+  placeholder="Enter campaign description..."
   className="bg-white/5 border-white/10"
   required
   value={campaignTitle}
@@ -581,18 +610,21 @@ const isActive =
 
                     {/* Buttons */}
                     <div className="flex justify-between pt-4">
-                      <Link href="/studio-dashboard">
-                        <Button variant="ghost" className="text-white/60 hover:text-white">
-                          Cancel
-                        </Button>
-                      </Link>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-white/60 hover:text-white"
+                        onClick={() => setLocation("/studio-dashboard")}
+                      >
+                        ← Back
+                      </Button>
 
                       <Button
                         type="submit"
                         className="bg-purple-600 hover:bg-purple-700"
                         disabled={loading || saveLoading}
                       >
-                        {loading || saveLoading ? "Saving..." : "Save & Next"}
+                        {loading || saveLoading ? "Saving..." : "Next →"}
                       </Button>
                     </div>
 
@@ -649,7 +681,7 @@ const isActive =
               {index + 1}
             </div>
 
-            <p className="flex-1 text-white">{task.type === "others" ? task.description : task.type}</p>
+            <p className="flex-1 text-white">{task.description || task.type}</p>
 
             <div className="flex items-center gap-2">
               <button
@@ -678,27 +710,27 @@ const isActive =
       </div>
     )}
 
-    {/* Tasks tab footer: Save Draft + Next → Review */}
+    {/* Tasks tab footer: Back + Next → Review */}
     <div className="flex justify-between items-center mt-6">
       <button
         className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm hover:bg-gray-600 transition"
-        onClick={() => handleSaveDraft()}
-        disabled={saveLoading}
+        onClick={() => setActiveTab("details")}
       >
-        {saveLoading ? "Saving..." : "Save Draft"}
+        ← Back
       </button>
       <button
-        className="px-6 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition flex items-center gap-2"
+        className="px-6 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition flex items-center gap-2 disabled:opacity-60"
+        disabled={saveLoading}
         onClick={() => {
           if (tasks.length === 0) {
             toast({ title: "No tasks", description: "Please add at least one task before reviewing.", variant: "destructive" });
             return;
           }
-          setActiveTab("review");
+          handleSaveDraft("review");
         }}
       >
-        Next
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+        {saveLoading ? "Saving..." : "Next →"}
+        {!saveLoading && <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>}
       </button>
     </div>
   </div>
@@ -740,7 +772,7 @@ const isActive =
                 ...newTask,
                 type,
                 platform: isDiscord ? "Discord" : isTwitter ? "Twitter" : (isPortal || isOther) ? "" : newTask.platform,
-                evidence: isDiscord || isPortal ? "" : newTask.evidence,
+                evidence: isDiscord || isPortal ? "" : isTwitter ? "submit_link" : newTask.evidence,
                 validation: isDiscord ? "Discord Auth" : isPortal ? "Auto Verified" : (newTask.validation === "Discord Auth" || newTask.validation === "Auto Verified" ? "Manual Validation" : newTask.validation),
                 verificationMode: "",
               });
@@ -762,7 +794,7 @@ const isActive =
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setNewTask({ ...newTask, platform: "Twitter", validation: newTask.validation === "Discord Auth" ? "Manual Validation" : newTask.validation })}
+              onClick={() => setNewTask({ ...newTask, platform: "Twitter", evidence: "submit_link", validation: newTask.validation === "Discord Auth" ? "Manual Validation" : newTask.validation })}
               className={`flex-1 border py-2 rounded-lg transition ${
                 newTask.platform === "Twitter"
                   ? "bg-purple-500 text-white border-purple-500"
@@ -798,11 +830,11 @@ const isActive =
         {/* Handle or URL */}
         <div className="mb-4">
           <label className="text-sm text-white/70 mb-2 block">
-            {newTask.platform === "Discord" ? "Discord Invite Link" : newTask.type === "Follow us on X" ? "Twitter Username" : "Handle or URL"}
+            {newTask.platform === "Discord" ? "Discord Invite Link" : newTask.type === "Comment on our X post" ? "Post URL" : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "Profile URL" : "Handle or URL"}
           </label>
           <input
             type="text"
-            placeholder={newTask.platform === "Discord" ? "https://discord.gg/..." : newTask.type === "Follow us on X" ? "@username" : "..."}
+            placeholder={newTask.platform === "Discord" ? "https://discord.gg/..." : newTask.type === "Comment on our X post" ? "https://x.com/username/status/..." : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "https://x.com/username" : "..."}
             value={newTask.handleOrUrl}
             onChange={(e) =>
               setNewTask({ ...newTask, handleOrUrl: e.target.value })
@@ -882,17 +914,11 @@ const isActive =
           <div className="grid grid-cols-2 gap-6">
             {/* Evidence Upload */}
             <div>
-              <label className="text-sm text-white/70 mb-2 block">Evidence Upload Management</label>
-              <select
-                className="w-full p-2 rounded-lg bg-[#0d0d14] text-white border border-white/10 focus:outline-none focus:border-purple-500 [&>option]:bg-[#0d0d14]"
-                value={newTask.evidence}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, evidence: e.target.value })
-                }
-              >
-                <option value="">Select option</option>
-                <option value="submit_link">Submit Link</option>
-              </select>
+              <label className="text-sm text-white/70 mb-2 block">Evidence Upload</label>
+              <div className="flex items-center gap-2 w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm">
+                <span className="text-purple-400">🔗</span>
+                <span>Submit Link</span>
+              </div>
             </div>
 
             {/* Validation Type */}
@@ -969,10 +995,10 @@ const isActive =
         {/* Title + description */}
         <div className="flex flex-col justify-center gap-1 min-w-0">
           <h3 className="text-xl font-bold text-white truncate">
-            {campaignTitle || campaignName || "Untitled Campaign"}
+            {campaignName || "Untitled Campaign"}
           </h3>
           <p className="text-white/60 text-sm">
-            {campaignName || "No description provided"}
+            {campaignTitle || "No description provided"}
           </p>
           {startDate && endDate && (
             <p className="text-white/40 text-xs mt-1">
@@ -1049,8 +1075,8 @@ const isActive =
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-white">{task.type === "others" ? task.description : task.type}</p>
-              {task.type === "others" && task.description && (
+              <p className="text-white">{task.description || task.type}</p>
+              {task.verificationMode && (
                 <p className="text-xs text-white/50 truncate">{task.verificationMode === "image_upload" ? "📷 Image proof" : task.verificationMode === "submit_link" ? "🔗 Link submission" : task.verificationMode === "auto" ? "⚡ Auto" : ""}</p>
               )}
             </div>
@@ -1109,19 +1135,25 @@ const isActive =
 
   {/* Right buttons */}
   <div className="flex items-center gap-2 mt-4">
-    <button
-      className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
-      onClick={() => handleSaveDraft()}
-      disabled={saveLoading}
-    >
-      {saveLoading ? "Saving..." : "Save Draft"}
-    </button>
 <button
-  onClick={() => setShowPublishModal(true)}
+  type="button"
   className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
   disabled={loading || saveLoading}
 >
-  Publish Campaign
+  Deploy Rewards Contract
+</button>
+<button
+  onClick={() => {
+    if (isEditMode) {
+      handleUpdateCampaign();
+      return;
+    }
+    setShowPublishModal(true);
+  }}
+  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={loading || saveLoading}
+>
+  {isEditMode ? "Update Campaign" : "Publish Campaign"}
 </button>
   </div>
 </div>
@@ -1156,21 +1188,21 @@ const isActive =
         {/* Title + Subtitle */}
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-white">
-            Activate your Studio Hub
+            Campaign Launch Fee
           </h2>
           <p className="text-white/70 mt-2">
-            Activate your studio hub to publish and manage campaigns.
+            Pay the campaign launch fee to publish this campaign and make it available for participants.
           </p>
         </div>
 
         {/* Subscription Card */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-white font-semibold text-sm">Studio Hub Activation</span>
-            <span className="text-purple-400 font-bold text-sm">1000 TRUST</span>
+            <span className="text-white font-semibold text-sm">Campaign Launch Fee</span>
+            <span className="text-purple-400 font-bold text-sm">1000 $TRUST</span>
           </div>
           <p className="text-white/60 text-xs mb-3">
-            A one-time fee of 1000 TRUST is required to publish your campaign.
+            A one-time fee of 1000 $TRUST is required to launch and publish this campaign.
           </p>
 
           {paymentTxHash ? (
@@ -1192,7 +1224,7 @@ const isActive =
                 try {
                   const hash = await payStudioHubFee();
                   setPaymentTxHash(hash);
-                  toast({ title: "Payment successful", description: "1000 TRUST sent. You can now publish your campaign." });
+                  toast({ title: "Payment successful", description: "1000 $TRUST sent. You can now publish your campaign." });
                 } catch (err: any) {
                   toast({ title: "Payment failed", description: err.message ?? "Transaction was rejected.", variant: "destructive" });
                 } finally {
@@ -1204,7 +1236,7 @@ const isActive =
               {paymentLoading ? (
                 <><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Waiting for wallet…</>
               ) : (
-                <>Pay 1000 TRUST</>
+                <>Pay 1000 $TRUST</>
               )}
             </button>
           )}
@@ -1214,7 +1246,7 @@ const isActive =
   className="mt-4 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
   onClick={async () => {
     if (!campaignTitle || !campaignName) {
-      toast({ title: "Incomplete details", description: "Please fill in campaign name and title.", variant: "destructive" });
+      toast({ title: "Incomplete details", description: "Please fill in campaign name and description.", variant: "destructive" });
       return;
     }
     if (tasks.length === 0) {
@@ -1222,38 +1254,24 @@ const isActive =
       return;
     }
     if (!paymentTxHash.trim()) {
-      toast({ title: "Payment required", description: "Please complete the 1000 TRUST payment before publishing.", variant: "destructive" });
+      toast({ title: "Payment required", description: "Please complete the 1000 $TRUST payment before publishing.", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     try {
-      const fd = new FormData();
-      fd.append("title", campaignTitle);
-      fd.append("description", campaignName);
-      fd.append("nameOfProject", campaignName);
-      fd.append("starts_at", startDate && startTime ? `${startDate}T${startTime}` : startDate);
-      fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
-      fd.append("reward", JSON.stringify({ xp: Number(xpRewards) || 0, pool: Number(rewardPool) || 0 }));
-      fd.append("txHash", paymentTxHash);
-      fd.append("campaignQuests", JSON.stringify(
-        tasks.map((t: any) => ({
-          title: t.type,
-          description: t.description,
-          url: t.handleOrUrl,
-          reward: { xp: Number(xpRewards) || 0 },
-        }))
-      ));
-      if (coverImage instanceof File) fd.append("coverImage", coverImage);
+      const savedCampaignId = campaignId ?? await handleSaveDraft();
+      if (!savedCampaignId) return;
 
       await projectApiRequest({
-        method: "POST",
-        endpoint: "/hub/create-campaign",
-        formData: fd,
+        method: "PATCH",
+        endpoint: "/hub/publish-campaign",
+        params: { id: savedCampaignId },
+        data: { txHash: paymentTxHash },
       });
 
       toast({ title: "Campaign published!", description: "Your campaign is now live." });
-      setPublishedCampaign({ title: campaignTitle, name: campaignName, rewardPool, coverImage: coverImagePreview ?? undefined });
+      setPublishedCampaign({ title: campaignName, description: campaignTitle, name: campaignName, rewardPool, coverImage: coverImagePreview ?? undefined });
       setShowPublishModal(false);
       setShowSuccessModal(true);
     } catch (err: unknown) {
@@ -1307,10 +1325,12 @@ const isActive =
         {/* Title + Subtitle */}
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-white">
-            Payment Successfully Completed
+            {isEditMode ? "Campaign Successfully Updated" : "Payment Successfully Completed"}
           </h2>
           <p className="text-white/70 mt-2">
-            Your 1000 TRUST payment was confirmed and your project is ready to go live.
+            {isEditMode
+              ? "Your campaign changes have been saved and are now live."
+              : "Your 1000 $TRUST payment was confirmed and your project is ready to go live."}
           </p>
         </div>
 
@@ -1337,7 +1357,7 @@ const isActive =
 
   <div>
     <h3 className="text-lg font-semibold text-white">
-      {publishedCampaign?.title}
+      {publishedCampaign?.name}
     </h3>
 
     <p className="text-white/70 text-sm mt-1">
@@ -1345,7 +1365,7 @@ const isActive =
     </p>
 
     <p className="text-white/60 text-sm mt-2">
-      Project: @{publishedCampaign?.name}
+      {isEditMode ? "Campaign updated successfully" : "Campaign published successfully"}
     </p>
   </div>
 
@@ -1357,7 +1377,7 @@ const isActive =
         Total Reward Pool
       </span>
       <span className="text-white mt-1 text-sm font-semibold">
-        {publishedCampaign?.rewardPool} TRUST
+        {publishedCampaign?.rewardPool} $TRUST
       </span>
     </div>
 
@@ -1365,10 +1385,8 @@ const isActive =
       <span className="text-xs font-semibold uppercase tracking-wide">
         Status
       </span>
-      <span className={`mt-1 text-sm font-semibold ${
-  isActive ? "text-green-400" : "text-red-400"
-}`}>
-  {isActive ? "ACTIVE" : "COMPLETED"}
+      <span className="mt-1 text-sm font-semibold text-green-400">
+  PUBLISHED
 </span>
     </div>
 
@@ -1394,8 +1412,5 @@ const isActive =
 
         </div>
         </main>
-        </div>
-    </div>
-    </div>
   );
 }

@@ -339,7 +339,7 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
         project_name: projectDoc?.name ?? req.body.nameOfProject ?? "",
         sub_title: req.body.description ?? "",
         totalXpAvailable: reward.xp ?? 0,
-        totalTrustAvailable: reward.trust ?? 0,
+        totalTrustAvailable: reward.pool ?? 0,
         campaignNumber: campaignCount + 1,
         projectCoverImage: req.body.coverImage ?? "pending",
         creator: req.id,
@@ -380,17 +380,50 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
     const { campaignQuests: _cq, isDraft: _d, existingCoverImage: _e, hubCoverImage: _h, nameOfProject: _n, ...updateFields } = req.body;
     await campaign.findByIdAndUpdate(id, updateFields, { new: true }).lean();
 
-    // Update quests
+    // Update quests without destroying existing IDs/submissions
     if (questsToSave !== null) {
-      await campaignQuest.deleteMany({ campaign: id });
-      if (questsToSave.length > 0) {
+      const existingQuests = await campaignQuest.find({ campaign: id }).select("_id").lean();
+      const existingQuestIds = existingQuests.map((q: any) => q._id.toString());
+      const incomingQuestIds = questsToSave
+        .map((q: any) => q._id?.toString())
+        .filter(Boolean);
+
+      const questsToUpdate = questsToSave.filter((q: any) => q._id);
+      const questsToInsert = questsToSave.filter((q: any) => !q._id);
+
+      if (questsToUpdate.length > 0) {
+        await campaignQuest.bulkWrite(
+          questsToUpdate.map((q: any) => {
+            const { _id, ...rest } = q;
+            const updatePayload = (q.tag === "discord" || q.tag === "join-discord")
+              ? { ...rest, campaign: id, guildId: hubFound.guildId }
+              : { ...rest, campaign: id };
+
+            return {
+              updateOne: {
+                filter: { _id, campaign: id },
+                update: { $set: updatePayload },
+              }
+            };
+          })
+        );
+      }
+
+      if (questsToInsert.length > 0) {
         await campaignQuest.insertMany(
-          questsToSave.map((q: any) => (
-            (q.tag === "discord" || q.tag === "join-discord") ? { ...q, campaign: id, guildId: hubFound.guildId } :
-            { ...q, campaign: id }
+          questsToInsert.map((q: any) => (
+            (q.tag === "discord" || q.tag === "join-discord")
+              ? { ...q, campaign: id, guildId: hubFound.guildId }
+              : { ...q, campaign: id }
           ))
         );
       }
+
+      const questIdsToDelete = existingQuestIds.filter((existingId) => !incomingQuestIds.includes(existingId));
+      if (questIdsToDelete.length > 0) {
+        await campaignQuest.deleteMany({ _id: { $in: questIdsToDelete }, campaign: id });
+      }
+
       await campaign.findByIdAndUpdate(id, { noOfQuests: questsToSave.length });
     }
 
