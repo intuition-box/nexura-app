@@ -62,28 +62,6 @@ export default function PortalClaims() {
   // Example state to store totals
   const [userShares, setUserShares] = useState<{ support: bigint; oppose: bigint }>({ support: 0n, oppose: 0n });
 
-  // localstorage stuff
-  const [actionState, setActionState] = useState<Record<string, "none" | "supported" | "opposed">>({});
-
-  const storageKey = user?.address
-    ? `actionState_${user.address.toLowerCase()}`
-    : null;
-
-  // load wallet state
-  useEffect(() => {
-    if (!storageKey) return;
-
-    const saved = localStorage.getItem(storageKey);
-    setActionState(saved ? JSON.parse(saved) : {});
-  }, [storageKey]);
-
-  // save wallet state
-  useEffect(() => {
-    if (!storageKey) return;
-
-    localStorage.setItem(storageKey, JSON.stringify(actionState));
-  }, [actionState, storageKey]);
-
 
   const [userSharesByCurve, setUserSharesByCurve] = useState<{
     support: { linear: bigint; exponential: bigint };
@@ -640,37 +618,29 @@ export default function PortalClaims() {
                           </div>
                         </td>
 
-   {/* Actions: buttons only */}
+{/* Actions: buttons only */}
 <td className="px-4 py-3 text-center text-xs">
   <div className="flex justify-center gap-2">
     {/* Support Button */}
     <button
-      className={`px-4 py-2 rounded-lg text-xs transition-all ${
-        actionState[claim.term.id] === "supported"
-          ? "bg-transparent text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white"
-          : "bg-blue-600 text-white hover:brightness-110"
-      }`}
+      className="px-4 py-2 rounded-lg text-xs bg-blue-600 text-white hover:brightness-110 transition-all"
       onClick={(e) => {
         e.stopPropagation();
         handleSupportClick(claim);
       }}
     >
-      {actionState[claim.term.id] === "supported" ? "Supported" : "Support"}
+      Support
     </button>
 
     {/* Oppose Button */}
     <button
-      className={`px-4 py-2 rounded-lg text-xs transition-all ${
-        actionState[claim.counter_term.id] === "opposed"
-          ? "bg-transparent text-[#F19C03] border border-[#F19C03] hover:bg-[#F19C03] hover:text-white"
-          : "bg-[#F19C03] text-white hover:brightness-110"
-      }`}
+      className="px-4 py-2 rounded-lg text-xs bg-[#F19C03] text-white hover:brightness-110 transition-all"
       onClick={(e) => {
         e.stopPropagation();
         handleOpposeClick(claim);
       }}
     >
-      {actionState[claim.counter_term.id] === "opposed" ? "Opposed" : "Oppose"}
+      Oppose
     </button>
   </div>
 </td>
@@ -1485,27 +1455,38 @@ export default function PortalClaims() {
                 )}
 
                 {/* SUCCESS */}
-                {modalStep === "success" && (
-                  <div className="flex flex-col items-center my-8">
-                    <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
-                      <span className="text-white text-2xl">✓</span>
-                    </div>
+{modalStep === "success" && (
+  <div className="flex flex-col items-center my-8">
+    <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
+      <span className="text-white text-2xl">✓</span>
+    </div>
 
-                    <span className="text-white mb-6">
-                      Successfully {opposeMode ? "opposed" : "supported"}!
-                    </span>
+    <span className="text-white mb-2">
+      Successfully {opposeMode ? "opposed" : "supported"}!
+    </span>
 
-                    <button
-                      className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
-                      onClick={() => {
-                        setShowReviewDepositModal(false);
-                        setModalStep("review");
-                      }}
-                    >
-                      Done
-                    </button>
-                  </div>
-                )}
+    {/* Explorer link */}
+    <a
+      href={transactionLink} // this is where you will add the explorer link stuff
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-500 flex items-center gap-1 mb-6 hover:underline"
+    >
+      View Transaction on Explorer
+      <img src="/share.png" alt="share icon" className="w-4 h-4" />
+    </a>
+
+    <button
+      className="bg-white text-black px-6 py-2 rounded-3xl text-sm"
+      onClick={() => {
+        setShowReviewDepositModal(false);
+        setModalStep("review");
+      }}
+    >
+      Done
+    </button>
+  </div>
+)}
 
                 {/* FAILED */}
                 {modalStep === "failed" && (
@@ -1546,9 +1527,11 @@ export default function PortalClaims() {
                 {/* Title + Support Tag */}
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-white text-base">Stake</h2>
-                  <span className="bg-[#0A2D4D] border border-white text-white px-3 py-1 rounded-full text-sm">
-                    Support
-                  </span>
+                  <span
+                            className="bg-[#0A2D4D] text-white text-[9px] px-1 py-[1px] rounded-full cursor-pointer transition-colors duration-200 hover:bg-white hover:text-[#0A2D4D] hover:border-[#0A2D4D]"
+                          >
+                            {opposeMode ? "Oppose" : "Support"}
+                          </span>
                 </div>
 
                 {/* Subtitle */}
