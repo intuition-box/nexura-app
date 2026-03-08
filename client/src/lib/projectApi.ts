@@ -36,7 +36,10 @@ export function clearProjectSession() {
   localStorage.removeItem("nexura:studio-step");
   localStorage.removeItem("hubData");
   localStorage.removeItem("twitterData");
-  localStorage.removeItem("nexura:wallet");
+  // NOTE: nexura:wallet is intentionally NOT cleared here.
+  // It belongs to the main app wallet connection (use-wallet.tsx),
+  // not the studio/project session. Clearing it here would
+  // disconnect the user's wallet when logging out of the studio.
 }
 
 export function isProjectSignedIn(): boolean {
