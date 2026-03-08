@@ -36,7 +36,9 @@ export function clearProjectSession() {
   localStorage.removeItem("nexura:studio-step");
   localStorage.removeItem("hubData");
   localStorage.removeItem("twitterData");
-  localStorage.removeItem("nexura:wallet");
+  // NOTE: Do NOT remove "nexura:wallet" here.
+  // That key belongs to the main app wallet connection (use-wallet.tsx)
+  // and must survive studio/project session logout.
 }
 
 export function isProjectSignedIn(): boolean {
@@ -120,4 +122,3 @@ export function base64ToBlob(dataUrl: string): Blob {
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return new Blob([bytes], { type: contentType });
 }
-
