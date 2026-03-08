@@ -36,9 +36,7 @@ export function clearProjectSession() {
   localStorage.removeItem("nexura:studio-step");
   localStorage.removeItem("hubData");
   localStorage.removeItem("twitterData");
-  // NOTE: Do NOT remove "nexura:wallet" here.
-  // That key belongs to the main app wallet connection (use-wallet.tsx)
-  // and must survive studio/project session logout.
+  localStorage.removeItem("nexura:wallet");
 }
 
 export function isProjectSignedIn(): boolean {
@@ -79,7 +77,7 @@ export const projectApiRequest = async <T = unknown>({
 
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  // Do NOT set Content-Type for FormData -- the browser sets the correct boundary.
+  // Do NOT set Content-Type for FormData – the browser sets the correct boundary.
   if (!formData) headers["Content-Type"] = "application/json";
 
   let url = getApiUrl(endpoint);
