@@ -29,7 +29,6 @@ export default function ClaimDetails() {
   const [userPositions, setUserPositions] = useState<Position[]>([]);
   const [visiblePositions, setVisiblePositions] = useState<Position[]>([]); // paginated slice
   const [page, setPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef(null);
   const [claim, setClaim] = useState<any | null>(null);
@@ -476,22 +475,8 @@ export default function ClaimDetails() {
     // Decide source based on active tab
     let data = activeTab === "my" ? [...userPositions] : [...positions];
 
-// SEARCH
-if (searchTerm.trim() !== "") {
-  const lower = searchTerm.toLowerCase();
-
-  data = data.filter((pos) =>
-    (pos.account?.label ?? "")
-      .toLowerCase()
-      .includes(lower) ||
-    (pos.account?.id ?? "")
-      .toLowerCase()
-      .includes(lower)
-  );
-}
-
-// FILTER
-if (positionsOption !== "all") {
+    // FILTER
+    if (positionsOption !== "all") {
       data = data.filter((pos) => {
         if (positionsOption === "linear") return Number(pos.curve_id) === 1;
         if (positionsOption === "exponential") return Number(pos.curve_id) === 2;
@@ -540,7 +525,7 @@ if (positionsOption !== "all") {
     }
 
     return data;
-}, [activeTab, positions, userPositions, positionsOption, sortOption, searchTerm]);
+  }, [activeTab, positions, userPositions, positionsOption, sortOption]);
 
 
   const numericBalance = Number(balance);
@@ -1317,12 +1302,10 @@ if (positionsOption !== "all") {
     {/* Search (60%) */}
     <div className="w-full sm:w-[60%]">
       <input
-  type="text"
-  placeholder="Search positions"
-  value={searchTerm}
-  onChange={(e) => setSearchTerm(e.target.value)}
-  className="w-full bg-[#06021A] border border-[#393B60] text-white p-1.5 rounded-xl outline-none text-[11px]"
-/>
+        type="text"
+        placeholder="Search positions"
+        className="w-full bg-[#06021A] border border-[#393B60] text-white p-1.5 rounded-xl outline-none text-[11px]"
+      />
     </div>
 
     {/* Positions (20%) */}
