@@ -5,9 +5,14 @@ const OTPSchema = new Schema({
     type: String,
     required: true
   },
-  projectId: {
+  hubId: {
     type: String,
     required: true
+  },
+  role: {
+    type: String,
+    enum: ["admin", "superadmin"],
+    default: "admin"
   },
   code: {
     type: String,
@@ -16,8 +21,8 @@ const OTPSchema = new Schema({
   },
   expiresAt: {
     type: Date,
-    default: new Date(),
-    expires: 300 // OTP expires in 5 minutes
+    default: () => new Date(Date.now() + 5 * 60 * 1000),
+    expires: 0 // TTL: remove document when expiresAt is reached
   }
 });
 

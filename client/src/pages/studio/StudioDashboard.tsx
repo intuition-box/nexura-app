@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Card } from "../../components/ui/card";
@@ -10,9 +8,8 @@ import { Label } from "../../components/ui/label";
 import { cn } from "../../lib/utils";
 import AnimatedBackground from "../../components/AnimatedBackground.tsx";
 import StudioSidebar from "./StudioSidebar";
-import { AddAdminModal } from "../../components/AddAdminModal";
-import { ManageAdminModal } from "../../components/ManageAdminModal";
 import { apiRequest } from "../../lib/config.ts";
+import { projectApiRequest, isProjectSignedIn } from "../../lib/projectApi";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../components/ui/collapsible";
 import { getStoredAdminInfo } from "../../lib/config.ts";
 import {
@@ -22,15 +19,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../../components/ui/dialog";
-import { Zap, Calendar, Shield, LayoutDashboard, Search, Bell, Plus, RefreshCw, Check, X, Eye, Clock, CheckCircle2, XCircle, Menu, ChevronDown, Users, FileText } from "lucide-react";
+import { Zap, Calendar, Shield, LayoutDashboard, Search, Bell, RefreshCw, Check, X, Eye, Clock, CheckCircle2, XCircle, ChevronDown, Users, FileText } from "lucide-react";
 import { StatsOverview } from "../../components/admin/StatsOverview";
 import CampaignSubmissions from "../../components/admin/CampaignSubmissions";
 import { TASKS } from "../../types/admin";
-import AdminManagement from "../../components/admin/AdminManagement";
-import { DUMMY_TASKS } from "../../components/admin/CampaignSubmissions";
+import AdminManagement, { AdminType as Admin } from "../../components/admin/AdminManagement";
 import CampaignsTab from "../../components/admin/CampaignsTab.tsx";
 import CreateNewCampaigns from "../../components/admin/CreateNewCampaign.tsx";
-
 interface StudioDashboardProps {
   onLogout: () => void;
 }
@@ -47,10 +42,16 @@ type TabType = "campaignSubmissions" | "adminManagement" | "campaignsTab";
 
 export default function StudioDashboard({ onLogout }: StudioDashboardProps) {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<TabType>("campaignSubmissions");
+  const [activeTab, setActiveTab] = useState<TabType>("campaignsTab");
+
+  // Auth guard — redirect to /studio if no valid session
+  useEffect(() => {
+    if (!isProjectSignedIn()) {
+      setLocation("/studio");
+    }
+  }, []);
   const [viewedSubmissions, setViewedSubmissions] = useState<Set<string>>(new Set());
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-const [campaignTasks, setCampaignTasks] = useState<TASKS[]>(DUMMY_TASKS);
+const [campaignTasks, setCampaignTasks] = useState<TASKS[]>([]);
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(false);
   const [adminsLoading, setAdminsLoading] = useState(false);
@@ -62,7 +63,7 @@ const [campaignTasks, setCampaignTasks] = useState<TASKS[]>(DUMMY_TASKS);
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const res = await apiRequest<{ message?: string; pendingTasks?: TASKS[] }>({ endpoint: "/api/admin/get-campaigns", method: "GET" });
+      const res = await projectApiRequest<{ message?: string; pendingTasks?: TASKS[] }>({ endpoint: "/hub/campaign-submissions", method: "GET" });
       const pendingTasks = res?.pendingTasks ?? [];
 
       const pendingcampaignTasks = pendingTasks.filter((task) => task.page === "campaign");
@@ -76,6 +77,13 @@ const [campaignTasks, setCampaignTasks] = useState<TASKS[]>(DUMMY_TASKS);
       setLoading(false);
     }
   };
+
+  // Fetch submissions when the component mounts or when switching to the submissions tab
+  useEffect(() => {
+    if (activeTab === "campaignSubmissions") {
+      fetchTasks();
+    }
+  }, [activeTab]);
 
   const fetchAdmins = async () => {
     try {
@@ -110,14 +118,10 @@ const [campaignTasks, setCampaignTasks] = useState<TASKS[]>(DUMMY_TASKS);
   const handleAction = async (id: string, action: "accept" | "reject") => {
     try {
       setLoading(true);
-      await apiRequest<{ message?: string }>({
+      await projectApiRequest<{ message?: string }>({
         method: "POST",
-        endpoint: "/api/admin/validate-task",
-        data: {
-          id,
-          action,
-          validatedBy: "current-admin"
-        }
+        endpoint: "/hub/validate-campaign-submissions",
+        data: { submissionId: id, action }
       });
 
       // Refresh tasks after action
@@ -135,12 +139,6 @@ const [campaignTasks, setCampaignTasks] = useState<TASKS[]>(DUMMY_TASKS);
       setLoading(false);
     }
   };
-
-  const sidebarItems = [
-    { title: "Campaign Tasks", icon: Zap, id: "campaignSubmissions" as TabType },
-    { title: "Campaigns", icon: Users, id: "campaignsTab" as TabType },
-    { title: "Admin Management", icon: Shield, id: "adminManagement" as TabType },
-  ];
 
 const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
 const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
@@ -202,117 +200,6 @@ const fetchBannedUsers = async () => {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
             <AnimatedBackground/>
-          {/* Mobile Header with Hamburger */}
-          <div className="md:hidden border-b border-white/10 px-4 py-3 flex items-center justify-between">
-            <button
-              onClick={() => setMobileNavOpen(true)}
-              className="p-2 -ml-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <img src="/nexura-logo.png" alt="Nexura" className="h-6 w-auto" />
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/5 h-9 w-9">
-                <Bell className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Mobile Sliding Nav Overlay */}
-          {mobileNavOpen && (
-            <div
-              className="fixed inset-0 z-50 md:hidden"
-              onClick={() => setMobileNavOpen(false)}
-            >
-              {/* Backdrop */}
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-
-              {/* Sliding Panel */}
-              <div
-                className="absolute top-0 left-0 h-full w-72 bg-[#0a0a15]/95 backdrop-blur-xl border-r border-white/10 shadow-2xl animate-slide-in-left"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Nav Header */}
-                <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                  <img src="/nexura-logo.png" alt="Nexura" className="h-7 w-auto" />
-                  <button
-                    onClick={() => setMobileNavOpen(false)}
-                    className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Nav Items */}
-                <nav className="p-3 space-y-1">
-                  {sidebarItems.map((item) => (
-  <button
-    key={item.id}
-    onClick={() => {
-      setActiveTab(item.id);
-      setLocation(
-        item.id === "campaignsTab"
-          ? "/studio-dashboard/campaigns-tab"
-          : `/studio-dashboard/${item.id}`
-      );
-    }}
-    className={cn(
-      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-      activeTab === item.id
-        ? "text-[#8a3ffc] bg-[#8a3ffc]/10 border border-[#8a3ffc]/30"
-        : "text-white/70 hover:bg-white/5 hover:text-white"
-    )}
-  >
-    <item.icon
-      className={cn(
-        "w-5 h-5",
-        activeTab === item.id ? "text-[#8a3ffc]" : "text-white/50"
-      )}
-    />
-    {item.title}
-  </button>
-))}
-                </nav>
-
-                {/* Actions */}
-                <div className="px-4 py-3">
-                  <AddAdminModal>
-                    <Button
-                      variant="outline"
-                      className="w-full border-[#8a3ffc] text-[#8a3ffc] hover:bg-[#8a3ffc] hover:text-white gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Admin
-                    </Button>
-                  </AddAdminModal>
-                </div>
-
-                {/* User Info & Logout */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#8a3ffc] to-[#6366f1] flex items-center justify-center text-white font-bold">
-                      A
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-white">Administrator</span>
-                      <span className="text-xs text-white/50">Online</span>
-                    </div>
-                  </div>
-<Button
-  variant="ghost"
-  onClick={() => {
-    setMobileNavOpen(false);
-    onLogout();
-    setLocation("/studio");
-  }}
-  className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 justify-start gap-2"
->
-  Logout
-</Button>
-                </div>
-              </div>
-            </div>
-          )}
 
           <header className="hidden md:flex h-16 border-b border-white/10 items-center justify-between px-6 backdrop-blur-sm bg-black/30">
   <div className="flex items-center gap-4 flex-1">
@@ -327,36 +214,6 @@ const fetchBannedUsers = async () => {
     <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/5">
       <Bell className="w-5 h-5" />
     </Button>
-
-    {activeTab === "adminManagement" && (
-      <AddAdminModal onSuccess={fetchAdmins}>
-        <Button
-          variant="outline"
-          className="border-[#8a3ffc] text-[#8a3ffc] hover:bg-[#8a3ffc] hover:text-white gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Admin
-        </Button>
-      </AddAdminModal>
-    )}
-
-    {activeTab === "campaignsTab" && "create" && (
-      <Button
-        variant="outline"
-        className="border-[#8a3ffc] text-[#8a3ffc] hover:bg-[#8a3ffc] hover:text-white gap-2"
-        onClick={() => {
-          // Open your "Create Campaign" modal or navigate
-          console.log("Open Create Campaign Modal");
-        }}
-      >
-        <img
-          src="/campaign-icon.png"
-          alt="Campaign Icon"
-          className="w-4 h-4"
-        />
-        Create Campaign
-      </Button>
-    )}
 
     <div className="h-6 w-px bg-white/10 mx-2" />
 
@@ -375,7 +232,7 @@ const fetchBannedUsers = async () => {
 </header>
 
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 relative bg-black/20">
+          <main className="flex-1 overflow-y-auto pt-4 pb-8 px-4 md:pt-8 md:pb-8 md:px-8 relative bg-black/20">
             <div className="max-w-7xl mx-auto">
               {activeTab !== "adminManagement" && activeTab !== "campaignsTab" && (
                 <StatsOverview key={activeTab} tasks={activeTab === "campaignSubmissions" ? campaignTasks : []} />
@@ -426,7 +283,15 @@ const fetchBannedUsers = async () => {
                 <div className="text-white capitalize">{selectedTask.taskType}</div>
               </div>
 
-              {selectedTask.taskType && ["follow", "like"].includes(selectedTask.taskType.toLowerCase()) ? (
+              {selectedTask.taskType && selectedTask.taskType.toLowerCase() === "feedback" ? (
+                <div className="grid gap-2">
+                  <Label className="text-white/70">User Feedback</Label>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4 max-h-60 overflow-y-auto">
+                    <p className="text-white text-sm whitespace-pre-wrap leading-relaxed">{selectedTask.submissionLink}</p>
+                  </div>
+                  <p className="text-xs text-white/40">{selectedTask.submissionLink.length} characters</p>
+                </div>
+              ) : selectedTask.taskType && ["follow", "like"].includes(selectedTask.taskType.toLowerCase()) ? (
                 <div className="grid gap-2">
                   <Label className="text-white/70">Username to {selectedTask.taskType}</Label>
                   <div className="flex gap-2">

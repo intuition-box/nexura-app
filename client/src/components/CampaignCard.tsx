@@ -8,13 +8,17 @@ interface CampaignCardProps {
   projectLogo: string;
   projectCoverImage: string;
   participants: number;
+  maxParticipants?: number;
   starts_at: string;
   ends_at: string;
   isLive?: boolean;
   reward?: {
-    xp: string;
-    trustTokens: string;
+    xp: string | number;
+    trustTokens?: string | number;
+    trust?: string | number;
+    pool?: string | number;
   };
+  totalTrustAvailable?: number;
   _id?: string;
   from?: string;
 }
@@ -25,10 +29,12 @@ export default function CampaignCard({
   projectLogo,
   projectCoverImage,
   participants,
+  maxParticipants,
   starts_at,
   ends_at,
   isLive = true,
   reward,
+  totalTrustAvailable,
   _id,
   from
 }: CampaignCardProps) {
@@ -58,6 +64,19 @@ export default function CampaignCard({
       setLocation(url);
     }
   };
+
+  const allowedParticipants = maxParticipants && maxParticipants > 0 ? maxParticipants : participants;
+  const trustReward = reward
+    ? ((Number(reward.trustTokens) > 0)
+      ? Number(reward.trustTokens)
+      : (Number(reward.trust) > 0)
+      ? Number(reward.trust)
+      : (Number(reward.pool) > 0 && allowedParticipants > 0)
+      ? Number((Number(reward.pool) / allowedParticipants).toFixed(2))
+      : (totalTrustAvailable && totalTrustAvailable > 0 && allowedParticipants > 0)
+      ? Number((totalTrustAvailable / allowedParticipants).toFixed(2))
+      : 0)
+    : 0;
 
   return (
     <Card
@@ -128,7 +147,7 @@ export default function CampaignCard({
               <span className="text-blue-500 font-bold">{reward.xp} XP</span>
               <span className="text-muted-foreground">+</span>
               <div className="flex items-center space-x-1">
-                <span className="font-bold text-card-foreground">{reward.trustTokens} TRUST</span>
+                <span className="font-bold text-card-foreground">{trustReward} TRUST</span>
               </div>
             </div>
           </div>

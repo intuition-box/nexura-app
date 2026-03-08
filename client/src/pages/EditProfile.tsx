@@ -189,7 +189,7 @@ export default function EditProfile() {
                 Back to Profile
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold text-foreground">Edit Profile</h1>
+            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">Edit Profile</h1>
           </div>
           <Button onClick={handleSave} data-testid="button-save-profile">
             <Save className="w-4 h-4 mr-2" />

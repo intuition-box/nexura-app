@@ -14,6 +14,10 @@ const userSchema = new Schema({
 	profilePic: {
 		type: String,
 		default: "",
+  },
+  dailyTrustXpDate: {
+    type: String,
+    default: "",
 	},
 	socialProfiles: {
 		x: {

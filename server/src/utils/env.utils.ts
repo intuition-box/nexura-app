@@ -50,8 +50,15 @@ export const EMAIL_USER = process.env.EMAIL_USER as string;
 export const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD as string;
 
 export const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID as string;
+
 export const MAIN_DISCORD_REDIRECT_URI = process.env.MAIN_DISCORD_REDIRECT_URI as string;
 export const DEV_DISCORD_REDIRECT_URI = process.env.DEV_DISCORD_REDIRECT_URI as string;
+
+const DEV_DISCORD_HUB_CLIENT_REDIRECT_URI = process.env.DEV_DISCORD_HUB_CLIENT_REDIRECT_URI as string;
+const MAIN_DISCORD_HUB_CLIENT_REDIRECT_URI = process.env.MAIN_DISCORD_HUB_CLIENT_REDIRECT_URI as string;
+
+const DEV_DISCORD_HUB_REDIRECT_URI = process.env.DEV_DISCORD_HUB_REDIRECT_URI as string;
+const MAIN_DISCORD_HUB_REDIRECT_URI = process.env.MAIN_DISCORD_HUB_REDIRECT_URI as string;
 
 export const MAIN_DISCORD_CLIENT_REDIRECT_URI = process.env.MAIN_DISCORD_CLIENT_REDIRECT_URI as string;
 export const DEV_DISCORD_CLIENT_REDIRECT_URI = process.env.DEV_DISCORD_CLIENT_REDIRECT_URI as string;
@@ -72,10 +79,14 @@ export const X_ACCESS_TOKEN_SECRET = process.env.X_ACCESS_TOKEN_SECRET as string
 export const BOT_TOKEN = process.env.BOT_TOKEN as string;
 
 export const DISCORD_REDIRECT_URI = environment === "development" ? DEV_DISCORD_REDIRECT_URI : MAIN_DISCORD_REDIRECT_URI;
+export const DISCORD_CLIENT_REDIRECT_URI = environment === "development" ? DEV_DISCORD_CLIENT_REDIRECT_URI : MAIN_DISCORD_CLIENT_REDIRECT_URI;
+
 export const X_REDIRECT_URI = process.env.X_REDIRECT_URI as string;
 
+export const DISCORD_HUB_REDIRECT_URI = environment === "development" ? DEV_DISCORD_HUB_REDIRECT_URI : MAIN_DISCORD_HUB_REDIRECT_URI;
+export const DISCORD_HUB_CLIENT_REDIRECT_URI = environment === "development" ? DEV_DISCORD_HUB_CLIENT_REDIRECT_URI : MAIN_DISCORD_HUB_CLIENT_REDIRECT_URI;
+
 export const X_CLIENT_REDIRECT_URI = environment === "development" ? DEV_X_CLIENT_REDIRECT_URI : MAIN_X_CLIENT_REDIRECT_URI;
-export const DISCORD_CLIENT_REDIRECT_URI = environment === "development" ? DEV_DISCORD_CLIENT_REDIRECT_URI : MAIN_DISCORD_CLIENT_REDIRECT_URI;
 
 export const THIRD_PARTY_API_KEY = process.env.THIRD_PARTY_API_KEY as string;
 

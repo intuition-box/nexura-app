@@ -94,7 +94,7 @@ export default function SignUpPopup({ mode = "user" as "user" | "project", actio
   return (
 <Dialog open={open} onOpenChange={(v) => setOpen(v)}>
   <DialogTrigger asChild>
-        <Button onClick={() => setOpen(true)}>{label}</Button>
+        <Button onClick={() => setOpen(true)} className="border border-white/80 text-white bg-transparent hover:bg-purple-600 hover:border-purple-600 transition-all">{label}</Button>
       </DialogTrigger>
   <DialogContent className="border-2 border-purple-500 rounded-2xl p-6 sm:p-8">
     <DialogHeader>
@@ -116,7 +116,7 @@ export default function SignUpPopup({ mode = "user" as "user" | "project", actio
             <p className="text-sm text-muted-foreground">
               Use your crypto wallet to {action === "signin" ? "sign in" : "sign up"}.
             </p>
-            <Button onClick={handleConnectAndCreate} size="lg" className="flex items-center gap-2">
+            <Button onClick={handleConnectAndCreate} size="lg" className="flex items-center gap-2 border border-white/80 text-white bg-transparent hover:bg-purple-600 hover:border-purple-600 transition-all">
               <KeyRound className="h-5 w-5" />
               {loading ? "Working..." : isConnected ? "Use connected wallet" : "Connect Wallet"}
             </Button>

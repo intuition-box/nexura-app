@@ -26,6 +26,11 @@ export const uploadImg = async ({
   folder,
   maxSize = 5 * (1024 ** 2) // 5 MB
 }: UploadImgParams) => {
+  // If AWS is not configured, return a deterministic placeholder
+  if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_S3_BUCKET || !AWS_REGION) {
+    logger.warn("[uploadImg] AWS credentials not configured — using placeholder image");
+    return `https://placehold.co/256x256/7c3aed/ffffff?text=${encodeURIComponent(folder)}`;
+  }
   try {
     const image = sharp(file);
 

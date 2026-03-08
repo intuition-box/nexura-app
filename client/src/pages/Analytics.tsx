@@ -1,388 +1,582 @@
-"use client";
+﻿"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import AnimatedBackground from "../components/AnimatedBackground";
-import { useState, useEffect } from "react";
-import { ResponsiveLine } from "@nivo/line";
+import { useState, useEffect, useRef } from "react";
 import DesktopCards from "../components/DesktopCard.tsx";
 import MobileCards from "../components/MobileCards.tsx";
+import { apiRequest } from "../lib/config";
+
+// â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+function pctChange(current: number, previous: number): number | null {
+  if (previous === 0) return current > 0 ? 100 : null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+function PctBadge({ value, className = "" }: { value: number | null; className?: string }) {
+  if (value === null) return null;
+  const up = value >= 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 font-mono font-bold italic text-base sm:text-2xl tracking-tight ${
+        up ? "text-emerald-400" : "text-red-400"
+      } ${className}`}
+    >
+      {up ? "\u25b2" : "\u25bc"}{Math.abs(value)}%
+    </span>
+  );
+}
+
+// â”€â”€â”€ bar chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+type BarData = { label: string; count: number };
+
+function niceMax(val: number): number {
+  if (val <= 0) return 10;
+  const mag = Math.pow(10, Math.floor(Math.log10(val)));
+  const norm = val / mag;
+  const nice = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+  return nice * mag;
+}
+
+function BarChart({ bars, scale, currentBucket }: { bars: BarData[]; scale: "1d" | "7d" | "30d"; currentBucket: number }) {
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string; count: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const BAR_AREA = 180;
+  const Y_TICKS = 4;
+
+  const rawMax = Math.max(...bars.map((b) => b.count), 1);
+  const maxVal = niceMax(rawMax);
+  const ticks = Array.from({ length: Y_TICKS + 1 }, (_, i) => Math.round((maxVal / Y_TICKS) * i));
+
+  return (
+    <div ref={containerRef} className="relative select-none flex gap-2">
+      {/* Y-axis labels */}
+      <div className="flex flex-col-reverse justify-between shrink-0 pb-[28px]" style={{ height: BAR_AREA + 40 }}>
+        {ticks.map((t) => (
+          <span key={t} className="text-[9px] sm:text-[10px] text-white/30 text-right leading-none w-7 sm:w-9 tabular-nums">
+            {t >= 1000 ? `${(t / 1000).toFixed(t % 1000 === 0 ? 0 : 1)}k` : t}
+          </span>
+        ))}
+      </div>
+
+      {/* Chart area */}
+      <div className="relative flex-1 min-w-0">
+        {/* Horizontal gridlines */}
+        <div className="absolute inset-x-0 pointer-events-none" style={{ top: 0, height: BAR_AREA }}>
+          {ticks.map((t, i) => (
+            <div
+              key={t}
+              className="absolute w-full border-t border-white/[0.06]"
+              style={{ bottom: (i / Y_TICKS) * BAR_AREA }}
+            />
+          ))}
+        </div>
+
+        {/* Bars */}
+        <div
+          className="flex items-end gap-[3px] sm:gap-1 w-full"
+          style={{ height: BAR_AREA + 40 }}
+        >
+          {bars.map((bar, i) => {
+            const pct = bar.count / maxVal;
+            const barH = Math.max(pct * BAR_AREA, bar.count > 0 ? 6 : 2);
+            const isCurrent = i === currentBucket;
+
+            return (
+              <div
+                key={bar.label + i}
+                className="relative flex flex-col items-center flex-1 cursor-pointer"
+                style={{ height: BAR_AREA + 40 }}
+                onMouseEnter={(e) => {
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  const containerRect = containerRef.current!.getBoundingClientRect();
+                  setTooltip({
+                    x: rect.left - containerRect.left + rect.width / 2,
+                    y: rect.top - containerRect.top - 8,
+                    label: bar.label,
+                    count: bar.count,
+                  });
+                }}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <div className="flex-1" />
+                <div
+                  className="w-full rounded-t-md transition-all duration-500"
+                  style={{
+                    height: barH,
+                    background: isCurrent
+                      ? "linear-gradient(180deg,#a855f7 0%,#7c3aed 100%)"
+                      : "linear-gradient(180deg,#c084fc 0%,#833AFD 100%)",
+                    opacity: isCurrent ? 1 : 0.55 + 0.04 * (i % 10),
+                    boxShadow: isCurrent ? "0 0 14px rgba(168,85,247,0.55)" : undefined,
+                  }}
+                />
+                <span
+                  className={`text-[9px] sm:text-[10px] mt-1.5 font-medium truncate w-full text-center ${
+                    isCurrent ? "text-purple-300" : "text-white/40"
+                  }`}
+                >
+                  {bar.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* tooltip */}
+        {tooltip && (
+          <div
+            className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full"
+            style={{ left: tooltip.x, top: tooltip.y }}
+          >
+            <div className="bg-[#1a1a2e] border border-purple-500/40 rounded-lg px-3 py-1.5 text-xs text-white shadow-xl whitespace-nowrap">
+              <span className="text-white/60">{tooltip.label}: </span>
+              <span className="font-bold text-purple-300">{tooltip.count}</span>
+              <span className="text-white/50 ml-1">user{tooltip.count !== 1 ? "s" : ""}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// â”€â”€â”€ chart range config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+
+function MiniBarChart({ bars, range }: { bars: { count: number; day?: string; date?: string }[]; range?: "Weekly" | "Monthly" }) {
+  const displayBars = range === "Monthly" ? bars.slice(-30) : bars.slice(-7);
+  const maxVal = Math.max(...displayBars.map((b) => b.count), 1);
+  const H = 48;
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string; count: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isEmpty = displayBars.length === 0;
+  if (isEmpty) return <div className="h-12 ml-auto w-24 flex items-end justify-center"><span className="text-white/20 text-xs">no data</span></div>;
+  return (
+    <div ref={containerRef} className="relative flex items-end gap-[2px] h-12 ml-auto">
+      {displayBars.map((bar, i) => {
+        const barH = Math.max((bar.count / maxVal) * H, 6);
+        const isLast = i === displayBars.length - 1;
+        const label = bar.day && bar.date ? `${bar.day} ${bar.date}` : bar.date ?? `Day ${i + 1}`;
+        return (
+          <div
+            key={i}
+            className="relative rounded-t-sm transition-all duration-500 cursor-pointer"
+            style={{
+              height: barH,
+              width: range === "Monthly" ? 4 : 10,
+              background: isLast
+                ? "linear-gradient(180deg,#a855f7 0%,#7c3aed 100%)"
+                : "linear-gradient(180deg,#c084fc 0%,#833AFD 100%)",
+              opacity: isLast ? 1 : 0.35 + 0.022 * i,
+            }}
+            onMouseEnter={(e) => {
+              if (!containerRef.current) return;
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const cRect = containerRef.current.getBoundingClientRect();
+              setTooltip({ x: rect.left - cRect.left + rect.width / 2, y: rect.top - cRect.top - 6, label, count: bar.count });
+            }}
+            onMouseLeave={() => setTooltip(null)}
+          />
+        );
+      })}
+      {tooltip && (
+        <div
+          className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-full"
+          style={{ left: tooltip.x, top: tooltip.y }}
+        >
+          <div className="bg-[#1a1a2e] border border-purple-500/40 rounded-lg px-2.5 py-1 text-[10px] text-white shadow-xl whitespace-nowrap">
+            <span className="text-white/60">{tooltip.label}: </span>
+            <span className="font-bold text-purple-300">{tooltip.count}</span>
+            <span className="text-white/50 ml-0.5">user{tooltip.count !== 1 ? "s" : ""}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+const CHART_RANGES = [
+  { value: "1d" as const, label: "1D" },
+  { value: "7d" as const, label: "14D" },
+  { value: "30d" as const, label: "30D" },
+];
 
 const GRAPH_RANGES = [
   { value: "24h", label: "Last 24 Hours" },
   { value: "7d", label: "Last 7 Days" },
   { value: "30d", label: "Last 30 Days" },
-  { value: "6m", label: "Last 6 Months" },
-  { value: "all", label: "All Time" },
 ];
+
+// â”€â”€â”€ page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function Analytics() {
   const [graphRange, setGraphRange] = useState("24h");
-  const [graphData, setGraphData] = useState<{ x: string; y: number }[]>([]);
+  const [chartScale, setChartScale] = useState<"1d" | "7d" | "30d">("7d");
+
   const [totalUsers, setTotalUsers] = useState(0);
   const [newUsers, setNewUsers] = useState(0);
   const [activeUsersRange, setActiveUsersRange] = useState("Weekly");
   const [activeUsers, setActiveUsers] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
-  const [usersJoined, setUsersJoined] = useState(501);
-  const [tasksCompleted, setTasksCompleted] = useState(500);
-  const graphDataWithZero = [{ x: graphData[0]?.x || "", y: 0 }, ...graphData];
 
+  const [usersJoined, setUsersJoined] = useState(0);
+  const [tasksCompleted, setTasksCompleted] = useState(0);
+  const [totalQuests, setTotalQuests] = useState(0);
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
+  const [totalTrustDistributed, setTotalTrustDistributed] = useState(0);
+  const [totalOnchainInteractions, setTotalOnchainInteractions] = useState(0);
+  const [totalOnchainClaims, setTotalOnchainClaims] = useState(0);
+
+  const [realUsers, setRealUsers] = useState({
+    "24h": 0, "7d": 0, "30d": 0,
+    weekly: 0, monthly: 0,
+    prev24h: 0, prev7d: 0, prev30d: 0,
+    prevWeekly: 0, prevMonthly: 0,
+    totalYesterday: 0,
+  });
+
+  const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
+  const [usersByDay, setUsersByDay] = useState<{ day: string; date: string; count: number }[]>([]);
+  const [usersByHour, setUsersByHour] = useState<{ hour: number; label: string; count: number }[]>([]);
+  const [tomorrowName, setTomorrowName] = useState("");
 
   useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 640);
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-useEffect(() => {
-  const { data, totalUsers, newUsers, activeUsers } = calculateTotals(graphRange);
-  setGraphData(data);
-  setTotalUsers(totalUsers);
-  setNewUsers(newUsers);
-}, [graphRange]);
+  useEffect(() => {
+    type AnalyticsResponse = {
+      analytics: {
+        totalOnchainInteractions: number;
+        totalOnchainClaims: number;
+        totalCampaigns: number;
+        user: {
+          totalUsers: number;
+          activeUsersWeekly: number;
+          activeUsersMonthly: number;
+          users24h: number;
+          users7d: number;
+          users30d: number;
+          prevUsers24h: number;
+          prevUsers7d: number;
+          prevUsers30d: number;
+          prevActiveWeekly: number;
+          prevActiveMonthly: number;
+          totalUsersYesterday: number;
+        };
+        totalReferrals: number;
+        totalQuests: number;
+        totalQuestsCompleted: number;
+        totalCampaignsCompleted: number;
+        joinRatio: number;
+        totalTrustDistributed: number;
+        usersByDay: { day: string; date: string; count: number }[];
+        usersByHour: { hour: number; label: string; count: number }[];
+        tomorrowName: string;
+      };
+    };
 
-  const MOCK_GRAPH_DATA = {
-  "24h": [
-    { x: "00:00", y: 4 },
-    { x: "02:00", y: 6 },
-    { x: "04:00", y: 3 },
-    { x: "06:00", y: 5 },
-    { x: "08:00", y: 12 },
-    { x: "10:00", y: 18 },
-    { x: "12:00", y: 15 },
-    { x: "14:00", y: 9 },
-    { x: "16:00", y: 11 },
-    { x: "18:00", y: 14 },
-    { x: "20:00", y: 10 },
-    { x: "22:00", y: 8 },
-  ],
-  "7d": [
-    { x: "Mon", y: 45 },
-    { x: "Tue", y: 52 },
-    { x: "Wed", y: 48 },
-    { x: "Thu", y: 61 },
-    { x: "Fri", y: 57 },
-    { x: "Sat", y: 72 },
-    { x: "Sun", y: 64 },
-  ],
-  "30d": [
-    { x: "Week 1", y: 310 },
-    { x: "Week 2", y: 355 },
-    { x: "Week 3", y: 330 },
-    { x: "Week 4", y: 390 },
-  ],
-  "6m": [
-    { x: "Month 1", y: 1200 },
-    { x: "Month 2", y: 1450 },
-    { x: "Month 3", y: 1680 },
-    { x: "Month 4", y: 1900 },
-    { x: "Month 5", y: 2150 },
-    { x: "Month 6", y: 2400 },
-  ],
-  "all": [
-    { x: "2021", y: 3200 },
-    { x: "2022", y: 5100 },
-    { x: "2023", y: 7800 },
-    { x: "2024", y: 11200 },
-    { x: "2025", y: 15400 },
-  ],
-};
+    apiRequest<AnalyticsResponse>({ method: "GET", endpoint: "/api/get-analytics" })
+      .then((res) => {
+        const a = res?.analytics;
+        if (!a) return;
+        setTotalUsers(a.user.totalUsers);
+        setRealUsers({
+          "24h": a.user.users24h,
+          "7d": a.user.users7d,
+          "30d": a.user.users30d,
+          weekly: a.user.activeUsersWeekly,
+          monthly: a.user.activeUsersMonthly,
+          prev24h: a.user.prevUsers24h ?? 0,
+          prev7d: a.user.prevUsers7d ?? 0,
+          prev30d: a.user.prevUsers30d ?? 0,
+          prevWeekly: a.user.prevActiveWeekly ?? 0,
+          prevMonthly: a.user.prevActiveMonthly ?? 0,
+          totalYesterday: a.user.totalUsersYesterday ?? 0,
+        });
+        setUsersJoined(a.totalCampaignsCompleted);
+        setTasksCompleted(a.totalQuestsCompleted);
+        setTotalQuests(a.totalQuests);
+        setTotalCampaigns(a.totalCampaigns);
+        setTotalTrustDistributed(a.totalTrustDistributed);
+        setTotalOnchainInteractions(a.totalOnchainInteractions);
+        setTotalOnchainClaims(a.totalOnchainClaims);
+        setUsersByDay(a.usersByDay ?? []);
+        setUsersByHour(a.usersByHour ?? []);
+        setTomorrowName(a.tomorrowName ?? "");
+        setNewUsers(a.user.users24h);
+        setActiveUsers(a.user.activeUsersWeekly);
+        setAnalyticsLoaded(true);
+      })
+      .catch(() => {/* keep defaults */});
+  }, []);
 
-const calculateTotals = (range: string) => {
-  const data = MOCK_GRAPH_DATA[range] || [];
-  const totalUsers = Object.values(MOCK_GRAPH_DATA).flat().reduce((acc, d) => acc + d.y, 0);
-  const newUsers = data.at(-1)?.y || 0;
-  const activeUsers = Math.floor(totalUsers * 0.5); // mock active users
-  return { data, totalUsers, newUsers, activeUsers };
-};
+  useEffect(() => {
+    if (!analyticsLoaded) return;
+    const map: Record<string, number> = { "24h": realUsers["24h"], "7d": realUsers["7d"], "30d": realUsers["30d"] };
+    setNewUsers(map[graphRange] ?? 0);
+  }, [graphRange, analyticsLoaded, realUsers]);
 
-const ACTIVE_USERS_MAP: Record<string, string> = {
-  Weekly: "7d",
-  Monthly: "30d",
-};
+  useEffect(() => {
+    if (!analyticsLoaded) return;
+    setActiveUsers(activeUsersRange === "Weekly" ? realUsers.weekly : realUsers.monthly);
+  }, [activeUsersRange, analyticsLoaded, realUsers]);
 
-useEffect(() => {
-  const rangeKey = ACTIVE_USERS_MAP[activeUsersRange] || "7d";
-  const data = MOCK_GRAPH_DATA[rangeKey] || [];
-  setActiveUsers(data.at(-1)?.y || 0);
-}, [activeUsersRange]);
+  // â”€â”€ derived % changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const totalUsersPct = pctChange(totalUsers, realUsers.totalYesterday);
 
+  const newUsersPctMap: Record<string, number | null> = {
+    "24h": pctChange(realUsers["24h"], realUsers.prev24h),
+    "7d":  pctChange(realUsers["7d"],  realUsers.prev7d),
+    "30d": pctChange(realUsers["30d"], realUsers.prev30d),
+  };
 
+  const activeUsersPct = activeUsersRange === "Weekly"
+    ? pctChange(realUsers.weekly, realUsers.prevWeekly)
+    : pctChange(realUsers.monthly, realUsers.prevMonthly);
+
+  // â”€â”€ chart data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const now = new Date();
+  const currentHour = now.getUTCHours();
+  const todayDayOfWeek = now.getUTCDay();
+
+  const chartBars: BarData[] = (() => {
+    if (chartScale === "1d") {
+      // 12 bars â€” every 2 hours. Show 00:00â†’22:00 labels (12 pairs)
+      const pairs = Array.from({ length: 12 }, (_, i) => {
+        const h = i * 2;
+        const count =
+          (usersByHour[h]?.count ?? 0) + (usersByHour[h + 1]?.count ?? 0);
+        const label = `${String(h).padStart(2, "0")}h`;
+        return { label, count };
+      });
+      return pairs;
+    }
+    if (chartScale === "7d") {
+      // 14 bars â€” last 14 days (two weeks, showing day abbreviation + date)
+      return usersByDay.slice(-14).map((d) => ({
+        label: `${d.day} ${d.date}`,
+        count: d.count,
+      }));
+    }
+    // 30d â€” all 30 bars
+    return usersByDay.map((d) => ({ label: d.date, count: d.count }));
+  })();
+
+  const currentBarIndex = (() => {
+    if (chartScale === "1d") return Math.floor(currentHour / 2);
+    if (chartScale === "7d") return chartBars.length - 1 - (13 - Math.min(13, chartBars.length - 1));
+    return chartBars.length - 1; // today is always the last bar
+  })();
+
+  const chartSubtitle = {
+    "1d": "Daily Trajectory \u2014 today (UTC)",
+    "7d": "Daily Trajectory \u2014 last 14 days",
+    "30d": "Daily Trajectory \u2014 last 30 days",
+  }[chartScale];
+
+  const chartTotal = {
+    "1d": realUsers["24h"],
+    "7d": realUsers["7d"],
+    "30d": realUsers["30d"],
+  }[chartScale];
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-auto p-4 sm:p-6 relative">
+    <div className="min-h-screen bg-black text-white overflow-x-hidden overflow-y-auto p-3 sm:p-6 relative pb-28 sm:pb-6">
       <AnimatedBackground />
       <div className="max-w-6xl mx-auto relative z-10 space-y-2">
-        <div className="py-4 sm:py-12 px-2 sm:px-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2 sm:mb-4 animate-slide-up">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+            <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">Analytics</span>
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent mb-1 sm:mb-4 animate-slide-up delay-100">
             Platform Performance Metrics
           </h1>
+          <p className="text-sm text-white/50 animate-slide-up delay-200">Live overview of your ecosystem activity</p>
         </div>
 
-        {/* Cards */}
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pb-12">
+        {/* â”€â”€ Stat Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pb-6 sm:pb-12">
 
           {/* Total Users */}
-            <Card className="glass glass-hover rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex-1 animate-slide-up delay-200 flex flex-col">
+          <Card className="glass glass-hover rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex-1 animate-slide-up delay-300 flex flex-col group cursor-default">
             <CardHeader className="p-0">
-              <CardTitle className="text-lg sm:text-xl font-bold text-white mb-2">
+              <CardTitle className="text-sm font-medium text-white/60 mb-1 uppercase tracking-widest">
                 Total Users
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 mt-auto">
-              <div className="flex items-center w-full">
-              <p className="text-4xl sm:text-5xl font-semibold text-white">{totalUsers}
-              </p>
-              <img src="/ref-icon.png" alt="Ref Icon" className="w-10 h-10 ml-auto" />
+            <CardContent className="p-0 mt-auto pt-4">
+                <div className="flex items-end w-full gap-2">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <p className="text-3xl sm:text-5xl font-semibold text-white group-hover:text-purple-300 transition-colors duration-300">{totalUsers}</p>
+                    <PctBadge value={totalUsersPct} />
+                  </div>
+                  <p className="mt-1 text-xs text-white/50">vs yesterday</p>
+                </div>
+                <img src="/ref-icon.png" alt="Ref Icon" className="w-7 h-7 sm:w-10 sm:h-10 ml-auto shrink-0 opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
               </div>
+              <div className="mt-3 h-0.5 w-full bg-gradient-to-r from-purple-500/60 via-indigo-400/40 to-transparent rounded-full" />
             </CardContent>
           </Card>
 
-
           {/* New Users */}
-            <Card className="
-  glass glass-hover
-  rounded-2xl sm:rounded-3xl
-  p-4 sm:p-6
-  flex flex-col
-  min-h-[160px] sm:min-h-[200px]
-  animate-slide-up delay-300
-">
-            <CardHeader className="grid grid-cols-2 items-center mb-2 p-0 w-full">
-              <CardTitle className="text-lg sm:text-xl font-bold text-white">New Users</CardTitle>
-              <div className="flex gap-2 justify-end items-center bg-white/10 rounded-lg p-1">
-                {GRAPH_RANGES.slice(0, 3).map((r) => (
-                  <button
-                    key={r.value}
-                    className={`px-2 py-1 rounded-lg text-sm font-medium ${
-                      graphRange === r.value ? "bg-primary text-black" : "text-white"
-                    }`}
-                    onClick={() => setGraphRange(r.value)}
-                  >
-                    {r.value}
-                  </button>
-                ))}
+          <Card className="glass glass-hover rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col flex-1 animate-slide-up delay-400 group cursor-default">
+            <CardHeader className="p-0 mb-2 w-full">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <CardTitle className="text-sm font-medium text-white/60 uppercase tracking-widest">New Users</CardTitle>
+                <div className="flex gap-1 items-center bg-white/5 border border-white/10 rounded-lg p-1">
+                  {GRAPH_RANGES.map((r) => (
+                    <button
+                      key={r.value}
+                      className={`px-2 py-1 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 ${
+                        graphRange === r.value
+                          ? "bg-purple-600 text-white shadow-[0_0_8px_rgba(138,63,252,0.6)]"
+                          : "text-white/60 hover:text-white hover:bg-white/10"
+                      }`}
+                      onClick={() => setGraphRange(r.value)}
+                    >
+                      {r.value}
+                    </button>
+                  ))}
+                </div>
               </div>
             </CardHeader>
-            <CardContent className="p-0 flex-1 flex items-end">
-              <div className="flex items-center gap-2 w-full">
-              <p className="text-4xl sm:text-5xl font-semibold">{newUsers}</p>
-              <img src="/ref-icon.png" alt="Ref Icon" className="w-10 h-10 ml-auto" />
+            <CardContent className="p-0 flex-1 flex flex-col justify-end pt-2">
+              <div className="flex items-end gap-2 w-full">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <p className="text-3xl sm:text-5xl font-semibold group-hover:text-purple-300 transition-colors duration-300">{newUsers}</p>
+                    <PctBadge value={newUsersPctMap[graphRange] ?? null} />
+                  </div>
+                  <p className="mt-1 text-xs text-white/50"> </p>
+                </div>
+                <img src="/ref-icon.png" alt="Ref Icon" className="w-7 h-7 sm:w-10 sm:h-10 ml-auto shrink-0 opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
               </div>
+              <div className="mt-3 h-0.5 w-full bg-gradient-to-r from-indigo-500/60 via-purple-400/40 to-transparent rounded-full" />
             </CardContent>
           </Card>
 
           {/* Active Users */}
-          <Card className="glass glass-hover rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex-1 animate-slide-up delay-400">
-            <CardHeader className="grid grid-cols-2 items-center mb-2 p-0 w-full">
-              <CardTitle className="text-lg sm:text-xl font-bold text-white">Active Users</CardTitle>
-              <div className="flex gap-2 justify-end items-center bg-white/10 rounded-lg p-1 -ml-3">
-    {["Weekly", "Monthly"].map((range) => (
-      <button
-        key={range}
-        className={`px-3 py-1 rounded-lg text-sm font-medium ${
-          activeUsersRange === range ? "bg-primary text-black" : "text-white"
-        }`}
-        onClick={() => setActiveUsersRange(range)}
-      >
-        {range}
-      </button>
-    ))}
-    </div>
-            </CardHeader>
-            <CardContent className="p-0 mt-10">
-              <div className="flex items-center w-full">
-              <p className="text-4xl sm:text-5xl font-semibold text-white mt-8">{activeUsers}
-              </p>
-              <img src="/graph-icon-1.png" alt="Graph Icon" className="w-48 h-24 ml-auto" />
+          <Card className="glass glass-hover rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex-1 animate-slide-up delay-500 group cursor-default">
+            <CardHeader className="p-0 mb-2 w-full">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <CardTitle className="text-sm font-medium text-white/60 uppercase tracking-widest">Active Users</CardTitle>
+                <div className="flex gap-1 items-center bg-white/5 border border-white/10 rounded-lg p-1">
+                  {["Weekly", "Monthly"].map((range) => (
+                    <button
+                      key={range}
+                      className={`px-2 py-1 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 ${
+                        activeUsersRange === range
+                          ? "bg-purple-600 text-white shadow-[0_0_8px_rgba(138,63,252,0.6)]"
+                          : "text-white/60 hover:text-white hover:bg-white/10"
+                      }`}
+                      onClick={() => setActiveUsersRange(range)}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
               </div>
+            </CardHeader>
+            <CardContent className="p-0 mt-2">
+              <div className="flex items-end w-full gap-2">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <p className="text-3xl sm:text-5xl font-semibold text-white group-hover:text-purple-300 transition-colors duration-300">{activeUsers}</p>
+                    <PctBadge value={activeUsersPct} />
+                  </div>
+                  <p className="mt-1 text-xs text-white/50"> </p>
+                </div>
+                <div className="ml-auto shrink-0">
+                  <MiniBarChart bars={usersByDay} range={activeUsersRange as "Weekly" | "Monthly"} />
+                </div>
+              </div>
+              <div className="mt-3 h-0.5 w-full bg-gradient-to-r from-pink-500/60 via-purple-400/40 to-transparent rounded-full" />
             </CardContent>
           </Card>
         </div>
 
-        <Card className="
-  relative
-  glass
-  glass-hover
-  rounded-3xl
-  p-6 sm:p-8
-  animate-slide-up
-  mt-8 mb-12
-  border
-  border-white/20
-  shadow-[0_10px_30px_rgba(212,11,239,0.3)]
-  hover:shadow-[0_15px_40px_rgba(212,11,239,0.5)]
-  backdrop-blur-md
-">
-  <CardHeader className="relative w-full mb-6 p-0">
-    {/* Title + Subtitle */}
-    <div className="flex flex-col items-start gap-1">
-      <CardTitle className="text-xl sm:text-2xl font-bold text-white tracking-wide">
-        New User Growth Trend
-      </CardTitle>
-      <p className="text-sm sm:text-base text-white/80">
-        {graphRange === "24h"
-          ? "Daily Trajectory over last 24 hours"
-          : graphRange === "7d"
-          ? "Daily Trajectory over last 7 days"
-          : graphRange === "30d"
-          ? "Daily Trajectory over last 30 days"
-          : graphRange === "6m"
-          ? "Daily Trajectory over last 6 months"
-          : "Daily Trajectory for all time"
-        }
-      </p>
-    </div>
+        {/* â”€â”€ Bar Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <Card className="relative glass rounded-2xl sm:rounded-3xl p-3 sm:p-8 animate-slide-up delay-600 mt-4 sm:mt-8 mb-8 sm:mb-12 overflow-hidden">
+          <CardHeader className="relative w-full mb-4 sm:mb-8 p-0">
+            <div className="grid grid-cols-3 items-center gap-2">
+              {/* Left: title + subtitle */}
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <CardTitle className="text-base sm:text-2xl font-bold text-white tracking-wide">
+                  New User Growth Trend
+                </CardTitle>
+                <p className="text-[10px] sm:text-sm text-white/50 truncate">{chartSubtitle}</p>
+              </div>
 
-    {/* Trend Icon */}
-    <div className="absolute top-0 right-0 w-14 h-14 sm:w-16 sm:h-16">
-      <div className="relative w-full h-full">
-        <img
-          src="/trend-icon.png"
-          alt="Trend Icon"
-          className="w-full h-full opacity-80"
-        />
-        <span className="
-          absolute inset-0
-          flex items-center justify-center
-          text-sm sm:text-base
-          font-bold text-white
-        ">
-          {newUsers}
-        </span>
-      </div>
-    </div>
+              {/* Center: scale dropdown */}
+              <div className="flex justify-center">
+                <select
+                  value={chartScale}
+                  onChange={(e) => setChartScale(e.target.value as "1d" | "7d" | "30d")}
+                  className="bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-xs sm:text-sm text-white/80 focus:outline-none focus:border-purple-500/60 cursor-pointer appearance-none"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                >
+                  {CHART_RANGES.map((r) => (
+                    <option key={r.value} value={r.value} style={{ background: '#1a1a2e', color: '#fff' }}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-    {/* Dropdown Centered */}
-    <div className="absolute left-1/2 top-0 -translate-x-1/2 hidden sm:block">
-      <div className="relative">
-        <select
-          value={graphRange}
-          onChange={(e) => setGraphRange(e.target.value)}
-          className="
-            w-52 sm:w-60
-            bg-white/10 backdrop-blur-md
-            text-white font-medium
-            rounded-lg p-2 pr-10
-            text-sm sm:text-base
-            appearance-none focus:outline-none
-            text-center
-          "
-        >
-          {[
-            { value: "24h", label: "Last 24 Hours" },
-            { value: "7d", label: "Last 7 Days" },
-            { value: "30d", label: "Last 30 Days" },
-            { value: "6m", label: "Last 6 Months" },
-            { value: "all", label: "All Time" },
-          ].map((option) => (
-            <option key={option.value} value={option.value} className="bg-gray-800 text-white">
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/70">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </span>
-      </div>
-    </div>
-  </CardHeader>
+              {/* Right: total badge */}
+              <div className="flex justify-end">
+                <div className="relative w-9 h-9 sm:w-14 sm:h-14 shrink-0">
+                  <img src="/trend-icon.png" alt="Trend" className="w-full h-full opacity-80" />
+                  <span className="absolute inset-0 flex items-center justify-center text-[10px] sm:text-sm font-bold text-white">
+                    {chartTotal}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
 
-  <CardContent className="p-0">
-    <div className="w-full h-64 sm:h-96 relative">
-      <ResponsiveLine
-        data={[{ id: "Users", data: graphDataWithZero }]}
-        margin={isDesktop ? { top: 20, right: 40, bottom: 50, left: 60 } : { top: 20, right: 20, bottom: 50, left: 50 }}
-        xScale={{ type: "point" }}
-        yScale={{ type: "linear", min: 0, max: "auto" }}
-        curve={graphRange === "24h" ? "linear" : "monotoneX"}
-        axisTop={null}
-        axisRight={null}
-        axisBottom={{
-          tickSize: 5,
-          tickPadding: 5,
-          tickRotation: graphRange === "24h" ? -45 : 0,
-          legend: "Time",
-          legendOffset: 36,
-          legendPosition: "middle",
-          tickColor: "#FFFFFF",
-          legendTextColor: "#FFFFFF"
-        }}
-        axisLeft={{
-          tickSize: 5,
-          tickPadding: 5,
-          tickRotation: 0,
-          legend: "Users",
-          legendOffset: -50,
-          legendPosition: "middle",
-          tickColor: "#FFFFFF",
-          legendTextColor: "#FFFFFF"
-        }}
-        enableGridX={false}
-        enableGridY={true}
-        enablePoints={true}
-        pointSize={8}
-        pointColor="#FFFFFF"
-        pointBorderWidth={2}
-        pointBorderColor="#1f1f1f"
-        enableArea={true}
-        areaOpacity={0.3}
-        colors={["rgba(212, 11, 239, 0.97)"]}
-        lineWidth={3}
-        useMesh={true}
-        animate={true}
-        motionConfig="gentle"
-        tooltip={({ point }) => (
-          <div className="bg-white text-black px-2 py-1 rounded shadow">
-            {point.data.x}: {point.data.y} users
-          </div>
-        )}
-        colors={['#FFFFFF']}     // line is white
-  lineWidth={2}            // optional, thicker line
-  useMesh={true}
+          <CardContent className="p-0">
+            <BarChart bars={chartBars} scale={chartScale} currentBucket={currentBarIndex} />
 
-  tooltip={({ point }) => (
-    <div className="bg-black/90 text-white px-2 py-1 rounded-md text-xs">
-      {point.data.x}: {point.data.y}
-    </div>
-  )}
-
-  animate={true}
-  motionConfig="gentle"
-
-  theme={{
-    axis: {
-      ticks: { text: { fill: '#FFFFFF' } },
-      legend: { text: { fill: '#FFFFFF' } },
-    },
-    tooltip: {
-      container: {
-        background: '#000000',
-        color: '#FFFFFF',
-        fontSize: '12px',
-      },
-    },
-  }}
-      />
-    </div>
-  </CardContent>
-</Card>
-
+            {/* legend */}
+            <div className="mt-4 flex items-center gap-2 text-white/30 text-xs">
+              <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "linear-gradient(180deg,#c084fc,#833AFD)" }} />
+              <span>New signups</span>
+              <span className="ml-2 inline-block w-3 h-3 rounded-sm" style={{ background: "linear-gradient(180deg,#a855f7,#7c3aed)" }} />
+              <span>Current period</span>
+            </div>
+          </CardContent>
+        </Card>
 
         {isDesktop ? (
-  <DesktopCards usersJoined={usersJoined} tasksCompleted={tasksCompleted} />
-) : (
-  <MobileCards usersJoined={usersJoined} tasksCompleted={tasksCompleted} />
-)}
+          <DesktopCards
+            usersJoined={usersJoined}
+            tasksCompleted={tasksCompleted}
+            totalQuests={totalQuests}
+            totalCampaigns={totalCampaigns}
+            totalTrustDistributed={totalTrustDistributed}
+            totalOnchainInteractions={totalOnchainInteractions}
+            totalOnchainClaims={totalOnchainClaims}
+          />
+        ) : (
+          <MobileCards
+            usersJoined={usersJoined}
+            tasksCompleted={tasksCompleted}
+            totalQuests={totalQuests}
+            totalCampaigns={totalCampaigns}
+            totalTrustDistributed={totalTrustDistributed}
+            totalOnchainInteractions={totalOnchainInteractions}
+            totalOnchainClaims={totalOnchainClaims}
+          />
+        )}
       </div>
     </div>
   );

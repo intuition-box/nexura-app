@@ -1,4 +1,3 @@
-import bcrypt from "bcrypt";
 import cryptoRandomString from "crypto-random-string";
 import logger from "@/config/logger";
 import {
@@ -7,26 +6,21 @@ import {
 	INTERNAL_SERVER_ERROR,
 	NOT_FOUND,
 	OK,
-	UNAUTHORIZED,
 } from "@/utils/status.utils";
 import {
 	DISCORD_CLIENT_ID,
 	DISCORD_REDIRECT_URI,
 	DISCORD_CLIENT_SECRET, 
-	X_API_BEARER_TOKEN,
 	X_CLIENT_REDIRECT_URI,
 	DISCORD_CLIENT_REDIRECT_URI,
 	X_REDIRECT_URI, 
 	X_API_CLIENT_ID,
-	X_API_CLIENT_SECRET,
 	X_API_KEY,
 	X_API_KEY_SECRET
 } from "@/utils/env.utils";
 import { formatDate } from "date-fns";
 import { user } from "@/models/user.model";
-import { getRefreshToken, JWT, validateProjectData } from "@/utils/utils";
-import { project } from "@/models/project.model";
-import { uploadImg } from "@/utils/img.utils";
+import { getRefreshToken, JWT } from "@/utils/utils";
 import { referredUsers } from "@/models/referrer.model";
 import axios from "axios";
 import { cvModel } from "@/models/cv.models";
@@ -292,8 +286,25 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 		});
 
 		res.status(200).json({ message: "signed in", accessToken, user: userExists });
+	} catch (error: any) {
+		logger.error(error);
+		const isDuplicate = error?.code === 11000;
+		res.status(isDuplicate ? BAD_REQUEST : INTERNAL_SERVER_ERROR).json({ error: isDuplicate ? "Account already exists for this wallet" : (error?.message || "Error signing user in") });
+	}
+};
+
+export const logout = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const { id, token } = req;
+
+    res.clearCookie("refreshToken");
+
+    // await REDIS.del(`user:${id}`);
+    await REDIS.set({ key: `access-token:${token}`, data: { token }, ttl: 7 * 24 * 60 * 60});
+
+		res.status(200).json({ message: "logged out" });
 	} catch (error) {
 		logger.error(error);
-		res.status(INTERNAL_SERVER_ERROR).json({ error: "Error signing user in" });
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "Error logging out" });
 	}
 };

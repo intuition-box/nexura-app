@@ -10,14 +10,19 @@ interface Campaign {
   project_name: string;
   projectLogo: string;
   participants: number;
+  maxParticipants?: number;
   starts_at: string;
-  ends_at: string;
+  ends_at?: string;
   status: string;
   reward?: {
-    xp: string;
-    trustTokens: string;
+    xp: string | number;
+    trustTokens?: string | number;
+    trust?: string | number;
+    pool?: string | number;
   };
-  heroImage: string;
+  totalTrustAvailable?: number;
+  heroImage?: string;
+  projectCoverImage?: string;
 }
 
 interface HeroCampaignProps {
@@ -44,8 +49,14 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
     return count.toString();
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) {
+      return { month: "TBA", day: "—", time: "TBA" };
+    }
     const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) {
+      return { month: "TBA", day: "—", time: "TBA" };
+    }
     const month = date.toLocaleDateString('en-US', { month: 'short' });
     const day = date.getDate();
     const time = date.toLocaleDateString('en-US', {
@@ -67,6 +78,20 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
 
   const starts_at = formatDate(currentCampaign.starts_at);
   const ends_at = formatDate(currentCampaign.ends_at);
+  const allowedParticipants = currentCampaign.maxParticipants && currentCampaign.maxParticipants > 0
+    ? currentCampaign.maxParticipants
+    : currentCampaign.participants;
+  const trustReward = currentCampaign.reward
+    ? ((Number(currentCampaign.reward.trustTokens) > 0)
+      ? Number(currentCampaign.reward.trustTokens)
+      : (Number(currentCampaign.reward.trust) > 0)
+      ? Number(currentCampaign.reward.trust)
+      : (Number(currentCampaign.reward.pool) > 0 && allowedParticipants > 0)
+      ? Number((Number(currentCampaign.reward.pool) / allowedParticipants).toFixed(2))
+      : (currentCampaign.totalTrustAvailable && currentCampaign.totalTrustAvailable > 0 && allowedParticipants > 0)
+      ? Number((currentCampaign.totalTrustAvailable / allowedParticipants).toFixed(2))
+      : 0)
+    : 0;
 
   return (
     <div
@@ -77,7 +102,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-        style={{ backgroundImage: `url(${currentCampaign.heroImage})` }}
+        style={{ backgroundImage: `url(${currentCampaign.heroImage || currentCampaign.projectCoverImage || "/campaign.png"})` }}
       />
 
       {/* Gradient Overlay */}
@@ -154,7 +179,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
                   <span className="text-white text-xs font-bold">T</span>
                 </div> */}
                 <span className="text-white font-bold text-lg">
-                  {currentCampaign.reward.xp} XP + {currentCampaign.reward.trustTokens} TRUST
+                  {currentCampaign.reward.xp} XP + {trustReward} TRUST
                 </span>
               </div>
             </div>

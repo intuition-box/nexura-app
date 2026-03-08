@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import fs from "fs";
+import os from "os";
 
 export default defineConfig({
   plugins: [react()],
@@ -30,6 +32,7 @@ export default defineConfig({
   },
   appType: "spa",
   server: {
+    port: 5173,
     fs: {
       strict: true,
       deny: ["**/.*"],
@@ -38,6 +41,13 @@ export default defineConfig({
     // instead of as a blocking overlay. This helps capture the full stack trace.
     hmr: {
       overlay: false,
+    },
+    proxy: {
+      "/api": {
+        target: "http://localhost:5600",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

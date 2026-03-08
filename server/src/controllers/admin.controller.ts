@@ -9,6 +9,7 @@ import { campaignQuestCompleted, miniQuestCompleted } from "@/models/questsCompl
 import { submission } from "@/models/submission.model";
 import { user } from "@/models/user.model";
 import { bannedUser } from "@/models/bannedUser.model";
+import { REDIS } from "@/utils/redis.utils";
 
 export const createQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
@@ -56,15 +57,30 @@ export const banUser = async (req: GlobalRequest, res: GlobalResponse) => {
 }
 
 export const getAdmins = async (req: GlobalRequest, res: GlobalResponse) => {
-	try {
-		const admins = await admin.find().lean();
+  try {
+    const admins = await admin.find().lean();
 
-		res.status(OK).json({ message: "admins fetched", admins });
-	} catch (error) {
-		logger.error(error);
-		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching admins" });
-	}
-}
+    res.status(OK).json({ message: "admins fetched", admins });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching admins" });
+  }
+};
+
+export const adminLogout = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { token } = req;
+
+    await REDIS.set({ key: `logout:${token}`, data: { token }, ttl: 7 * 24 * 60 * 60 });
+
+    res.clearCookie("refreshToken");
+
+    res.status(OK).json({ message: "admin logged out" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error logging out admin" });
+  }
+};
 
 export const removeAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
@@ -80,9 +96,14 @@ export const removeAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
     }
 
-		const adminExists = await admin.findOne({ email });
+		const adminExists = await admin.exists({ email });
 		if (!adminExists) {
 			res.status(NOT_FOUND).json({ error: "admin does not exist" });
+			return;
+		}
+
+		if (adminExists._id.toString() === req.id) {
+			res.status(BAD_REQUEST).json({ error: "you cannot remove your own account" });
 			return;
 		}
 
@@ -197,7 +218,7 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 		semiAdmin.code = "";
 
     await semiAdmin.save();
-		
+
     const id = semiAdmin._id.toString();
 
 		const accessToken = JWT.sign(id);
@@ -259,6 +280,79 @@ export const unBanUser = async (req: GlobalRequest, res: GlobalResponse) => {
 		logger.error(error);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
 	}
+};
+
+export const manageAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    if (req.role !== "superadmin") {
+      res.status(UNAUTHORIZED).json({ error: "only superadmin can manage other admins" });
+      return;
+    }
+
+    const { action, adminId, adminName, newRole }: {
+      action: "update_role" | "demote" | "revoke";
+      adminId?: string;
+      adminName?: string;
+      newRole?: string;
+    } = req.body;
+
+    if (!action) {
+      res.status(BAD_REQUEST).json({ error: "action is required" });
+      return;
+    }
+
+    // Find target admin by ID or username
+    const targetAdmin = adminId
+      ? await admin.findById(adminId)
+      : adminName
+      ? await admin.findOne({ username: adminName })
+      : null;
+
+    if (!targetAdmin) {
+      res.status(NOT_FOUND).json({ error: "admin not found" });
+      return;
+    }
+
+    // Prevent acting on yourself regardless of how the target was identified
+    if (targetAdmin._id.toString() === req.id) {
+      res.status(BAD_REQUEST).json({ error: "you cannot manage your own account" });
+      return;
+    }
+
+    if (action === "update_role") {
+      const allowed = ["superadmin", "admin"];
+      if (!newRole || !allowed.includes(newRole)) {
+        res.status(BAD_REQUEST).json({ error: `newRole must be one of: ${allowed.join(", ")}` });
+        return;
+      }
+
+      targetAdmin.role = newRole as "superadmin" | "admin";
+      await targetAdmin.save();
+
+      res.status(OK).json({ message: `admin role updated to ${newRole}` });
+      return;
+    }
+
+    if (action === "demote") {
+      targetAdmin.role = "admin";
+      await targetAdmin.save();
+
+      res.status(OK).json({ message: "admin demoted to admin role" });
+      return;
+    }
+
+    if (action === "revoke") {
+      await admin.findByIdAndDelete(targetAdmin._id);
+
+      res.status(OK).json({ message: "admin access revoked" });
+      return;
+    }
+
+    res.status(BAD_REQUEST).json({ error: "unknown action" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error managing admin" });
+  }
 };
 
 export const markTask = async (req: GlobalRequest, res: GlobalResponse) => {

@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "./components/ui/toaster";
@@ -23,7 +23,6 @@ import DiscordCallback from "./pages/DiscordCallback";
 import XCallback from "./pages/XCallback";
 import Levels from "./pages/Levels";
 import UserReferred from "./pages/UserReferred";
-import Projects from "./pages/studio/Projects";
 import ProjectCreate from "./pages/studio/ProjectCreate";
 import ProjectDashboard from "./pages/project/ProjectDashboard";
 import NexuraSidebar from "./components/QuestflowSidebar";
@@ -41,22 +40,33 @@ import NexuraStudio from "./pages/NexuraStudio.tsx"
 import CreateHub from "./pages/studio/CreateHub.tsx"
 import SignInToHub from "./pages/studio/SignInToHub.tsx"
 import TheHub from "./pages/studio/TheHub.tsx";
-import ConnectTwitter from "./pages/studio/ConnectTwitter.tsx";
-import ConnectedTwitter from "./pages/studio/ConnectedTwitter.tsx"
+import ConnectedDiscord from "./pages/studio/ConnectedDiscord.tsx";
 import StudioDashboard from "./pages/studio/StudioDashboard.tsx"
+import StudioLayout from "./pages/studio/StudioLayout.tsx"
 import CampaignsTab from "./components/admin/CampaignsTab.tsx";
 import { getStoredAccessToken, apiRequest } from './lib/config'
+import { clearProjectSession, getStoredProjectToken, projectApiRequest } from './lib/projectApi'
 import CreateNewCampaigns from "./components/admin/CreateNewCampaign.tsx";
 import MyCampaign from "./components/admin/MyCampaign.tsx"
 import AdminManagement from "./components/admin/AdminManagement.tsx";
+import AdminSignUp from "./pages/studio/AdminSignUp.tsx";
+import HubProfile from "./pages/studio/HubProfile.tsx";
+import ClaimDetails from "./pages/ClaimDetails";
+import ConnectDiscord from "./pages/studio/ConnectDiscord.tsx";
 
 function Router() {
    const [isAuthenticated, setIsAuthenticated] = useState(false)
    
     const handleLogout = () => {
-    localStorage.removeItem('nexura-admin:token')
-    localStorage.removeItem('nexura-admin:info')
-    setIsAuthenticated(false)
+    // Clear admin session
+    localStorage.removeItem('nexura-admin:token');
+    localStorage.removeItem('nexura-admin:info');
+    // Clear project session and call server logout if project is signed in
+    if (getStoredProjectToken()) {
+      projectApiRequest({ method: 'POST', endpoint: '/hub/logout' }).catch(() => {});
+    }
+    clearProjectSession();
+    setIsAuthenticated(false);
   }
 
   return (
@@ -78,35 +88,55 @@ function Router() {
       <Route path="/x/callback" component={XCallback} />
       <Route path="/campaigns/tasks" component={CampaignEnvironment} />
       <Route path="/quests/tasks-card" component={QuestEnvironment} />
-      <Route path="/analytics" component={Analytics} />
+      {/*<Route path="/analytics" component={Analytics} />*/}
       <Route path="/portal-claims" component={PortalClaims} />
-      <Route path="/studio" component={NexuraStudio} />
+      <Route path="/portal-claims/:id" component={ClaimDetails} />
+      {/*<Route path="/studio" component={NexuraStudio} />*/}
       {/* Profile pages */}
       <Route path="/profile" component={Profile} />
       <Route path="/profile/edit" component={EditProfile} />
       <Route path="/achievements" component={Achievements} />
       <Route path="/leaderboard" component={Leaderboard} />
       {/* Developer pages */}
-      <Route path="/projects" component={Projects} />
-      <Route path="/projects/create" component={ProjectCreate} />
+      {/*<Route path="/projects/create" component={ProjectCreate} />
       <Route path="/projects/create/create-hub" component={CreateHub} />
       <Route path="/projects/create/signin-to-hub" component={SignInToHub} />
       <Route path="/projects/create/the-hub" component={TheHub} />
-      <Route path="/connect-twitter" component={ConnectTwitter} />
-      <Route path="/connected-twitter" component={ConnectedTwitter} />
+      <Route path="/connect-discord" component={ConnectDiscord} />
+      <Route path="/project/connected-discord" component={ConnectedDiscord} />
       <Route path="/studio-dashboard">
-  <StudioDashboard onLogout={handleLogout} />
-</Route>
-<Route path="/studio-dashboard/create-new-campaign" component={CreateNewCampaigns} />
-<Route path="/studio-dashboard/campaigns-tab" component={CampaignsTab} />
-<Route path="/studio-dashboard/admin-management" component={AdminManagement} />
-<Route path="/studio-dashboard/my-campaign" component={MyCampaign} />
+        <StudioDashboard onLogout={handleLogout} />
+      </Route>*/}
+      {/*<Route path="/studio-dashboard/create-new-campaign">
+        <StudioLayout title="Create Campaign" onLogout={handleLogout}>
+          <CreateNewCampaigns />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/campaigns-tab">
+        <StudioLayout title="Campaigns" onLogout={handleLogout}>
+          <CampaignsTab />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/admin-management">
+        <StudioLayout title="User Administration" onLogout={handleLogout}>
+          <AdminManagement />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/my-campaign">
+        <StudioLayout title="My Campaign" onLogout={handleLogout}>
+          <MyCampaign />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/hub-profile">
+        <StudioLayout title="Hub Profile" onLogout={handleLogout}>
+          <HubProfile />
+        </StudioLayout>
+      </Route>*/}
 
-
-      {/* <Route path="/studio" component={StudioIndex} />
-      <Route path="/studio/register" component={ProjectRegistration} /> */}
-      <Route path="/project/:projectId/*" component={ProjectDashboard} />
-      <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
+      {/*<Route path="/studio/register" component={AdminSignUp} />*/}
+      {/* <Route path="/studio" component={StudioIndex} /> */}
+      {/*<Route path="/project/:projectId/*" component={ProjectDashboard} />
+      <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />*/}
       {/* Referral */}
       <Route path="/ref/:referrerCode" component={UserReferred} />
       {/* Fallback to 404 */}
@@ -117,9 +147,15 @@ function Router() {
 
 function App() {
   const [location] = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [location]);
+
   // NEXURA-style sidebar configuration
   const sidebarStyle = {
-    "--sidebar-width": "18rem",
+    "--sidebar-width": "12rem",
     "--sidebar-width-icon": "4rem",
   };
 
@@ -128,13 +164,14 @@ function App() {
       <WalletProvider>
         <AuthProvider>
           <TooltipProvider>
-            <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+            <SidebarProvider defaultOpen={false} style={sidebarStyle as React.CSSProperties}>
               {(() => {
                 
 
                 const isHome = location === "/" || location === "/home";
                 const isStudio = location.startsWith("/studio-dashboard");
                 const isProject = location.startsWith("/project/");
+                const isProjectCreate = location.startsWith("/projects/create");
                 return (
                   <div className="flex h-screen w-full text-white selection:bg-blue-500/30 relative">
 
@@ -142,17 +179,19 @@ function App() {
                     <AnimatedBackground />
 
                     {/* Sidebar */}
-                    {!isHome && !isStudio && <NexuraSidebar />}
+                    {!isHome && !isStudio && !isProjectCreate && <NexuraSidebar />}
 
                     {/* Main content */}
                     <div className="flex-1 flex flex-col relative z-10">
-                      {!isHome && !isStudio &&(
-                        <header className="flex items-center justify-between p-4 app-header">
-                          <SidebarTrigger data-testid="button-sidebar-toggle" />
-                          <ProfileBar />
+                      {!isHome && !isStudio && !isProjectCreate &&(
+                        <header className="flex items-center p-4 app-header">
+                          <SidebarTrigger data-testid="button-sidebar-toggle" className="md:hidden" />
+                          <div className="ml-auto">
+                            <ProfileBar />
+                          </div>
                         </header>
                       )}
-                      <main className="flex-1 overflow-y-auto">
+                      <main ref={mainRef} className="flex-1 overflow-y-auto">
                         <Router />
                       </main>
                     </div>

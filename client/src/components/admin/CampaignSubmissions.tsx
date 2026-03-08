@@ -215,6 +215,13 @@ const completedTasks = tasks.filter(task =>
             <span className="text-white/60">Task</span>
             <span className="text-white text-right">{submission.taskType}</span>
           </div>
+          {submission.taskType?.toLowerCase() === "feedback" && (
+            <div className="mt-2 bg-white/5 border border-white/10 rounded-lg p-3 max-h-24 overflow-y-auto">
+              <p className="text-white/80 text-xs whitespace-pre-wrap leading-relaxed">
+                {submission.submissionLink.length > 150 ? submission.submissionLink.slice(0, 150) + "…" : submission.submissionLink}
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <span className="text-white/60">Validated By</span>
             <span className="text-white">{submission.validatedBy}</span>
@@ -386,16 +393,16 @@ const completedTasks = tasks.filter(task =>
 
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-y-3 mb-6">
           <h2 className="text-2xl font-bold text-white">Campaigns Submissions</h2>
-          <div className="flex items-center gap-2">
-            <div className="relative">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
               <Input
                 placeholder="Search users..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-white/5 border-white/10 text-white pl-9 placeholder:text-white/30 focus-visible:ring-[#8a3ffc] w-48"
+                className="bg-white/5 border-white/10 text-white pl-9 placeholder:text-white/30 focus-visible:ring-[#8a3ffc] w-full sm:w-48"
               />
             </div>
             <Button

@@ -13,7 +13,7 @@ import {
 	fetchCampaignQuests,
 } from "@/controllers/quest.controller";
 import {
-	authenticateProject,
+	authenticateHubAdmin,
 	authenticateUser,
 	authenticateUser2,
 	upload,
@@ -22,14 +22,14 @@ import {
 const router = Router();
 
 router
-	.patch("/add-campaign-address", authenticateProject, addCampaignAddress)
+	.patch("/add-campaign-address", authenticateHubAdmin, addCampaignAddress)
 	.post("/complete-campaign", authenticateUser, claimCampaignRewards)
-	.patch("/close-campaign", authenticateProject, closeCampaign)
-	.post("/create-campaign", authenticateProject, upload.single("coverImage"), createCampaign)
-	.post("/create-campaign-quests", authenticateProject, createCampaignQuests)
-	.post("/create-ecosystem-quests", authenticateProject, createEcosystemQuests)
+	.patch("/close-campaign", authenticateHubAdmin, closeCampaign)
+	.post("/create-campaign", authenticateHubAdmin, upload.single("coverImage"), createCampaign)
+	.post("/create-campaign-quests", authenticateHubAdmin, createCampaignQuests)
+	.post("/create-ecosystem-quests", authenticateHubAdmin, createEcosystemQuests)
 	.post("/join-campaign", authenticateUser, joinCampaign)
 	.get("/quests", authenticateUser2, fetchCampaignQuests)
-	.patch("/update-campaign", authenticateProject, updateCampaign);
+	.patch("/update-campaign", authenticateHubAdmin, updateCampaign);
 
 export default router;

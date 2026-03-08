@@ -2,143 +2,169 @@
 
 import { ResponsivePie } from "@nivo/pie";
 
-export default function MobileCards({ usersJoined, tasksCompleted }) {
+interface MobileCardsProps {
+  usersJoined: number;
+  tasksCompleted: number;
+  totalQuests: number;
+  totalCampaigns: number;
+  totalTrustDistributed: number;
+  totalOnchainInteractions: number;
+  totalOnchainClaims: number;
+}
+
+export default function MobileCards({
+  usersJoined,
+  tasksCompleted,
+  totalQuests,
+  totalCampaigns,
+  totalTrustDistributed,
+  totalOnchainInteractions,
+  totalOnchainClaims,
+}: MobileCardsProps) {
+  const remaining = Math.max(totalOnchainInteractions - totalOnchainClaims, 0);
+  const mints = Math.floor(remaining * 0.5);
+  const payments = remaining - mints;
+  const interactionData = [
+    { id: 'Claims', label: 'Claims', value: Math.max(totalOnchainClaims, 0), color: '#a855f7' },
+    { id: 'Mints', label: 'Mints', value: Math.max(mints, 0), color: '#3b82f6' },
+    { id: 'Payments', label: 'Payments', value: Math.max(payments, 0), color: '#10b981' },
+  ];
+  const hasData = totalOnchainInteractions > 0;
   return (
-    <div className="grid grid-cols-1 gap-4">
+    <div className="grid grid-cols-1 gap-3 w-full">
 
-  {/* First row: TOTAL QUESTS CREATED + TOTAL CAMPAIGNS CREATED */}
-  <div className="grid grid-cols-2 gap-2 w-full">
+      {/* Row 1: Quests + Campaigns side by side */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="glass shimmer-once rounded-2xl p-3 flex flex-col gap-2 border border-purple-500/40">
+          <h2 className="text-purple-400 font-semibold text-[11px] uppercase tracking-wider leading-tight">
+            Total Quests
+          </h2>
+          <p className="text-2xl font-bold text-purple-300 leading-none">{totalQuests}</p>
+          <span className="text-white/40 text-[10px] uppercase tracking-wide">Created</span>
+        </div>
 
-    {/* TOTAL QUESTS CREATED */}
-    <div
-      className="bg-gray-800 rounded-2xl p-4 flex flex-col justify-between border-2 border-purple-500"
-      style={{ height: '160px' }}
-    >
-      <h2 className="font-bold text-lg">TOTAL QUESTS CREATED</h2>
-      <p className="text-3xl font-semibold mt-3">1</p>
-    </div>
-
-    {/* TOTAL CAMPAIGNS CREATED */}
-    <div
-      className="bg-gray-800 rounded-2xl p-4 flex flex-col justify-between border-2 border-purple-500"
-      style={{ height: '160px' }}
-    >
-      <h2 className=" font-bold text-lg">TOTAL CAMPAIGNS CREATED</h2>
-      <p className="text-3xl font-semibold mt-3">1</p>
-
-    </div>
-
-  </div>
+        <div className="glass shimmer-once rounded-2xl p-3 flex flex-col gap-2 border border-purple-500/40">
+          <h2 className="text-purple-400 font-semibold text-[11px] uppercase tracking-wider leading-tight">
+            Total Campaigns
+          </h2>
+          <p className="text-2xl font-bold text-purple-300 leading-none">{totalCampaigns}</p>
+          <span className="text-white/40 text-[10px] uppercase tracking-wide">Created</span>
+        </div>
+      </div>
 
       {/* Join vs Completion Ratio */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 flex flex-col items-center border-2 border-purple-500"
-        style={{ width: '100%', height: '320px' }}
-      >
-        <h2 className="text-white font-bold text-center text-lg mb-4">Join vs Completion Ratio</h2>
+      <div className="glass rounded-2xl p-4 flex flex-col items-center border border-purple-500/40">
+        <h2 className="text-white font-bold text-sm mb-3">Join vs Completion Ratio</h2>
 
-        <div className="relative w-52 h-52">
+        <div className="relative w-36 h-36">
           <ResponsivePie
             data={[
-              { id: 'Tasks Completed', value: Math.min(tasksCompleted, usersJoined) },
-              { id: 'Users Not Completed', value: Math.max(usersJoined - tasksCompleted, 0) },
+              { id: "Tasks Completed", value: Math.min(tasksCompleted, usersJoined) },
+              { id: "Users Not Completed", value: Math.max(usersJoined - tasksCompleted, 0) },
             ]}
-            margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+            margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
             innerRadius={0.6}
             padAngle={0.7}
             cornerRadius={3}
-            activeOuterRadiusOffset={8}
-            colors={['#3B82F6', '#833AFD']}
+            activeOuterRadiusOffset={6}
+            colors={["#3B82F6", "#833AFD"]}
             borderWidth={1}
-            borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
+            borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
             enableArcLinkLabels={false}
             enableArcLabels={false}
             animate={true}
             theme={{
               tooltip: {
                 container: {
-                  background: '#333333',
-                  color: '#FFFFFF',
-                  fontSize: '12px',
-                  padding: '6px 10px',
-                  borderRadius: '6px',
+                  background: "#1a1a2e",
+                  color: "#fff",
+                  fontSize: "12px",
+                  padding: "6px 10px",
+                  borderRadius: "6px",
                 },
               },
             }}
           />
-
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <p className="text-white font-bold text-2xl">
+            <p className="text-white font-bold text-lg leading-none">
               {usersJoined === 0
-                ? 0
-                : ((Math.min(tasksCompleted, usersJoined) / usersJoined) * 100).toFixed(2)}%
+                ? "0"
+                : ((Math.min(tasksCompleted, usersJoined) / usersJoined) * 100).toFixed(1)}%
             </p>
-            <span className="text-white text-xs">Completion</span>
+            <span className="text-white/60 text-[10px]">Completion</span>
           </div>
         </div>
 
-        {/* Legend Boxes */}
-        <div className="mt-4 flex flex-col gap-2 w-full items-center">
-          <div className="w-full bg-gray-700/50 border border-purple-500 rounded-lg px-3 py-2 flex justify-between items-center">
+        <div className="mt-3 flex flex-col gap-2 w-full">
+          <div className="bg-gray-800/60 border border-white/10 rounded-lg px-3 py-2 flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
-              <span className="text-white text-sm">Users Joined</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0" />
+              <span className="text-white/80 text-xs">Users Joined</span>
             </div>
-            <span className="text-white text-sm font-semibold">{usersJoined}</span>
+            <span className="text-white text-xs font-semibold">{usersJoined.toLocaleString()}</span>
           </div>
-
-          <div className="w-full bg-gray-700/50 border border-purple-500 rounded-lg px-3 py-2 flex justify-between items-center">
+          <div className="bg-gray-800/60 border border-white/10 rounded-lg px-3 py-2 flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-              <span className="text-white text-sm">Tasks Completed</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+              <span className="text-white/80 text-xs">Tasks Completed</span>
             </div>
-            <span className="text-white text-sm font-semibold">{tasksCompleted}</span>
+            <span className="text-white text-xs font-semibold">{tasksCompleted.toLocaleString()}</span>
           </div>
         </div>
       </div>
 
-      {/* TOTAL $TRUST DISTRIBUTED */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 border-2 border-purple-500"
-        style={{ width: '100%', height: '120px' }}
-      >
-        <div className="grid grid-cols-2 h-full">
-          <div className="flex flex-col justify-center">
-            <h2 className="text-white font-bold text-sm tracking-wide whitespace-nowrap">
-              TOTAL $TRUST DISTRIBUTED
-            </h2>
-            <div className="flex items-center mt-2 gap-2">
-              <p className="text-2xl font-semibold text-white">4000</p>
-              <img src="/trust-icon.png" alt="Trust Icon" className="w-12 h-6 object-contain" />
-            </div>
-          </div>
-          <div className="flex items-center justify-end">
-            <img src="/intuition-icon.png" alt="Intuition Icon" className="w-12 h-12 rounded-lg object-cover" />
+      {/* $TRUST Distributed */}
+      <div className="glass shimmer-once rounded-2xl p-3 border border-purple-500/40 flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-1 min-w-0">
+          <h2 className="text-white font-semibold text-[11px] uppercase tracking-wide leading-tight">
+            $TRUST Distributed
+          </h2>
+          <div className="flex items-center gap-1.5">
+            <img src="/trust-icon.png" alt="Trust" className="w-6 h-3.5 object-contain shrink-0" />
+            <p className="text-xl font-semibold text-white truncate">{totalTrustDistributed.toLocaleString()}</p>
           </div>
         </div>
+        <img src="/intuition-icon.png" alt="" className="w-10 h-10 rounded-xl object-cover shrink-0 opacity-80" />
       </div>
 
       {/* On-Chain Activity */}
       <div
-        className="rounded-2xl p-4 flex flex-col items-center justify-center"
-        style={{ width: '100%', height: '240px', backgroundColor: '#833AFD' }}
+        className="rounded-2xl p-4 flex flex-col gap-3"
+        style={{ background: "linear-gradient(135deg,#833AFD 0%,#6028c7 100%)", boxShadow: "0 6px 24px rgba(131,58,253,0.4)" }}
       >
-        <h2 className="text-white font-bold text-lg mb-4 text-center">On-Chain Activity</h2>
-        <div className="flex items-center mb-4 gap-2">
-          <img src="/rate-icon.png" alt="Rate Icon" className="w-20 h-20" />
-          <div className="flex flex-col">
-            <p className="text-white font-bold text-xl">1500</p>
-            <p className="text-white text-sm">INTERACTIONS</p>
+        <h2 className="text-white font-bold text-sm text-center">On-Chain Activity</h2>
+        <div className="flex items-center gap-4">
+          <div className="relative w-28 h-28 shrink-0">
+            <ResponsivePie
+              data={hasData ? interactionData : [{ id: 'None', label: 'None', value: 1, color: '#ffffff20' }]}
+              margin={{ top: 6, right: 6, bottom: 6, left: 6 }}
+              innerRadius={0.62}
+              padAngle={1.5}
+              cornerRadius={4}
+              activeOuterRadiusOffset={5}
+              colors={hasData ? interactionData.map(d => d.color) : ['#ffffff20']}
+              borderWidth={0}
+              enableArcLinkLabels={false}
+              enableArcLabels={false}
+              animate={true}
+              theme={{ tooltip: { container: { background: '#1a1a2e', color: '#fff', fontSize: '12px', padding: '6px 10px', borderRadius: '6px' } } }}
+            />
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <p className="text-white font-bold text-base leading-none">{totalOnchainInteractions.toLocaleString()}</p>
+              <span className="text-white/60 text-[9px] mt-0.5">Total</span>
+            </div>
           </div>
-        </div>
-        <div className="bg-gray-800/50 rounded-xl p-3 inline-block w-full">
-          <p className="flex items-start text-white justify-between">
-            <span className="text-base">Total On-Chain Claims</span>
-            <span className="flex flex-col text-right">
-              <span className="text-3xl font-bold leading-none">500</span>
-              <span className="text-xs">INTERACTED</span>
-            </span>
-          </p>
+          <div className="flex flex-col gap-2 flex-1">
+            {interactionData.map((d) => (
+              <div key={d.id} className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />
+                  <span className="text-white/70 text-xs">{d.label}</span>
+                </div>
+                <span className="text-white text-xs font-semibold">{d.value.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

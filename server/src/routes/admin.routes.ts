@@ -1,5 +1,19 @@
 import { Router } from "express";
-import { addAdmin, adminLogin, banUser, createAdmin, unBanUser, getBannedUsers, createQuest, getAdmins, getTasks, markTask, removeAdmin } from "@/controllers/admin.controller";
+import {
+  addAdmin,
+  adminLogout,
+  adminLogin,
+  banUser,
+  createAdmin,
+  unBanUser,
+  getBannedUsers,
+  createQuest,
+  getAdmins,
+  getTasks,
+  markTask,
+  removeAdmin,
+  manageAdmin
+} from "@/controllers/admin.controller";
 import { authenticateAdmin } from "@/middlewares/auth.middleware";
 
 const router = Router();
@@ -10,7 +24,9 @@ router
   .post("/add-admin", authenticateAdmin, addAdmin)
   .post("/register", createAdmin)
   .post("/login", adminLogin)
+  .post("/logout", authenticateAdmin, adminLogout)
   .post("/remove-admin", authenticateAdmin, removeAdmin)
+  .post("/manage-admin", authenticateAdmin, manageAdmin)
   .post("/ban-user", authenticateAdmin, banUser)
   .post("/unban-user", authenticateAdmin, unBanUser)
   .get("/get-banned-users", authenticateAdmin, getBannedUsers)

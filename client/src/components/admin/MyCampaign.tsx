@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import StudioSidebar from "../../pages/studio/StudioSidebar";
+// StudioSidebar is provided by StudioLayout wrapper
 import { Card } from "../ui/card";
 
 export default function MyCampaign() {
@@ -54,21 +54,7 @@ export default function MyCampaign() {
   } = campaign;
 
   return (
-    <div className="relative min-h-screen flex">
-      {/* Sidebar */}
-      <div className="fixed top-0 left-0 h-screen flex">
-        <StudioSidebar
-          activeTab="campaignsTab"
-          setActiveTab={(tab) => {
-            if (tab === "campaignSubmissions") setLocation("/studio-dashboard");
-            if (tab === "campaignsTab") setLocation("/studio-dashboard/create-new-campaign");
-            if (tab === "adminManagement") setLocation("/studio-dashboard");
-          }}
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 md:ml-[18rem] p-6 space-y-6">
+    <div className="space-y-6 text-white">
 
 {/* Top Row: Campaign Title + Buttons */}
 <div className="flex justify-between items-center pr-4 mb-6 border-b border-purple-500/50 pb-3">
@@ -110,7 +96,7 @@ export default function MyCampaign() {
     </button>
 
     <button
-      onClick={() => setLocation("/studio-dashboard/create-new-campaign")}
+      onClick={() => setLocation(`/studio-dashboard/create-new-campaign?edit=${campaign._id}`)}
     >
       <img src="/edit-campaign.png" alt="Edit Campaign" className="w-18 h-8 object-contain" />
     </button>
@@ -210,7 +196,6 @@ export default function MyCampaign() {
             </button>
           </div>
         </Card>
-      </div>
     </div>
   );
 }

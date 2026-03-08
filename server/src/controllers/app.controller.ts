@@ -5,14 +5,14 @@ import { referredUsers } from "@/models/referrer.model";
 import { token } from "@/models/tokens.model";
 import { campaignQuest, miniQuest, quest } from "@/models/quests.model";
 import { user } from "@/models/user.model";
+import { hub } from "@/models/hub.model";
 import { performIntuitionOnchainAction } from "@/utils/account";
-import { BOT_TOKEN, THIRD_PARTY_API_KEY, X_API_BEARER_TOKEN } from "@/utils/env.utils";
+import { BOT_TOKEN, THIRD_PARTY_API_KEY } from "@/utils/env.utils";
 import {
-  INTERNAL_SERVER_ERROR, 
+  INTERNAL_SERVER_ERROR,
   OK,
-  CREATED, 
   BAD_REQUEST,
-  FORBIDDEN, 
+  FORBIDDEN,
   NOT_FOUND,
   UNAUTHORIZED
 } from "@/utils/status.utils";
@@ -27,13 +27,14 @@ import {
 	miniQuestCompleted,
   questCompleted
 } from "@/models/questsCompleted.models";
-import { bannedUser } from "@/models/bannedUser.model";
 import { GRAPHQL_API_URL } from "@/utils/constants";
 import { GraphQLClient } from "graphql-request";
 import { checksumAddress } from "viem";
 import { campaign, campaignCompleted } from "@/models/campaign.model";
 import { dailySignIn } from "@/models/dailySignIn.model";
-import { startOfDayUTC } from "@/utils/utils";
+import { startOfDayUTC, updateLevel, getAmountPaid } from "@/utils/utils";
+
+const client = new GraphQLClient(GRAPHQL_API_URL);
 
 export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 	res.send("hi!");
@@ -53,7 +54,7 @@ export const updateUser = async (req: GlobalRequest, res: GlobalResponse) => {
 
     if (profilePicBuffer) {
       const profilePic = await uploadImg({ filename: req.file?.originalname, file: profilePicBuffer, folder: "profile-pictures" });
-  
+
       userToUpdate.profilePic = profilePic;
     }
 
@@ -82,6 +83,373 @@ export const updateUser = async (req: GlobalRequest, res: GlobalResponse) => {
   }
 }
 
+export const claimDepositXp = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { transactionHash } = req.body;
+    const { id } = req;
+
+    if (!transactionHash) {
+      res.status(BAD_REQUEST).json({ error: "transaction hash and trust amount are required" });
+      return;
+    }
+
+    const { value, from } = await getAmountPaid(transactionHash);
+
+    if (Number(value) < 200) {
+      res.status(FORBIDDEN).json({ error: "amount paid must be at least 200 to claim xp" });
+      return;
+    }
+
+    const trustUser = await user.findById(id);
+    if (!trustUser) {
+      res.status(BAD_REQUEST).json({ error: "user not found" });
+      return;
+    }
+
+    if (trustUser.address !== from.toLowerCase()) {
+      res.status(FORBIDDEN).json({ error: "transaction must be from the user's address" });
+      return;
+    }
+
+    const date = new Date();
+    const exactDate = date.toISOString().split("T")[0];
+
+    if (trustUser.dailyTrustXpDate === exactDate) {
+      res.status(OK).json({ message: "xp for claim already made today" });
+      return;
+    }
+
+    trustUser.dailyTrustXpDate = exactDate as string;
+    trustUser.xp += 20;
+
+    await trustUser.save();
+
+    res.status(OK).json({ message: "xp claim successful" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error adding claim xp" });
+  }
+}
+
+export const getTriple = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { termId } = req.query as { termId: string };
+    const appUser = await user.findOne({ _id: req.id });
+
+    const query = `
+      query GetTripleTerm($termId: String!, $userPositionAddress: String!) {
+        triple_term(term_id: $termId) {
+          term_id
+          counter_term_id
+          total_assets
+          total_market_cap
+          total_position_count
+          term {
+            total_assets
+            positions_aggregate {
+              aggregate {
+                count
+              }
+            }
+            vaults(order_by: {curve_id: asc}) {
+              curve_id
+              current_share_price
+              total_shares
+              total_assets
+              position_count
+              market_cap
+              userPosition: positions(
+              limit: 1
+              where: { account_id: { _eq: $userPositionAddress }}
+              ) {
+                shares
+                account_id
+              }
+            }
+            positions(order_by: [{
+              shares: desc
+            }]) {
+              shares
+              curve_id
+              account {
+                id
+                label
+                image
+              }
+            }
+            total_assets
+            triple {
+              subject {
+                label
+                image
+              }
+              predicate {
+                label
+                image
+              }
+              object {
+                label
+                image
+              }
+              creator {
+                id
+                image
+                label
+              }
+            }
+            total_market_cap
+          }
+          counter_term {
+            total_assets
+            positions_aggregate {
+              aggregate {
+                count
+              }
+            }
+            vaults(order_by: {curve_id: asc}) {
+              curve_id
+              current_share_price
+              total_shares
+              total_assets
+              position_count
+              market_cap
+              userPosition: positions(
+              limit: 1
+              where: { account_id: { _eq: $userPositionAddress }}
+              ) {
+                shares
+                account_id
+              }
+            }
+            positions(order_by: [{
+              shares: desc
+            }]) {
+              shares
+              curve_id
+              account {
+                id
+                label
+                image
+              }
+            }
+            total_assets
+            triple {
+              subject {
+                label
+                image
+              }
+              predicate {
+                label
+                image
+              }
+              object {
+                label
+                image
+              }
+              creator {
+                id
+                image
+                label
+              }
+            }
+            total_market_cap
+          }
+        }
+      }
+    `;
+
+    const response = await client.request(query, { termId, userPositionAddress: appUser?.address ? checksumAddress(appUser.address as `0x${string}`) : "..." });
+    res.status(OK).json(response.triple_term);
+  } catch (error) {
+    logger.error(error);
+    res.send("failed")
+  }
+}
+
+export const getClaims = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+
+    const appUser = await user.findById(req.id);
+
+    const filter = JSON.parse(req.query.filter as string) ?? { total_market_cap: "desc" };
+
+    const offset = parseInt(req.query.offset as unknown as string);
+
+    // 1️⃣ Fetch all vaults (slice for pagination)
+    const vaultQuery = `
+      query GetExploreTriples($where: triple_term_bool_exp, $orderBy: [triple_term_order_by!], $limit: Int, $offset: Int, $userPositionAddress: String) {
+        triple_terms(where: $where, order_by: $orderBy, limit: $limit, offset: $offset) {
+          term_id
+          counter_term_id
+          total_assets
+          total_market_cap
+          total_position_count
+          term {
+            id
+            total_market_cap
+            total_assets
+            vaults(order_by: {curve_id: asc}) {
+              curve_id
+              current_share_price
+              total_shares
+              total_assets
+              position_count
+              market_cap
+              userPosition: positions(
+              limit: 1
+              where: {account_id: {_eq: $userPositionAddress}}
+              ) {
+                shares
+                account_id
+              }
+            }
+            positions_aggregate {
+              aggregate {
+                count
+              }
+            }
+            triple {
+              term_id
+              counter_term_id
+              created_at
+              subject_id
+              predicate_id
+              object_id
+              subject {
+                term_id
+                wallet_id
+                label
+                image
+                cached_image {
+                  ...CachedImageFields
+                }
+                data
+                type
+                value {
+                  ...AtomValueLight
+                }
+              }
+              predicate {
+                term_id
+                wallet_id
+                label
+                image
+                cached_image {
+                  ...CachedImageFields
+                }
+                data
+                type
+                value {
+                  ...AtomValueLight
+                }
+              }
+              object {
+                term_id
+                wallet_id
+                label
+                image
+                cached_image {
+                  ...CachedImageFields
+                }
+                data
+                type
+                value {
+                  ...AtomValue
+                }
+              }
+              creator {
+                id
+                label
+                image
+                cached_image {
+                  ...CachedImageFields
+                }
+              }
+            }
+          }
+          counter_term {
+            id
+            total_market_cap
+            total_assets
+            vaults(order_by: {curve_id: asc}) {
+              curve_id
+              current_share_price
+              total_shares
+              total_assets
+              position_count
+              market_cap
+              userPosition: positions(
+              limit: 1
+              where: {account_id: {_eq: $userPositionAddress}}
+              ) {
+                shares
+                account_id
+              }
+            }
+            positions_aggregate {
+              aggregate {
+                count
+              }
+            }
+          }
+        }
+      }
+
+      fragment CachedImageFields on cached_images_cached_image {
+        url
+        safe
+      }
+
+      fragment AtomValueLight on atom_values {
+        person {
+          name
+          image
+          cached_image {
+            ...CachedImageFields
+          }
+          url
+        }
+        thing {
+          name
+          image
+          cached_image {
+            ...CachedImageFields
+          }
+          url
+        }
+        organization {
+          name
+          image
+          url
+        }
+        account {
+          id
+          label
+          image
+          cached_image {
+            ...CachedImageFields
+          }
+        }
+      }
+
+
+      fragment AtomValue on atom_values {
+        ...AtomValueLight
+        json_object {
+        description: data(path: \"description\")
+        }
+      }
+    `;
+
+    const { triple_terms: claims } = await client.request(vaultQuery, { where: {}, orderBy: [filter], limit: 50, offset, userPositionAddress: appUser?.address ? checksumAddress(appUser.address as `0x${string}`) : "..." });
+
+    res.json({ message: "fetched", claims });
+  } catch (e) {
+    logger.error(e);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Failed to fetch claims" });
+  }
+};
+
 export const updateSubmission = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const userId = req.id;
@@ -101,7 +469,7 @@ export const updateSubmission = async (req: GlobalRequest, res: GlobalResponse) 
     if (task.status === "pending") {
       res.status(FORBIDDEN).json({ error: "submission is still pending review" });
       return;
-    } else if (task.status === "done") { 
+    } else if (task.status === "done") {
       res.status(FORBIDDEN).json({ error: "quest has been marked as done" });
       return;
     }
@@ -169,7 +537,7 @@ export const getLeaderboard = async (req: GlobalRequest, res: GlobalResponse) =>
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching leaderboard data" })
   }
-}  
+}
 
 export const fetchUser = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
@@ -280,7 +648,7 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
           }) {
             account_id
           }
-      
+
           counter_positions (where:  {
             account_id:  {
               _eq: $address
@@ -294,8 +662,6 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
         }
       }
     `; // user needs to atleast support or oppose with 0.5 - 1 trust;
-
-    const client = new GraphQLClient(GRAPHQL_API_URL);
 
     const formattedAddress = checksumAddress(userToCheck.address as `0x${string}`);
 
@@ -453,7 +819,88 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
       return u.status === "Active" && u.updatedAt >= last30Days;
     }).length;
 
-    res.status(OK).json({ message: "analytics data fetched", analytics: { totalOnchainInteractions, totalOnchainClaims, totalCampaigns, user: { totalUsers, activeUsersWeekly, activeUsersMonthly, users24h, users7d, users30d }, totalReferrals, totalQuests, totalQuestsCompleted, totalCampaignsCompleted, joinRatio, totalTrustDistributed } });
+    const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    // ── 30-day buckets (index 0 = 29 days ago, index 29 = today) ──────────────
+    const usersByDay = Array.from({ length: 30 }, (_, i) => {
+      const dayStart = new Date(now);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      dayStart.setUTCDate(dayStart.getUTCDate() - (29 - i));
+      const dayEnd = new Date(dayStart);
+      dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+      const count = userFound.filter((u) => u.createdAt >= dayStart && u.createdAt < dayEnd).length;
+      const dayName = DAY_NAMES[dayStart.getUTCDay()];
+      const dateLabel = `${dayStart.getUTCMonth() + 1}/${dayStart.getUTCDate()}`;
+      return { day: dayName, date: dateLabel, count };
+    });
+
+    // ── 24-hour buckets for the current day (index 0 = midnight, index 23 = current hour) ──
+    const todayMidnight = new Date(now);
+    todayMidnight.setUTCHours(0, 0, 0, 0);
+    const usersByHour = Array.from({ length: 24 }, (_, h) => {
+      const hourStart = new Date(todayMidnight.getTime() + h * 60 * 60 * 1000);
+      const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
+      const count = userFound.filter((u) => u.createdAt >= hourStart && u.createdAt < hourEnd).length;
+      const label = `${String(h).padStart(2, "0")}:00`;
+      return { hour: h, label, count };
+    });
+
+    const tomorrowName = DAY_NAMES[new Date(now.getTime() + 24 * 60 * 60 * 1000).getUTCDay()];
+
+    // ── Previous-period counts for % change badges ────────────────────────────
+    const prev24hStart = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    const prev24hEnd   = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const prev7dStart  = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const prev7dEnd    = new Date(now.getTime() -  7 * 24 * 60 * 60 * 1000);
+    const prev30dStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const prev30dEnd   = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const prevUsers24h = userFound.filter((u) => u.createdAt >= prev24hStart && u.createdAt < prev24hEnd).length;
+    const prevUsers7d  = userFound.filter((u) => u.createdAt >= prev7dStart  && u.createdAt < prev7dEnd).length;
+    const prevUsers30d = userFound.filter((u) => u.createdAt >= prev30dStart && u.createdAt < prev30dEnd).length;
+
+    const prevActiveWeekly  = userFound.filter((u: { updatedAt: Date; status: string }) => {
+      return u.status === "Active" && u.updatedAt >= prev7dStart && u.updatedAt < prev7dEnd;
+    }).length;
+    const prevActiveMonthly = userFound.filter((u: { updatedAt: Date; status: string }) => {
+      return u.status === "Active" && u.updatedAt >= prev30dStart && u.updatedAt < prev30dEnd;
+    }).length;
+
+    // Total users yesterday (for day-over-day % change)
+    const yesterdayMidnight = new Date(todayMidnight.getTime() - 24 * 60 * 60 * 1000);
+    const totalUsersYesterday = userFound.filter((u) => u.createdAt < yesterdayMidnight).length;
+
+    res.status(OK).json({
+      message: "analytics data fetched",
+      analytics: {
+        totalOnchainInteractions,
+        totalOnchainClaims,
+        totalCampaigns,
+        user: {
+          totalUsers,
+          activeUsersWeekly,
+          activeUsersMonthly,
+          users24h,
+          users7d,
+          users30d,
+          prevUsers24h,
+          prevUsers7d,
+          prevUsers30d,
+          prevActiveWeekly,
+          prevActiveMonthly,
+          totalUsersYesterday,
+        },
+        totalReferrals,
+        totalQuests,
+        totalQuestsCompleted,
+        totalCampaignsCompleted,
+        joinRatio,
+        totalTrustDistributed,
+        usersByDay,
+        usersByHour,
+        tomorrowName,
+      },
+    });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching analytics data" });
@@ -486,7 +933,7 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
       userExists.lastSignInDate = onlyDate;
       userExists.xp += 20;
       userExists.streak += 1;
-      
+
       // Update longest streak if current streak is higher
       if (userExists.streak > (userExists.longestStreak || 0)) {
         userExists.longestStreak = userExists.streak;
@@ -507,7 +954,7 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
     if (dailySignInExists.date === yesterdayDate) {
       userExists.xp += 20;
       userExists.streak += 1;
-      
+
       // Update longest streak if current streak is higher
       if (userExists.streak > (userExists.longestStreak || 0)) {
         userExists.longestStreak = userExists.streak;
@@ -516,6 +963,10 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
       userExists.streak = 1;
       userExists.xp += 20;
     }
+
+    const level = await updateLevel(userExists.xp, userExists.badges, userExists._id.toString());
+
+		userExists.level = level;
 
     dailySignInExists.date = onlyDate as string;
 
@@ -600,7 +1051,7 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
   let quest: any | undefined = undefined;
 
   try {
-    const { tag, id: postId, questId, page } = req.body; // get task id and store project x id, then remove hardcoded nexura id
+    const { tag, id: postId, questId, page } = req.body; // get task id and store hub x id, then remove hardcoded nexura id
 
     const NEXURA_ID = "1983300499597393920";
     const NEXURA_USERNAME = "NexuraXYZ";
@@ -665,8 +1116,8 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
             }
           }
 
-          if (!timeToWait) { 
-            await timer.create({ time: new Date(now.getTime() + 1 * 60 * 60 * 1000) }); 
+          if (!timeToWait) {
+            await timer.create({ time: new Date(now.getTime() + 1 * 60 * 60 * 1000) });
           } else {
             timeToWait.time = new Date(now.getTime() + 1 * 60 * 60 * 1000);
             await timeToWait.save();
@@ -768,8 +1219,8 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
             }
           }
 
-          if (!timeToWait) { 
-            await timer.create({ time: "" }); 
+          if (!timeToWait) {
+            await timer.create({ time: "" });
           } else {
             timeToWait.time = new Date(now.getTime() + 1 * 60 * 60 * 1000);
             await timeToWait.save();
@@ -832,8 +1283,8 @@ export const checkXTask = async (req: GlobalRequest, res: GlobalResponse) => {
             }
           }
 
-          if (!timeToWait) { 
-            await timer.create({ time: "" }); 
+          if (!timeToWait) {
+            await timer.create({ time: "" });
           } else {
             timeToWait.time = new Date(now.getTime() + 1 * 60 * 60 * 1000);
             await timeToWait.save();
@@ -1034,13 +1485,19 @@ export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) 
       return
     }
 
+    const serverInfo = await hub.findOne({ guildId });
+    if (!serverInfo) {
+      res.status(BAD_REQUEST).json({ error: "discord server not found" });
+      return;
+    }
+
     switch (tag) {
       case "join":
         const {
-          status, 
+          status,
           data: { roles }
           // remove hardcoded guild id
-        } = await axios.get(`https://discord.com/api/guilds/1419336727302111367/members/${discordId}`,
+        } = await axios.get(`https://discord.com/api/guilds/${guildId}/members/${discordId}`,
           {
             headers: {
               Authorization: `Bot ${BOT_TOKEN}`,
@@ -1061,7 +1518,7 @@ export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) 
           return;
         }
 
-        if (!roles.includes("1439591151081492593")) { // verfied id
+        if (!roles.includes(serverInfo.verifiedId)) { // verfied id
           if (!completed) {
             await campaignQuestCompleted.create({ user: req.id, status: "retry", campaign: campaignId, campaignQuest: id });
           } else {

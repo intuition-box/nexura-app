@@ -1,8 +1,16 @@
 {
   "dependencies": {
-    "@nivo/core": "^0.99.0",
-    "@nivo/line": "^0.99.0",
-    "@nivo/pie": "^0.99.0",
-    "recharts": "^3.7.0"
+    "@0xintuition/graphql": "^2.0.2",
+    "@0xintuition/sdk": "^2.0.2"
+  },
+  "scripts": {
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
+    "eslint": "^9.39.3",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1"
   }
 }

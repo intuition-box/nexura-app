@@ -3,16 +3,15 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import React from "react"
-// import { Card } from "../../components/ui/card";
 import { Card, CardTitle, CardDescription, CardFooter } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { Link } from "wouter";
-import StudioSidebar from "../../pages/studio/StudioSidebar";
-import AnimatedBackground from "../AnimatedBackground";
+
+import { projectApiRequest } from "../../lib/projectApi";
+import { payStudioHubFee } from "../../lib/performOnchainAction";
+import { useToast } from "../../hooks/use-toast";
 import {
   Calendar,
-  Clock,
   ImageIcon,
   FileText,
   ListChecks,
@@ -40,18 +39,25 @@ export default function CreateNewCampaigns() {
   const [, setLocation] = useLocation();
 
   const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [campaignId, setCampaignId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [showTasks, setShowTasks] = useState(false)
   const [showModal, setShowModal] = useState(false);
   const [validationType, setValidationType] = useState("manual");
-  const [tasks, setTasks] = useState([]); 
+  const { toast } = useToast();
+  type Task = { _id: string | undefined; type: string; platform: string; handleOrUrl: string; description: string; evidence: string; validation: string; verificationMode: string; };
+
+const [tasks, setTasks] = useState<Task[]>([]); 
   const [newTask, setNewTask] = useState({
+    _id: undefined as string | undefined,
   type: "",
   platform: "",
   handleOrUrl: "",
   description: "",
   evidence: "",
   validation: "Manual Validation",
+  verificationMode: "",
 });
 const [editingIndex, setEditingIndex] = useState<number | null>(null);
 const [error, setError] = useState("");
@@ -72,9 +78,92 @@ const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
 
 const [rewardPool, setRewardPool] = useState("");
 const [participants, setParticipants] = useState("");
-const [xpRewards, setXpRewards] = useState("");
+const [xpRewards, setXpRewards] = useState("200");
 const [publishedCampaign, setPublishedCampaign] = useState<any | null>(null);
+const [paymentTxHash, setPaymentTxHash] = useState("");
+const [paymentLoading, setPaymentLoading] = useState(false);
+const [isEditMode, setIsEditMode] = useState(false);
+const [isPublished, setIsPublished] = useState(false);
 
+// Pre-fill from existing draft when ?edit=<id> is in the URL
+const parseDateTime = (isoStr: string) => {
+  if (!isoStr) return { date: "", time: "" };
+  const idx = isoStr.indexOf("T");
+  if (idx === -1) return { date: isoStr, time: "" };
+  return { date: isoStr.slice(0, idx), time: isoStr.slice(idx + 1, idx + 6) };
+};
+
+useEffect(() => {
+  const editId = new URLSearchParams(window.location.search).get("edit");
+  if (!editId) return;
+  (async () => {
+    try {
+      const res = await projectApiRequest<{ hubCampaigns?: any[] }>({
+        method: "GET",
+        endpoint: "/hub/get-campaigns",
+      });
+      const found = (res.hubCampaigns ?? []).find((c: any) => c._id === editId);
+      if (!found) return;
+      setCampaignId(editId);
+      setIsEditMode(true);
+      setIsPublished(found.status !== "Save");
+      setCampaignTitle(found.title ?? "");
+      setCampaignName(found.description ?? found.nameOfProject ?? "");
+      const s = parseDateTime(found.starts_at ?? "");
+      const e = parseDateTime(found.ends_at ?? "");
+      setStartDate(s.date);
+      setStartTime(s.time);
+      setEndDate(e.date);
+      setEndTime(e.time);
+      setRewardPool(String(found.reward?.pool ?? ""));
+      setParticipants(found.maxParticipants !== undefined && found.maxParticipants !== null
+        ? String(found.maxParticipants)
+        : found.participants !== undefined && found.participants !== null
+          ? String(found.participants)
+          : "");
+      setXpRewards("200");
+      if (found.projectCoverImage) setCoverImagePreview(found.projectCoverImage);
+      // Pre-fill tasks from saved quests
+      try {
+        const qRes = await projectApiRequest<{ campaignQuests?: any[] }>({
+          method: "GET",
+          endpoint: "/hub/get-campaign",
+          params: { id: editId },
+        });
+        const tagToType = (tag: string) => {
+          if (tag === "comment" || tag === "comment-x") return "Comment on our X post";
+          if (tag === "follow" || tag === "follow-x") return "Follow us on X";
+          if (tag === "join" || tag === "join-discord") return "Join Us On Discord";
+          if (tag === "portal") return "Check Out the Portal Claims";
+          if (tag === "feedback") return "Give Feedback";
+          return "others";
+        };
+        const catToPlatform = (cat: string) => {
+          if (cat === "twitter") return "Twitter";
+          if (cat === "discord") return "Discord";
+          return "";
+        };
+        const tagToValidation = (tag: string) => {
+          if (tag === "join" || tag === "join-discord") return "Discord Auth";
+          if (tag === "portal") return "Auto Verified";
+          return "Manual Validation";
+        };
+        if (qRes.campaignQuests) {
+          setTasks(qRes.campaignQuests.map((q: any) => ({
+            _id: q._id,
+            type: tagToType(q.tag),
+            platform: catToPlatform(q.category),
+            handleOrUrl: q.link ?? "",
+            description: q.quest ?? "",
+            evidence: "",
+            validation: tagToValidation(q.tag),
+            verificationMode: q.verificationMode ?? "",
+          })));
+        }
+      } catch { /* ignore */ }
+    } catch { /* ignore – user will fill in manually */ }
+  })();
+}, []);
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "";
   const date = new Date(dateStr);
@@ -82,23 +171,79 @@ const formatDate = (dateStr: string) => {
 };
 
 
-const handlePublish = () => {
-  const newCampaign = {
-    name: campaignName,
-    title: campaignTitle,
-    startDate,
-    endDate,
-    rewardPool,
-    participants,
-    tasks,
-    coverImage,
-    isDraft: false,
-  };
+const typeToTag = (type: string) => {
+  if (type === "Comment on our X post") return "comment-x";
+  if (type === "Follow us on X") return "follow-x";
+  if (type === "Join Us On Discord") return "join-discord";
+  if (type === "Check Out the Portal Claims") return "portal";
+  if (type === "Give Feedback") return "feedback";
+  return "other";
+};
+const platformToCategory = (platform: string) => {
+  if (platform === "Twitter") return "twitter";
+  if (platform === "Discord") return "discord";
+  return "other";
+};
 
-  const savedCampaigns = JSON.parse(localStorage.getItem("campaigns") || "[]");
-  localStorage.setItem("campaigns", JSON.stringify([...savedCampaigns, newCampaign]));
+const buildCampaignFormData = (isDraft: boolean): FormData => {
+  const fd = new FormData();
+  const perParticipantTrust = rewardPool && participants && Number(participants) > 0
+    ? Number((Number(rewardPool) / Number(participants)).toFixed(2))
+    : 0;
+  fd.append("title", campaignTitle);
+  fd.append("description", campaignName);
+  fd.append("nameOfProject", campaignName);
+  fd.append("starts_at", startDate && startTime ? `${startDate}T${startTime}` : startDate);
+  fd.append("ends_at", endDate && endTime ? `${endDate}T${endTime}` : endDate);
+  fd.append("maxParticipants", participants);
+  fd.append("reward", JSON.stringify({
+    xp: Number(xpRewards) || 0,
+    pool: Number(rewardPool) || 0,
+    trust: perParticipantTrust,
+  }));
+  if (coverImage instanceof File) fd.append("coverImage", coverImage);
+  if (isDraft) fd.append("isDraft", "true");
+  fd.append("campaignQuests", JSON.stringify(
+    tasks.map(t => ({
+      _id: t._id,
+      quest: t.description || t.type,
+      link: t.handleOrUrl || "https://nexura.io",
+      tag: typeToTag(t.type),
+      category: platformToCategory(t.platform),
+      verificationMode: t.verificationMode || "",
+    }))
+  ));
+  return fd;
+};
 
-  setShowSuccessModal(true);
+const handleSaveDraft = async (thenNavigate?: string): Promise<string | null> => {
+  if (!campaignTitle) {
+    toast({ title: "Missing description", description: "Please enter a campaign description.", variant: "destructive" });
+    return null;
+  }
+  setSaveLoading(true);
+  try {
+    const fd = buildCampaignFormData(true);
+    const params: Record<string, string> = {};
+    if (campaignId) params.id = campaignId;
+    const res = await projectApiRequest<{ campaignId?: string; message?: string }>({
+      method: "PATCH",
+      endpoint: "/hub/save-campaign",
+      formData: fd,
+      params,
+    });
+    const savedCampaignId = res.campaignId ?? campaignId;
+    if (res.campaignId) setCampaignId(res.campaignId);
+    toast({ title: "Campaign saved!", description: "Draft saved successfully." });
+    if (thenNavigate) setActiveTab(thenNavigate);
+    return savedCampaignId ?? null;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to save campaign.";
+    toast({ title: "Save failed", description: msg, variant: "destructive" });
+    return null;
+  } finally {
+    setSaveLoading(false);
+  }
 };
 
 const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,7 +273,8 @@ const convertToBase64 = (file: File): Promise<string> => {
 
 
 const handleSaveTask = () => {
-  if (!newTask.type || !newTask.platform || !newTask.handleOrUrl || !newTask.description) {
+  const requiresPlatform = newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback";
+  if (!newTask.type || (requiresPlatform && !newTask.platform) || !newTask.handleOrUrl || !newTask.description) {
     return setError("All fields are required.");
   }
 
@@ -141,24 +287,12 @@ const handleSaveTask = () => {
     setTasks([...tasks, newTask]);
   }
 
-  setNewTask({ type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation" });
+  setNewTask({ _id: undefined, type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation", verificationMode: "" });
   setShowModal(false);
   setError("");
 };
 
 
-
-
-// On component mount, load tasks from localStorage
-useEffect(() => {
-  const savedTasks = localStorage.getItem("tasks");
-  if (savedTasks) setTasks(JSON.parse(savedTasks));
-}, []);
-
-// Save tasks to localStorage whenever tasks change
-useEffect(() => {
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-}, [tasks]);
 
 const handleCoverImage = (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
@@ -173,28 +307,35 @@ const handleCoverImage = (e: React.ChangeEvent<HTMLInputElement>) => {
 
 
 
-const handleSubmit = (e) => {
+const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();
+  handleSaveDraft("tasks");
+};
+
+const handleUpdateCampaign = async () => {
+  if (!campaignTitle || !campaignName) {
+    toast({ title: "Incomplete details", description: "Please fill in campaign name and description.", variant: "destructive" });
+    return;
+  }
+  if (tasks.length === 0) {
+    toast({ title: "No tasks", description: "Please add at least one task.", variant: "destructive" });
+    return;
+  }
+
   setLoading(true);
+  try {
+    const savedCampaignId = campaignId ?? await handleSaveDraft();
+    if (!savedCampaignId) return;
 
-  // Build your payload
-  const payload = {
-    campaignName,
-    campaignTitle,
-    coverImage,
-    startDate,
-    startTime,
-    endDate,
-    endTime,
-    rewardPool,
-    participants,
-    xpRewards,
-  };
-
-  console.log("Form Data:", payload);
-
-///// backend 
-  setTimeout(() => setLoading(false), 1000);
+    setCampaignId(savedCampaignId);
+    toast({ title: "Campaign updated!", description: "Your campaign changes have been saved." });
+    setLocation("/studio-dashboard/campaigns-tab");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to update campaign.";
+    toast({ title: "Update failed", description: msg, variant: "destructive" });
+  } finally {
+    setLoading(false);
+  }
 };
 
 const isActive =
@@ -204,29 +345,16 @@ const isActive =
 
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      <div className="relative z-10 flex h-screen">
-        <AnimatedBackground />
-
-<StudioSidebar
-  activeTab="campaignsTab"
-  setActiveTab={(tab) => {
-    if (tab === "campaignSubmissions") setLocation("/studio-dashboard");
-    if (tab === "campaignsTab") setLocation("/studio-dashboard/create-new-campaign");
-    if (tab === "adminManagement") setLocation("/studio-dashboard");
-  }}
-/>
-
-
-        <div className="flex-1 flex flex-col overflow-hidden backdrop-blur-xl">
-          <main className="flex-1 overflow-y-auto p-8 text-white">
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 pt-16 md:pt-8 pb-24 md:pb-8 text-white">
             <div className="max-w-5xl mx-auto space-y-8">
 
               {/* Title */}
               <div>
-                <h1 className="text-3xl font-bold">Create New Campaign</h1>
+                <h1 className="text-3xl font-bold">{isEditMode ? "Edit Campaign" : "Create New Campaign"}</h1>
                 <p className="text-white/60 mt-2">
-                  Launch your next campaign and grow your community with tailored rewards.
+                  {isEditMode
+                    ? "Update your draft campaign details, tasks, and duration."
+                    : "Launch your next campaign and grow your community with tailored rewards."}
                 </p>
               </div>
 
@@ -292,10 +420,10 @@ const isActive =
   </button>
           </div>
 
-              <h2 className="text-xl font-semibold">Campaign Details</h2>
-
               {/* DETAILS TAB */}
               {activeTab === "details" && (
+                <>
+                <h2 className="text-xl font-semibold">Campaign Details</h2>
                 <Card className="bg-purple/10 backdrop-blur-md p-8 space-y-8">
 
                   <form onSubmit={handleSubmit} className="space-y-8">
@@ -314,13 +442,13 @@ const isActive =
 />
                     </div>
 
-                    {/* Campaign Title */}
+                    {/* Campaign Description */}
                     <div>
                       <label className="block mb-2 text-sm font-medium">
-                        Campaign Title
+                        Campaign Description
                       </label>
 <Input
-  placeholder="Enter campaign title..."
+  placeholder="Enter campaign description..."
   className="bg-white/5 border-white/10"
   required
   value={campaignTitle}
@@ -332,60 +460,42 @@ const isActive =
                     </div>
 
                     {/* Dates & Times */}
-                    <div className="grid grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div>
                         <label className="flex items-center gap-2 text-sm mb-2">
                           <Calendar className="w-4 h-4" />
-                          Start Date
+                          Start Date &amp; Time
                         </label>
-                        <Input
-  type="date"
-  className="bg-white/5 border-white/10"
-  value={startDate}
-  onChange={(e) => setStartDate(e.target.value)}
-/>
-                      </div>
-
-                      <div>
-                        <label className="flex items-center gap-2 text-sm mb-2">
-                          <Clock className="w-4 h-4" />
-                          Start Time
-                        </label>
-                        <Input
-  type="time"
-  className="bg-white/5 border-white/10"
-  value={startTime}
-  onChange={(e) => setStartTime(e.target.value)}
-/>
+                        <input
+                          type="datetime-local"
+                          className="w-full rounded-md bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 [color-scheme:dark]"
+                          value={startDate && startTime ? `${startDate}T${startTime}` : startDate ? `${startDate}T00:00` : ""}
+                          onChange={(e) => {
+                            const [d, t] = e.target.value.split("T");
+                            setStartDate(d ?? "");
+                            setStartTime(t ? t.slice(0, 5) : "");
+                          }}
+                        />
                       </div>
 
                       <div>
                         <label className="flex items-center gap-2 text-sm mb-2">
                           <Calendar className="w-4 h-4" />
-                          End Date
+                          End Date &amp; Time
                         </label>
-                        <Input
-  type="date"
-  className="bg-white/5 border-white/10"
-  value={endDate}
-  onChange={(e) => setEndDate(e.target.value)}
-/>
+                        <input
+                          type="datetime-local"
+                          className="w-full rounded-md bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 [color-scheme:dark]"
+                          value={endDate && endTime ? `${endDate}T${endTime}` : endDate ? `${endDate}T00:00` : ""}
+                          onChange={(e) => {
+                            const [d, t] = e.target.value.split("T");
+                            setEndDate(d ?? "");
+                            setEndTime(t ? t.slice(0, 5) : "");
+                          }}
+                        />
                       </div>
-
-                      <div>
-                        <label className="flex items-center gap-2 text-sm mb-2">
-                          <Clock className="w-4 h-4" />
-                          End Time
-                        </label>
-                        <Input
-  type="time"
-  className="bg-white/5 border-white/10"
-  value={endTime}
-  onChange={(e) => setEndTime(e.target.value)}
-/>
-                      </div>
-                      <p className="text-xs text-white/50 -mt-2">
-                        Set the duration of the campaign in UTC. 
+                      <p className="text-xs text-white/50 -mt-2 col-span-full">
+                        Set the start and end date &amp; time of the campaign.
                       </p>
                     </div>
 
@@ -395,39 +505,31 @@ const isActive =
                         <ImageIcon className="w-4 h-4" />
                         Cover Image
                       </label>
-<div
-  className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-900 hover:border-purple-400 transition cursor-pointer"
-  onClick={() => document.getElementById("coverInput").click()}
->
 <label className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-800 hover:border-purple-400 transition cursor-pointer block">
   <input
-  type="file"
-  accept="image/*"
-  onChange={handleCoverImage}
-  className="hidden"
-/>
-
-
+    id="coverInput"
+    type="file"
+    accept="image/*"
+    onChange={handleCoverImage}
+    className="hidden"
+  />
   {coverImagePreview ? (
-  <div className="flex flex-col items-center gap-3">
-    <img
-      src={coverImagePreview} // ✅ Base64 preview string
-      alt="Preview"
-      className="w-32 h-32 object-cover rounded-xl"
-    />
-    <p className="text-sm text-white/60">Click to change image</p>
-  </div>
-) : (
-  <div className="flex flex-col items-center justify-center text-center gap-2">
-    <img src="/upload-icon.png" alt="Upload icon" className="w-16 h-16" />
-    <p className="font-medium text-white">Click to upload or drag and drop</p>
-    <p className="text-sm text-white/50">SVG, PNG, JPG or GIF (max. 10MB)</p>
-  </div>
-)}
+    <div className="flex flex-col items-center gap-3">
+      <img
+        src={coverImagePreview}
+        alt="Preview"
+        className="w-32 h-32 object-cover rounded-xl"
+      />
+      <p className="text-sm text-white/60">Click to change image</p>
+    </div>
+  ) : (
+    <div className="flex flex-col items-center justify-center text-center gap-2">
+      <img src="/upload-icon.png" alt="Upload icon" className="w-16 h-16" />
+      <p className="font-medium text-white">Click to upload or drag and drop</p>
+      <p className="text-sm text-white/50">SVG, PNG, JPG or GIF (max. 10MB)</p>
+    </div>
+  )}
 </label>
-
-
-</div>
 
                     </div>
 
@@ -446,10 +548,11 @@ const isActive =
 
     <Input
   type="number"
-  className="bg-white/5 border-white/10 pl-20"
+  className={`bg-white/5 border-white/10 pl-20 ${isPublished ? "cursor-not-allowed opacity-60" : ""}`}
   placeholder="0"
   value={rewardPool}
   onChange={(e) => setRewardPool(e.target.value)}
+  readOnly={isPublished}
 />
   </div>
 </div>
@@ -470,9 +573,10 @@ const isActive =
     <Input
   type="number"
   placeholder="Enter number of participants"
-  className="bg-white/5 border-white/10 pl-10"
+  className={`bg-white/5 border-white/10 pl-10 ${isPublished ? "cursor-not-allowed opacity-60" : ""}`}
   value={participants}
   onChange={(e) => setParticipants(e.target.value)}
+  readOnly={isPublished}
 />
   </div>
 </div>
@@ -481,13 +585,16 @@ const isActive =
   <label className="block mb-2 text-sm font-medium">
     XP Rewards
   </label>
-  <Input
-  type="number"
-  placeholder="200 XP per participant"
-  className="bg-white/5 border-white/10"
-  value={xpRewards}
-  onChange={(e) => setXpRewards(e.target.value)}
-/>
+  <div className="relative">
+    <Input
+      type="number"
+      placeholder="200 XP per participant"
+      className="bg-white/5 border-white/10 pr-16 cursor-not-allowed opacity-60"
+      value={xpRewards}
+      readOnly
+    />
+    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 text-xs font-medium select-none">Fixed</span>
+  </div>
 </div>
                     </div>
 
@@ -502,39 +609,35 @@ const isActive =
                       </div>
                       {/* Text */}
                       <CardDescription className="text-white/60 text-sm">
-                        Disclaimer: If you want to provide rewards for this campaign, please reach out to Nexura via Discord.
+                        {isPublished
+                          ? "The reward pool and number of participants cannot be changed after the campaign has been published."
+                          : "The reward pool and number of participants cannot be changed once the campaign is published. Please make sure these values are correct before publishing."}
                       </CardDescription>
                     </div>
 
                     {/* Buttons */}
                     <div className="flex justify-between pt-4">
-                      <Link href="/studio-dashboard">
-                        <Button variant="ghost" className="text-white/60 hover:text-white">
-                          Cancel
-                        </Button>
-                      </Link>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-white/60 hover:text-white"
+                        onClick={() => setLocation("/studio-dashboard")}
+                      >
+                        ← Back
+                      </Button>
 
-                      <div className="flex gap-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="border-white/20 text-white hover:bg-white/5"
-                        >
-                          Save
-                        </Button>
-
-                        <Button
-                          type="submit"
-                          className="bg-purple-600 hover:bg-purple-700"
-                          disabled={loading}
-                        >
-                          {loading ? "Saving..." : "Save & Next"}
-                        </Button>
-                      </div>
+                      <Button
+                        type="submit"
+                        className="bg-purple-600 hover:bg-purple-700"
+                        disabled={loading || saveLoading}
+                      >
+                        {loading || saveLoading ? "Saving..." : "Next →"}
+                      </Button>
                     </div>
 
                   </form>
                 </Card>
+                </>
               )}
 
 {/* TASKS TAB */}
@@ -585,7 +688,7 @@ const isActive =
               {index + 1}
             </div>
 
-            <p className="flex-1 text-white">{task.type}</p>
+            <p className="flex-1 text-white">{task.description || task.type}</p>
 
             <div className="flex items-center gap-2">
               <button
@@ -613,19 +716,43 @@ const isActive =
         ))}
       </div>
     )}
+
+    {/* Tasks tab footer: Back + Next → Review */}
+    <div className="flex justify-between items-center mt-6">
+      <button
+        className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm hover:bg-gray-600 transition"
+        onClick={() => setActiveTab("details")}
+      >
+        ← Back
+      </button>
+      <button
+        className="px-6 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition flex items-center gap-2 disabled:opacity-60"
+        disabled={saveLoading}
+        onClick={() => {
+          if (tasks.length === 0) {
+            toast({ title: "No tasks", description: "Please add at least one task before reviewing.", variant: "destructive" });
+            return;
+          }
+          handleSaveDraft("review");
+        }}
+      >
+        {saveLoading ? "Saving..." : "Next →"}
+        {!saveLoading && <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>}
+      </button>
+    </div>
   </div>
 )}
 
 
 {/* ===== MODAL ===== */}
 {showModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-    <div className="bg-purple-950 w-[650px] p-6 rounded-2xl relative shadow-xl">
+  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+    <div className="bg-[#0d0d14] w-full max-w-xl border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
       {/* Close Button */}
       <button
         onClick={() => setShowModal(false)}
-        className="absolute top-3 right-4 text-white text-xl"
+        className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-lg leading-none"
       >
         ×
       </button>
@@ -640,26 +767,43 @@ const isActive =
         <div>
           <label className="text-sm text-white/70 mb-2 block">Task Type</label>
           <select
-            className="w-full p-2 rounded-lg bg-purple-900 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            className="w-full p-2 rounded-lg bg-[#0d0d14] text-white border border-white/10 focus:outline-none focus:border-purple-500 [&>option]:bg-[#0d0d14]"
             value={newTask.type}
-            onChange={(e) => setNewTask({ ...newTask, type: e.target.value })}
+            onChange={(e) => {
+              const type = e.target.value;
+              const isDiscord = type === "Join Us On Discord";
+              const isTwitter = type === "Comment on our X post" || type === "Follow us on X";
+              const isPortal = type === "Check Out the Portal Claims";
+              const isOther = type === "others";
+              const isFeedback = type === "Give Feedback";
+              setNewTask({
+                ...newTask,
+                type,
+                platform: isDiscord ? "Discord" : isTwitter ? "Twitter" : (isPortal || isOther || isFeedback) ? "" : newTask.platform,
+                evidence: isDiscord || isPortal ? "" : isTwitter ? "submit_link" : isFeedback ? "" : newTask.evidence,
+                validation: isDiscord ? "Discord Auth" : isPortal ? "Auto Verified" : isFeedback ? "Manual Validation" : (newTask.validation === "Discord Auth" || newTask.validation === "Auto Verified" ? "Manual Validation" : newTask.validation),
+                verificationMode: isFeedback ? "feedback" : "",
+              });
+            }}
           >
             <option value="">Select task</option>
             <option value="Comment on our X post">Comment on X</option>
             <option value="Follow us on X">Follow on X</option>
             <option value="Join Us On Discord">Join Discord</option>
             <option value="Check Out the Portal Claims">Portal Claims</option>
+            <option value="Give Feedback">Give Feedback</option>
             <option value="others">Others</option>
           </select>
         </div>
 
         {/* Platform */}
+        {newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback" && (
         <div>
           <label className="text-sm text-white/70 mb-2 block">Platform</label>
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setNewTask({ ...newTask, platform: "Twitter" })}
+              onClick={() => setNewTask({ ...newTask, platform: "Twitter", evidence: "submit_link", validation: newTask.validation === "Discord Auth" ? "Manual Validation" : newTask.validation })}
               className={`flex-1 border py-2 rounded-lg transition ${
                 newTask.platform === "Twitter"
                   ? "bg-purple-500 text-white border-purple-500"
@@ -670,7 +814,12 @@ const isActive =
             </button>
             <button
               type="button"
-              onClick={() => setNewTask({ ...newTask, platform: "Discord" })}
+              onClick={() => setNewTask({
+                ...newTask,
+                platform: "Discord",
+                evidence: "",
+                validation: "Discord Auth",
+              })}
               className={`flex-1 border py-2 rounded-lg transition ${
                 newTask.platform === "Discord"
                   ? "bg-purple-500 text-white border-purple-500"
@@ -681,73 +830,135 @@ const isActive =
             </button>
           </div>
         </div>
+        )}
       </div>
 
       {/* TASK DETAILS CARD */}
-      <div className="bg-purple-900 p-5 rounded-xl mb-6 border border-purple-800">
+      <div className="bg-white/5 p-5 rounded-xl mb-6 border border-white/10">
 
         {/* Handle or URL */}
         <div className="mb-4">
-          <label className="text-sm text-white/70 mb-2 block">Handle or URL</label>
+          <label className="text-sm text-white/70 mb-2 block">
+            {newTask.type === "Give Feedback" ? "Website URL" : newTask.platform === "Discord" ? "Discord Invite Link" : newTask.type === "Comment on our X post" ? "Post URL" : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "Profile URL" : "Handle or URL"}
+          </label>
           <input
             type="text"
-            placeholder="..."
+            placeholder={newTask.type === "Give Feedback" ? "https://example.com" : newTask.platform === "Discord" ? "https://discord.gg/..." : newTask.type === "Comment on our X post" ? "https://x.com/username/status/..." : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "https://x.com/username" : "..."}
             value={newTask.handleOrUrl}
             onChange={(e) =>
               setNewTask({ ...newTask, handleOrUrl: e.target.value })
             }
-            className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500"
           />
         </div>
 
         {/* Task Description */}
         <div className="mb-4">
-          <label className="text-sm text-white/70 mb-2 block">Task Description</label>
+          <label className="text-sm text-white/70 mb-2 block">{newTask.type === "Give Feedback" ? "Task Description" : "Task Description"}</label>
           <input
             type="text"
-            placeholder="..."
+            placeholder={newTask.type === "Give Feedback" ? "e.g. Tell us what you think about our platform" : "..."}
             value={newTask.description}
             onChange={(e) =>
               setNewTask({ ...newTask, description: e.target.value })
             }
-            className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
+            className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500"
           />
         </div>
 
         {/* Evidence + Validation */}
-        <div className="grid grid-cols-2 gap-6">
-          {/* Evidence Upload */}
-          <div>
-            <label className="text-sm text-white/70 mb-2 block">Evidence Upload Management</label>
-            <select
-              className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500"
-              value={newTask.evidence}
-              onChange={(e) =>
-                setNewTask({ ...newTask, evidence: e.target.value })
-              }
-            >
-              <option value="">Select option</option>
-            </select>
-          </div>
-
-          {/* Validation Type */}
-          <div>
-            <label className="text-sm text-white/70 mb-2 block">Validation Type</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={newTask.validation}
-                readOnly
-                className="w-full p-2 rounded-lg bg-purple-950 text-white border border-purple-800 focus:outline-none focus:border-purple-500 pr-10"
-              />
-              <img
-                src="/purple-check.png"
-                alt="Verified"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5"
-              />
+        {newTask.platform === "Discord" || newTask.type === "Join Us On Discord" ? (
+          <div className="flex items-center gap-3 rounded-lg bg-indigo-900/50 border border-indigo-500/50 px-4 py-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-indigo-400 flex-shrink-0">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+            </svg>
+            <div>
+              <p className="text-sm text-indigo-300 font-medium">Verified via Discord Auth</p>
+              <p className="text-xs text-white/50 mt-0.5">Users must connect their Discord account. Verification is automatic.</p>
             </div>
           </div>
-        </div>
+        ) : newTask.type === "Check Out the Portal Claims" ? (
+          <div className="flex items-center gap-3 rounded-lg bg-purple-900/50 border border-purple-500/50 px-4 py-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-purple-400 flex-shrink-0">
+              <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="text-sm text-purple-300 font-medium">Auto-verified via Portal</p>
+              <p className="text-xs text-white/50 mt-0.5">Completion is verified automatically after the user completes the task.</p>
+            </div>
+          </div>
+        ) : newTask.type === "Give Feedback" ? (
+          <div className="flex items-center gap-3 rounded-lg bg-emerald-900/50 border border-emerald-500/50 px-4 py-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-emerald-400 flex-shrink-0">
+              <path fillRule="evenodd" d="M4.848 2.771A49.144 49.144 0 0 1 12 2.25c2.43 0 4.817.178 7.152.52 1.978.29 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.68-3.348 3.97a48.901 48.901 0 0 1-3.476.383.39.39 0 0 0-.297.17l-2.755 4.133a.75.75 0 0 1-1.248 0l-2.755-4.133a.39.39 0 0 0-.297-.17 48.9 48.9 0 0 1-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.741c0-1.946 1.37-3.68 3.348-3.97Z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="text-sm text-emerald-300 font-medium">User Feedback Submission</p>
+              <p className="text-xs text-white/50 mt-0.5">Users will visit the website and submit written feedback (min. 200 characters). Reviewed manually.</p>
+            </div>
+          </div>
+        ) : newTask.type === "others" ? (
+          <div>
+            <label className="text-sm text-white/70 mb-2 block">Verification Mode</label>
+            <div className="flex gap-3">
+              {([
+                { value: "image_upload", label: "📷 Image Upload", hint: "User uploads a screenshot" },
+                { value: "submit_link", label: "🔗 Submit Link", hint: "User submits a URL" },
+                { value: "auto", label: "⚡ Auto (link click)", hint: "Verified when link is clicked" },
+              ] as { value: string; label: string; hint: string }[]).map(({ value, label, hint }) => (
+                <button
+                  key={value}
+                  type="button"
+                  title={hint}
+                  onClick={() => setNewTask({ ...newTask, verificationMode: value, evidence: value !== "auto" ? value : "", validation: value === "auto" ? "Auto Verified" : "Manual Validation" })}
+                  className={`flex-1 border py-2 px-2 rounded-lg text-xs transition ${
+                    newTask.verificationMode === value
+                      ? "bg-purple-500 text-white border-purple-500"
+                      : "bg-purple-950 border-purple-800 text-white/70 hover:border-purple-500"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {newTask.verificationMode && (
+              <p className="text-xs text-white/40 mt-2">
+                {newTask.verificationMode === "image_upload" && "Users will upload a screenshot as proof."}
+                {newTask.verificationMode === "submit_link" && "Users will submit a link to prove completion."}
+                {newTask.verificationMode === "auto" && "Task is marked complete as soon as the user clicks the link."}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-6">
+            {/* Evidence Upload */}
+            <div>
+              <label className="text-sm text-white/70 mb-2 block">Evidence Upload</label>
+              <div className="flex items-center gap-2 w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm">
+                <span className="text-purple-400">🔗</span>
+                <span>Submit Link</span>
+              </div>
+            </div>
+
+            {/* Validation Type */}
+            <div>
+              <label className="text-sm text-white/70 mb-2 block">Validation Type</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={newTask.validation}
+                  readOnly
+                  className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500 pr-10"
+                />
+                <img
+                  src="/purple-check.png"
+                  alt="Verified"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -756,17 +967,17 @@ const isActive =
       )}
 
       {/* ACTION BUTTONS */}
-      <div className="flex justify-between">
+      <div className="flex justify-end gap-3 mt-2">
         <button
           onClick={() => setShowModal(false)}
-          className="px-5 py-2 rounded-lg bg-purple-800 hover:bg-purple-700 text-white transition"
+          className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all"
         >
           Cancel
         </button>
 
         <button
           onClick={handleSaveTask}
-          className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold transition"
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
         >
           Save Task
         </button>
@@ -778,70 +989,87 @@ const isActive =
 
 {activeTab === "review" && (
   <Card className="p-8 space-y-6 bg-white/10 backdrop-blur-md">
-    <h2 className="text-2xl font-bold mb-4">Final Campaign Review</h2>
+    <h2 className="text-2xl font-bold">Final Campaign Review</h2>
 
     {/* Campaign Board */}
-    <div className="flex gap-6 rounded-lg border-2 border-purple-500 p-6 bg-white/5">
-      {/* Left side: image */}
-      <div className="w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
-        {coverImage ? (
-          <img
-  src={coverImagePreview || undefined}
-  alt="Campaign Cover"
-  className="w-full h-full object-cover"
-/>
+    <div className="rounded-xl border border-purple-500/60 bg-white/5 overflow-hidden">
 
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-700 text-white">
-            No Image
-          </div>
-        )}
-      </div>
-
-      {/* Right side: title and description */}
-      <div className="flex-1 flex flex-col justify-between">
-        <div>
-          <h3 className="text-xl font-semibold text-white">
-            {campaignTitle || campaignName || "Untitled Campaign"}
-          </h3>
-          <p className="text-white/70 mt-1">
-            {campaignName || "No description provided"}
-          </p>
-          {/* Optional: you can include a project/handle here if needed */}
+      {/* Top: image + title */}
+      <div className="flex gap-6 p-6">
+        {/* Cover image */}
+        <div className="w-36 h-36 flex-shrink-0 rounded-xl overflow-hidden border border-white/10">
+          {(coverImagePreview || imagePreview) ? (
+            <img
+              src={coverImagePreview || imagePreview || undefined}
+              alt="Campaign Cover"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-white/10 text-white/40 text-sm">
+              No Image
+            </div>
+          )}
         </div>
 
-        {/* Bottom info as blocks */}
-        <div className="flex mt-4 text-white/80 border border-white/10 rounded-lg overflow-hidden">
-          {/* Duration */}
-          <div className="flex-1 flex flex-col items-center p-4 border-r border-white/10">
-            <div className="flex items-center gap-2">
-              <img src="/duration.png" alt="Duration Icon" className="w-5 h-5" />
-              <span className="font-semibold">Duration</span>
-            </div>
-            <span className="text-white mt-1">
-  {startDate && endDate
-    ? `${formatDate(startDate)} ${startTime} – ${formatDate(endDate)} ${endTime}`
-    : "Not set"}
-</span>
-          </div>
+        {/* Title + description */}
+        <div className="flex flex-col justify-center gap-1 min-w-0">
+          <h3 className="text-xl font-bold text-white truncate">
+            {campaignName || "Untitled Campaign"}
+          </h3>
+          <p className="text-white/60 text-sm">
+            {campaignTitle || "No description provided"}
+          </p>
+          {startDate && endDate && (
+            <p className="text-white/40 text-xs mt-1">
+              {formatDate(startDate)} {startTime} → {formatDate(endDate)} {endTime}
+            </p>
+          )}
+        </div>
+      </div>
 
-          {/* Reward Pool */}
-          <div className="flex-1 flex flex-col items-center p-4 border-r border-white/10">
-            <div className="flex items-center gap-2">
-              <img src="/reward-pool.png" alt="Reward Pool Icon" className="w-5 h-5" />
-              <span className="font-semibold">Reward Pool</span>
-            </div>
-            <span className="text-white mt-1">{xpRewards || "N/A"}</span>
-          </div>
+      {/* Divider */}
+      <div className="border-t border-white/10" />
 
-          {/* Target Users / Participants */}
-          <div className="flex-1 flex flex-col items-center p-4">
-            <div className="flex items-center gap-2">
-              <img src="/target-users.png" alt="Target Users Icon" className="w-5 h-5" />
-              <span className="font-semibold">Target Users</span>
-            </div>
-            <span className="text-white mt-1">{participants || "N/A"}</span>
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 divide-x-0 md:divide-x divide-white/10">
+        {/* Reward Pool */}
+        <div className="flex flex-col gap-1 p-5">
+          <div className="flex items-center gap-2 text-white/50 text-xs font-medium uppercase tracking-wide">
+            <img src="/reward-pool.png" alt="" className="w-4 h-4 opacity-60" />
+            Reward Pool
           </div>
+          <span className="text-white text-lg font-semibold">{rewardPool ? `${rewardPool} $TRUST` : "—"}</span>
+        </div>
+
+        {/* Target Users */}
+        <div className="flex flex-col gap-1 p-5 border-t md:border-t-0 border-l md:border-l border-white/10">
+          <div className="flex items-center gap-2 text-white/50 text-xs font-medium uppercase tracking-wide">
+            <img src="/target-users.png" alt="" className="w-4 h-4 opacity-60" />
+            Target Users
+          </div>
+          <span className="text-white text-lg font-semibold">{participants || "—"}</span>
+        </div>
+
+        {/* XP Allocated */}
+        <div className="flex flex-col gap-1 p-5 border-t border-white/10 md:border-l">
+          <div className="flex items-center gap-2 text-white/50 text-xs font-medium uppercase tracking-wide">
+            <span className="text-purple-400 font-bold text-sm leading-none">XP</span>
+            XP Allocated
+          </div>
+          <span className="text-white text-lg font-semibold">{xpRewards ? `${xpRewards} XP` : "—"}</span>
+        </div>
+
+        {/* Per Participant */}
+        <div className="flex flex-col gap-1 p-5 border-t border-white/10 md:border-l">
+          <div className="flex items-center gap-2 text-white/50 text-xs font-medium uppercase tracking-wide">
+            <img src="/reward-pool.png" alt="" className="w-4 h-4 opacity-60" />
+            Per Participant
+          </div>
+          <span className="text-white text-lg font-semibold">
+            {rewardPool && participants && Number(participants) > 0
+              ? `${(Number(rewardPool) / Number(participants)).toFixed(2)} $TRUST`
+              : "—"}
+          </span>
         </div>
       </div>
     </div>
@@ -865,8 +1093,12 @@ const isActive =
               {index + 1}
             </div>
 
-            {/* Show task type as description */}
-            <p className="flex-1 text-white">{task.type}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-white">{task.description || task.type}</p>
+              {task.verificationMode && (
+                <p className="text-xs text-white/50 truncate">{task.verificationMode === "image_upload" ? "📷 Image proof" : task.verificationMode === "submit_link" ? "🔗 Link submission" : task.verificationMode === "auto" ? "⚡ Auto" : ""}</p>
+              )}
+            </div>
 
             <div className="flex items-center gap-2">
               <button
@@ -876,7 +1108,6 @@ const isActive =
 
   let url = task.handleOrUrl.trim();
 
-  // If it doesn't start with http, prepend https
   if (!/^https?:\/\//i.test(url)) {
     url = `https://${url}`;
   }
@@ -897,6 +1128,13 @@ const isActive =
               >
                 Edit
               </button>
+
+              <button
+                className="px-3 py-1 bg-gray-800 rounded-lg text-white hover:bg-red-800 transition"
+                onClick={() => setTasks(tasks.filter((_, i) => i !== index))}
+              >
+                <img src="/delete.png" alt="Delete" className="w-4 h-4" />
+              </button>
             </div>
           </div>
         ))}
@@ -912,39 +1150,51 @@ const isActive =
 {/* Footer Buttons */}
 <div className="flex items-center justify-between mt-8">
   {/* Back button on the left */}
-  <button className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition">
-    Back
-  </button>
+    <button className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition" onClick={() => setActiveTab("tasks")}>Back</button>
 
   {/* Right buttons */}
   <div className="flex items-center gap-2 mt-4">
-    <button className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
-      Save
-    </button>
 <button
-  onClick={() => setShowPublishModal(true)}
-  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
+  type="button"
+  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={loading || saveLoading}
 >
-  Publish Campaign
+  Deploy Rewards Contract
 </button>
+{isEditMode && isPublished ? (
+  <button
+    onClick={() => handleUpdateCampaign()}
+    className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+    disabled={loading || saveLoading}
+  >
+    Update Campaign
+  </button>
+) : (
+  <button
+    onClick={() => setShowPublishModal(true)}
+    className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+    disabled={loading || saveLoading}
+  >
+    Publish Campaign
+  </button>
+)}
   </div>
 </div>
   </Card>
   
     )}
 
-<>
   {/* ========================= */}
   {/* PUBLISH MODAL */}
   {/* ========================= */}
   {showPublishModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-      <div className="bg-gray-900 w-[500px] p-6 rounded-2xl relative shadow-xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-[#0d0d14] w-full max-w-md border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
         {/* Close Icon */}
         <button
           onClick={() => setShowPublishModal(false)}
-          className="absolute top-3 right-4 text-white text-xl"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-lg leading-none"
         >
           ×
         </button>
@@ -961,82 +1211,108 @@ const isActive =
         {/* Title + Subtitle */}
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-white">
-            Activate your Studio Hub
+            Campaign Launch Fee
           </h2>
           <p className="text-white/70 mt-2">
-            Activate your studio hub to publish and manage campaigns.
+            Pay the campaign launch fee to publish this campaign and make it available for participants.
           </p>
         </div>
 
         {/* Subscription Card */}
-        <div className="bg-gray-800 p-5 rounded-xl border border-gray-700 mb-6">
-          <h3 className="text-lg font-semibold text-white">
-            Yearly Subscription
-          </h3>
-          <p className="text-white/70 mt-1">
-            1000 TRUST / year
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-white font-semibold text-sm">Campaign Launch Fee</span>
+            <span className="text-purple-400 font-bold text-sm">1000 $TRUST</span>
+          </div>
+          <p className="text-white/60 text-xs mb-3">
+            A one-time fee of 1000 $TRUST is required to launch and publish this campaign.
           </p>
 
-<button
-  className="mt-4 w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
-  onClick={async () => {
-  // Validate minimum requirements
-  if (!campaignTitle || !campaignName) {
-    alert("Campaign details are incomplete.");
-    return;
-  }
-
-  if (tasks.length === 0) {
-    alert("You must add at least one task.");
-    return;
-  }
-
-  // Combine date + time properly
-  const combinedStart = `${startDate}T${startTime}`;
-  const combinedEnd = `${endDate}T${endTime}`;
-
-  let imageBase64 = "";
-
-  if (coverImage instanceof File) {
-    imageBase64 = await convertToBase64(coverImage);
-  }
-
-  const newCampaign: Campaign = {
-    id: crypto.randomUUID(),
-    title: campaignTitle,
-    name: campaignName,
-    description: campaignName,
-    startDate: combinedStart,
-    endDate: combinedEnd,
-    rewardPool,
-    participants,
-    xpRewards,
-    coverImage: imageBase64,
-    tasks,
-    isDraft: false,
-    createdAt: new Date().toISOString(),
-  };
-
-  // Save to storage
-  const savedCampaigns = JSON.parse(localStorage.getItem("campaigns") || "[]");
-  localStorage.setItem("campaigns", JSON.stringify([...savedCampaigns, newCampaign]));
-
-  // Set snapshot for success modal
-  setPublishedCampaign(newCampaign);
-
-  // Close publish modal & show success
-  setShowPublishModal(false);
-  setShowSuccessModal(true);
-}}
->
-  Pay 1000 TRUST
-</button>
+          {paymentTxHash ? (
+            <div className="flex items-center gap-2 bg-green-900/40 border border-green-600/50 rounded-lg px-3 py-2">
+              <svg className="w-4 h-4 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <div className="min-w-0">
+                <p className="text-green-400 text-xs font-semibold">Payment confirmed</p>
+                <p className="text-white/40 text-[10px] truncate">{paymentTxHash}</p>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={paymentLoading}
+              onClick={async () => {
+                setPaymentLoading(true);
+                try {
+                  const hash = await payStudioHubFee();
+                  setPaymentTxHash(hash);
+                  toast({ title: "Payment successful", description: "1000 $TRUST sent. You can now publish your campaign." });
+                } catch (err: any) {
+                  toast({ title: "Payment failed", description: err.message ?? "Transaction was rejected.", variant: "destructive" });
+                } finally {
+                  setPaymentLoading(false);
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg px-4 py-2 transition"
+            >
+              {paymentLoading ? (
+                <><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Waiting for wallet…</>
+              ) : (
+                <>Pay 1000 $TRUST</>
+              )}
+            </button>
+          )}
         </div>
+
+<button
+  className="mt-4 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+  onClick={async () => {
+    if (!campaignTitle || !campaignName) {
+      toast({ title: "Incomplete details", description: "Please fill in campaign name and description.", variant: "destructive" });
+      return;
+    }
+    if (tasks.length === 0) {
+      toast({ title: "No tasks", description: "Please add at least one task.", variant: "destructive" });
+      return;
+    }
+    if (!paymentTxHash.trim()) {
+      toast({ title: "Payment required", description: "Please complete the 1000 $TRUST payment before publishing.", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const savedCampaignId = campaignId ?? await handleSaveDraft();
+      if (!savedCampaignId) return;
+
+      await projectApiRequest({
+        method: "PATCH",
+        endpoint: "/hub/publish-campaign",
+        params: { id: savedCampaignId },
+        data: { txHash: paymentTxHash },
+      });
+
+      toast({ title: "Campaign published!", description: "Your campaign is now live." });
+      setPublishedCampaign({ title: campaignName, description: campaignTitle, name: campaignName, rewardPool, coverImage: coverImagePreview ?? undefined });
+      setShowPublishModal(false);
+      setShowSuccessModal(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to publish campaign.";
+      toast({ title: "Publish failed", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }}
+  disabled={loading || !paymentTxHash}
+>
+  {loading ? <span className="flex items-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Publishing...</span> : "Publish"}
+</button>
 
         {/* Cancel Button */}
         <button
           onClick={() => setShowPublishModal(false)}
-          className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition"
+          className="mt-2 w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all"
         >
           Cancel
         </button>
@@ -1049,13 +1325,13 @@ const isActive =
   {/* SUCCESS MODAL */}
   {/* ========================= */}
   {showSuccessModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-      <div className="bg-gray-900 w-[600px] p-6 rounded-2xl relative shadow-xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-[#0d0d14] w-full max-w-xl border border-purple-500/20 p-6 rounded-2xl relative shadow-[0_0_60px_rgba(131,58,253,0.2)] animate-modal-pop">
 
         {/* Close Icon */}
         <button
           onClick={() => setShowSuccessModal(false)}
-          className="absolute top-3 right-4 text-white text-xl"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-lg leading-none"
         >
           ×
         </button>
@@ -1072,15 +1348,17 @@ const isActive =
         {/* Title + Subtitle */}
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-white">
-            Payment Successfully Completed
+            {isEditMode ? "Campaign Successfully Updated" : "Payment Successfully Completed"}
           </h2>
           <p className="text-white/70 mt-2">
-            Your 1000 TRUST payment was confirmed and your project is ready to go live.
+            {isEditMode
+              ? "Your campaign changes have been saved and are now live."
+              : "Your 1000 $TRUST payment was confirmed and your project is ready to go live."}
           </p>
         </div>
 
         {/* Campaign Snapshot Card */}
-        <div className="bg-white/5 backdrop-blur-md rounded-xl border border-purple-500 p-5">
+        <div className="bg-white/5 backdrop-blur-md rounded-xl border border-purple-500/30 p-5">
 
           <h3 className="text-sm font-semibold text-white/80 mb-4">
             CAMPAIGN SNAPSHOT
@@ -1102,7 +1380,7 @@ const isActive =
 
   <div>
     <h3 className="text-lg font-semibold text-white">
-      {publishedCampaign?.title}
+      {publishedCampaign?.name}
     </h3>
 
     <p className="text-white/70 text-sm mt-1">
@@ -1110,7 +1388,7 @@ const isActive =
     </p>
 
     <p className="text-white/60 text-sm mt-2">
-      Project: @{publishedCampaign?.name}
+      {isEditMode ? "Campaign updated successfully" : "Campaign published successfully"}
     </p>
   </div>
 
@@ -1122,7 +1400,7 @@ const isActive =
         Total Reward Pool
       </span>
       <span className="text-white mt-1 text-sm font-semibold">
-        {publishedCampaign?.rewardPool} TRUST
+        {publishedCampaign?.rewardPool} $TRUST
       </span>
     </div>
 
@@ -1130,10 +1408,8 @@ const isActive =
       <span className="text-xs font-semibold uppercase tracking-wide">
         Status
       </span>
-      <span className={`mt-1 text-sm font-semibold ${
-  isActive ? "text-green-400" : "text-red-400"
-}`}>
-  {isActive ? "ACTIVE" : "COMPLETED"}
+      <span className="mt-1 text-sm font-semibold text-green-400">
+  PUBLISHED
 </span>
     </div>
 
@@ -1145,39 +1421,19 @@ const isActive =
         {/* Launch Button */}
 <Button
   onClick={() => {
-    setActiveTab("campaignsTab"); // highlight sidebar tab
-    setLocation("/studio-dashboard/campaigns-tab"); // update URL
+    setShowSuccessModal(false);
+    setLocation("/studio-dashboard/campaigns-tab");
   }}
-  className="mt-6 w-full flex items-center justify-center gap-3 px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition"
+  className="mt-6 w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
 >
-  <span>Launch Campaign Now</span>
-
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="w-6 h-6 text-white"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2.5}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M5 12h14M13 6l6 6-6 6"
-    />
-  </svg>
+  <span>Continue</span>
 </Button>
 
       </div>
     </div>
   )}
-</>
-
 
         </div>
         </main>
-        </div>
-    </div>
-    </div>
   );
 }

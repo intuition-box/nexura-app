@@ -38,8 +38,18 @@ const submissionSchema = new mongoose.Schema({
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "user"
-  }
+    ref: "users",
+    required: true
+  },
+  hub: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "hubs",
+    required: true
+  },
+  rejectedCount: {
+    type: Number,
+    default: 0
+  },
 }, { timestamps: true });
 
 export const submission = mongoose.model("submissions", submissionSchema);

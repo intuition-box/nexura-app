@@ -45,6 +45,10 @@ const campaignSchema = new Schema({
 		type: Number,
 		default: 0,
 	},
+	maxParticipants: {
+		type: Number,
+		default: 0,
+	},
 	sub_title: {
 		type: String,
 		required: true,
@@ -55,8 +59,8 @@ const campaignSchema = new Schema({
 	},
 	status: {
 		type: String,
-		default: "Active",
-		enum: ["Active", "Scheduled", "Ended"],
+		default: "Save",
+		enum: ["Active", "Scheduled", "Ended", "Save"],
 	},
 	contractAddress: {
 		type: String,
@@ -68,7 +72,7 @@ const campaignSchema = new Schema({
 		},
 		trustTokens: {
 			type: Number,
-			required: true,
+			default: 0,
 		},
 		pool: {
 			type: Number,
@@ -83,9 +87,10 @@ const campaignSchema = new Schema({
 		type: String,
 		required: true,
 	},
-	creator: {
+	hub: {
 		type: mongoose.Schema.Types.ObjectId,
-		ref: "project",
+    ref: "hubs",
+		required: true
 	},
 }, { timestamps: true });
 

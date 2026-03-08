@@ -127,41 +127,35 @@ export default function Leaderboard() {
 
   return (
     // <div className="min-h-screen bg-black text-white p-6 relative">
-    <div className="min-h-screen bg-black text-white py-8 relative">
+    <div className="min-h-screen bg-black text-white p-6 relative">
       <AnimatedBackground />
-      <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 space-y-6 relative z-10">
+      <div className="w-full max-w-3xl mx-auto space-y-8 relative z-10">
 
-        {/* <header className="flex items-center justify-between"> */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Left side: icon + title */}
           <div className="flex items-center gap-3">
             <img src={gold} alt="Leaderboard" className="w-10 h-10" />
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold">Leaderboard</h1>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">Rankings</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">Leaderboard</h1>
+            </div>
           </div>
 
-          {/* Right side: players badge */}
           {!loading && !error && (
-            <Badge variant="outline" className="border-white/20 text-white">
-              {list.length} Players
-            </Badge>
+            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-full px-4 py-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-white/60 text-sm">{list.length} Players</span>
+            </div>
           )}
         </header>
 
         {/* ------------------- PODIUM ------------------- */}
         {!loading && !error && list.length > 0 && (
-          <div className="relative mt-16">
+          <div className="relative mt-10">
             {/* Background gradient */}
-            <div
-              className="
-                absolute inset-x-0 top-0 h-64
-                bg-gradient-to-b
-                from-purple-500/20
-                via-purple-700/20
-                to-black/0
-                rounded-3xl
-                -z-10
-              "
-            />
+            <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-purple-500/15 via-purple-700/10 to-black/0 rounded-3xl -z-10" />
 
             {/* <div className="flex justify-center items-end gap-6 relative"> */}
             <div className="flex justify-center items-end gap-3 sm:gap-5 relative">
@@ -374,17 +368,17 @@ export default function Leaderboard() {
                 {/* REAL CARD */}
                 <Card
                   ref={isCurrentUser ? currentUserRowRef : null}
-                  // className={`p-4 rounded-3xl border-4 hover:brightness-110 ${positionClass}`}
-                  className={`p-3 sm:p-4 rounded-3xl border-4 hover:brightness-110 ${positionClass}`}
+                  className={`p-3 sm:p-4 rounded-2xl border hover:brightness-110 ${positionClass}`}
                   style={{
                     borderColor: isCurrentUser ? "#f5c542" : accent.border,
                     boxShadow: isCurrentUser
                       ? "0 0 20px #f5c54288, 0 0 24px #f5c54244"
-                      : `0 0 14px ${accent.border}66, 0 0 26px ${accent.border}44`,
-                    background:
-                      "linear-gradient(to right, rgba(255,255,255,0.05), rgba(0,0,0,0.4))",
+                      : `0 0 10px ${accent.border}44`,
+                    background: isCurrentUser
+                      ? "linear-gradient(to right, rgba(245,197,66,0.06), rgba(0,0,0,0.5))"
+                      : "linear-gradient(to right, rgba(255,255,255,0.03), rgba(0,0,0,0.4))",
                     transition: "all 0.3s ease-in-out",
-                    zIndex: isCurrentUser ? 50 : "auto", // extra guard
+                    zIndex: isCurrentUser ? 50 : "auto",
                   }}
                 >
                   <div className="flex flex-col">

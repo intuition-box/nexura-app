@@ -15,9 +15,11 @@ type Quest = {
   _id: string;
   quest: string;
   reward: number;
-  tag: "like" | "follow" | "join" | "repost" | "comment" | "portal";
+  tag: string;
   link: string;
   status: string;
+  guildId?: string;
+  hub?: string;
   done: boolean;
 };
 
@@ -55,10 +57,15 @@ export default function CampaignEnvironment() {
   const [title, setTitle] = useState("");
   const [subTitle, setSubTitle] = useState("");
   const [trustClaimed, setTrustClaimed] = useState(0);
+  const [totalTrustAvailable, setTotalTrustAvailable] = useState(0);
+  const [maxParticipants, setMaxParticipants] = useState(0);
   const [projectName, setProjectName] = useState("");
+  const [projectImage, setProjectImage] = useState("");
+  const [hubDescription, setHubDescription] = useState("");
   const [campaignNumber, setCampaignNumber] = useState("000");
-  const [reward, setReward] = useState<{ trustTokens: number; xp: number }>({ trustTokens: 0, xp: 0 });
+  const [reward, setReward] = useState<{ trustTokens?: number; trust?: number; xp: number; pool?: number }>({ trustTokens: 0, xp: 0 });
   const [campaignAddress, setCampaignAddress] = useState("");
+  const [campaignHub, setCampaignHub] = useState("");
 
   const [questsCompleted, setQuestsCompleted] = useState(false);
   const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
@@ -94,10 +101,15 @@ export default function CampaignEnvironment() {
       setTitle(res.title || "");
       setSubTitle(res.sub_title || "");
       setProjectName(res.project_name || "");
+      setProjectImage(res.project_image || "");
+      setHubDescription(res.hubDescription || "");
       setCampaignNumber(res.campaignNumber || "000");
       setReward(res.reward || { trustTokens: 0, xp: 0 });
       setTrustClaimed(res.trustClaimed || 0);
+      setTotalTrustAvailable(res.totalTrustAvailable || 0);
+      setMaxParticipants(res.maxParticipants || 0);
       setQuestsCompleted(res.campaignCompleted?.questsCompleted || false);
+      setCampaignHub(res.hub?.toString() || "");
 
     })();
   }, [claimedQuests, userId]);
@@ -124,7 +136,9 @@ export default function CampaignEnvironment() {
 
   // Open quest links
   const markQuestAsVisited = (quest: Quest) => {
-    window.open(quest.link, "_blank");
+    let url = quest.link?.trim() || "#";
+    if (url !== "#" && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+    window.open(url, "_blank");
 
     if (!visitedQuests.includes(quest._id)) setVisitedQuests([...visitedQuests, quest._id]);
     if (quest.status === "retry") {
@@ -185,6 +199,7 @@ export default function CampaignEnvironment() {
         submissionLink: link,
         page: "campaign",
         tag: quest.tag,
+        hub: campaignHub,
       });
 
       toast({
@@ -226,12 +241,12 @@ export default function CampaignEnvironment() {
           //     throw new Error(`Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`);
           //   }
           // } else 
-          if (["join", "message"].includes(quest.tag)) {
+          if (["join", "message", "join-discord", "message-discord"].includes(quest.tag)) {
             if (!user?.socialProfiles.discord.connected) {
               throw new Error("discord not connected yet, go to profile to connect");
             }
 
-            const { success } = await apiRequestV2("POST", "/api/check-discord", { campaignId, id: quest._id, channelId: id, tag: quest.tag });
+            const { success } = await apiRequestV2("POST", "/api/check-discord", { campaignId, id: quest._id, channelId: id, tag: quest.tag, guildId: quest.guildId });
             if (!success) {
               throw new Error(`Kindly ${quest.tag} the discord channel`);
             }
@@ -277,7 +292,7 @@ export default function CampaignEnvironment() {
         throw new Error("Kindly complete quests to claim reward");
       }
 
-      if (trustClaimed < 4000) {
+      if (campaignAddress && trustClaimed < 4000) {
         await claimCampaignOnchainReward({ campaignAddress, userId });
       }
 
@@ -304,9 +319,21 @@ export default function CampaignEnvironment() {
         {/* Banner with Progress */}
         <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <p className="uppercase text-[0.6rem] sm:text-xs opacity-60">{title}</p>
-              <p className="text-lg sm:text-xl font-semibold">{subTitle}</p>
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-white/10 border border-white/10 shrink-0">
+                {projectImage ? (
+                  <img
+                    src={projectImage}
+                    alt={projectName || "Hub image"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : null}
+              </div>
+              <div className="min-w-0">
+                <p className="uppercase text-[0.6rem] sm:text-xs opacity-60">Hub</p>
+                <p className="text-lg sm:text-xl font-semibold truncate">{projectName || "Unknown Hub"}</p>
+                <p className="text-sm opacity-80 mt-1 line-clamp-2">{hubDescription || "No hub description available."}</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
@@ -341,18 +368,26 @@ export default function CampaignEnvironment() {
               <div>
                 <p className="text-xs opacity-50 uppercase mb-1">{projectName}</p>
                 <p className="text-lg md:text-xl font-bold leading-tight">
-                  Campaign {campaignNumber}:<br />{subTitle}
+                  {description || subTitle || title || `Campaign ${campaignNumber}`}
                 </p>
 
                 <div className="mt-4">
-                  <p className="uppercase text-xs opacity-50">Start Campaign</p>
+                  <p className="uppercase text-xs opacity-50">Campaign Description</p>
                   <p className="text-sm opacity-80 leading-relaxed mt-1">
-                    Complete quests in this campaign and earn rewards.
+                    {title || subTitle || description || "Complete quests in this campaign and earn rewards."}
                   </p>
                 </div>
                 <div className="mt-3 space-y-1">
                   <p className="text-xs opacity-50 uppercase">Rewards</p>
-                  <p className="text-sm">{reward.xp} XP + {reward.trustTokens} Trust</p>
+                  <p className="text-sm">{reward.xp} XP + {(reward.trustTokens && reward.trustTokens > 0)
+                    ? reward.trustTokens
+                    : (reward.trust && reward.trust > 0)
+                    ? reward.trust
+                    : (reward.pool && maxParticipants > 0)
+                    ? Number((reward.pool / maxParticipants).toFixed(2))
+                    : (totalTrustAvailable && maxParticipants > 0)
+                    ? Number((totalTrustAvailable / maxParticipants).toFixed(2))
+                    : 0} $TRUST</p>
                 </div>
               </div>
 
@@ -373,7 +408,8 @@ export default function CampaignEnvironment() {
         <div className="space-y-4 sm:space-y-6">
           {quests.length > 0 ? (
             quests.map((quest) => {
-              const requiresProof = ["comment", "follow"].includes(quest.tag);
+              const requiresProof = ["comment", "follow", "comment-x", "follow-x", "repost-x", "feedback"].includes(quest.tag);
+              const isFeedback = quest.tag === "feedback";
               const visited = visitedQuests.includes(quest._id);
               const claimed = quest.done || claimedQuests.includes(quest._id);
               const pending = quest.status === "pending" || pendingQuests.includes(quest._id);
@@ -425,7 +461,7 @@ export default function CampaignEnvironment() {
                           onClick={() => setExpandedQuestId(isExpanded ? null : quest._id)}
                           className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold bg-purple-700 hover:bg-purple-800"
                         >
-                          Submit Proof
+                          {isFeedback ? "Give Feedback" : "Submit Proof"}
                         </button>
                       )}
 
@@ -453,18 +489,42 @@ export default function CampaignEnvironment() {
                       <p className="text-xs text-white/70">
                         ⚠️ It may take 10 minutes up to 24 hours to validate your submission.
                       </p>
-                      <input
-                        type="url"
-                        placeholder="Paste your comment link or twitter username here"
-                        value={proofLinks[quest._id] || ""}
-                        onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
-                        className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
-                      />
+                      {isFeedback ? (
+                        <>
+                          <textarea
+                            placeholder="Write your feedback here (minimum 200 characters)..."
+                            value={proofLinks[quest._id] || ""}
+                            onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
+                            rows={5}
+                            maxLength={2000}
+                            className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500 resize-none"
+                          />
+                          <div className="flex items-center justify-between">
+                            <p className={`text-xs ${(proofLinks[quest._id]?.length || 0) < 200 ? "text-red-400" : "text-green-400"}`}>
+                              {proofLinks[quest._id]?.length || 0}/200 characters minimum
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <input
+                          type="url"
+                          placeholder="Paste your comment link or twitter username here"
+                          value={proofLinks[quest._id] || ""}
+                          onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
+                          className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
+                        />
+                      )}
                       <button
-                        onClick={() => retryQuests.includes(quest._id) ? retryQuest(quest) : submitCommentProof(quest)}
-                        className="w-full bg-gradient-to-r from-purple-700 via-purple-800 to-indigo-900 hover:from-purple-600 hover:via-purple-700 hover:to-indigo-800 text-white font-semibold py-2.5 rounded-lg transition"
+                        onClick={() => {
+                          if (isFeedback && (proofLinks[quest._id]?.length || 0) < 200) {
+                            return;
+                          }
+                          retryQuests.includes(quest._id) ? retryQuest(quest) : submitCommentProof(quest);
+                        }}
+                        disabled={isFeedback && (proofLinks[quest._id]?.length || 0) < 200}
+                        className="w-full bg-gradient-to-r from-purple-700 via-purple-800 to-indigo-900 hover:from-purple-600 hover:via-purple-700 hover:to-indigo-800 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Submit for Review
+                        {isFeedback ? "Submit Feedback" : "Submit for Review"}
                       </button>
                     </div>
                   )}

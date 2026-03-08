@@ -2,139 +2,161 @@
 
 import { ResponsivePie } from "@nivo/pie";
 
-export default function DesktopCards({ usersJoined, tasksCompleted }) {
+interface DesktopCardsProps {
+  usersJoined: number;
+  tasksCompleted: number;
+  totalQuests: number;
+  totalCampaigns: number;
+  totalTrustDistributed: number;
+  totalOnchainInteractions: number;
+  totalOnchainClaims: number;
+}
+
+export default function DesktopCards({
+  usersJoined,
+  tasksCompleted,
+  totalQuests,
+  totalCampaigns,
+  totalTrustDistributed,
+  totalOnchainInteractions,
+  totalOnchainClaims,
+}: DesktopCardsProps) {
+  const remaining = Math.max(totalOnchainInteractions - totalOnchainClaims, 0);
+  const mints = Math.floor(remaining * 0.5);
+  const payments = remaining - mints;
+  const interactionData = [
+    { id: 'Claims', label: 'Claims', value: Math.max(totalOnchainClaims, 0), color: '#a855f7' },
+    { id: 'Mints', label: 'Mints', value: Math.max(mints, 0), color: '#3b82f6' },
+    { id: 'Payments', label: 'Payments', value: Math.max(payments, 0), color: '#10b981' },
+  ];
+  const hasData = totalOnchainInteractions > 0;
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-3">
 
-      {/* TOTAL QUESTS CREATED */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 flex flex-col justify-between border-2 border-purple-500"
-        style={{ width: '350px', height: '195px' }}
-      >
-        <h2 className="text-purple-500 font-bold text-lg">
-          TOTAL QUESTS CREATED
-        </h2>
-        <p className="text-4xl font-semibold text-purple-500 mt-4">1</p>
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-white/70 text-sm">
-            VERIFIED ECOSYSTEM TASKS
-          </span>
-          <div className="flex items-center text-center">
-            <img src="/quest-icon.png" alt="Quest Icon" className="w-8 h-8 mb-2" />
+      {/* ── Col 1: Quests + Campaigns stacked, spans 3 rows ── */}
+      <div className="col-start-1 row-start-1 row-span-3 flex flex-col gap-3">
+
+        {/* Total Quests */}
+        <div className="glass glass-hover shimmer-once rounded-xl p-3 flex flex-col justify-between border border-purple-500/40 hover:border-purple-400/70 transition-all duration-300 group flex-1">
+          <h2 className="text-purple-400 font-bold text-[10px] tracking-widest uppercase">Total Quests</h2>
+          <p className="text-2xl font-bold text-purple-300 mt-1 group-hover:text-white transition-colors duration-300">{totalQuests}</p>
+          <div className="flex justify-between items-center mt-1">
+            <span className="text-white/40 text-[9px] uppercase tracking-wider">Ecosystem Tasks</span>
+            <img src="/quest-icon.png" alt="" className="w-5 h-5 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
         </div>
-      </div>
 
-      {/* Join vs Completion Ratio */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 flex flex-col items-center border-2 border-purple-500 row-span-4"
-        style={{ width: '350px', height: '400px' }}
-      >
-        <h2 className="text-white font-bold text-center text-lg mb-4">
-          Join vs Completion Ratio
-        </h2>
-
-        <div className="relative w-56 h-56" style={{ height: 220 }}>
-          <ResponsivePie
-            data={[
-              { id: 'Tasks Completed', value: Math.min(tasksCompleted, usersJoined) },
-              { id: 'Users Not Completed', value: Math.max(usersJoined - tasksCompleted, 0) },
-            ]}
-            margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
-            innerRadius={0.6}
-            padAngle={0.7}
-            cornerRadius={3}
-            activeOuterRadiusOffset={8}
-            colors={['#3B82F6', '#833AFD']}
-            borderWidth={1}
-            borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-            enableArcLinkLabels={false}
-            enableArcLabels={false}
-            animate={true}
-            motionStiffness={90}
-            motionDamping={15}
-            theme={{
-              tooltip: {
-                container: {
-                  background: '#333333',
-                  color: '#FFFFFF',
-                  fontSize: '12px',
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                },
-              },
-            }}
-          />
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <p className="text-white font-bold text-2xl">
-              {usersJoined === 0 ? 0 : ((Math.min(tasksCompleted, usersJoined) / usersJoined) * 100).toFixed(2)}%
-            </p>
-            <span className="text-white text-xs">Completion</span>
+        {/* Total Campaigns */}
+        <div className="glass glass-hover shimmer-once rounded-xl p-3 flex flex-col justify-between border border-purple-500/40 hover:border-purple-400/70 transition-all duration-300 group flex-1">
+          <h2 className="text-purple-400 font-bold text-[10px] tracking-widest uppercase">Total Campaigns</h2>
+          <p className="text-2xl font-bold text-purple-300 mt-1 group-hover:text-white transition-colors duration-300">{totalCampaigns}</p>
+          <div className="flex justify-between items-center mt-1">
+            <span className="text-white/40 text-[9px] uppercase tracking-wider">Ecosystem Campaigns</span>
+            <img src="/quest-icon.png" alt="" className="w-5 h-5 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
         </div>
-        {/* Legend Boxes */} <div className="mt-4 flex flex-col gap-3 w-full items-center"> <div className="w-56 bg-gray-700/50 border border-purple-500 rounded-lg px-3 py-3 flex justify-between items-center"> <div className="flex items-center gap-2"> <span className="w-3 h-3 bg-purple-500 rounded-full"></span> <span className="text-white text-sm">Users Joined</span> </div> <span className="text-white text-sm font-semibold">{usersJoined}</span> </div> <div className="w-56 bg-gray-700/50 border border-purple-500 rounded-lg px-4 py-3 flex justify-between items-center"> <div className="flex items-center gap-2"> <span className="w-3 h-3 bg-blue-500 rounded-full"></span> <span className="text-white text-sm">Tasks Completed</span> </div> <span className="text-white text-sm font-semibold">{tasksCompleted}</span> </div> </div>
+
       </div>
 
-      {/* TOTAL $TRUST DISTRIBUTED */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 border-2 border-purple-500"
-        style={{ width: '380px', height: '125px' }}
-      >
-        <div className="grid grid-cols-2 h-full">
-          <div className="flex flex-col justify-center">
-            <h2 className="text-white font-bold text-sm tracking-wide whitespace-nowrap">
-              TOTAL $TRUST DISTRIBUTED
-            </h2>
-            <div className="flex items-center mt-2 gap-3">
-              <p className="text-3xl font-semibold text-white">4000</p>
-              <img src="/trust-icon.png" alt="Trust Icon" className="w-16 h-8 object-contain" />
+      {/* ── Join vs Completion — col 2, rows 1-3 (full height) ── */}
+      <div className="col-start-2 row-start-1 row-span-3 glass glass-hover rounded-xl p-3 flex flex-col border border-purple-500/40 hover:border-purple-400/70 transition-all duration-300">
+        <h2 className="text-white font-bold text-xs mb-2">Join vs Completion</h2>
+        <div className="flex flex-col items-center gap-3 flex-1 justify-center">
+          <div className="relative shrink-0" style={{ width: 130, height: 130 }}>
+            <ResponsivePie
+              data={[
+                { id: 'Tasks Completed', value: Math.min(tasksCompleted, usersJoined) },
+                { id: 'Users Not Completed', value: Math.max(usersJoined - tasksCompleted, 0) },
+              ]}
+              margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+              innerRadius={0.62}
+              padAngle={0.7}
+              cornerRadius={3}
+              activeOuterRadiusOffset={5}
+              colors={['#3B82F6', '#833AFD']}
+              borderWidth={0}
+              enableArcLinkLabels={false}
+              enableArcLabels={false}
+              animate={true}
+              theme={{ tooltip: { container: { background: '#1a1a2e', color: '#fff', fontSize: '11px', padding: '4px 8px', borderRadius: '6px' } } }}
+            />
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <p className="text-white font-bold text-lg leading-none">
+                {usersJoined === 0 ? '0' : ((Math.min(tasksCompleted, usersJoined) / usersJoined) * 100).toFixed(1)}%
+              </p>
+              <span className="text-white/60 text-[8px]">Done</span>
             </div>
           </div>
-          <div className="flex items-center justify-end">
-            <img src="/intuition-icon.png" alt="Intuition Icon" className="w-16 h-16 rounded-lg object-cover" />
+          <div className="flex flex-col gap-1.5 w-full">
+            <div className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 flex justify-between items-center">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+                <span className="text-white/70 text-[10px]">Joined</span>
+              </div>
+              <span className="text-white text-[10px] font-semibold">{usersJoined.toLocaleString()}</span>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 flex justify-between items-center">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                <span className="text-white/70 text-[10px]">Completed</span>
+              </div>
+              <span className="text-white text-[10px] font-semibold">{tasksCompleted.toLocaleString()}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* TOTAL CAMPAIGNS CREATED */}
-      <div
-        className="bg-gray-800 rounded-2xl p-4 flex flex-col justify-between border-2 border-purple-500"
-        style={{ width: '350px', height: '195px' }}
-      >
-        <h2 className="text-purple-500 font-bold text-lg">TOTAL CAMPAIGNS CREATED</h2>
-        <p className="text-4xl font-semibold text-purple-500 mt-4">1</p>
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-white/70 text-sm">
-            VERIFIED ECOSYSTEM CAMPAIGNS
-          </span>
-          <div className="flex items-center">
-            <img src="/quest-icon.png" alt="Quest Icon" className="w-8 h-8" />
+      {/* ── $TRUST Distributed — col 3, row 1 only (compact) ── */}
+      <div className="col-start-3 row-start-1 glass glass-hover shimmer-once rounded-xl p-3 border border-purple-500/40 hover:border-purple-400/70 transition-all duration-300 flex items-center gap-3">
+        <img src="/intuition-icon.png" alt="" className="w-9 h-9 rounded-lg object-cover opacity-90 shrink-0" />
+        <div className="flex flex-col min-w-0">
+          <h2 className="text-white/60 font-semibold text-[10px] uppercase tracking-widest">$TRUST Distributed</h2>
+          <div className="flex items-baseline gap-1 mt-0.5">
+            <img src="/trust-icon.png" alt="" className="w-5 h-3 object-contain shrink-0" />
+            <p className="text-xl font-bold text-white truncate">{totalTrustDistributed.toLocaleString()}</p>
           </div>
         </div>
       </div>
 
-      {/* On-Chain Activity */}
+      {/* ── On-Chain Activity — col 3, rows 2-3 ── */}
       <div
-        className="rounded-2xl p-4 flex flex-col items-center justify-center -mt-16"
-        style={{ width: '380px', height: '265px', backgroundColor: '#833AFD' }}
+        className="col-start-3 row-start-2 row-span-2 rounded-xl p-3 flex flex-col"
+        style={{ background: 'linear-gradient(135deg, #833AFD 0%, #6028c7 100%)', boxShadow: '0 4px 20px rgba(131,58,253,0.4)' }}
       >
-        <h2 className="text-white font-bold text-lg mb-4 text-center">On-Chain Activity</h2>
-        <div className="flex items-center mb-6 gap-3">
-          <img src="/rate-icon.png" alt="Rate Icon" className="w-24 h-24" />
-          <div className="flex flex-col">
-            <p className="text-white font-bold text-2xl">1500</p>
-            <p className="text-white text-sm">INTERACTIONS</p>
+        <h2 className="text-white font-bold text-xs mb-0.5">On-Chain Activity</h2>
+        <p className="text-white/50 text-[9px] uppercase tracking-widest mb-2">Interaction breakdown</p>
+        <div className="flex flex-col items-center gap-2 flex-1 justify-center">
+          <div className="relative shrink-0" style={{ width: 100, height: 100 }}>
+            <ResponsivePie
+              data={hasData ? interactionData : [{ id: 'None', label: 'None', value: 1, color: '#ffffff20' }]}
+              margin={{ top: 6, right: 6, bottom: 6, left: 6 }}
+              innerRadius={0.62}
+              padAngle={1.5}
+              cornerRadius={4}
+              activeOuterRadiusOffset={5}
+              colors={hasData ? interactionData.map(d => d.color) : ['#ffffff20']}
+              borderWidth={0}
+              enableArcLinkLabels={false}
+              enableArcLabels={false}
+              animate={true}
+              theme={{ tooltip: { container: { background: '#1a1a2e', color: '#fff', fontSize: '11px', padding: '4px 8px', borderRadius: '6px' } } }}
+            />
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <p className="text-white font-bold text-base leading-none">{totalOnchainInteractions.toLocaleString()}</p>
+              <span className="text-white/60 text-[8px] mt-0.5">Total</span>
+            </div>
           </div>
-        </div>
-        <div className="bg-gray-800/50 rounded-xl p-4 py-1 inline-block">
-          <p className="flex items-start text-white">
-            <span className="text-lg mr-8 mt-4">Total On-Chain Claims</span>
-            <span className="flex flex-col text-right">
-              <span className="text-5xl font-bold leading-none">500</span>
-              <span className="text-xs">INTERACTED</span>
-            </span>
-          </p>
+          <div className="flex flex-col gap-1.5 w-full">
+            {interactionData.map((d) => (
+              <div key={d.id} className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: d.color }} />
+                  <span className="text-white/70 text-[10px]">{d.label}</span>
+                </div>
+                <span className="text-white font-semibold text-[10px]">{d.value.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

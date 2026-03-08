@@ -62,7 +62,7 @@ const campaignQuestSchema = new Schema({
 	},
 	tag: {
 		type: String,
-		enum: ["like", "follow", "repost", "join", "portal", "message", "portal", "comment", "other"],
+		enum: ["like", "follow", "follow-x", "repost", "repost-x", "join", "join-discord", "portal", "message", "message-discord", "comment", "comment-x", "feedback", "other"],
 		required: true
 	},
 	followers: {
@@ -134,8 +134,8 @@ const miniQuestSchema = new Schema({
 		type: String,
 		required: true,
 	},
-	followers: {
-		type: Number
+	guildId: {
+		type: String
 	},
 	tag: {
 		type: String,

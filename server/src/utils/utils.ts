@@ -1,11 +1,13 @@
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { JWT_SECRET, REFRESH_SECRET } from "./env.utils";
+import { JWT_SECRET, network, REFRESH_SECRET } from "./env.utils";
 import { performIntuitionOnchainAction } from "./account";
 import { NexonsAddress } from "./constants";
 import { ethers } from "ethers";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import chain from "./chain.utils";
+import { formatEther } from "viem";
 
 export const padNumber = (numberToBePadded: number) => {
 	return numberToBePadded.toString().padStart(3, "0");
@@ -195,16 +197,13 @@ export const validateEcosystemQuestData = (reqData: any) => {
 	return parseData;
 };
 
-export const validateProjectData = (reqData: any) => {
-	const projectSchema = z.object({
+export const validateHubData = (reqData: any) => {
+	const hubSchema = z.object({
 		name: z.string().trim(),
-		email: z.email().trim(),
     description: z.string().trim(),
-		address: z.string().trim(),
-		password: z.string().trim().length(8),
 	});
 
-	const parseData = projectSchema.safeParse(reqData);
+	const parseData = hubSchema.safeParse(reqData);
 
 	return parseData;
 };
@@ -219,14 +218,27 @@ export const generateOTP = () => {
 	return code;
 };
 
-export const validateProjectAdminData = (reqData: any) => {
-	const projectAdminSchema = z.object({
+export const validateSuperAdminData = (reqData: any) => {
+	const hubSuperAdminSchema = z.object({
+		name: z.string().trim().min(3),
 		email: z.email().trim(),
-    password: z.string().trim(),
+    password: z.string().trim().min(8),
+	});
+
+	const parseData = hubSuperAdminSchema.safeParse(reqData);
+
+	return parseData;
+};
+
+export const validateHubAdminData = (reqData: any) => {
+	const hubAdminSchema = z.object({
+		name: z.string().trim().min(3),
+		email: z.email().trim(),
+    password: z.string().trim().min(8),
 		code: z.string().trim().length(6),
 	});
 
-	const parseData = projectAdminSchema.safeParse(reqData);
+	const parseData = hubAdminSchema.safeParse(reqData);
 
 	return parseData;
 };
@@ -295,18 +307,18 @@ export const getRefreshToken = (id: any) => {
 };
 
 export const checkPayment = async (txHash: string) => {
-	const provider = new ethers.JsonRpcProvider("https://rpc.intuition.systems");
+	const provider = new ethers.JsonRpcProvider(chain.rpcUrls.default.http[0]);
 
-	const feeInterface = new ethers.Interface(["event FeePaid(uint256 totalCampaigns)"]); // Replace with your event interface
+	const feeInterface = new ethers.Interface(["event FeePaid(uint256 totalCampaigns)"]);
 
 	const receipt = await provider.getTransactionReceipt(txHash);
 	if (!receipt || receipt.status !== 1) {
 		throw new Error("Transaction failed");
 	}
 
-	const FEE_CONTRACT = "0xcontractAddress";
+	const FEE_CONTRACT = network === "testnet" ? "0x742ed23dD10686C22A5cD459Af96BC1F83e58C7a" : "";
 
-	let totalCampaigns: number = 0;
+	let totalCampaigns: bigint = 0n;
 
 	// Check logs
 	for (const log of receipt.logs) {
@@ -315,9 +327,20 @@ export const checkPayment = async (txHash: string) => {
     const parsed = feeInterface.parseLog(log);
 
 		if (parsed?.name === "FeePaid") {
-			totalCampaigns = parsed.args.totalCampaigns ?? 0;
+			totalCampaigns = parsed.args.totalCampaigns ?? 0n;
 		}
 	}
 
-	return totalCampaigns;
+	return Number(totalCampaigns);
+}
+
+export const getAmountPaid = async (txHash: string) => {
+	const provider = new ethers.JsonRpcProvider(chain.rpcUrls.default.http[0]);
+
+	const tx = await provider.getTransaction(txHash);
+	if (!tx) {
+		throw new Error("Transaction not found");
+	}
+
+	return { from: tx.from, value: formatEther(tx.value) };
 }

@@ -1,43 +1,47 @@
-import { type WalletClient, type PublicClient, custom, createWalletClient, createPublicClient } from "viem";
+import { type WalletClient, type Address, type PublicClient, custom, createWalletClient, createPublicClient } from "viem";
 import chain from "./chain";
 
 let walletClient: WalletClient | undefined = undefined;
 let publicClient: PublicClient | undefined = undefined;
 
 export const getPublicClient = () => {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    throw new Error("window is undefined");
+  };
 
   const provider = (window as any).ethereum;
 
   if (!provider) {
-    console.error("No Ethereum provider found");
-    return null;
+    throw new Error("No Ethereum provider found");
   }
 
   if (!publicClient) {
     publicClient = createPublicClient({
       chain,
       transport: custom(provider)
-    })
+    });
+    
+    return publicClient;
   }
 
   return publicClient;
 };
 
-export const getWalletClient = () => {
-  if (typeof window === 'undefined') return null;
+export const getWalletClient = async () => {
+  if (typeof window === 'undefined') {
+    throw new Error("window is undefined");
+  };
 
-  const provider = (window as any).ethereum;
-
-  if (!provider) {
-    console.error("No Ethereum provider found");
-    return null;
+  const [account] = await window.ethereum!.request({ method: 'eth_requestAccounts' });
+  if (!account) {
+    throw new Error("No account found");
   }
 
   if (!walletClient) {
     walletClient = createWalletClient({
       chain,
-      transport: custom(provider)
+      account,
+      transport: custom(window.ethereum!)
     });
 
     return walletClient;

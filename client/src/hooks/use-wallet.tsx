@@ -88,7 +88,7 @@ export function useWallet() {
       try {
         console.log("🔐 Attempting backend authentication...");
         if (opts?.purpose === "org-signin") {
-          const checkedData = await apiRequestV2("POST", "/api/project/check", { address });
+          const checkedData = await apiRequestV2("POST", "/api/hub/check", { address });
           // console.log("project-hehe", checkedData);
           if (checkedData.user) {
             localStorage.setItem("project_profile", JSON.stringify(checkedData.user));
