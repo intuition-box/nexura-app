@@ -88,56 +88,55 @@ function Router() {
       <Route path="/x/callback" component={XCallback} />
       <Route path="/campaigns/tasks" component={CampaignEnvironment} />
       <Route path="/quests/tasks-card" component={QuestEnvironment} />
-      <Route path="/analytics" component={Analytics} />
+      {/*<Route path="/analytics" component={Analytics} />*/}
       <Route path="/portal-claims" component={PortalClaims} />
       <Route path="/portal-claims/:id" component={ClaimDetails} />
-      <Route path="/studio" component={NexuraStudio} />
+      {/*<Route path="/studio" component={NexuraStudio} />*/}
       {/* Profile pages */}
       <Route path="/profile" component={Profile} />
       <Route path="/profile/edit" component={EditProfile} />
       <Route path="/achievements" component={Achievements} />
       <Route path="/leaderboard" component={Leaderboard} />
       {/* Developer pages */}
-      <Route path="/projects/create" component={ProjectCreate} />
+      {/*<Route path="/projects/create" component={ProjectCreate} />
       <Route path="/projects/create/create-hub" component={CreateHub} />
       <Route path="/projects/create/signin-to-hub" component={SignInToHub} />
       <Route path="/projects/create/the-hub" component={TheHub} />
       <Route path="/connect-discord" component={ConnectDiscord} />
       <Route path="/project/connected-discord" component={ConnectedDiscord} />
       <Route path="/studio-dashboard">
-  <StudioDashboard onLogout={handleLogout} />
-</Route>
-<Route path="/studio-dashboard/create-new-campaign">
-  <StudioLayout title="Create Campaign" onLogout={handleLogout}>
-    <CreateNewCampaigns />
-  </StudioLayout>
-</Route>
-<Route path="/studio-dashboard/campaigns-tab">
-  <StudioLayout title="Campaigns" onLogout={handleLogout}>
-    <CampaignsTab />
-  </StudioLayout>
-</Route>
-<Route path="/studio-dashboard/admin-management">
-  <StudioLayout title="User Administration" onLogout={handleLogout}>
-    <AdminManagement />
-  </StudioLayout>
-</Route>
-<Route path="/studio-dashboard/my-campaign">
-  <StudioLayout title="My Campaign" onLogout={handleLogout}>
-    <MyCampaign />
-  </StudioLayout>
-</Route>
-<Route path="/studio-dashboard/hub-profile">
-  <StudioLayout title="Hub Profile" onLogout={handleLogout}>
-    <HubProfile />
-  </StudioLayout>
-</Route>
+        <StudioDashboard onLogout={handleLogout} />
+      </Route>*/}
+      {/*<Route path="/studio-dashboard/create-new-campaign">
+        <StudioLayout title="Create Campaign" onLogout={handleLogout}>
+          <CreateNewCampaigns />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/campaigns-tab">
+        <StudioLayout title="Campaigns" onLogout={handleLogout}>
+          <CampaignsTab />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/admin-management">
+        <StudioLayout title="User Administration" onLogout={handleLogout}>
+          <AdminManagement />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/my-campaign">
+        <StudioLayout title="My Campaign" onLogout={handleLogout}>
+          <MyCampaign />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/hub-profile">
+        <StudioLayout title="Hub Profile" onLogout={handleLogout}>
+          <HubProfile />
+        </StudioLayout>
+      </Route>*/}
 
-
-      <Route path="/studio/register" component={AdminSignUp} />
+      {/*<Route path="/studio/register" component={AdminSignUp} />*/}
       {/* <Route path="/studio" component={StudioIndex} /> */}
-      <Route path="/project/:projectId/*" component={ProjectDashboard} />
-      <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
+      {/*<Route path="/project/:projectId/*" component={ProjectDashboard} />
+      <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />*/}
       {/* Referral */}
       <Route path="/ref/:referrerCode" component={UserReferred} />
       {/* Fallback to 404 */}
