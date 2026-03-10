@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "wouter";
 
 type Props = {
   onClose?: () => void;
@@ -8,21 +9,24 @@ type Props = {
 
 const XPRewardPopup: React.FC<Props> = ({ onClose, forceShow = false }) => {
   const [show, setShow] = useState(false);
+const [location] = useLocation();
+const TARGET_PAGE = "/portal-claims";
   const LOCAL_KEY = "xpPopupShownCount";
 
   useEffect(() => {
-    if (forceShow) {
-      setShow(true);
-      return;
-    }
+  if (location !== TARGET_PAGE) return;
 
-    const count = parseInt(localStorage.getItem(LOCAL_KEY) || "0");
-    if (count < 2) {
-      setShow(true);
-      localStorage.setItem(LOCAL_KEY, (count + 1).toString());
-    }
-  }, [forceShow]);
+  if (forceShow) {
+    setShow(true);
+    return;
+  }
 
+  const count = parseInt(localStorage.getItem(LOCAL_KEY) || "0");
+  if (count < 2) {
+    setShow(true);
+    localStorage.setItem(LOCAL_KEY, (count + 1).toString());
+  }
+}, [forceShow, location]);
   if (!show) return null;
 
   return createPortal(
