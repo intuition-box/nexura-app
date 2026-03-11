@@ -288,8 +288,30 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 		res.status(200).json({ message: "signed in", accessToken, user: userExists });
 	} catch (error: any) {
 		logger.error(error);
-		const isDuplicate = error?.code === 11000;
-		res.status(isDuplicate ? BAD_REQUEST : INTERNAL_SERVER_ERROR).json({ error: isDuplicate ? "Account already exists for this wallet" : (error?.message || "Error signing user in") });
+
+		// Duplicate key on address — wallet already registered, just sign them in
+		if (error?.code === 11000) {
+			try {
+				const { address } = req.body;
+				const existingUser = await user.findOne({ address });
+				if (existingUser) {
+					const accessToken = JWT.sign(existingUser._id);
+					const refreshToken = getRefreshToken(existingUser._id);
+					req.id = existingUser._id as unknown as string;
+					res.cookie("refreshToken", refreshToken, {
+						httpOnly: true,
+						secure: true,
+						maxAge: 30 * 24 * 60 * 60,
+					});
+					res.status(200).json({ message: "signed in", accessToken, user: existingUser });
+					return;
+				}
+			} catch (innerError) {
+				logger.error(innerError);
+			}
+		}
+
+		res.status(INTERNAL_SERVER_ERROR).json({ error: error?.message || "Error signing user in" });
 	}
 };
 
