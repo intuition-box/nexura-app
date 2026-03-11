@@ -40,7 +40,7 @@ const ensureSwitch = async () => {
 
 export const payStudioHubFee = async (): Promise<string> => {
   try {
-    if (!window.ethereum) throw new Error("No injected wallet found. Install MetaMask or another Ethereum wallet.");
+    if (!window.ethereum) throw new Error("No wallet provider available. Connect a wallet with RainbowKit first.");
 
     await ensureSwitch();
 
@@ -83,7 +83,7 @@ export const createCampaignOnchain = async () => {
 export const claimCampaignOnchainReward = async ({ campaignAddress, userId }: { campaignAddress: string, userId: string }) => {
   try {
     const walletClient = getWalletClient();
-    if (!walletClient) throw new Error("No injected wallet found. Install MetaMask or another Ethereum wallet.");
+    if (!walletClient) throw new Error("No wallet provider available. Connect a wallet with RainbowKit first.");
 
     await window.ethereum.request({
       method: "wallet_switchEthereumChain",
@@ -125,7 +125,7 @@ export const claimCampaignOnchainReward = async ({ campaignAddress, userId }: { 
 export const claimReferralReward = async (userId: string) => {
   try {
     const walletClient = getWalletClient();
-    if (!walletClient) throw new Error("No injected wallet found. Install MetaMask or another Ethereum wallet.");
+    if (!walletClient) throw new Error("No wallet provider available. Connect a wallet with RainbowKit first.");
 
     const mainnet = network === "mainnet";
 
@@ -150,7 +150,7 @@ export const claimReferralReward = async (userId: string) => {
 export const mintNexon = async (level: number, userId: string) => {
   try {
     const walletClient = getWalletClient();
-    if (!walletClient) throw new Error("No injected wallet found. Install MetaMask or another Ethereum wallet.");
+    if (!walletClient) throw new Error("No wallet provider available. Connect a wallet with RainbowKit first.");
 
     const mainnet = network === "mainnet";
 

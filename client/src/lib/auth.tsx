@@ -25,50 +25,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Build auth headers
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         const token = getSessionToken();
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-          console.log("🔑 Sending Authorization header for /api/user/profile");
-        } else {
-          console.log("❌ No accessToken found for /api/user/profile");
-        }
-
-        // Use apiRequest which includes Authorization: Bearer <token> when present
-        const res = await apiRequest("GET", "/api/user/profile").catch(err => {
-          console.warn("Network error fetching profile:", String(err));
-          return null;
-        });
-
-        console.log("passed first fetch");
-        
-        const json = await res?.json().catch(() => null);
-        if (!json) {
-          console.warn("Could not parse profile response");
+        if (!token) {
           setUser(null);
           setLoading(false);
           return;
         }
 
-        console.log("passed json parse");
-        
-        // /api/me returns { user, profile, hasProfile }
-        // Validate that user is an object before setting
-        const userData = json?.user ? { ...json.user, ...(json.profile || {}) } : null;
-        
-        console.log('[AuthProvider] Received data from /api/user/profile:', {
-          hasUser: !!json?.user,
-          hasProfile: !!json?.profile,
-          userDataType: typeof userData,
-          isArray: Array.isArray(userData),
-          isNull: userData === null,
-          keys: userData ? Object.keys(userData) : []
-        });
+        headers["Authorization"] = `Bearer ${token}`;
 
-        if (userData && typeof userData === 'object' && !Array.isArray(userData) && userData !== null) {
-          console.log('[AuthProvider] Setting valid user data');
-          console.log("dilly");
+        const res = await apiRequest("GET", "/api/user/profile").catch(() => null);
+
+        const json = await res?.json().catch(() => null);
+        if (!json) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        const userData = json?.user ? { ...json.user, ...(json.profile || {}) } : null;
+
+        if (userData && typeof userData === 'object' && !Array.isArray(userData)) {
           setUser(userData);
         } else {
-          console.error('[AuthProvider] Invalid user data structure:', typeof userData, Array.isArray(userData), userData);
           setUser(null);
         }
       } catch (e) {
@@ -89,20 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const json = await res.json();
           const userData = json?.user ? { ...json.user, ...(json.profile || {}) } : null;
 
-          console.log('[AuthProvider] Session change - received data:', {
-            hasUser: !!json?.user,
-            hasProfile: !!json?.profile,
-            userDataType: typeof userData,
-            isArray: Array.isArray(userData),
-            isNull: userData === null
-          });
-
-          if (userData && typeof userData === 'object' && !Array.isArray(userData) && userData !== null) {
-            console.log('[AuthProvider] Session change - setting valid user data');
+          if (userData && typeof userData === 'object' && !Array.isArray(userData)) {
             setUser(userData);
-            toast({ title: "Profile updated", description: "Your progress has been refreshed" });
-          } else {
-            console.error('[AuthProvider] Invalid user data on session change:', typeof userData);
           }
           return;
         }

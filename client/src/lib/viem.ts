@@ -12,7 +12,7 @@ export const getPublicClient = () => {
   const provider = (window as any).ethereum;
 
   if (!provider) {
-    throw new Error("No Ethereum provider found");
+    throw new Error("No wallet provider available. Connect a wallet with RainbowKit first.");
   }
 
   if (!publicClient) {
@@ -32,9 +32,13 @@ export const getWalletClient = async () => {
     throw new Error("window is undefined");
   };
 
+  if (!window.ethereum) {
+    throw new Error("No wallet provider available. Connect a wallet with RainbowKit first.");
+  }
+
   const [account] = await window.ethereum!.request({ method: 'eth_requestAccounts' });
   if (!account) {
-    throw new Error("No account found");
+    throw new Error("No connected wallet account found. Connect a wallet with RainbowKit first.");
   }
 
   if (!walletClient) {
