@@ -23,14 +23,20 @@ export default function StudioLayout({ children, title = "Nexura Studio", onLogo
   const [location, setLocation] = useLocation();
 
   // Determine active tab from the current URL
-  const deriveTab = (): TabType => {
+  const deriveTab = (): TabType | null => {
+    if (location.includes("hub-profile")) return null;
     if (location.includes("admin-management")) return "adminManagement";
+    if (location === "/studio-dashboard") return "campaignSubmissions";
     if (location.includes("campaigns-tab") || location.includes("create-new-campaign") || location.includes("my-campaign"))
       return "campaignsTab";
-    return "campaignsTab"; // default
+    return "campaignSubmissions";
   };
 
-  const [activeTab, setActiveTab] = useState<TabType>(deriveTab);
+  const [activeTab, setActiveTab] = useState<TabType | null>(deriveTab);
+
+  useEffect(() => {
+    setActiveTab(deriveTab());
+  }, [location]);
 
   // Auth guard
   useEffect(() => {

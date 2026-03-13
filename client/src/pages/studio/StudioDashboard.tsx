@@ -41,8 +41,19 @@ type BannedUser = {
 type TabType = "campaignSubmissions" | "adminManagement" | "campaignsTab";
 
 export default function StudioDashboard({ onLogout }: StudioDashboardProps) {
-  const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<TabType>("campaignsTab");
+  const [location, setLocation] = useLocation();
+  const deriveTab = (): TabType => {
+    if (location.includes("admin-management")) return "adminManagement";
+    if (location.includes("campaigns-tab") || location.includes("create-new-campaign") || location.includes("my-campaign")) {
+      return "campaignsTab";
+    }
+    return "campaignSubmissions";
+  };
+  const [activeTab, setActiveTab] = useState<TabType>(deriveTab);
+
+  useEffect(() => {
+    setActiveTab(deriveTab());
+  }, [location]);
 
   // Auth guard — redirect to /studio if no valid session
   useEffect(() => {

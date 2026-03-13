@@ -8,8 +8,8 @@ import { getStoredProjectInfo, clearProjectSession, projectApiRequest, getStored
 type TabType = "campaignSubmissions" | "adminManagement" | "campaignsTab";
 
 interface StudioSidebarProps {
-  activeTab: TabType;
-  setActiveTab: (tab: TabType) => void;
+  activeTab: TabType | null;
+  setActiveTab: (tab: TabType | null) => void;
 }
 
 export default function StudioSidebar({
@@ -65,9 +65,15 @@ export default function StudioSidebar({
         .catch(() => { /* ignore — offline or no hub yet */ });
   }, []);
 
+  const routeByTab: Record<TabType, string> = {
+    campaignSubmissions: "/studio-dashboard",
+    campaignsTab: "/studio-dashboard/campaigns-tab",
+    adminManagement: "/studio-dashboard/admin-management",
+  };
+
   const navigate = (id: TabType) => {
     setActiveTab(id);
-    setLocation("/studio-dashboard");
+    setLocation(routeByTab[id]);
   };
 
   return (
@@ -83,7 +89,10 @@ export default function StudioSidebar({
 
           {/* Project pill — clickable, navigates to hub profile */}
           <button
-            onClick={() => setLocation("/studio-dashboard/hub-profile")}
+            onClick={() => {
+              setActiveTab(null);
+              setLocation("/studio-dashboard/hub-profile");
+            }}
             className="flex items-center gap-3 border-2 border-purple-500 rounded-2xl px-3 py-2 relative z-10 w-full min-w-0 hover:bg-white/5 transition-colors cursor-pointer text-left"
           >
             <div className="w-10 h-10 rounded-2xl overflow-hidden flex-shrink-0">
@@ -146,7 +155,10 @@ export default function StudioSidebar({
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-xl border-b border-white/10">
         <img src="/nexura-logo.png" alt="Nexura" className="h-7 w-auto" />
         <button
-          onClick={() => setLocation("/studio-dashboard/hub-profile")}
+          onClick={() => {
+            setActiveTab(null);
+            setLocation("/studio-dashboard/hub-profile");
+          }}
           className="flex items-center gap-2 border border-purple-500 rounded-xl px-2 py-1 max-w-[55%] min-w-0 hover:bg-white/10 transition-colors cursor-pointer"
         >
           <div className="w-6 h-6 rounded-lg overflow-hidden flex-shrink-0">
