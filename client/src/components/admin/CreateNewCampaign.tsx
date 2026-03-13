@@ -1314,13 +1314,6 @@ const isActive =
         method: "PATCH",
         endpoint: "/hub/publish-campaign",
         params: { id: savedCampaignId },
-        data: { txHash: paymentTxHash },
-      });
-
-      await projectApiRequest({
-        method: "PATCH",
-        endpoint: "/hub/save-payment-hash",
-        data: { txHash: null },
       });
 
       toast({ title: "Campaign published!", description: "Your campaign is now live." });

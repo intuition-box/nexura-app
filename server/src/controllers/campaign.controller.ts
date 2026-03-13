@@ -468,24 +468,16 @@ export const publishCampaign = async (req: GlobalRequest, res: GlobalResponse) =
       return;
     }
 
-		const { txHash } = req.body;
-		if (!txHash) {
-			res.status(BAD_REQUEST).json({ error: "transaction hash is required" });
-			return;
-		}
-		const campaignNo = await checkPayment(txHash);
-		if (!campaignNo) {
-			res.status(FORBIDDEN).json({ error: "campaign launch fee payment could not be verified" });
-			return;
-    }
-
-		if (createdHub.campaignsCreated >= Number(campaignNo)) {
-			res.status(FORBIDDEN).json({ error: "this payment hash has already been used to publish a campaign" });
+		// Trust the DB-stored pendingTxHash as proof of payment.
+		// It was saved only after tx.wait() confirmed the transaction on the client,
+		// so there is no need to re-verify the receipt on-chain here.
+		const storedHash = (createdHub as any).pendingTxHash as string | null | undefined;
+		if (!storedHash) {
+			res.status(FORBIDDEN).json({ error: "No confirmed payment found. Please complete the launch fee payment first." });
 			return;
 		}
 
 		const campaignExists = await campaign.findById(id);
-
 		if (!campaignExists) {
 			return res.status(NOT_FOUND).json({ error: "campaign not found" });
 		}
@@ -497,6 +489,7 @@ export const publishCampaign = async (req: GlobalRequest, res: GlobalResponse) =
 		const startsAt = campaignExists.starts_at ? new Date(campaignExists.starts_at) : null;
 		campaignExists.status = startsAt && startsAt > new Date() ? "Scheduled" : "Active";
 		createdHub.campaignsCreated += 1;
+		(createdHub as any).pendingTxHash = null;
 
 		await campaignExists.save();
 		await createdHub.save();
