@@ -52,9 +52,9 @@ export default function StudioLayout({ children, title = "Nexura Studio", onLogo
     <div className="relative min-h-screen bg-black overflow-hidden">
       {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#8a3ffc]/20 blur-[120px] animate-pulse-glow" />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#9a58ff]/20 blur-[120px] animate-pulse-glow" />
         <div className="absolute bottom-1/4 right-1/4 h-80 w-80 rounded-full bg-[#6366f1]/15 blur-[100px] animate-pulse-glow" style={{ animationDelay: "2s" }} />
-        <div className="absolute top-1/2 right-1/3 h-64 w-64 rounded-full bg-[#a855f7]/10 blur-[80px] animate-pulse-glow" style={{ animationDelay: "4s" }} />
+        <div className="absolute top-1/2 right-1/3 h-64 w-64 rounded-full bg-[#b76bff]/10 blur-[80px] animate-pulse-glow" style={{ animationDelay: "4s" }} />
       </div>
 
       <div className="relative z-10 flex h-screen flex-col md:flex-row">

@@ -149,6 +149,22 @@ function App() {
     mainRef.current?.scrollTo({ top: 0 });
   }, [location]);
 
+  useEffect(() => {
+    const isStudioRoute =
+      location === "/studio" ||
+      location.startsWith("/studio-dashboard") ||
+      location.startsWith("/projects/create") ||
+      location.startsWith("/connect-discord") ||
+      location.startsWith("/project/connected-discord") ||
+      location.startsWith("/studio/register");
+
+    document.body.classList.toggle("studio-theme", isStudioRoute);
+
+    return () => {
+      document.body.classList.remove("studio-theme");
+    };
+  }, [location]);
+
   // NEXURA-style sidebar configuration
   const sidebarStyle = {
     "--sidebar-width": "12rem",

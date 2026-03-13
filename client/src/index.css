@@ -266,6 +266,19 @@ body {
   font-weight: 600;
 }
 
+body.studio-theme [class*="purple-"] {
+  filter: brightness(1.06);
+}
+
+body.studio-theme [class*="from-purple"],
+body.studio-theme [class*="to-purple"],
+body.studio-theme [class*="via-purple"],
+body.studio-theme [class*="border-purple"],
+body.studio-theme [class*="bg-purple"],
+body.studio-theme [class*="text-purple"] {
+  filter: brightness(1.06);
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);
