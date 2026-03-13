@@ -84,6 +84,9 @@ const [publishedCampaign, setPublishedCampaign] = useState<any | null>(null);
 const [paymentTxHash, setPaymentTxHash] = useState("");
 const [paymentLoading, setPaymentLoading] = useState(false);
 const [recoverLoading, setRecoverLoading] = useState(false);
+const [restoreLoading, setRestoreLoading] = useState(false);
+const [showManualRestore, setShowManualRestore] = useState(false);
+const [manualTxHash, setManualTxHash] = useState("");
 const [isEditMode, setIsEditMode] = useState(false);
 const [isPublished, setIsPublished] = useState(false);
 const { address: connectedWallet } = useAccount();
@@ -1303,15 +1306,59 @@ const isActive =
                     setPaymentTxHash(res.txHash);
                     toast({ title: "Payment recovered", description: "Your previous payment was found and restored." });
                   } catch (err: any) {
-                    toast({ title: "Not found", description: err.message ?? "No payment found for this wallet.", variant: "destructive" });
+                    toast({ title: "Scan failed", description: err.message ?? "No payment found for this wallet.", variant: "destructive" });
+                    setShowManualRestore(true);
                   } finally {
                     setRecoverLoading(false);
                   }
                 }}
                 className="w-full mt-2 text-xs text-white/40 hover:text-purple-400 transition text-center disabled:opacity-40"
               >
-                {recoverLoading ? "Searching on-chain…" : "Already paid? Recover payment →"}
+                {recoverLoading ? "Scanning on-chain…" : "Already paid? Recover payment →"}
               </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowManualRestore(v => !v)}
+              className="w-full mt-1 text-xs text-white/30 hover:text-white/60 transition text-center"
+            >
+              {showManualRestore ? "▲ Hide manual restore" : "Paste tx hash manually →"}
+            </button>
+            {showManualRestore && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="0x… transaction hash"
+                  value={manualTxHash}
+                  onChange={e => setManualTxHash(e.target.value)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-purple-500"
+                />
+                <button
+                  type="button"
+                  disabled={restoreLoading || !manualTxHash.trim().startsWith("0x")}
+                  onClick={async () => {
+                    setRestoreLoading(true);
+                    try {
+                      const res = await projectApiRequest<{ txHash: string }>({
+                        method: "POST",
+                        endpoint: "/hub/restore-by-txhash",
+                        data: { txHash: manualTxHash.trim() },
+                      });
+                      setPaymentTxHash(res.txHash);
+                      setManualTxHash("");
+                      setShowManualRestore(false);
+                      toast({ title: "Payment restored", description: "Transaction verified and saved." });
+                    } catch (err: any) {
+                      toast({ title: "Restore failed", description: err.message ?? "Could not verify transaction.", variant: "destructive" });
+                    } finally {
+                      setRestoreLoading(false);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 disabled:opacity-40 text-white text-xs rounded-lg transition whitespace-nowrap"
+                >
+                  {restoreLoading ? "Verifying…" : "Restore"}
+                </button>
+              </div>
             )}
           )}
         </div>

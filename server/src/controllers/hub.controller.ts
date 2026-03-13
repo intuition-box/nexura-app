@@ -115,38 +115,62 @@ export const recoverPaymentByWallet = async (req: GlobalRequest, res: GlobalResp
     const provider = new ethers.JsonRpcProvider(chain.rpcUrls.default.http[0]);
     const feeInterface = new ethers.Interface(["event FeePaid(uint256 totalCampaigns)"]);
 
-    // Scan the last 100000 blocks for FeePaid events from this contract
+    // Scan in chunks of 5000 blocks to stay within typical RPC getLogs limits
     const latestBlock = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, latestBlock - 100000);
+    const CHUNK = 5000;
+    const HISTORY = 50000;
+    const fromBlock = Math.max(0, latestBlock - HISTORY);
 
-    const logs = await provider.getLogs({
-      address: feeContract,
-      topics: [ethers.id("FeePaid(uint256)")],
-      fromBlock,
-      toBlock: "latest",
+    let allLogs: ethers.Log[] = [];
+    for (let start = latestBlock; start > fromBlock; start -= CHUNK) {
+      const end = start;
+      const chunkStart = Math.max(fromBlock, start - CHUNK + 1);
+      try {
+        const chunk = await provider.getLogs({
+          address: feeContract,
+          topics: [ethers.id("FeePaid(uint256)")],
+          fromBlock: chunkStart,
+          toBlock: end,
+        });
+        allLogs = [...chunk, ...allLogs];
+      } catch {
+        // RPC may reject chunk — skip and continue
+      }
+    }
+
+    // Reverse so newest logs are first, deduplicate by txHash
+    const seen = new Set<string>();
+    const uniqueLogs = [...allLogs].reverse().filter(l => {
+      if (seen.has(l.transactionHash)) return false;
+      seen.add(l.transactionHash);
+      return true;
     });
 
-    // Walk events newest-first to find the most recent payment from this wallet
+    // Batch-fetch transactions in parallel (groups of 5) to avoid sequential timeout
     let foundTxHash: string | null = null;
-    for (const log of [...logs].reverse()) {
-      const tx = await provider.getTransaction(log.transactionHash);
-      if (tx && tx.from.toLowerCase() === walletAddress.toLowerCase()) {
-        const receipt = await provider.getTransactionReceipt(log.transactionHash);
-        if (receipt && receipt.status === 1) {
-          // Verify it actually emitted FeePaid
-          const hasEvent = receipt.logs.some(l => {
-            try { return feeInterface.parseLog(l)?.name === "FeePaid"; } catch { return false; }
-          });
-          if (hasEvent) {
-            foundTxHash = log.transactionHash;
-            break;
+    const BATCH = 5;
+    for (let i = 0; i < uniqueLogs.length && !foundTxHash; i += BATCH) {
+      const batch = uniqueLogs.slice(i, i + BATCH);
+      const txs = await Promise.all(batch.map(l => provider.getTransaction(l.transactionHash).catch(() => null)));
+      for (let j = 0; j < txs.length; j++) {
+        const tx = txs[j];
+        if (tx && tx.from.toLowerCase() === walletAddress.toLowerCase()) {
+          const receipt = await provider.getTransactionReceipt(tx.hash).catch(() => null);
+          if (receipt && receipt.status === 1) {
+            const hasEvent = receipt.logs.some(l => {
+              try { return feeInterface.parseLog(l)?.name === "FeePaid"; } catch { return false; }
+            });
+            if (hasEvent) {
+              foundTxHash = tx.hash;
+              break;
+            }
           }
         }
       }
     }
 
     if (!foundTxHash) {
-      res.status(NOT_FOUND).json({ error: "No successful studio fee payment found for this wallet on-chain" });
+      res.status(NOT_FOUND).json({ error: "No successful studio fee payment found for this wallet on-chain. If you have your transaction hash, use the manual restore option instead." });
       return;
     }
 
@@ -161,6 +185,35 @@ export const recoverPaymentByWallet = async (req: GlobalRequest, res: GlobalResp
   } catch (error: any) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: error?.message || "Error recovering payment" });
+  }
+};
+
+export const restoreByTxHash = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { txHash } = req.body;
+
+    if (!txHash || typeof txHash !== "string" || !txHash.trim().startsWith("0x")) {
+      res.status(BAD_REQUEST).json({ error: "A valid transaction hash (starting with 0x) is required" });
+      return;
+    }
+
+    const hash = txHash.trim();
+
+    // Verify the tx on-chain — checkPayment throws if not valid
+    const { checkPayment } = await import("@/utils/utils");
+    await checkPayment(hash);
+
+    // Save
+    if (req.admin.hub) {
+      await hub.findByIdAndUpdate(req.admin.hub, { pendingTxHash: hash });
+    } else {
+      await hubAdmin.findByIdAndUpdate(req.id, { pendingTxHash: hash });
+    }
+
+    res.status(OK).json({ txHash: hash, message: "Payment restored" });
+  } catch (error: any) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: error?.message || "Error restoring payment" });
   }
 };
 
