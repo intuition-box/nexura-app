@@ -471,10 +471,16 @@ export const publishCampaign = async (req: GlobalRequest, res: GlobalResponse) =
 		// Trust the DB-stored pendingTxHash as proof of payment.
 		// It was saved only after tx.wait() confirmed the transaction on the client,
 		// so there is no need to re-verify the receipt on-chain here.
-		const storedHash = (createdHub as any).pendingTxHash as string | null | undefined;
+		// Also accept txHash from request body as fallback (e.g. if DB write was missed).
+		const bodyHash = (req.body as any)?.txHash as string | undefined;
+		const storedHash = ((createdHub as any).pendingTxHash as string | null | undefined) || bodyHash;
 		if (!storedHash) {
 			res.status(FORBIDDEN).json({ error: "No confirmed payment found. Please complete the launch fee payment first." });
 			return;
+		}
+		// Persist body hash to DB if not already stored (catch-up for missed saves)
+		if (!(createdHub as any).pendingTxHash && bodyHash) {
+			(createdHub as any).pendingTxHash = bodyHash;
 		}
 
 		const campaignExists = await campaign.findById(id);

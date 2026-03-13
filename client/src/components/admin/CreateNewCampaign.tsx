@@ -1314,6 +1314,7 @@ const isActive =
         method: "PATCH",
         endpoint: "/hub/publish-campaign",
         params: { id: savedCampaignId },
+        data: { txHash: paymentTxHash },
       });
 
       toast({ title: "Campaign published!", description: "Your campaign is now live." });
