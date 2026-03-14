@@ -5,6 +5,7 @@ import hbs, {
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import logger from "@/config/logger";
+import axios from "axios";
 import {
   EMAIL_USER,
   EMAIL_PASSWORD,
@@ -13,6 +14,8 @@ import {
   SMTP_HOST,
   SMTP_PORT,
   SMTP_SECURE,
+  RESEND_API_KEY,
+  RESEND_FROM,
 } from "./env.utils";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -93,10 +96,53 @@ export const resetEmail = async (email: string, link: string) => {
 };
 
 export const addHubAdminEmail = async (email: string, code: string, origin?: string) => {
+  const baseUrl = origin || CLIENT_URL;
+  const signUpUrl = `${baseUrl}/studio/register?email=${encodeURIComponent(email)}`;
+  logger.info(`Sending admin invite to ${email} with link ${signUpUrl}`);
+
+  if (RESEND_API_KEY) {
+    // Use Resend HTTP API — works from any cloud host (no SMTP ports needed)
+    try {
+      const from = RESEND_FROM || "Nexura <onboarding@resend.dev>";
+      await axios.post(
+        "https://api.resend.com/emails",
+        {
+          from,
+          to: [email],
+          subject: "Hub admin setup",
+          html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827; max-width: 640px; margin: 0 auto; padding: 24px;">
+              <h2 style="margin: 0 0 16px;">You have been invited to Nexura Studio</h2>
+              <p style="margin: 0 0 12px;">You have been invited to join a hub on Nexura Studio as an admin.</p>
+              <p style="margin: 0 0 12px;">Your access code is <strong>${code}</strong>.</p>
+              <p style="margin: 0 0 20px;">Use the button below to complete your setup and create your password.</p>
+              <p style="margin: 0 0 24px;">
+                <a href="${signUpUrl}" style="display: inline-block; background: #7c3aed; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-weight: 600;">Complete Admin Setup</a>
+              </p>
+              <p style="margin: 0 0 8px; font-size: 14px; color: #4b5563;">If the button does not work, use this link:</p>
+              <p style="margin: 0; font-size: 14px; word-break: break-all; color: #2563eb;">${signUpUrl}</p>
+            </div>
+          `,
+          text: `You have been invited to join a hub on Nexura Studio as an admin.\n\nYour access code is: ${code}\n\nComplete your setup here: ${signUpUrl}`,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      logger.info(`Admin invite email sent via Resend to ${email}`);
+      return;
+    } catch (error: any) {
+      const detail = error?.response?.data ?? error.message;
+      logger.error(`Resend failed for ${email}:`, JSON.stringify(detail));
+      throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    }
+  }
+
+  // Fallback: SMTP (works locally; may timeout on some cloud hosts)
   try {
-    const baseUrl = origin || CLIENT_URL;
-    const signUpUrl = `${baseUrl}/studio/register?email=${encodeURIComponent(email)}`;
-    logger.info(`Sending admin invite to ${email} with link ${signUpUrl}`);
     await directInviteTransporter.sendMail({
       from: EMAIL_USER,
       to: email,
@@ -116,9 +162,9 @@ export const addHubAdminEmail = async (email: string, code: string, origin?: str
       `,
       text: `You have been invited to join a hub on Nexura Studio as an admin.\n\nYour access code is: ${code}\n\nComplete your setup here: ${signUpUrl}`,
     } as MailOptions);
-    logger.info(`Admin invite email sent successfully to ${email}`);
+    logger.info(`Admin invite email sent via SMTP to ${email}`);
   } catch (error: any) {
-    logger.error(`Failed to send admin invite email to ${email}:`, error.message);
+    logger.error(`SMTP failed for ${email}:`, error.message);
     throw new Error(error.message);
   }
 };

@@ -53,6 +53,8 @@ export const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD as string;
 export const SMTP_HOST = process.env.SMTP_HOST as string | undefined;
 export const SMTP_PORT = process.env.SMTP_PORT as string | undefined;
 export const SMTP_SECURE = process.env.SMTP_SECURE as string | undefined;
+export const RESEND_API_KEY = process.env.RESEND_API_KEY as string | undefined;
+export const RESEND_FROM = process.env.RESEND_FROM as string | undefined;
 
 export const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID as string;
 
