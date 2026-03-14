@@ -88,7 +88,7 @@ export function ManageAdminModal({ children, adminId, name, email, role, onSucce
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <div className="p-2 rounded-full bg-[#8a3ffc]/20">
-              <UserCog className="w-5 h-5 text-[#8a3ffc]" />
+              <UserCog className="w-5 h-5 text-[#8B3EFE]" />
             </div>
             Manage Access
           </DialogTitle>
@@ -131,7 +131,7 @@ export function ManageAdminModal({ children, adminId, name, email, role, onSucce
             type="button"
             onClick={handleUpdateRole}
             disabled={loading || selectedRole === role}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#8B3EFE] text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
           >
             <Shield className="w-4 h-4" />
             {selectedRole !== role

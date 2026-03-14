@@ -188,7 +188,7 @@ export default function ConnectedDiscord() {
             </div>
           )}
         </div>
-        <Button onClick={createHub} className="w-full text-white bg-purple-500 hover:bg-purple-600 flex items-center justify-center gap-2 mt-4">
+        <Button onClick={createHub} className="w-full text-white bg-[#8B3EFE] hover:bg-[#8B3EFE] flex items-center justify-center gap-2 mt-4">
           Continue to Dashboard
           <ArrowRight className="h-5 w-5" />
         </Button>

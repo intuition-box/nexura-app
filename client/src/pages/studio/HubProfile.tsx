@@ -208,7 +208,7 @@ export default function HubProfile() {
             <Button
               onClick={handleSave}
               disabled={saving || descTooShort}
-              className="bg-[#8a3ffc] hover:bg-[#7c3ce0] text-white gap-2 px-6 disabled:opacity-50"
+              className="bg-[#8B3EFE] hover:bg-[#7b35e6] text-white gap-2 px-6 disabled:opacity-50"
             >
               {saving ? (
                 <><Loader2 className="w-4 h-4 animate-spin" />Saving...</>

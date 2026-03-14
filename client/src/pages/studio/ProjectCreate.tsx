@@ -75,12 +75,12 @@ export default function ProjectCreate() {
             {/* Buttons */}
             <div className="flex flex-col gap-4 mt-4">
               <Link href="/projects/create/create-hub">
-                <Button className="w-full bg-purple-400 hover:bg-purple-600 hover:shadow-[0_0_28px_rgba(131,58,253,0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+                <Button className="w-full bg-[#8B3EFE] hover:bg-[#8B3EFE] hover:shadow-[0_0_28px_rgba(131,58,253,0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                   Create Your Hub
                 </Button>
               </Link>
               <Link href="/projects/create/signin-to-hub">
-                <Button className="w-full bg-transparent border border-purple-400 hover:bg-purple-600 hover:border-purple-600 hover:shadow-[0_0_24px_rgba(131,58,253,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-white">
+                <Button className="w-full bg-transparent border border-[#8B3EFE] hover:bg-[#8B3EFE] hover:border-[#8B3EFE] hover:shadow-[0_0_24px_rgba(131,58,253,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-white">
                   Sign in to Existing Hub
                 </Button>
               </Link>

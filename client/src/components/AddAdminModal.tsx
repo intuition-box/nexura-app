@@ -73,7 +73,7 @@ export function AddAdminModal({ children, onSuccess }: AddAdminModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <div className="p-2 rounded-full bg-[#8a3ffc]/20">
-              <UserPlus className="w-5 h-5 text-[#8a3ffc]" />
+              <UserPlus className="w-5 h-5 text-[#8B3EFE]" />
             </div>
             Add Administrator
           </DialogTitle>
@@ -128,7 +128,7 @@ export function AddAdminModal({ children, onSuccess }: AddAdminModalProps) {
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+            className="px-5 py-2.5 rounded-xl bg-[#8B3EFE] text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
           >
             {loading ? "Sending Invitation..." : "Send Invitation"}
           </button>

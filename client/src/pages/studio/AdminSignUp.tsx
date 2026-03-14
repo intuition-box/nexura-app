@@ -186,7 +186,7 @@ export default function AdminSignUp() {
         <Button
           onClick={handleSignUp}
           disabled={!canSubmit}
-          className="mt-6 w-full border border-white/80 text-white bg-transparent hover:bg-purple-600 hover:border-purple-600 transition-all py-2.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-white/80"
+          className="mt-6 w-full border border-white/80 text-white bg-transparent hover:bg-[#8B3EFE] hover:border-[#8B3EFE] transition-all py-2.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-white/80"
         >
           {loading ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />

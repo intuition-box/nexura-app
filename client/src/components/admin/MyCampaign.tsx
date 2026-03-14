@@ -143,12 +143,12 @@ export default function MyCampaign() {
           {/* Task Overview */}
           <div className="flex items-center justify-between mt-6">
             <h3 className="text-xl font-semibold text-white">Task Overview</h3>
-            <button className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
+            <button className="px-3 py-1 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition">
               Manage Tasks
             </button>
           </div>
 
-        <Card className="p-8 space-y-6 bg-white/10 backdrop-blur-md">
+        <Card className="p-8 space-y-6 bg-black">
           {tasks.length > 0 && (
             <div className="relative mt-2 space-y-4">
               {tasks.map((task, index) => (
@@ -157,7 +157,7 @@ export default function MyCampaign() {
                   <p className="flex-1 text-white">{task.type}</p>
                   <div className="flex items-center gap-2">
                     <button
-                      className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
+                      className="px-3 py-1 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition"
                       onClick={() => {
                         if (!task.handleOrUrl) return;
                         let url = task.handleOrUrl.trim();
@@ -191,7 +191,7 @@ export default function MyCampaign() {
             >
               Back
             </button>
-            <button className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
+            <button className="px-4 py-2 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition">
               Save
             </button>
           </div>

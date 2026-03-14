@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import AnimatedBackground from "../../components/AnimatedBackground";
@@ -226,7 +226,7 @@ export default function SharedAccessCredentials() {
               <Button
                 disabled={creating}
                 onClick={handleSignUp}
-                className="w-full bg-purple-400 hover:bg-purple-600 hover:shadow-[0_0_28px_rgba(131,58,253,0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+                className="w-full bg-[#8B3EFE] hover:bg-[#8B3EFE] hover:shadow-[0_0_28px_rgba(131,58,253,0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
               >
                 {creating ? "Creating Super Admin..." : "Create Super Admin"}
               </Button>

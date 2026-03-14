@@ -387,7 +387,7 @@ const isActive =
     {/* Underline on top */}
     <span
       className={`block h-[4px] w-full rounded-full transition-colors ${
-        activeTab === "details" ? "bg-purple-500" : "bg-white/20"
+        activeTab === "details" ? "bg-[#8B3EFE]" : "bg-white/20"
       }`}
     />
     <div className="flex items-center gap-2 text-white/80 hover:text-white">
@@ -407,7 +407,7 @@ const isActive =
     {/* Underline on top */}
     <span
       className={`block h-[4px] w-full rounded-full transition-colors ${
-        activeTab === "tasks" ? "bg-purple-500" : "bg-white/20"
+        activeTab === "tasks" ? "bg-[#8B3EFE]" : "bg-white/20"
       }`}
     />
     <div className="flex items-center gap-2 text-white/80 hover:text-white">
@@ -426,7 +426,7 @@ const isActive =
     {/* Underline on top */}
     <span
       className={`block h-[4px] w-full rounded-full transition-colors ${
-        activeTab === "review" ? "bg-purple-500" : "bg-white/20"
+        activeTab === "review" ? "bg-[#8B3EFE]" : "bg-white/20"
       }`}
     />
     <div className="flex items-center gap-2 text-white/80 hover:text-white">
@@ -523,7 +523,7 @@ const isActive =
                         <ImageIcon className="w-4 h-4" />
                         Cover Image
                       </label>
-<label className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-800 hover:border-purple-400 transition cursor-pointer block">
+<label className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-black hover:border-[#8B3EFE] transition cursor-pointer block">
   <input
     id="coverInput"
     type="file"
@@ -646,7 +646,7 @@ const isActive =
 
                       <Button
                         type="submit"
-                        className="bg-purple-600 hover:bg-purple-700"
+                        className="bg-[#8B3EFE] hover:bg-[#7b35e6]"
                         disabled={loading || saveLoading}
                       >
                         {loading || saveLoading ? "Saving..." : "Next →"}
@@ -665,9 +665,9 @@ const isActive =
     {/* Small Add Task Button - Top Right */}
     <button
       onClick={() => setShowModal(true)}
-      className="absolute -top-10 right-0 px-3 py-1 bg-purple-800 text-purple-300 hover:bg-purple-700 rounded-lg text-sm font-semibold flex items-center gap-2 transition"
+      className="absolute -top-10 right-0 px-3 py-1 bg-[#8B3EFE] text-purple-300 hover:bg-[#7b35e6] rounded-lg text-sm font-semibold flex items-center gap-2 transition"
     >
-      <span className="flex items-center justify-center w-3 h-3 pb-1 bg-purple-400 text-purple-900 rounded-full text-xs font-bold">
+      <span className="flex items-center justify-center w-3 h-3 pb-1 bg-[#8B3EFE] text-purple-900 rounded-full text-xs font-bold">
         +
       </span>
       Add Task
@@ -675,7 +675,7 @@ const isActive =
 
     {tasks.length === 0 ? (
       <div
-        className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-900 hover:border-purple-400 transition cursor-pointer mt-8"
+        className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-900 hover:border-[#8B3EFE] transition cursor-pointer mt-8"
         onClick={() => setShowModal(true)}
       >
         <div className="flex flex-col items-center justify-center text-center gap-2">
@@ -686,9 +686,9 @@ const isActive =
           </p>
           <button
             onClick={() => setShowModal(true)}
-            className="mt-4 flex items-center justify-center gap-2 px-4 py-1 bg-purple-900 text-purple-400 hover:bg-purple-700 font-semibold rounded-lg transition"
+            className="mt-4 flex items-center justify-center gap-2 px-4 py-1 bg-purple-900 text-purple-400 hover:bg-[#7b35e6] font-semibold rounded-lg transition"
           >
-            <span className="flex items-center justify-center w-3 h-3 pb-1 bg-purple-400 text-purple-900 rounded-full text-lg font-bold">
+            <span className="flex items-center justify-center w-3 h-3 pb-1 bg-[#8B3EFE] text-purple-900 rounded-full text-lg font-bold">
               +
             </span>
             Add Task
@@ -744,7 +744,7 @@ const isActive =
         ← Back
       </button>
       <button
-        className="px-6 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition flex items-center gap-2 disabled:opacity-60"
+        className="px-6 py-2 bg-[#8B3EFE] text-white rounded-lg text-sm font-semibold hover:bg-[#7b35e6] transition flex items-center gap-2 disabled:opacity-60"
         disabled={saveLoading}
         onClick={() => {
           if (tasks.length === 0) {
@@ -824,7 +824,7 @@ const isActive =
               onClick={() => setNewTask({ ...newTask, platform: "Twitter", evidence: "submit_link", validation: newTask.validation === "Discord Auth" ? "Manual Validation" : newTask.validation })}
               className={`flex-1 border py-2 rounded-lg transition ${
                 newTask.platform === "Twitter"
-                  ? "bg-purple-500 text-white border-purple-500"
+                  ? "bg-[#8B3EFE] text-white border-purple-500"
                   : "bg-purple-900 border-purple-800 text-white hover:border-purple-500"
               }`}
             >
@@ -840,7 +840,7 @@ const isActive =
               })}
               className={`flex-1 border py-2 rounded-lg transition ${
                 newTask.platform === "Discord"
-                  ? "bg-purple-500 text-white border-purple-500"
+                  ? "bg-[#8B3EFE] text-white border-purple-500"
                   : "bg-purple-900 border-purple-800 text-white hover:border-purple-500"
               }`}
             >
@@ -931,7 +931,7 @@ const isActive =
                   onClick={() => setNewTask({ ...newTask, verificationMode: value, evidence: value !== "auto" ? value : "", validation: value === "auto" ? "Auto Verified" : "Manual Validation" })}
                   className={`flex-1 border py-2 px-2 rounded-lg text-xs transition ${
                     newTask.verificationMode === value
-                      ? "bg-purple-500 text-white border-purple-500"
+                      ? "bg-[#8B3EFE] text-white border-purple-500"
                       : "bg-purple-950 border-purple-800 text-white/70 hover:border-purple-500"
                   }`}
                 >
@@ -995,7 +995,7 @@ const isActive =
 
         <button
           onClick={handleSaveTask}
-          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
+          className="px-5 py-2.5 rounded-xl bg-[#8B3EFE] text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
         >
           Save Task
         </button>
@@ -1006,7 +1006,7 @@ const isActive =
 
 
 {activeTab === "review" && (
-  <Card className="p-8 space-y-6 bg-white/10 backdrop-blur-md">
+  <Card className="p-8 space-y-6 bg-black">
     <h2 className="text-2xl font-bold">Final Campaign Review</h2>
 
     {/* Campaign Board */}
@@ -1095,7 +1095,7 @@ const isActive =
     {/* Task Overview */}
     <div className="flex items-center justify-between mt-6">
       <h3 className="text-xl font-semibold">Task Overview</h3>
-      <button className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
+      <button className="px-3 py-1 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition">
         Manage Tasks
       </button>
     </div>
@@ -1120,7 +1120,7 @@ const isActive =
 
             <div className="flex items-center gap-2">
               <button
-                className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition"
+                className="px-3 py-1 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition"
                 onClick={() => {
   if (!task.handleOrUrl) return;
 
@@ -1174,7 +1174,7 @@ const isActive =
   <div className="flex items-center gap-2 mt-4">
 <button
   type="button"
-  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+  className="px-4 py-2 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
   disabled={loading || saveLoading}
 >
   Deploy Rewards Contract
@@ -1182,7 +1182,7 @@ const isActive =
 {isEditMode && isPublished ? (
   <button
     onClick={() => handleUpdateCampaign()}
-    className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+    className="px-4 py-2 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
     disabled={loading || saveLoading}
   >
     Update Campaign
@@ -1190,7 +1190,7 @@ const isActive =
 ) : (
   <button
     onClick={() => setShowPublishModal(true)}
-    className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+    className="px-4 py-2 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
     disabled={loading || saveLoading}
   >
     Publish Campaign
@@ -1277,7 +1277,7 @@ const isActive =
                   setPaymentLoading(false);
                 }
               }}
-              className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg px-4 py-2 transition"
+              className="w-full flex items-center justify-center gap-2 bg-[#8B3EFE] hover:bg-[#7b35e6] disabled:opacity-60 text-white text-sm font-semibold rounded-lg px-4 py-2 transition"
             >
               {paymentLoading ? (
                 <><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Waiting for wallet…</>
@@ -1290,7 +1290,7 @@ const isActive =
         </div>
 
 <button
-  className="mt-4 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+  className="mt-4 w-full py-2.5 px-4 rounded-xl bg-[#8B3EFE] text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
   onClick={async () => {
     if (!campaignTitle || !campaignName) {
       toast({ title: "Incomplete details", description: "Please fill in campaign name and description.", variant: "destructive" });
@@ -1449,7 +1449,7 @@ const isActive =
     setShowSuccessModal(false);
     setLocation("/studio-dashboard/campaigns-tab");
   }}
-  className="mt-6 w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
+  className="mt-6 w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-[#8B3EFE] text-white text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_20px_rgba(131,58,253,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
 >
   <span>Continue</span>
 </Button>

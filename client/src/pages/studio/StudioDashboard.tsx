@@ -278,7 +278,7 @@ const fetchBannedUsers = async () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-bold">
               <div className="p-2 rounded-full bg-[#8a3ffc]/20">
-                <Eye className="w-5 h-5 text-[#8a3ffc]" />
+                <Eye className="w-5 h-5 text-[#8B3EFE]" />
               </div>
               View {selectedTask?.taskType} Submission
             </DialogTitle>
@@ -322,7 +322,7 @@ const fetchBannedUsers = async () => {
                         if (targetUrl) window.open(targetUrl, "_blank");
                       }}
                       disabled={!selectedTask.submissionLink}
-                      className="bg-[#8a3ffc] hover:bg-[#7b2fec] text-white px-4"
+                      className="bg-[#8B3EFE] hover:bg-[#7b35e6] text-white px-4"
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
@@ -339,7 +339,7 @@ const fetchBannedUsers = async () => {
                     />
                     <Button
                       onClick={() => window.open(selectedTask.submissionLink, "_blank")}
-                      className="bg-[#8a3ffc] hover:bg-[#7b2fec] text-white px-4"
+                      className="bg-[#8B3EFE] hover:bg-[#7b35e6] text-white px-4"
                     >
                       <Eye className="w-4 h-4" />
                     </Button>

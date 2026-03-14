@@ -51,7 +51,7 @@ export default function ConnectDiscord() {
 
         <Button
           onClick={handleFakeConnect}
-          className="w-full text-white bg-purple-500 hover:bg-purple-600 flex items-center justify-center gap-2"
+          className="w-full text-white bg-[#8B3EFE] hover:bg-[#8B3EFE] flex items-center justify-center gap-2"
         >
           <img src="/original-discord.png" alt="Discord logo" className="w-4 h-4" />
           Connect

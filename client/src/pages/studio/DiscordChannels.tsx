@@ -109,7 +109,7 @@ export default function DiscordChannels() {
                               {ch.name}
                             </span>
                             {isSelected && (
-                              <span className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                              <span className="w-5 h-5 rounded-full bg-[#8B3EFE] flex items-center justify-center flex-shrink-0">
                                 <Check className="w-3 h-3 text-white" />
                               </span>
                             )}
@@ -132,7 +132,7 @@ export default function DiscordChannels() {
           <Button
             onClick={handleContinue}
             disabled={selected.length === 0}
-            className="w-full bg-purple-400 hover:bg-purple-600 hover:shadow-[0_0_28px_rgba(131,58,253,0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none"
+            className="w-full bg-[#8B3EFE] hover:bg-[#8B3EFE] hover:shadow-[0_0_28px_rgba(131,58,253,0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none"
           >
             Install Bot & Continue
             <ArrowRight className="h-5 w-5" />

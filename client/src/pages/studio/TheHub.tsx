@@ -193,7 +193,7 @@ export default function TheHub() {
           <div className="space-y-3 w-full">
             <CardTitle className="text-lg text-center">Project Logo</CardTitle>
 
-            <label className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-gray-800 hover:border-purple-400 transition cursor-pointer block">
+            <label className="w-full border-2 border-dashed border-purple-500 rounded-2xl p-8 bg-black hover:border-[#8B3EFE] transition cursor-pointer block">
               <input
                 type="file"
                 accept="image/*"
@@ -231,7 +231,7 @@ export default function TheHub() {
           {/* Action */}
           <div className="pt-4">
             <Button
-              className="w-full bg-purple-400 border-0 text-white hover:bg-purple-600 hover:shadow-[0_0_28px_rgba(131,58,253,0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+              className="w-full bg-[#8B3EFE] border-0 text-white hover:bg-[#8B3EFE] hover:shadow-[0_0_28px_rgba(131,58,253,0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
               onClick={handleSubmit}
               disabled={loading}
             >

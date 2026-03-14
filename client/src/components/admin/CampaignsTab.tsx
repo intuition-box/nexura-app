@@ -218,7 +218,7 @@ export default function CampaignsTab() {
           <div className="mt-auto flex flex-col gap-2 pt-3">
             <div className="flex gap-1.5 flex-wrap">
               <button
-                className="flex-1 px-2 py-1.5 text-xs bg-purple-600 rounded-lg hover:bg-purple-700 transition"
+                className="flex-1 px-2 py-1.5 text-xs bg-[#8B3EFE] rounded-lg hover:bg-[#7b35e6] transition"
                 onClick={() => setLocation(`/studio-dashboard/create-new-campaign?edit=${campaign._id}`)}
               >
                 {isSuperAdmin ? "View Details" : "View"}
@@ -313,7 +313,7 @@ export default function CampaignsTab() {
                 href="/studio-dashboard/create-new-campaign"
                 className="w-full p-6 flex flex-col items-center justify-center gap-3
                            border-2 border-dashed border-purple-500 rounded-2xl
-                           bg-white/10 backdrop-blur-md hover:bg-white/15 hover:border-purple-400
+                           bg-black hover:bg-black/80 hover:border-[#8B3EFE]
                            transition cursor-pointer no-underline"
               >
                 <div className="w-12 h-12 flex items-center justify-center rounded-full bg-purple-500/20 text-purple-400 text-2xl font-bold">+</div>
