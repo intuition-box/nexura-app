@@ -9,6 +9,7 @@ import { queryClient } from "../lib/queryClient";
 import HeroCampaign from "../components/HeroCampaign";
 import CampaignCard from "../components/CampaignCard";
 import AnimatedBackground from "../components/AnimatedBackground";
+import { apiRequestV2 } from "../lib/queryClient";
 
 // Import user avatar images for trending claims
 // import avatar1 from "/claim1.jpg";
@@ -27,10 +28,20 @@ import { DEV_CAMPAIGNS } from "../pages/Campaigns";
 export default function Discover() {
   const [activeTab, setActiveTab] = useState("all");
   const [refreshCountdown, setRefreshCountdown] = useState(0);
+  const [serverOffset, setServerOffset] = useState(0);
+  const [nowMs, setNowMs] = useState(Date.now());
   const [, setLocation] = useLocation();
 
   // Initialize and manage 24-hour refresh
   useEffect(() => {
+    apiRequestV2("GET", `/api/server-time`)
+      .then((res: any) => setServerOffset(res.serverTime - Date.now()))
+      .catch(() => {});
+
+    const ticker = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+
     const initializeRefreshTimer = () => {
       const lastRefresh = localStorage.getItem("lastTaskRefresh");
       const now = Date.now();
@@ -63,7 +74,10 @@ export default function Discover() {
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      clearInterval(ticker);
+    };
   }, []);
 
   const formatTime = (seconds: number) => {
@@ -102,8 +116,18 @@ export default function Discover() {
       ? campaignsData.campaigns
       : DEV_CAMPAIGNS;
 
+  const currentTime = nowMs + serverOffset;
+  const isCompletedCampaign = (campaign: any) => !!campaign.ends_at && new Date(campaign.ends_at).getTime() <= currentTime;
+  const isActiveCampaign = (campaign: any) => {
+    if (isCompletedCampaign(campaign)) return false;
+    if (campaign.starts_at) {
+      return new Date(campaign.starts_at).getTime() <= currentTime;
+    }
+    return String(campaign.status ?? "").toLowerCase() === "active";
+  };
+
   const trendingCampaigns = campaigns
-    .filter((c: any) => c.status?.toLowerCase() === "active")
+    .filter((c: any) => isActiveCampaign(c))
     .slice(0, 3);
 
 

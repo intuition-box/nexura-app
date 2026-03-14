@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 
 interface CampaignCardProps {
   title: string;
+  description?: string;
   project_name: string;
   projectLogo: string;
   projectCoverImage: string;
@@ -25,6 +26,7 @@ interface CampaignCardProps {
 
 export default function CampaignCard({
   title,
+  description,
   project_name,
   projectLogo,
   projectCoverImage,
@@ -123,7 +125,20 @@ export default function CampaignCard({
           <span className="text-sm text-muted-foreground">{project_name}</span>
         </div> */}
 
-        <h3 className="text-lg font-bold text-card-foreground mb-4">{title}</h3>
+        <h3
+          className="text-lg font-bold text-card-foreground mb-2 truncate"
+          title={title}
+        >
+          {title}
+        </h3>
+        {description && (
+          <p
+            className="text-sm text-muted-foreground mb-4 line-clamp-2 min-h-10"
+            title={description}
+          >
+            {description}
+          </p>
+        )}
 
         {/* Date Range */}
         {/* <div className="flex items-center space-x-4 mb-4">

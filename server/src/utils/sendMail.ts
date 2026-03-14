@@ -67,14 +67,23 @@ export const addHubAdminEmail = async (email: string, code: string, origin?: str
     const signUpUrl = `${baseUrl}/studio/register?email=${encodeURIComponent(email)}`;
     logger.info(`Sending admin invite to ${email} with link ${signUpUrl}`);
     await transporter.sendMail({
-      from: EMAIL_USER,
+      from: `Nexura <${EMAIL_USER}>`,
       to: email,
       subject: "Hub admin setup",
-      template: "admin-setup",
-      context: {
-        url: signUpUrl,
-        code
-      },
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827; max-width: 640px; margin: 0 auto; padding: 24px;">
+          <h2 style="margin: 0 0 16px;">You have been invited to Nexura Studio</h2>
+          <p style="margin: 0 0 12px;">You have been invited to join a hub on Nexura Studio as an admin.</p>
+          <p style="margin: 0 0 12px;">Your access code is <strong>${code}</strong>.</p>
+          <p style="margin: 0 0 20px;">Use the button below to complete your setup and create your password.</p>
+          <p style="margin: 0 0 24px;">
+            <a href="${signUpUrl}" style="display: inline-block; background: #7c3aed; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-weight: 600;">Complete Admin Setup</a>
+          </p>
+          <p style="margin: 0 0 8px; font-size: 14px; color: #4b5563;">If the button does not work, use this link:</p>
+          <p style="margin: 0; font-size: 14px; word-break: break-all; color: #2563eb;">${signUpUrl}</p>
+        </div>
+      `,
+      text: `You have been invited to join a hub on Nexura Studio as an admin.\n\nYour access code is: ${code}\n\nComplete your setup here: ${signUpUrl}`,
     } as MailOptions);
     logger.info(`Admin invite email sent successfully to ${email}`);
   } catch (error: any) {
