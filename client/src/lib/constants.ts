@@ -10,6 +10,8 @@ export const projectId = (import.meta as any).env?.VITE_REOWN_PROJECT_ID;
 
 const VITE_DISCORD_CLIENT_ID = (import.meta as any).env?.VITE_DISCORD_CLIENT_ID;
 
+export const PROXY_FEE_CONTRACT = (import.meta as any).env?.VITE_PROXY_FEE_CONTRACT;
+
 export const discordAuthUrl = "https://discord.com/oauth2/authorize" + "?client_id=" + VITE_DISCORD_CLIENT_ID + "&redirect_uri=" + encodeURIComponent(BACKEND_URL + "/api/auth/discord/callback") + "&response_type=code" + "&scope=identify";
 
 export const discordHubAuthUrl = "https://discord.com/oauth2/authorize" + "?client_id=" + VITE_DISCORD_CLIENT_ID + "&redirect_uri=" + encodeURIComponent(BACKEND_URL + "/api/hub/discord/callback") + "&response_type=code" + "&scope=identify+guilds+bot+applications.commands";
@@ -1139,4 +1141,820 @@ export const NEXONS_ABI = [
 		"stateMutability": "nonpayable",
 		"type": "function"
 	}
+];
+
+export const PROXY_CONTRACT_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_ethMultiVault",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_feeRecipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_depositFixedFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_depositPercentageFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_initialAdmins",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "IntuitionFeeProxy_FeePercentageTooHigh",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "IntuitionFeeProxy_InsufficientValue",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "IntuitionFeeProxy_InvalidMultiVaultAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "IntuitionFeeProxy_InvalidMultisigAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "IntuitionFeeProxy_NotWhitelistedAdmin",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "IntuitionFeeProxy_TransferFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "IntuitionFeeProxy_WrongArrayLengths",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "IntuitionFeeProxy_ZeroAddress",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "admin",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "status",
+        "type": "bool"
+      }
+    ],
+    "name": "AdminWhitelistUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldFee",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "DepositFixedFeeUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldFee",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "DepositPercentageFeeUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldRecipient",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newRecipient",
+        "type": "address"
+      }
+    ],
+    "name": "FeeRecipientUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "operation",
+        "type": "string"
+      }
+    ],
+    "name": "FeesCollected",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "operation",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "resultCount",
+        "type": "uint256"
+      }
+    ],
+    "name": "MultiVaultSuccess",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "operation",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "multiVaultValue",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalReceived",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransactionForwarded",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "FEE_DENOMINATOR",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_FEE_PERCENTAGE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "calculateAtomId",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "depositCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalDeposit",
+        "type": "uint256"
+      }
+    ],
+    "name": "calculateDepositFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "subjectId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "predicateId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "objectId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "calculateTripleId",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "data",
+        "type": "bytes[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "assets",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "curveId",
+        "type": "uint256"
+      }
+    ],
+    "name": "createAtoms",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "atomIds",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "subjectIds",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "predicateIds",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "objectIds",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "assets",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "curveId",
+        "type": "uint256"
+      }
+    ],
+    "name": "createTriples",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "tripleIds",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "termId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "curveId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minShares",
+        "type": "uint256"
+      }
+    ],
+    "name": "deposit",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "shares",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "termIds",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "curveIds",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "assets",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "minShares",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "depositBatch",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "shares",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "depositFixedFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "depositPercentageFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ethMultiVault",
+    "outputs": [
+      {
+        "internalType": "contract IEthMultiVault",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "feeRecipient",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAtomCost",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "msgValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "getMultiVaultAmountFromValue",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "termId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "curveId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getShares",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "depositCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalDeposit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "multiVaultCost",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTotalCreationCost",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "depositAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTotalDepositCost",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "tripleId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getTriple",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTripleCost",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isTermCreated",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "termId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "curveId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "assets",
+        "type": "uint256"
+      }
+    ],
+    "name": "previewDeposit",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDepositFixedFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDepositPercentageFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newRecipient",
+        "type": "address"
+      }
+    ],
+    "name": "setFeeRecipient",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "admin",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "status",
+        "type": "bool"
+      }
+    ],
+    "name": "setWhitelistedAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "whitelistedAdmins",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  }
 ];
