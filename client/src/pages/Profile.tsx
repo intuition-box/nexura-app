@@ -212,7 +212,6 @@ export default function Profile() {
     if (user) {
       localStorage.setItem('nexura:nexon:minted', JSON.stringify(value))
     }
-
   }, [mintedLevels, user]);
 
   const { levelName, levelValue, xpValue, nextLevelXp, neededXp, progressPercentage, currentLevelIndex } =
@@ -240,6 +239,8 @@ export default function Profile() {
         toast({ title: "Error", description: "xp not enough to mint nexon", variant: "destructive" });
         return;
       } // not achieved yet
+
+      await apiRequestV2("POST", "/api/allow-mint", { level: levelIndex });
 
       await mintNexon(levelIndex, user._id);
 
