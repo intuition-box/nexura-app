@@ -11,7 +11,8 @@ import {
 	updateX,
   updateDiscord,
 	getClaims,
-  getTriple
+  getTriple,
+  allowNexonsMint
 } from "@/controllers/app.controller";
 import {
   discordCallback,
@@ -25,6 +26,7 @@ const router = Router();
 router
   .get("/", home)
   .get("/studio-payment-config", getStudioPaymentConfig)
+  .post("/allow-mint", authenticateUser, allowNexonsMint)
   .get("/get-claims", rateLimiter, authenticateUser2, getClaims)
   .get("/get-triple", rateLimiter, authenticateUser2, getTriple)
   .get("/get-analytics", getAnalytics)

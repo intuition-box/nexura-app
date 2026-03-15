@@ -49,6 +49,32 @@ export const getStudioPaymentConfig = async (_req: GlobalRequest, res: GlobalRes
   });
 };
 
+export const allowNexonsMint = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { id } = req;
+
+    const level = req.body.level;
+
+    const minter = await user.findById(id).lean();
+    if (!minter) {
+      res.status(NOT_FOUND).json({ error: "user not found" });
+      return;
+    }
+
+    if (minter.badges.includes(level)) {
+      res.status(OK).json({ message: "already minted" });
+      return;
+    }
+
+    await performIntuitionOnchainAction({ action: "allow-mint", level: level.toString(), userId: id! });
+
+    res.status(OK).json({ message: "allow user to mint successfully" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "internal server error" });
+  }
+}
+
 export const updateUser = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const profilePicBuffer = req.file?.buffer;
@@ -129,7 +155,7 @@ export const claimDepositXp = async (req: GlobalRequest, res: GlobalResponse) =>
     }
 
     trustUser.dailyTrustXpDate = exactDate as string;
-    trustUser.xp += 20;
+    trustUser.xp += 50;
 
     await trustUser.save();
 

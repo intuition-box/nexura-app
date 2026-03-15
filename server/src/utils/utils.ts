@@ -83,10 +83,6 @@ async function updateLevel (xp: number, badges: number[], userId: string) {
 			}
 		}
 
-		if (address) {
-			await performIntuitionOnchainAction({ action: "allow-mint", level, userId });
-		}
-
 		return level;
 	} catch (error) {
 		return level;
