@@ -1028,6 +1028,19 @@ const handleUpdateCampaign = async () => {
   }
 };
 
+const handlePublishButtonClick = () => {
+  if (Number(rewardPool) > 0 && !rewardContractAddress.trim()) {
+    toast({
+      title: "Rewards contract required",
+      description: "Deploy the rewards contract before publishing this campaign.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  setShowPublishModal(true);
+};
+
 const isActive =
   publishedCampaign &&
   new Date(publishedCampaign.endDate) > new Date();
@@ -2009,7 +2022,7 @@ const isActive =
   </button>
 ) : (
   <button
-    onClick={() => setShowPublishModal(true)}
+    onClick={handlePublishButtonClick}
     className="px-4 py-2 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
     disabled={loading || saveLoading}
   >
