@@ -37,6 +37,44 @@ interface ICreateCampaign {
 	description: string;
 }
 
+const DISCORD_CAMPAIGN_TAGS = new Set([
+	"discord",
+	"join",
+	"join-discord",
+	"message",
+	"message-discord",
+	"acquire-role-discord",
+	"send-message-discord",
+]);
+
+const isDiscordCampaignTask = (task: Record<string, any>) =>
+	DISCORD_CAMPAIGN_TAGS.has(String(task?.tag ?? "").trim()) || String(task?.category ?? "").trim() === "discord";
+
+const hasDiscordTasksInCampaign = async (campaignId: string) => {
+	const quests = await campaignQuest.find({ campaign: campaignId }).select("tag category").lean();
+	return quests.some((quest: any) => isDiscordCampaignTask(quest));
+};
+
+const getCampaignDiscordGuildIds = async (campaignId: string) => {
+	const quests = await campaignQuest.find({ campaign: campaignId }).select("guildId tag category").lean();
+	return Array.from(
+		new Set(
+			quests
+				.filter((quest: any) => isDiscordCampaignTask(quest))
+				.map((quest: any) => String(quest.guildId ?? "").trim())
+				.filter(Boolean)
+		)
+	);
+};
+
+const resolveCampaignDiscordLaunchGuildId = async (campaignDoc: any) => {
+	const storedGuildId = String(campaignDoc?.discordLaunchGuildId ?? "").trim();
+	if (storedGuildId) return storedGuildId;
+
+	const guildIds = await getCampaignDiscordGuildIds(String(campaignDoc?._id ?? "").trim());
+	return guildIds[0] ?? "";
+};
+
 const getTemporalCampaignStatus = (campaignDoc: {
 	status?: string;
 	starts_at?: string | Date;
@@ -274,8 +312,10 @@ export const addCampaignAddress = async (
 		}
 
 		foundCampaign.contractAddress = contractAddress;
+		const existingRewardsDeployment = { ...((foundCampaign as any).rewardsDeployment?.toObject?.() ?? (foundCampaign as any).rewardsDeployment ?? {}) };
 		if (deploymentTxHash) {
 			(foundCampaign as any).rewardsDeployment = {
+				...existingRewardsDeployment,
 				txHash: deploymentTxHash,
 				fundedAmount: Number(fundedAmount ?? foundCampaign.reward?.pool ?? 0),
 				rewardPerParticipant: Number(rewardPerParticipant ?? foundCampaign.reward?.trustTokens ?? 0),
@@ -572,6 +612,73 @@ export const closeCampaign = async (
 	}
 };
 
+export const recordCampaignRewardsWithdrawal = async (
+	req: GlobalRequest,
+	res: GlobalResponse
+) => {
+	try {
+		const {
+			id,
+			withdrawalTxHash,
+			withdrawnAmount,
+		}: {
+			id: string;
+			withdrawalTxHash?: string;
+			withdrawnAmount?: number;
+		} = req.body;
+
+		if (!id) {
+			res.status(BAD_REQUEST).json({ error: "send campaign ID" });
+			return;
+		}
+
+		const foundCampaign = await campaign.findById(id);
+		if (!foundCampaign) {
+			res.status(NOT_FOUND).json({ error: "id associated with campaign is invalid" });
+			return;
+		}
+		if (foundCampaign.hub?.toString() !== req.admin.hub?.toString()) {
+			res.status(FORBIDDEN).json({ error: "you are not allowed to update this campaign" });
+			return;
+		}
+		if (!foundCampaign.contractAddress || !ethers.isAddress(foundCampaign.contractAddress)) {
+			res.status(BAD_REQUEST).json({ error: "campaign rewards contract is not configured" });
+			return;
+		}
+		if (!withdrawalTxHash || !withdrawalTxHash.trim()) {
+			res.status(BAD_REQUEST).json({ error: "send the rewards withdrawal transaction hash" });
+			return;
+		}
+
+		const normalizedWithdrawnAmount = Number(withdrawnAmount ?? 0);
+		if (!Number.isFinite(normalizedWithdrawnAmount) || normalizedWithdrawnAmount < 0) {
+			res.status(BAD_REQUEST).json({ error: "send a valid withdrawn amount" });
+			return;
+		}
+
+		const existingRewardsDeployment = { ...((foundCampaign as any).rewardsDeployment?.toObject?.() ?? (foundCampaign as any).rewardsDeployment ?? {}) };
+		(foundCampaign as any).rewardsDeployment = {
+			...existingRewardsDeployment,
+			remainderWithdrawalTxHash: withdrawalTxHash.trim(),
+			remainderWithdrawnAmount: normalizedWithdrawnAmount,
+			remainderWithdrawnAt: new Date(),
+		};
+
+		if (foundCampaign.status !== "Ended") {
+			foundCampaign.status = "Ended";
+		}
+
+		await foundCampaign.save();
+
+		res.status(OK).json({ message: "campaign rewards withdrawal recorded" });
+	} catch (error) {
+		logger.error(error);
+		res
+			.status(INTERNAL_SERVER_ERROR)
+			.json({ error: "error recording campaign rewards withdrawal" });
+	}
+};
+
 export const reopenCampaign = async (
 	req: GlobalRequest,
 	res: GlobalResponse
@@ -604,6 +711,23 @@ export const reopenCampaign = async (
 		if (endsAt && endsAt <= now) {
 			res.status(FORBIDDEN).json({ error: "campaign end date has passed and it cannot be reopened" });
 			return;
+		}
+
+		const lockedDiscordGuildId = await resolveCampaignDiscordLaunchGuildId(foundCampaign);
+		if (lockedDiscordGuildId) {
+			const currentHub = await hub.findById(req.admin.hub).select("discordConnected guildId").lean();
+			const currentHubGuildId = String(currentHub?.guildId ?? "").trim();
+
+			if (!currentHub?.discordConnected || currentHubGuildId !== lockedDiscordGuildId) {
+				res.status(FORBIDDEN).json({
+					error: "Reconnect the same Discord server that was used to launch this campaign before reopening it.",
+				});
+				return;
+			}
+
+			if (!String((foundCampaign as any).discordLaunchGuildId ?? "").trim()) {
+				(foundCampaign as any).discordLaunchGuildId = lockedDiscordGuildId;
+			}
 		}
 
 		foundCampaign.status = startsAt && startsAt > now ? "Scheduled" : "Active";
@@ -779,6 +903,48 @@ export const publishCampaign = async (req: GlobalRequest, res: GlobalResponse) =
 			return res.status(FORBIDDEN).json({
 				error: "deploy and attach a rewards contract before publishing this campaign",
 			});
+		}
+
+		const hasDiscordTasks = await hasDiscordTasksInCampaign(id);
+		const currentHubGuildId = String((createdHub as any).guildId ?? "").trim();
+		const lockedDiscordGuildId = await resolveCampaignDiscordLaunchGuildId(campaignExists);
+		const requiredDiscordGuildId = lockedDiscordGuildId || currentHubGuildId;
+
+		if (hasDiscordTasks || lockedDiscordGuildId) {
+			if (!(createdHub as any).discordConnected || !currentHubGuildId) {
+				return res.status(FORBIDDEN).json({
+					error: "Connect Discord in Studio before publishing a campaign with Discord tasks.",
+				});
+			}
+
+			if (currentHubGuildId !== requiredDiscordGuildId) {
+				return res.status(FORBIDDEN).json({
+					error: "This campaign is locked to a different Discord server. Reconnect the original Discord server that was used to launch it before publishing.",
+				});
+			}
+
+			(campaignExists as any).discordLaunchGuildId = requiredDiscordGuildId;
+			await campaignQuest.updateMany(
+				{ campaign: id },
+				[
+					{
+						$set: {
+							guildId: {
+								$cond: [
+									{
+										$or: [
+											{ $eq: ["$category", "discord"] },
+											{ $in: ["$tag", Array.from(DISCORD_CAMPAIGN_TAGS)] },
+										],
+									},
+									requiredDiscordGuildId,
+									"$guildId",
+								],
+							},
+						},
+					},
+				]
+			);
 		}
 
 		const startsAt = campaignExists.starts_at ? new Date(campaignExists.starts_at) : null;

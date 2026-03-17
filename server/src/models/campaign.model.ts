@@ -62,6 +62,10 @@ const campaignSchema = new Schema({
 		default: "Save",
 		enum: ["Active", "Scheduled", "Ended", "Save"],
 	},
+	discordLaunchGuildId: {
+		type: String,
+		default: "",
+	},
 	contractAddress: {
 		type: String,
 	},
@@ -77,6 +81,15 @@ const campaignSchema = new Schema({
 		},
 		maxClaimableParticipants: {
 			type: Number,
+		},
+		remainderWithdrawalTxHash: {
+			type: String,
+		},
+		remainderWithdrawnAmount: {
+			type: Number,
+		},
+		remainderWithdrawnAt: {
+			type: Date,
 		},
 	},
 	reward: {

@@ -8,6 +8,7 @@ import { beginStudioDiscordConnect, getStudioDiscordReturnPath } from "../../lib
 export default function ConnectDiscord() {
   const [, setLocation] = useLocation();
   const returnPath = getStudioDiscordReturnPath("/studio-dashboard");
+  const showSkipButton = returnPath === "/studio-dashboard";
 
   React.useEffect(() => {
     const hasFullSession =
@@ -48,6 +49,7 @@ export default function ConnectDiscord() {
 
         <div className="grid gap-4 rounded-2xl border border-white/10 bg-black/25 p-5 text-sm text-white/70">
           <p>Discord will ask you to approve access to the servers you manage.</p>
+          <p>You can skip this for now and reconnect later when you want to build Discord-related tasks.</p>
           <p>After approval, you’ll come right back to the studio to choose the server and verification role.</p>
         </div>
 
@@ -61,6 +63,16 @@ export default function ConnectDiscord() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Studio
           </Button>
+          {showSkipButton && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setLocation("/studio-dashboard")}
+              className="border border-white/10 bg-white/[0.03] text-white/75 hover:bg-white/10 hover:text-white"
+            >
+              Skip for Now
+            </Button>
+          )}
           <Button
             type="button"
             onClick={() => beginStudioDiscordConnect(returnPath)}

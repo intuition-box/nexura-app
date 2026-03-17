@@ -125,7 +125,8 @@ export default function ConnectedDiscord() {
       setLocation(returnPath);
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Failed to connect Discord", variant: "destructive" });
+      const message = error instanceof Error ? error.message : "Failed to connect Discord";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setSaving(false);
     }

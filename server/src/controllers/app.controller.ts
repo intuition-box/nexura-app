@@ -1577,6 +1577,32 @@ export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) 
       return;
     }
 
+    const relatedCampaign = await campaign.findById(campaignId).select("hub").lean();
+    if (!relatedCampaign?.hub) {
+      await failDiscordTask("campaign project not found for this discord task", NOT_FOUND);
+      return;
+    }
+
+    const studioHub = await hub.findById(relatedCampaign.hub).select("discordConnected guildId verifiedId").lean();
+    const studioGuildId = String(studioHub?.guildId ?? "").trim();
+    const verifiedRoleId = String(studioHub?.verifiedId ?? "").trim();
+
+    if (!studioHub?.discordConnected || !studioGuildId) {
+      await failDiscordTask(
+        "this project's Discord connection is not active in Studio. The campaign team needs to reconnect Discord before Discord tasks can be completed.",
+        FORBIDDEN
+      );
+      return;
+    }
+
+    if (resolvedGuildId && studioGuildId !== resolvedGuildId) {
+      await failDiscordTask(
+        "this campaign's Discord setup no longer matches the project's active Studio Discord connection. Please contact the campaign team.",
+        FORBIDDEN
+      );
+      return;
+    }
+
     const fetchGuildMember = async () => {
       if (!resolvedGuildId) return null;
       try {
@@ -1603,13 +1629,7 @@ export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) 
           return;
         }
 
-        const serverInfo = await hub.findOne({ guildId: resolvedGuildId }).lean();
-        if (!serverInfo) {
-          await failDiscordTask("discord server not found for this quest");
-          return;
-        }
-
-        if (!serverInfo.verifiedId) {
+        if (!verifiedRoleId) {
           await failDiscordTask("this discord server has no verified role configured yet");
           return;
         }
@@ -1629,7 +1649,7 @@ export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) 
         }
 
         const memberRoles: string[] = Array.isArray(member.roles) ? member.roles : [];
-        if (!memberRoles.includes(String(serverInfo.verifiedId))) {
+        if (!memberRoles.includes(verifiedRoleId)) {
           await failDiscordTask("you need to be verified to continue");
           return;
         }

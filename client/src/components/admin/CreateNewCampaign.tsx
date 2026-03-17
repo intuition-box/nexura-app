@@ -605,11 +605,18 @@ const convertToBase64 = (file: File): Promise<string> => {
 
 const handleSaveTask = () => {
   const requiresPlatform = newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback";
+  const requiresDiscordConnection = newTask.platform === "Discord" || isDiscordFixedTaskType(newTask.type);
   const requiresRole = isDiscordRoleTaskType(newTask.type);
   const requiresChannel = isDiscordMessageTaskType(newTask.type);
 
   if (!newTask.type || (requiresPlatform && !newTask.platform) || !newTask.handleOrUrl || !newTask.description) {
     return setError("All fields are required.");
+  }
+  if (requiresDiscordConnection && !hubDiscordConnected) {
+    return setError("Connect Discord in Studio before creating Discord-related tasks.");
+  }
+  if (requiresDiscordConnection && !hubGuildId) {
+    return setError("Finish Discord setup by selecting a server before creating Discord-related tasks.");
   }
   if (requiresRole && !newTask.roleId) {
     return setError("Please select a Discord role for this task.");
@@ -1614,6 +1621,14 @@ const isActive =
             className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500"
           />
         </div>
+
+        {(newTask.platform === "Discord" || isDiscordFixedTaskType(newTask.type)) && (!hubDiscordConnected || !hubGuildId) && (
+          <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            {!hubDiscordConnected
+              ? "Discord is optional for your studio overall, but you must connect it before creating Discord-related tasks."
+              : "Finish the Discord setup by selecting a server before creating Discord-related tasks."}
+          </div>
+        )}
 
         {(isDiscordRoleTaskType(newTask.type) || isDiscordMessageTaskType(newTask.type)) && (
           <div className="mb-4 space-y-2">

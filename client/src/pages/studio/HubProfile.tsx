@@ -5,6 +5,16 @@ import { Card } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Button } from "../../components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
 import { ArrowLeft, Camera, Loader2, Save, Globe, Twitter } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "../../hooks/use-toast";
@@ -32,6 +42,8 @@ export default function HubProfile() {
   const [imagePreview, setImagePreview] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [disconnectingDiscord, setDisconnectingDiscord] = useState(false);
+  const [showDisconnectWarning, setShowDisconnectWarning] = useState(false);
 
   const info = getStoredProjectInfo();
   const isSuperAdmin = (info?.role ?? "admin") === "superadmin";
@@ -115,6 +127,41 @@ export default function HubProfile() {
     }
   };
 
+  const disconnectDiscord = async () => {
+    setDisconnectingDiscord(true);
+    try {
+      await projectApiRequest({ method: "PATCH", endpoint: "/hub/disconnect-discord" });
+
+      const token = getStoredProjectToken();
+      const existing = getStoredProjectInfo() ?? {};
+      if (token) {
+        storeProjectSession(token, {
+          ...existing,
+          discordSessionId: "",
+        });
+      }
+
+      setDiscordConnected(false);
+      setDiscordServer("");
+      setShowDisconnectWarning(false);
+      toast({ title: "Discord disconnected", description: "You can reconnect Discord any time from this profile." });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to disconnect Discord.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setDisconnectingDiscord(false);
+    }
+  };
+
+  const handleDiscordButtonClick = async () => {
+    if (!discordConnected) {
+      beginStudioDiscordConnect("/studio-dashboard/hub-profile");
+      return;
+    }
+
+    setShowDisconnectWarning(true);
+  };
+
   const displayLogo = imagePreview || logoUrl || "/default-project-logo.png";
 
   if (loading) {
@@ -127,6 +174,40 @@ export default function HubProfile() {
 
   return (
     <div className="flex flex-col items-center w-full">
+      <AlertDialog
+        open={showDisconnectWarning}
+        onOpenChange={(open) => {
+          if (!disconnectingDiscord) setShowDisconnectWarning(open);
+        }}
+      >
+        <AlertDialogContent className="border border-white/10 bg-[#140d24] text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect Discord?</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70">
+              Discord is optional for the studio overall, but disconnecting it can stop users from completing any Discord tasks tied to this project. If a live Discord campaign is already running, you will need to reconnect the same Discord server before that campaign ends.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={disconnectingDiscord}
+              className="border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={disconnectingDiscord}
+              onClick={(event) => {
+                event.preventDefault();
+                void disconnectDiscord();
+              }}
+              className="bg-red-500 text-white hover:bg-red-600"
+            >
+              {disconnectingDiscord ? "Disconnecting..." : "Proceed anyway"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Back button + title */}
       <div className="w-full max-w-2xl flex items-center gap-3 mb-8">
         <Button
@@ -263,10 +344,15 @@ export default function HubProfile() {
               <label className="text-sm text-white/60 font-medium block">Discord Verification</label>
               <Button
                 type="button"
-                onClick={() => beginStudioDiscordConnect("/studio-dashboard/hub-profile")}
-                className="bg-[#8B3EFE] hover:bg-[#7b35e6] text-white"
+                onClick={() => void handleDiscordButtonClick()}
+                disabled={disconnectingDiscord}
+                className={discordConnected ? "bg-red-500 hover:bg-red-600 text-white" : "bg-[#8B3EFE] hover:bg-[#7b35e6] text-white"}
               >
-                {discordConnected ? "Reconnect Discord" : "Connect Discord"}
+                {disconnectingDiscord
+                  ? "Disconnecting..."
+                  : discordConnected
+                    ? "Disconnect Discord"
+                    : "Connect Discord"}
               </Button>
             </div>
           )}

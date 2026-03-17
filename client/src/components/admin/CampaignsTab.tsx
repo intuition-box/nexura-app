@@ -5,9 +5,11 @@ import { Card } from "../ui/card";
 import { Link, useLocation } from "wouter";
 import { projectApiRequest, getStoredProjectInfo } from "../../lib/projectApi";
 import { useToast } from "../../hooks/use-toast";
-import { RefreshCw, Trash2, XCircle, Loader2, Clock, RotateCcw } from "lucide-react";
+import { ArrowDownToLine, RefreshCw, Trash2, XCircle, Loader2, Clock, RotateCcw } from "lucide-react";
 import { Button } from "../ui/button";
 import { apiRequestV2 } from "../../lib/queryClient";
+import { closeRewardCampaign, getRewardContractBalance } from "../../lib/performOnchainAction";
+import { formatEther } from "viem";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,16 @@ interface Campaign {
   ends_at: string;
   status?: string;
   isDraft?: boolean;
+  contractAddress?: string;
+  rewardsDeployment?: {
+    txHash?: string;
+    fundedAmount?: number;
+    rewardPerParticipant?: number;
+    maxClaimableParticipants?: number;
+    remainderWithdrawalTxHash?: string;
+    remainderWithdrawnAmount?: number;
+    remainderWithdrawnAt?: string;
+  };
   reward?: { xp?: number; pool?: number; trust?: number };
 }
 
@@ -39,14 +51,23 @@ export default function CampaignsTab() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [reopeningId, setReopeningId] = useState<string | null>(null);
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [serverOffset, setServerOffset] = useState<number>(0);
   const [countdowns, setCountdowns] = useState<Record<string, string>>({});
+  const [rewardBalances, setRewardBalances] = useState<Record<string, bigint>>({});
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const info = getStoredProjectInfo();
   const isSuperAdmin = (info?.role as string) === "superadmin";
+  const formatTrustAmount = (amountWei: bigint) => {
+    const formatted = formatEther(amountWei);
+    const numeric = Number(formatted);
+    return Number.isFinite(numeric)
+      ? numeric.toLocaleString(undefined, { maximumFractionDigits: 4 })
+      : formatted;
+  };
 
   useEffect(() => {
     apiRequestV2("GET", `/api/server-time`)
@@ -84,6 +105,50 @@ export default function CampaignsTab() {
   const isScheduled = (c: Campaign) => !isDraft(c) && !isCompleted(c) && !!c.starts_at && new Date(c.starts_at) > now;
   const isActiveCampaign = (c: Campaign) => !isDraft(c) && !isScheduled(c) && !isCompleted(c);
   const isReopenable = (c: Campaign) => isEnded(c) && (!!c.ends_at ? new Date(c.ends_at) > now : true);
+
+  useEffect(() => {
+    const currentNow = new Date(Date.now() + serverOffset);
+    const completedRewardCampaigns = campaigns.filter((campaign) => {
+      const campaignCompleted = campaign.status === "Ended" || (!!campaign.ends_at && new Date(campaign.ends_at) <= currentNow);
+      return campaignCompleted && !!campaign.contractAddress && Number(campaign.reward?.pool ?? 0) > 0;
+    });
+
+    if (completedRewardCampaigns.length === 0) {
+      setRewardBalances({});
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadBalances = async () => {
+      const entries = await Promise.all(
+        completedRewardCampaigns.map(async (campaign) => {
+          try {
+            const balance = await getRewardContractBalance(campaign.contractAddress as string);
+            return [campaign._id, balance] as const;
+          } catch (error) {
+            console.error(`Failed to load rewards contract balance for campaign ${campaign._id}:`, error);
+            return [campaign._id, 0n] as const;
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      setRewardBalances(
+        entries.reduce<Record<string, bigint>>((acc, [campaignId, balance]) => {
+          acc[campaignId] = balance;
+          return acc;
+        }, {})
+      );
+    };
+
+    void loadBalances();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [campaigns, serverOffset]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -127,6 +192,66 @@ export default function CampaignsTab() {
       toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setReopeningId(null);
+    }
+  };
+
+  const handleWithdrawRemainder = async (campaign: Campaign) => {
+    if (!campaign.contractAddress) {
+      toast({ title: "No rewards contract", description: "This campaign does not have a rewards contract attached.", variant: "destructive" });
+      return;
+    }
+
+    setWithdrawingId(campaign._id);
+    try {
+      const currentBalance = await getRewardContractBalance(campaign.contractAddress);
+      if (currentBalance <= 0n) {
+        setRewardBalances((prev) => ({ ...prev, [campaign._id]: 0n }));
+        toast({ title: "No remainder found", description: "This rewards contract no longer holds any TRUST.", variant: "destructive" });
+        return;
+      }
+
+      const txHash = await closeRewardCampaign(campaign.contractAddress);
+      const withdrawnAmount = Number(formatEther(currentBalance));
+
+      const syncResults = await Promise.allSettled([
+        campaign.status !== "Ended"
+          ? projectApiRequest({ method: "PATCH", endpoint: "/hub/close-campaign", params: { id: campaign._id } })
+          : Promise.resolve(null),
+        projectApiRequest({
+          method: "PATCH",
+          endpoint: "/hub/record-campaign-rewards-withdrawal",
+          data: {
+            id: campaign._id,
+            withdrawalTxHash: txHash,
+            withdrawnAmount,
+          },
+        }),
+      ]);
+
+      const syncFailure = syncResults.find((result) => result.status === "rejected");
+
+      setRewardBalances((prev) => ({ ...prev, [campaign._id]: 0n }));
+      await fetchCampaigns();
+
+      if (syncFailure?.status === "rejected") {
+        console.error("Campaign withdrawal sync failed:", syncFailure.reason);
+        toast({
+          title: "Remainder withdrawn",
+          description: `${formatTrustAmount(currentBalance)} TRUST was withdrawn on-chain, but the studio metadata needs a refresh.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Remainder withdrawn",
+        description: `${formatTrustAmount(currentBalance)} TRUST was returned from the rewards contract.`,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to withdraw the remaining rewards.";
+      toast({ title: "Withdrawal failed", description: msg, variant: "destructive" });
+    } finally {
+      setWithdrawingId(null);
     }
   };
 
@@ -197,6 +322,10 @@ export default function CampaignsTab() {
     const scheduled = isScheduled(campaign);
     const completed = isCompleted(campaign);
     const canReopen = isReopenable(campaign);
+    const rewardBalance = rewardBalances[campaign._id];
+    const rewardBalanceKnown = rewardBalance !== undefined;
+    const hasRewardsContract = !!campaign.contractAddress && Number(campaign.reward?.pool ?? 0) > 0;
+    const hasWithdrawableRemainder = completed && hasRewardsContract && rewardBalanceKnown && rewardBalance > 0n;
     let status = "Published";
     let statusColor = "bg-green-500";
 
@@ -236,6 +365,15 @@ export default function CampaignsTab() {
           {Number(campaign.reward?.pool ?? 0) > 0 && (
             <p className="text-purple-400 text-xs font-medium">Reward Pool: {campaign.reward?.pool} TRUST</p>
           )}
+          {completed && hasRewardsContract && (
+            <p className="text-emerald-300 text-xs font-medium">
+              {rewardBalanceKnown
+                ? rewardBalance! > 0n
+                  ? `Contract remainder: ${formatTrustAmount(rewardBalance!)} TRUST`
+                  : "Reward contract settled"
+                : "Checking reward contract..."}
+            </p>
+          )}
 
           <div className="mt-auto flex flex-col gap-2 pt-3">
             <div className="flex gap-1.5 flex-wrap">
@@ -265,6 +403,23 @@ export default function CampaignsTab() {
                   disabled={reopeningId === campaign._id || deletingId === campaign._id || closingId === campaign._id}
                 >
                   {reopeningId === campaign._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                </button>
+              )}
+
+              {isSuperAdmin && hasWithdrawableRemainder && (
+                <button
+                  title="Withdraw contract remainder"
+                  className="px-3 py-1.5 text-xs bg-emerald-600/20 text-emerald-300 rounded-lg hover:bg-emerald-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+                  onClick={() => void handleWithdrawRemainder(campaign)}
+                  disabled={
+                    withdrawingId === campaign._id ||
+                    deletingId === campaign._id ||
+                    closingId === campaign._id ||
+                    reopeningId === campaign._id
+                  }
+                >
+                  {withdrawingId === campaign._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowDownToLine className="w-4 h-4" />}
+                  <span>{withdrawingId === campaign._id ? "Withdrawing..." : "Withdraw"}</span>
                 </button>
               )}
 
