@@ -899,7 +899,7 @@ export const publishCampaign = async (req: GlobalRequest, res: GlobalResponse) =
 				error: "set a participant limit before publishing a reward campaign",
 			});
 		}
-		if (rewardPool > 0 && maxParticipants > 0 && !campaignExists.contractAddress) {
+		if (rewardPool > 0 && !campaignExists.contractAddress) {
 			return res.status(FORBIDDEN).json({
 				error: "deploy and attach a rewards contract before publishing this campaign",
 			});

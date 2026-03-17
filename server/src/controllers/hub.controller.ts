@@ -81,7 +81,7 @@ const getRequiredOngoingDiscordGuildIdForHub = async (hubId: unknown) => {
   }
 
   if (lockedGuildIds.size > 1) {
-    throw new Error("Multiple active Discord campaigns are locked to different Discord servers. Reconnect the original server used for those campaigns before changing Studio Discord.");
+    throw new Error("Multiple active campaigns with Discord tasks are locked to different Discord servers. Reconnect the original server used for those campaigns before changing Studio Discord.");
   }
 
   return Array.from(lockedGuildIds)[0] ?? "";
@@ -187,7 +187,7 @@ export const updateIds = async (req: GlobalRequest, res: GlobalResponse) => {
 
     if (requiredOngoingGuildId && normalizedGuildId && normalizedGuildId !== requiredOngoingGuildId) {
       res.status(FORBIDDEN).json({
-        error: "An active Discord campaign is still tied to a different Discord server. Reconnect the same Discord server that was used to launch that campaign until it ends.",
+        error: "An active campaign with Discord tasks is still tied to a different Discord server. Reconnect the same Discord server that was used to launch that campaign until it ends.",
       });
       return;
     }

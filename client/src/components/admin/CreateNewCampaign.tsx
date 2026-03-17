@@ -2136,11 +2136,12 @@ const isActive =
       toast({ title: "Payment required", description: "Please complete the 1000 $TRUST payment before publishing.", variant: "destructive" });
       return;
     }
+    const rewardPoolRequiresContract = Number(rewardPool) > 0;
     if (hasRewards && (!rewardPool || Number(rewardPool) <= 0)) {
       toast({ title: "Reward pool required", description: "Set a reward pool before publishing a rewards-enabled campaign.", variant: "destructive" });
       return;
     }
-    if (hasRewards && !rewardContractAddress.trim()) {
+    if (rewardPoolRequiresContract && !rewardContractAddress.trim()) {
       toast({ title: "Rewards contract required", description: "Deploy the rewards contract before publishing this campaign.", variant: "destructive" });
       return;
     }
@@ -2193,7 +2194,7 @@ const isActive =
       setLoading(false);
     }
   }}
-  disabled={loading || !paymentTxHash || (hasRewards && !rewardContractAddress.trim())}
+  disabled={loading || !paymentTxHash || (Number(rewardPool) > 0 && !rewardContractAddress.trim())}
 >
   {loading ? <span className="flex items-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Publishing...</span> : "Publish"}
 </button>

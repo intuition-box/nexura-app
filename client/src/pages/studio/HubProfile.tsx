@@ -184,7 +184,7 @@ export default function HubProfile() {
           <AlertDialogHeader>
             <AlertDialogTitle>Disconnect Discord?</AlertDialogTitle>
             <AlertDialogDescription className="text-white/70">
-              Discord is optional for the studio overall, but disconnecting it can stop users from completing any Discord tasks tied to this project. If a live Discord campaign is already running, you will need to reconnect the same Discord server before that campaign ends.
+              Discord is optional for the studio overall, but disconnecting it can stop users from completing any Discord tasks tied to this project. If a live campaign with Discord tasks is already running, you will need to reconnect the same Discord server before that campaign ends.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
