@@ -3,6 +3,7 @@ import {
   closeCampaign,
   createCampaign,
   deleteCampaign,
+  reopenCampaign,
   updateCampaign
 } from "@/controllers/campaign.controller";
 import {
@@ -47,6 +48,7 @@ router
   .patch("/update-campaign", upload.single("coverImage"), updateCampaign)
   .patch("/update-campaign-quest", updateCamapaignQuest)
   .patch("/close-campaign", closeCampaign)
+  .patch("/reopen-campaign", reopenCampaign)
   .patch("/add-campaign-address", addCampaignAddress);
 
 export default router;

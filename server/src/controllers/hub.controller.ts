@@ -602,6 +602,46 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
       updateFields.maxParticipants = Number(updateFields.maxParticipants ?? 0);
     }
 
+    const existingPool = Number(campaignFound.reward?.pool ?? 0);
+    const existingMaxParticipants = Number((campaignFound as any).maxParticipants ?? campaignFound.participants ?? 0);
+    const incomingPool = updateFields.reward
+      ? Number((updateFields.reward as Record<string, unknown>).pool ?? existingPool)
+      : existingPool;
+    const incomingMaxParticipants = updateFields.maxParticipants !== undefined
+      ? Number(updateFields.maxParticipants ?? existingMaxParticipants)
+      : existingMaxParticipants;
+
+    if (campaignFound.status !== "Save" && campaignFound.contractAddress && existingPool > 0) {
+      if (incomingPool < existingPool) {
+        res.status(BAD_REQUEST).json({ error: "reward pool cannot be reduced after publishing" });
+        return;
+      }
+      if (incomingMaxParticipants < existingMaxParticipants) {
+        res.status(BAD_REQUEST).json({ error: "participant limit cannot be reduced after publishing" });
+        return;
+      }
+
+      if (incomingPool > existingPool || incomingMaxParticipants > existingMaxParticipants) {
+        const existingRewardPerParticipant = Number(campaignFound.reward?.trustTokens ?? 0);
+        if (existingRewardPerParticipant > 0) {
+          const expectedParticipants = incomingPool / existingRewardPerParticipant;
+          const roundedExpectedParticipants = Math.round(expectedParticipants);
+          if (!Number.isFinite(expectedParticipants) || Math.abs(expectedParticipants - roundedExpectedParticipants) > 1e-9) {
+            res.status(BAD_REQUEST).json({
+              error: "reward pool increase must map to a whole number of participants at the existing per-participant reward",
+            });
+            return;
+          }
+          if (roundedExpectedParticipants !== incomingMaxParticipants) {
+            res.status(BAD_REQUEST).json({
+              error: "for published reward campaigns, participants must scale with reward pool at the deployed per-participant reward",
+            });
+            return;
+          }
+        }
+      }
+    }
+
     const updatedCampaign = await campaign.findByIdAndUpdate(id, updateFields, { new: true });
 
     // Recalculate status when dates change on a live/scheduled campaign

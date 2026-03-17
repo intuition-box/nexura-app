@@ -43,6 +43,7 @@ const getTemporalCampaignStatus = (campaignDoc: {
 	ends_at?: string | Date;
 }) => {
 	if (campaignDoc.status === "Save") return "Save";
+	if (campaignDoc.status === "Ended") return "Ended";
 
 	const now = new Date();
 	const startsAt = campaignDoc.starts_at ? new Date(campaignDoc.starts_at) : null;
@@ -397,6 +398,16 @@ export const updateCampaign = async (
       return;
 		}
 
+		const existingCampaign = await campaign.findById(id);
+		if (!existingCampaign) {
+			res.status(NOT_FOUND).json({ error: "campaign not found" });
+			return;
+		}
+		if (String(existingCampaign.hub) !== String(req.admin.hub)) {
+			res.status(FORBIDDEN).json({ error: "you are not allowed to update this campaign" });
+			return;
+		}
+
     const campaignUpdateData: Record<string, unknown> = {};
 
     const coverImageBuffer = req.file?.buffer;
@@ -421,11 +432,72 @@ export const updateCampaign = async (
 			}
 		}
 
+		if (typeof campaignUpdateData.reward === "string") {
+			try {
+				campaignUpdateData.reward = JSON.parse(campaignUpdateData.reward as string);
+			} catch {
+				// leave as-is and let downstream validation fail naturally
+			}
+		}
+		if (campaignUpdateData.maxParticipants !== undefined) {
+			campaignUpdateData.maxParticipants = Number(campaignUpdateData.maxParticipants ?? 0);
+		}
+		if (campaignUpdateData.reward && typeof campaignUpdateData.reward === "object") {
+			const rewardUpdate = campaignUpdateData.reward as Record<string, unknown>;
+			const pool = Number(rewardUpdate.pool ?? 0);
+			campaignUpdateData.reward = {
+				xp: Number(rewardUpdate.xp ?? 0),
+				pool,
+				trustTokens: Number(rewardUpdate.trust ?? rewardUpdate.trustTokens ?? 0),
+			};
+			campaignUpdateData.totalTrustAvailable = pool;
+		}
+
 		if (Object.keys(campaignUpdateData).length === 0) {
 			res
 				.status(BAD_REQUEST)
 				.json({ error: "No valid fields provided for update" });
 			return;
+		}
+
+		const existingPool = Number(existingCampaign.reward?.pool ?? 0);
+		const existingMaxParticipants = Number((existingCampaign as any).maxParticipants ?? existingCampaign.participants ?? 0);
+		const incomingPool = campaignUpdateData.reward
+			? Number((campaignUpdateData.reward as Record<string, unknown>).pool ?? existingPool)
+			: existingPool;
+		const incomingMaxParticipants = campaignUpdateData.maxParticipants !== undefined
+			? Number(campaignUpdateData.maxParticipants ?? existingMaxParticipants)
+			: existingMaxParticipants;
+
+		if (existingCampaign.status !== "Save" && existingCampaign.contractAddress && existingPool > 0) {
+			if (incomingPool < existingPool) {
+				res.status(BAD_REQUEST).json({ error: "reward pool cannot be reduced after publishing" });
+				return;
+			}
+			if (incomingMaxParticipants < existingMaxParticipants) {
+				res.status(BAD_REQUEST).json({ error: "participant limit cannot be reduced after publishing" });
+				return;
+			}
+
+			if (incomingPool > existingPool || incomingMaxParticipants > existingMaxParticipants) {
+				const existingRewardPerParticipant = Number(existingCampaign.reward?.trustTokens ?? 0);
+				if (existingRewardPerParticipant > 0) {
+					const expectedParticipants = incomingPool / existingRewardPerParticipant;
+					const roundedExpectedParticipants = Math.round(expectedParticipants);
+					if (!Number.isFinite(expectedParticipants) || Math.abs(expectedParticipants - roundedExpectedParticipants) > 1e-9) {
+						res.status(BAD_REQUEST).json({
+							error: "reward pool increase must map to a whole number of participants at the existing per-participant reward",
+						});
+						return;
+					}
+					if (roundedExpectedParticipants !== incomingMaxParticipants) {
+						res.status(BAD_REQUEST).json({
+							error: "for published reward campaigns, participants must scale with reward pool at the deployed per-participant reward",
+						});
+						return;
+					}
+				}
+			}
 		}
 
 		const updated = await campaign.findByIdAndUpdate(id, campaignUpdateData, { new: true });
@@ -472,6 +544,14 @@ export const closeCampaign = async (
 			res.status(NOT_FOUND).json({ error: "campaign id is invalid" });
 			return;
 		}
+		if (String(foundCampaign.hub) !== String(req.admin.hub)) {
+			res.status(FORBIDDEN).json({ error: "you are not allowed to close this campaign" });
+			return;
+		}
+		if (foundCampaign.status === "Save") {
+			res.status(BAD_REQUEST).json({ error: "draft campaigns cannot be closed" });
+			return;
+		}
 
 		if (foundCampaign.status === "Ended") {
 			res.status(FORBIDDEN).json({ error: "campaign has already ended" });
@@ -487,6 +567,52 @@ export const closeCampaign = async (
 		res
 			.status(INTERNAL_SERVER_ERROR)
 			.json({ error: "error closing campaign!" });
+	}
+};
+
+export const reopenCampaign = async (
+	req: GlobalRequest,
+	res: GlobalResponse
+) => {
+	try {
+		const id = req.query.id as string;
+		if (!id) {
+			res.status(BAD_REQUEST).json({ error: "send campaign id" });
+			return;
+		}
+
+		const foundCampaign = await campaign.findById(id);
+		if (!foundCampaign) {
+			res.status(NOT_FOUND).json({ error: "campaign id is invalid" });
+			return;
+		}
+		if (String(foundCampaign.hub) !== String(req.admin.hub)) {
+			res.status(FORBIDDEN).json({ error: "you are not allowed to reopen this campaign" });
+			return;
+		}
+		if (foundCampaign.status !== "Ended") {
+			res.status(BAD_REQUEST).json({ error: "only ended campaigns can be reopened" });
+			return;
+		}
+
+		const now = new Date();
+		const startsAt = foundCampaign.starts_at ? new Date(foundCampaign.starts_at) : null;
+		const endsAt = foundCampaign.ends_at ? new Date(foundCampaign.ends_at) : null;
+
+		if (endsAt && endsAt <= now) {
+			res.status(FORBIDDEN).json({ error: "campaign end date has passed and it cannot be reopened" });
+			return;
+		}
+
+		foundCampaign.status = startsAt && startsAt > now ? "Scheduled" : "Active";
+		await foundCampaign.save();
+
+		res.status(OK).json({ message: "campaign reopened!" });
+	} catch (error) {
+		logger.error(error);
+		res
+			.status(INTERNAL_SERVER_ERROR)
+			.json({ error: "error reopening campaign!" });
 	}
 };
 
@@ -681,6 +807,10 @@ export const deleteCampaign = async (req: GlobalRequest, res: GlobalResponse) =>
       res.status(NOT_FOUND).json({ error: "campaign not found, id is invalid" });
       return;
     }
+		if (String(campaignToBeDeleted.hub) !== String(req.admin.hub)) {
+			res.status(FORBIDDEN).json({ error: "you are not allowed to delete this campaign" });
+			return;
+		}
 
     await campaign.findByIdAndDelete(id);
 

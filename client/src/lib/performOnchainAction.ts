@@ -232,7 +232,7 @@ export const updateRewardStartTime = async (contractAddress: string, newDate: nu
   }
 }
 
-export const addReward = async (contractAddress: string, rewardsToAdd: number) => {
+export const addReward = async (contractAddress: string, rewardsToAdd: number | string): Promise<string> => {
   try {
     const walletClient = await getWalletClient();
     const publicClient = getPublicClient();
@@ -254,7 +254,9 @@ export const addReward = async (contractAddress: string, rewardsToAdd: number) =
       value: rewardsToAddWei
     });
 
-    await walletClient.writeContract(request);
+    const hash = await walletClient.writeContract(request);
+    await publicClient.waitForTransactionReceipt({ hash });
+    return hash;
   } catch (error: any) {
     if (error.data) {
       const iface = new ethers.Interface(REWARD_ABI);

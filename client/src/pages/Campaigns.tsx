@@ -137,9 +137,10 @@ export default function Campaigns() {
 
   const now = Date.now() + serverOffset;
 
-  const isCompletedCampaign = (campaign: Campaign) => !!campaign.ends_at && new Date(campaign.ends_at).getTime() <= now;
-  const isScheduledCampaign = (campaign: Campaign) => !isCompletedCampaign(campaign) && !!campaign.starts_at && new Date(campaign.starts_at).getTime() > now;
-  const isActiveCampaign = (campaign: Campaign) => !isScheduledCampaign(campaign) && !isCompletedCampaign(campaign);
+  const isEndedCampaign = (campaign: Campaign) =>
+    campaign.status === "Ended" || (!!campaign.ends_at && new Date(campaign.ends_at).getTime() <= now);
+  const isScheduledCampaign = (campaign: Campaign) => !isEndedCampaign(campaign) && !!campaign.starts_at && new Date(campaign.starts_at).getTime() > now;
+  const isActiveCampaign = (campaign: Campaign) => !isScheduledCampaign(campaign) && !isEndedCampaign(campaign);
 
   // Fetch server time offset once
   useEffect(() => {
@@ -262,7 +263,11 @@ export default function Campaigns() {
 
   const upcomingCampaigns = allCampaigns.filter((c) => isScheduledCampaign(c));
 
-  const renderCampaignCard = (campaign: Campaign, isActive: boolean) => {
+  const endedCampaigns = allCampaigns.filter((c) => isEndedCampaign(c));
+
+  const renderCampaignCard = (campaign: Campaign, state: "active" | "upcoming" | "ended") => {
+    const isActive = state === "active";
+    const isUpcoming = state === "upcoming";
     let metadata: any = {};
     try {
       metadata = campaign.metadata ? JSON.parse(campaign.metadata) : {};
@@ -320,13 +325,17 @@ export default function Campaigns() {
               <Badge className="bg-green-500/20 text-green-400 border border-green-500/30 text-[0.65rem] sm:text-xs">
                 Active
               </Badge>
-            ) : (
+            ) : isUpcoming ? (
               <div className="bg-black/60 backdrop-blur-sm border border-purple-500/30 rounded-lg px-2 py-1 flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-purple-400 animate-pulse" />
                 <span className="text-purple-300 text-[0.6rem] sm:text-xs font-mono font-semibold">
                   {countdowns[campaign._id] || "Loading..."}
                 </span>
               </div>
+            ) : (
+              <Badge className="bg-gray-500/20 text-gray-200 border border-gray-500/30 text-[0.65rem] sm:text-xs">
+                Ended
+              </Badge>
             )}
           </div>
 
@@ -423,9 +432,13 @@ export default function Campaigns() {
                 <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Join Campaign
               </>
-            ) : (
+            ) : isUpcoming ? (
               <>
                 <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Starts in {countdowns[campaign._id] || "..."}
+              </>
+            ) : (
+              <>
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Campaign Ended
               </>
             )}
           </Button>
@@ -460,7 +473,7 @@ export default function Campaigns() {
             </Card>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {activeCampaigns.map((campaign) => renderCampaignCard(campaign, true))}
+              {activeCampaigns.map((campaign) => renderCampaignCard(campaign, "active"))}
             </div>
           )}
         </div>
@@ -476,7 +489,23 @@ export default function Campaigns() {
             </Card>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {upcomingCampaigns.map((campaign) => renderCampaignCard(campaign, false))}
+              {upcomingCampaigns.map((campaign) => renderCampaignCard(campaign, "upcoming"))}
+            </div>
+          )}
+        </div>
+
+        {/* Ended Campaigns */}
+        <div className="space-y-4 sm:space-y-6 mt-8 sm:mt-12">
+          <h2 className="text-lg sm:text-2xl font-semibold text-white">Ended Campaigns</h2>
+          {isLoading ? (
+            <div className="text-center py-6 sm:py-12 text-muted-foreground">Loading campaigns...</div>
+          ) : endedCampaigns.length === 0 ? (
+            <Card className="glass glass-hover rounded-3xl p-6 sm:p-8 text-center">
+              <p className="text-white/60">No ended campaigns yet.</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {endedCampaigns.map((campaign) => renderCampaignCard(campaign, "ended"))}
             </div>
           )}
         </div>
