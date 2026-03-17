@@ -1,4 +1,5 @@
 import { BACKEND_URL } from "./constants";
+import { toUserFriendlyErrorMessage } from "./errorMessages";
 
 const PROJECT_API_URL = (BACKEND_URL ?? "") as string;
 
@@ -8,7 +9,7 @@ function getApiUrl(path: string) {
 
 export function getStoredProjectToken(): string | null {
   try {
-    return localStorage.getItem("nexura-project:token");
+    return localStorage.getItem("nexura-project:token") ?? localStorage.getItem("nexura:proj-token");
   } catch {
     return null;
   }
@@ -34,6 +35,7 @@ export function clearProjectSession() {
   localStorage.removeItem("nexura:proj-token");
   localStorage.removeItem("nexura:studio-wallet");
   localStorage.removeItem("nexura:studio-step");
+  localStorage.removeItem("nexura:studio-discord-return");
   localStorage.removeItem("hubData");
   localStorage.removeItem("twitterData");
   // NOTE: nexura:wallet is intentionally NOT cleared here.
@@ -59,7 +61,7 @@ async function throwIfNotOk(res: Response): Promise<void> {
       (json as Record<string, unknown>)?.error ??
       (json as Record<string, unknown>)?.message ??
       res.statusText;
-    throw new Error(String(msg));
+    throw new Error(toUserFriendlyErrorMessage(String(msg)));
   }
 }
 

@@ -35,15 +35,15 @@ export type Term = {
   id: Address;
   total_market_cap: string;
   total_assets: string;
-  vaults: [{
+  vaults: Array<{
     curve_id: string;
     current_share_price: string;
     market_cap: string;
     position_count: number;
     total_shares: string;
-    userPosition: [];
+    userPosition: Position[];
     total_assets: string;
-  }]
+  }>;
   positions_aggregate: {
     aggregate: {
       count: number
@@ -79,6 +79,7 @@ export type Position = {
   curve_id: number;
   account_id: string;
   direction: string;
+  created_at?: string;
   account: {
     id: Address;
     label: string;

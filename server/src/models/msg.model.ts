@@ -9,6 +9,10 @@ const firstMessageSchema = new mongoose.Schema({
   guild_id: {
     type: String,
     required: true,
+  },
+  channel_id: {
+    type: String,
+    required: false,
   }
 }, { timestamps: true });
 

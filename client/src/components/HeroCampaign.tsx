@@ -92,6 +92,8 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
       ? Number((currentCampaign.totalTrustAvailable / allowedParticipants).toFixed(2))
       : 0)
     : 0;
+  const heroHeading = currentCampaign.description || currentCampaign.title || "Untitled Campaign";
+  const heroBody = currentCampaign.title || currentCampaign.description || "Explore this campaign and earn rewards.";
 
   return (
     <div
@@ -133,10 +135,10 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
       </button>
 
       <div className="relative h-full flex flex-col sm:flex-row items-start sm:items-center">
-        <div className="flex-1 p-4 sm:p-8">
+        <div className="flex-1 min-w-0 p-4 sm:p-8">
           {/* Participant Count */}
           <div className="text-white/80 text-sm mb-2">
-            {formatParticipants(currentCampaign.participants ?? 0)} participants
+            {formatParticipants(allowedParticipants ?? 0)} participants
           </div>
 
           {/* Campaign Label */}
@@ -144,13 +146,17 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
 
 
           {/* Campaign Title */}
-          <h1 className="text-2xl sm:text-4xl font-bold text-white mb-2 sm:mb-4">{currentCampaign.title}</h1>
+          <h1 className="text-xl sm:text-3xl font-bold text-white mb-2 sm:mb-3 break-words line-clamp-2">
+            {heroHeading}
+          </h1>
 
           {/* Campaign Description */}
-          <p className="text-sm sm:text-lg text-white/80 mb-4 sm:mb-6 max-w-full sm:max-w-md">{currentCampaign.description}</p>
+          <p className="text-sm sm:text-base text-white/80 mb-3 sm:mb-4 max-w-full sm:max-w-xl break-words line-clamp-3">
+            {heroBody}
+          </p>
 
           {/* Date and Status */}
-          <div className="flex items-center space-x-6 mb-6">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-3 sm:mb-4">
             <div className="flex items-center space-x-2">
               <div className="text-center">
                 <div className="text-white font-bold text-lg">{starts_at.month}</div>
@@ -172,13 +178,13 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
 
           {/* Reward Pool */}
           {currentCampaign.reward && (
-            <div className="flex items-center space-x-2">
-              <span className="text-white/60">Total Rewards Pool</span>
-              <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-white/60 text-sm">Total Rewards Pool</span>
+              <div className="flex flex-wrap items-center gap-2">
                 {/* <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">T</span>
                 </div> */}
-                <span className="text-white font-bold text-lg">
+                <span className="text-white font-bold text-sm sm:text-base break-words">
                   {currentCampaign.reward.xp} XP + {trustReward} TRUST
                 </span>
               </div>
@@ -187,7 +193,7 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
         </div>
 
         {/* 3D Hexagonal Logo Display */}
-        <div className="flex-shrink-0 mt-6 sm:mt-0 sm:pr-8 flex justify-center sm:justify-end">
+        <div className="hidden sm:flex flex-shrink-0 mt-6 sm:mt-0 sm:pr-8 justify-center sm:justify-end">
           <div className="relative">
             {/* 3D Hexagonal Base */}
             <div className="relative w-32 h-32 sm:w-48 sm:h-48">

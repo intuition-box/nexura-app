@@ -7,7 +7,7 @@ import StudioSidebar from "./StudioSidebar";
 import { isProjectSignedIn, clearProjectSession, projectApiRequest } from "../../lib/projectApi";
 import { getStoredProjectToken } from "../../lib/projectApi";
 
-type TabType = "campaignSubmissions" | "adminManagement" | "campaignsTab";
+type TabType = "hubProfile" | "campaignSubmissions" | "adminManagement" | "campaignsTab";
 
 interface StudioLayoutProps {
   children: React.ReactNode;
@@ -23,8 +23,8 @@ export default function StudioLayout({ children, title = "Nexura Studio", onLogo
   const [location, setLocation] = useLocation();
 
   // Determine active tab from the current URL
-  const deriveTab = (): TabType | null => {
-    if (location.includes("hub-profile")) return null;
+  const deriveTab = (): TabType => {
+    if (location.includes("hub-profile")) return "hubProfile";
     if (location.includes("admin-management")) return "adminManagement";
     if (location === "/studio-dashboard") return "campaignSubmissions";
     if (location.includes("campaigns-tab") || location.includes("create-new-campaign") || location.includes("my-campaign"))
@@ -32,7 +32,7 @@ export default function StudioLayout({ children, title = "Nexura Studio", onLogo
     return "campaignSubmissions";
   };
 
-  const [activeTab, setActiveTab] = useState<TabType | null>(deriveTab);
+  const [activeTab, setActiveTab] = useState<TabType>(deriveTab);
 
   useEffect(() => {
     setActiveTab(deriveTab());
@@ -51,7 +51,7 @@ export default function StudioLayout({ children, title = "Nexura Studio", onLogo
     }
     clearProjectSession();
     onLogout?.();
-    setLocation("/studio");
+    setLocation("/discover");
   };
 
   return (

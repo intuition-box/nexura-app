@@ -1,7 +1,7 @@
 import { OTP } from '@/models/otp.model';
 import { hub, hubAdmin } from '@/models/hub.model';
 import { addHubAdminEmail } from '@/utils/sendMail';
-import { BAD_REQUEST, INTERNAL_SERVER_ERROR, CREATED, OK, NO_CONTENT, NOT_FOUND } from '@/utils/status.utils';
+import { BAD_REQUEST, INTERNAL_SERVER_ERROR, CREATED, OK, NO_CONTENT, NOT_FOUND, FORBIDDEN } from '@/utils/status.utils';
 import { CLIENT_URL } from '@/utils/env.utils';
 import { generateOTP, validateHubData, getMissingFields, validateCampaignData, validateCampaignQuestData, validateSaveCampaignData } from '@/utils/utils';
 import logger from '@/config/logger';
@@ -10,6 +10,82 @@ import { miniQuestCompleted, campaignQuestCompleted } from '@/models/questsCompl
 import { campaign } from '@/models/campaign.model';
 import { campaignQuest } from '@/models/quests.model';
 import { uploadImg } from "@/utils/img.utils";
+
+const DISCORD_CAMPAIGN_TAGS = new Set([
+  "discord",
+  "join",
+  "join-discord",
+  "message",
+  "message-discord",
+  "acquire-role-discord",
+  "send-message-discord",
+]);
+
+const isDiscordCampaignTask = (task: Record<string, any>) =>
+  DISCORD_CAMPAIGN_TAGS.has(String(task?.tag ?? "").trim()) || String(task?.category ?? "").trim() === "discord";
+
+const ONGOING_CAMPAIGN_STATUSES = ["Active", "Scheduled"] as const;
+
+const getDiscordQuestGuildIdsForCampaigns = async (campaignIds: string[]) => {
+  if (campaignIds.length === 0) return [];
+
+  const quests = await campaignQuest
+    .find({ campaign: { $in: campaignIds } })
+    .select("guildId tag category")
+    .lean();
+
+  return Array.from(
+    new Set(
+      quests
+        .filter((quest: any) => isDiscordCampaignTask(quest))
+        .map((quest: any) => String(quest.guildId ?? "").trim())
+        .filter(Boolean)
+    )
+  );
+};
+
+const resolveCampaignDiscordLaunchGuildId = async (campaignDoc: any) => {
+  const storedGuildId = String(campaignDoc?.discordLaunchGuildId ?? "").trim();
+  if (storedGuildId) return storedGuildId;
+
+  const guildIds = await getDiscordQuestGuildIdsForCampaigns([String(campaignDoc?._id ?? "")].filter(Boolean));
+  return guildIds[0] ?? "";
+};
+
+const getRequiredOngoingDiscordGuildIdForHub = async (hubId: unknown) => {
+  const ongoingCampaigns = await campaign
+    .find({ hub: hubId, status: { $in: ONGOING_CAMPAIGN_STATUSES } })
+    .select("_id discordLaunchGuildId")
+    .lean();
+
+  if (ongoingCampaigns.length === 0) {
+    return "";
+  }
+
+  const lockedGuildIds = new Set<string>();
+  const fallbackCampaignIds: string[] = [];
+
+  for (const ongoingCampaign of ongoingCampaigns) {
+    const storedGuildId = String((ongoingCampaign as any).discordLaunchGuildId ?? "").trim();
+    if (storedGuildId) {
+      lockedGuildIds.add(storedGuildId);
+      continue;
+    }
+
+    fallbackCampaignIds.push(String((ongoingCampaign as any)._id ?? "").trim());
+  }
+
+  const fallbackGuildIds = await getDiscordQuestGuildIdsForCampaigns(fallbackCampaignIds.filter(Boolean));
+  for (const guildId of fallbackGuildIds) {
+    lockedGuildIds.add(guildId);
+  }
+
+  if (lockedGuildIds.size > 1) {
+    throw new Error("Multiple active campaigns with Discord tasks are locked to different Discord servers. Reconnect the original server used for those campaigns before changing Studio Discord.");
+  }
+
+  return Array.from(lockedGuildIds)[0] ?? "";
+};
 
 export const createHub = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
@@ -38,10 +114,16 @@ export const createHub = async (req: GlobalRequest, res: GlobalResponse) => {
     }
 
     const hubLogo = await uploadImg({ file: hubLogoAsFile, filename: req.file?.originalname, folder: "hub-logos" });
+    const website = String(req.body.website ?? "").trim();
+    const xAccount = String(req.body.xAccount ?? "").trim();
+    const discordServer = String(req.body.discordServer ?? "").trim();
 
     const createdHub = await hub.create({
       name,
       description: req.body.description ?? "",
+      website,
+      xAccount,
+      discordServer,
       logo: hubLogo,
       superAdmin: req.id,
       xpAllocated: 200,
@@ -97,16 +179,48 @@ export const savePaymentHash = async (req: GlobalRequest, res: GlobalResponse) =
 
 export const updateIds = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { verifiedId, guildId } = req.body;
+    const { verifiedId, guildId, discordServer, discordSessionId } = req.body;
+    const normalizedGuildId = String(guildId ?? "").trim();
+    const normalizedDiscordServer = String(discordServer ?? "").trim();
+    const normalizedDiscordSessionId = String(discordSessionId ?? "").trim();
+    const requiredOngoingGuildId = await getRequiredOngoingDiscordGuildIdForHub(req.admin.hub);
 
-    await hub.findByIdAndUpdate(req.admin.hub, { verifiedId, guildId, discordConnected: true });
+    if (requiredOngoingGuildId && normalizedGuildId && normalizedGuildId !== requiredOngoingGuildId) {
+      res.status(FORBIDDEN).json({
+        error: "An active campaign with Discord tasks is still tied to a different Discord server. Reconnect the same Discord server that was used to launch that campaign until it ends.",
+      });
+      return;
+    }
+
+    await hub.findByIdAndUpdate(req.admin.hub, {
+      verifiedId,
+      guildId: normalizedGuildId,
+      discordConnected: true,
+      ...(normalizedDiscordServer ? { discordServer: normalizedDiscordServer } : {}),
+      ...(normalizedDiscordSessionId ? { discordSessionId: normalizedDiscordSessionId } : {}),
+    });
 
     res.status(OK).json({ message: "ids updated successfully" });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "Error updating ids" });
-  }
+	}
 }
+
+export const disconnectHubDiscord = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    await hub.findByIdAndUpdate(req.admin.hub, {
+      discordConnected: false,
+      discordServer: "",
+      discordSessionId: "",
+    });
+
+    res.status(OK).json({ message: "discord disconnected" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Error disconnecting discord" });
+  }
+};
 
 export const addHubAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
@@ -211,6 +325,9 @@ export const updateHub = async (req: GlobalRequest, res: GlobalResponse) => {
     }
 
     const { xpAllocated: _xp, ...safeBody } = req.body;
+    if (safeBody.website !== undefined) safeBody.website = String(safeBody.website ?? "").trim();
+    if (safeBody.xAccount !== undefined) safeBody.xAccount = String(safeBody.xAccount ?? "").trim();
+    if (safeBody.discordServer !== undefined) safeBody.discordServer = String(safeBody.discordServer ?? "").trim();
     const updatedHub = await hub.findByIdAndUpdate(req.admin.hub, safeBody, { new: true });
     res.status(OK).json(updatedHub);
   } catch (error) {
@@ -558,7 +675,7 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
         if (questsToSave.length > 0) {
           await campaignQuest.insertMany(
             questsToSave.map((q: any) => (
-              (q.tag === "discord" || q.tag === "join-discord") ? { ...q, campaign: savedCampaignId, guildId: hubFound.guildId } :
+              isDiscordCampaignTask(q) ? { ...q, campaign: savedCampaignId, guildId: hubFound.guildId } :
               { ...q, campaign: savedCampaignId }))
           );
         }
@@ -574,8 +691,69 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
       res.status(NOT_FOUND).json({ error: "campaign not found" });
       return;
     }
+    const lockedDiscordGuildId = campaignFound.status !== "Save"
+      ? await resolveCampaignDiscordLaunchGuildId(campaignFound)
+      : "";
+    const discordGuildIdForCampaign = lockedDiscordGuildId || String(hubFound.guildId ?? "").trim();
 
     const { campaignQuests: _cq, isDraft: _d, existingCoverImage: _e, hubCoverImage: _h, nameOfProject: _n, ...updateFields } = req.body;
+
+    if (updateFields.reward && typeof updateFields.reward === "object") {
+      const rewardUpdate = updateFields.reward as Record<string, unknown>;
+      const pool = Number(rewardUpdate.pool ?? 0);
+      const trustTokens = Number(rewardUpdate.trust ?? rewardUpdate.trustTokens ?? 0);
+      updateFields.reward = {
+        xp: Number(rewardUpdate.xp ?? 0),
+        pool,
+        trustTokens,
+      };
+      updateFields.totalTrustAvailable = pool;
+    }
+
+    if (updateFields.maxParticipants !== undefined) {
+      updateFields.maxParticipants = Number(updateFields.maxParticipants ?? 0);
+    }
+
+    const existingPool = Number(campaignFound.reward?.pool ?? 0);
+    const existingMaxParticipants = Number((campaignFound as any).maxParticipants ?? campaignFound.participants ?? 0);
+    const incomingPool = updateFields.reward
+      ? Number((updateFields.reward as Record<string, unknown>).pool ?? existingPool)
+      : existingPool;
+    const incomingMaxParticipants = updateFields.maxParticipants !== undefined
+      ? Number(updateFields.maxParticipants ?? existingMaxParticipants)
+      : existingMaxParticipants;
+
+    if (campaignFound.status !== "Save" && campaignFound.contractAddress && existingPool > 0) {
+      if (incomingPool < existingPool) {
+        res.status(BAD_REQUEST).json({ error: "reward pool cannot be reduced after publishing" });
+        return;
+      }
+      if (incomingMaxParticipants < existingMaxParticipants) {
+        res.status(BAD_REQUEST).json({ error: "participant limit cannot be reduced after publishing" });
+        return;
+      }
+
+      if (incomingPool > existingPool || incomingMaxParticipants > existingMaxParticipants) {
+        const existingRewardPerParticipant = Number(campaignFound.reward?.trustTokens ?? 0);
+        if (existingRewardPerParticipant > 0) {
+          const expectedParticipants = incomingPool / existingRewardPerParticipant;
+          const roundedExpectedParticipants = Math.round(expectedParticipants);
+          if (!Number.isFinite(expectedParticipants) || Math.abs(expectedParticipants - roundedExpectedParticipants) > 1e-9) {
+            res.status(BAD_REQUEST).json({
+              error: "reward pool increase must map to a whole number of participants at the existing per-participant reward",
+            });
+            return;
+          }
+          if (roundedExpectedParticipants !== incomingMaxParticipants) {
+            res.status(BAD_REQUEST).json({
+              error: "for published reward campaigns, participants must scale with reward pool at the deployed per-participant reward",
+            });
+            return;
+          }
+        }
+      }
+    }
+
     const updatedCampaign = await campaign.findByIdAndUpdate(id, updateFields, { new: true });
 
     // Recalculate status when dates change on a live/scheduled campaign
@@ -609,13 +787,13 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
         await campaignQuest.bulkWrite(
           questsToUpdate.map((q: any) => {
             const { _id, ...rest } = q;
-            const updatePayload = (q.tag === "discord" || q.tag === "join-discord")
-              ? { ...rest, campaign: id, guildId: hubFound.guildId }
+            const updatePayload = isDiscordCampaignTask(q)
+              ? { ...rest, campaign: id, guildId: discordGuildIdForCampaign }
               : { ...rest, campaign: id };
 
             return {
               updateOne: {
-                filter: { _id, campaign: id },
+                filter: { _id, campaign: id as any },
                 update: { $set: updatePayload },
               }
             };
@@ -626,8 +804,8 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
       if (questsToInsert.length > 0) {
         await campaignQuest.insertMany(
           questsToInsert.map((q: any) => (
-            (q.tag === "discord" || q.tag === "join-discord")
-              ? { ...q, campaign: id, guildId: hubFound.guildId }
+            isDiscordCampaignTask(q)
+              ? { ...q, campaign: id, guildId: discordGuildIdForCampaign }
               : { ...q, campaign: id }
           ))
         );
@@ -708,20 +886,24 @@ export const saveCampaignWithQuests = async (req: GlobalRequest, res: GlobalResp
     const newQuests = [];
 
     for (const qd of req.body.questData) {
+      const questData = isDiscordCampaignTask(qd)
+        ? { ...qd, guildId: hubFound.guildId }
+        : { ...qd };
+
       if (qd.campaign && qd._id) {
         createdQuests.push({
           updateOne: {
             filter: { _id: qd._id },
             update: {
               $set: {
-                ...qd,
+                ...questData,
               }
             }
           }
         });
       } else {
         qd.campaign = campaignId;
-        qd.guildId = qd.tag === "discord" ? hubFound.guildId  : undefined;
+        qd.guildId = isDiscordCampaignTask(qd) ? hubFound.guildId : undefined;
         newQuests.push({ ...qd,  })
       }
     }

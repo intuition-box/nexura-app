@@ -38,16 +38,18 @@ type BannedUser = {
   bannedAt: string;
 }
 
-type TabType = "campaignSubmissions" | "adminManagement" | "campaignsTab";
+type TabType = "hubProfile" | "campaignSubmissions" | "adminManagement" | "campaignsTab";
 
 export default function StudioDashboard({ onLogout }: StudioDashboardProps) {
   const [location, setLocation] = useLocation();
   const deriveTab = (): TabType => {
+    if (location.includes("/studio-dashboard/dashboard")) return "campaignSubmissions";
+    if (location.includes("hub-profile")) return "hubProfile";
     if (location.includes("admin-management")) return "adminManagement";
     if (location.includes("campaigns-tab") || location.includes("create-new-campaign") || location.includes("my-campaign")) {
       return "campaignsTab";
     }
-    return "campaignSubmissions";
+    return "campaignsTab";
   };
   const [activeTab, setActiveTab] = useState<TabType>(deriveTab);
 
@@ -215,6 +217,7 @@ const fetchBannedUsers = async () => {
           <header className="hidden md:flex h-16 border-b border-white/10 items-center justify-between px-6 backdrop-blur-sm bg-black/30">
   <div className="flex items-center gap-4 flex-1">
     <h2 className="text-lg font-semibold text-white whitespace-nowrap min-w-[200px]">
+      {activeTab === "hubProfile" && "Project Profile"}
       {activeTab === "campaignSubmissions" && "Nexura Studio"}
       {activeTab === "adminManagement" && "User Administration"}
       {activeTab === "campaignsTab" && "Campaigns"}
@@ -233,7 +236,7 @@ const fetchBannedUsers = async () => {
       size="sm"
       onClick={() => {
         onLogout();
-        setLocation("/studio");
+        setLocation("/discover");
       }}
       className="text-white/70 hover:text-white hover:text-red-400"
     >

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import AnimatedBackground from "../components/AnimatedBackground";
-import { Layers, Megaphone, BarChart3, Users, Zap, Shield, ArrowRight } from "lucide-react";
+import { Layers, Megaphone, BarChart3, Users, Zap, Shield, ArrowRight, ArrowLeft } from "lucide-react";
 import { isProjectSignedIn } from "../lib/projectApi";
+import { useWallet } from "../hooks/use-wallet";
 
 const FEATURES = [
   { icon: Megaphone, title: "Campaign Builder", desc: "Launch targeted campaigns with custom tasks and reward tiers" },
@@ -16,6 +17,7 @@ const FEATURES = [
 export default function NexuraStudio() {
   const [, setLocation] = useLocation();
   const [redirecting] = useState(() => isProjectSignedIn());
+  const { isConnected, address, connectWallet } = useWallet();
 
   useEffect(() => {
     if (isProjectSignedIn()) {
@@ -40,6 +42,22 @@ export default function NexuraStudio() {
           height: "100vh",
         }}
       >
+        <div className="w-full flex items-center justify-between px-4 sm:px-6 pt-4">
+          <button
+            onClick={() => setLocation("/discover")}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-white/30 bg-black/30 hover:bg-black/50 text-white text-xs sm:text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Explore
+          </button>
+
+          <button
+            onClick={() => connectWallet({ noReload: true })}
+            className="px-3 py-2 rounded-full border border-white/80 text-white bg-transparent hover:bg-purple-600 hover:border-purple-600 transition-all text-xs sm:text-sm"
+          >
+            {isConnected && address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Connect Wallet"}
+          </button>
+        </div>
 
         {/* Hero */}
         <div className="flex flex-col items-center justify-center text-center px-6 pt-6 pb-6">
@@ -131,7 +149,7 @@ export default function NexuraStudio() {
         {/* Footer band */}
         <div className="mt-auto bg-white/[0.02] px-6 py-4 text-center">
           <p className="text-white/30 text-xs">
-            Already have a hub?{" "}
+            Already have a project?{" "}
             <button
               onClick={() => setLocation("/projects/create/signin-to-hub")}
               className="text-purple-400 hover:underline"

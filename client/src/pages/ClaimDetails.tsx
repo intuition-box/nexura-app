@@ -37,8 +37,8 @@ export default function ClaimDetails() {
   const [selling, setSelling] = useState(false);
   const [buyAmount, setBuyAmount] = useState("");
   const [sellAmount, setSellAmount] = useState("");
-  const [term, setTerm] = useState<Term>({});
-  const [counterTerm, setCounterTerm] = useState<Term>({});
+  const [term, setTerm] = useState<Term>({} as Term);
+  const [counterTerm, setCounterTerm] = useState<Term>({} as Term);
   const [supportCount, setSupportCount] = useState(0);
   const [opposeCount, setOpposeCount] = useState(0);
   const [supportPercent, setSupportPercent] = useState(0);
@@ -56,7 +56,7 @@ export default function ClaimDetails() {
   const [positionsOption, setPositionsOption] = useState("all");
   const [activePosition, setActivePosition] = useState<any | null>(null);
   const inputAmount = isBuy ? buyAmount : sellAmount;
-  const receiveTimeoutRef = useRef(null);
+  const receiveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showCurveInfo, setShowCurveInfo] = useState(false);
   // const [userShares, setUserShares] = useState("")
   const [actionState, setActionState] = useState("")
@@ -196,8 +196,8 @@ export default function ClaimDetails() {
 
     // All positions
     const allPositions = [
-      ...(fetched.term.positions ?? []).map(p => ({ ...p, direction: "support" })),
-      ...(fetched.counter_term.positions ?? []).map(p => ({ ...p, direction: "oppose" })),
+      ...(fetched.term.positions ?? []).map((p: any) => ({ ...p, direction: "support" })),
+      ...(fetched.counter_term.positions ?? []).map((p: any) => ({ ...p, direction: "oppose" })),
     ];
     setPositions(allPositions);
 
@@ -207,7 +207,7 @@ export default function ClaimDetails() {
     if (user) {
       myPositions = [
         // Support positions from term vaults
-        ...(fetched.term.vaults?.[0]?.userPosition ?? []).map(p => ({
+        ...(fetched.term.vaults?.[0]?.userPosition ?? []).map((p: any) => ({
           ...p,
           direction: "support",
           curve_id: 1, // Linear
@@ -217,7 +217,7 @@ export default function ClaimDetails() {
             image: user.image ?? null,
           },
         })),
-        ...(fetched.term.vaults?.[1]?.userPosition ?? []).map(p => ({
+        ...(fetched.term.vaults?.[1]?.userPosition ?? []).map((p: any) => ({
           ...p,
           direction: "support",
           curve_id: 2,
@@ -228,7 +228,7 @@ export default function ClaimDetails() {
           },
         })),
         // Oppose positions from counter_term vaults
-        ...(fetched.counter_term.vaults?.[0]?.userPosition ?? []).map(p => ({
+        ...(fetched.counter_term.vaults?.[0]?.userPosition ?? []).map((p: any) => ({
           ...p,
           direction: "oppose",
           curve_id: 1, // Linear
@@ -238,7 +238,7 @@ export default function ClaimDetails() {
             image: user.image ?? null,
           },
         })),
-        ...(fetched.counter_term.vaults?.[1]?.userPosition ?? []).map(p => ({
+        ...(fetched.counter_term.vaults?.[1]?.userPosition ?? []).map((p: any) => ({
           ...p,
           direction: "oppose",
           curve_id: 2,
@@ -296,7 +296,7 @@ export default function ClaimDetails() {
         pos?.direction === mainTab
     );
 
-    return up ? formatEther(BigInt(parseInt(up.shares) > 0 ? up.shares : 0)) : 0;
+    return up ? Number(formatEther(BigInt(parseInt(up.shares) > 0 ? up.shares : 0))) : 0;
   }, [userPositions, user, growthType, mainTab]);
 
   const hasOppositePosition = useMemo(() => {
@@ -316,8 +316,8 @@ export default function ClaimDetails() {
   function getPrice() {
     let sharePrice = "0";
 
-    const getVaultPrice = (vaults: typeof term.vaults | typeof counterTerm.vaults, index: number) => {
-      const price = vaults[index]?.current_share_price ?? "0";
+    const getVaultPrice = (vaults: typeof term.vaults | typeof counterTerm.vaults | undefined, index: number) => {
+      const price = vaults?.[index]?.current_share_price ?? "0";
       console.log(`Vault index ${index}:`, price);
       return price;
     };
@@ -500,14 +500,14 @@ export default function ClaimDetails() {
         break;
       case "newest":
         data.sort((a, b) =>
-          new Date(b.created_at).getTime() -
-          new Date(a.created_at).getTime()
+          new Date(b.created_at ?? 0).getTime() -
+          new Date(a.created_at ?? 0).getTime()
         );
         break;
       case "oldest":
         data.sort((a, b) =>
-          new Date(a.created_at).getTime() -
-          new Date(b.created_at).getTime()
+          new Date(a.created_at ?? 0).getTime() -
+          new Date(b.created_at ?? 0).getTime()
         );
         break;
       case "a_to_z":
@@ -909,17 +909,17 @@ export default function ClaimDetails() {
                 show: true,
                 min: Math.min(...generateChartData(claim, growthType).map(d => d.value)) * 0.95,
                 max: Math.max(...generateChartData(claim, growthType).map(d => d.value)) * 1.05,
-                labels: { style: { colors: "#BDAFFF", fontSize: '10px' }, formatter: val => val.toFixed(2) },
+                labels: { style: { colors: "#BDAFFF", fontSize: '10px' }, formatter: (val: number) => val.toFixed(2) },
               },
               tooltip: {
                 theme: "dark",
                 shared: true,
                 intersect: false,
                 x: { show: true },
-                y: { formatter: val => `${val} TRUST` },
+                y: { formatter: (val: number) => `${val} TRUST` },
               },
               grid: { show: false },
-            }}
+            } as any}
           />
         </div>
 

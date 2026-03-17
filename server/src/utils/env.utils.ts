@@ -59,11 +59,34 @@ export const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID as string;
 export const MAIN_DISCORD_REDIRECT_URI = process.env.MAIN_DISCORD_REDIRECT_URI as string;
 export const DEV_DISCORD_REDIRECT_URI = process.env.DEV_DISCORD_REDIRECT_URI as string;
 
-const DEV_DISCORD_HUB_CLIENT_REDIRECT_URI = process.env.DEV_DISCORD_HUB_CLIENT_REDIRECT_URI as string;
-const MAIN_DISCORD_HUB_CLIENT_REDIRECT_URI = process.env.MAIN_DISCORD_HUB_CLIENT_REDIRECT_URI as string;
+const withFallback = (value: string | undefined, fallback: string) => {
+  const normalized = value?.trim();
+  return normalized && normalized.length > 0 ? normalized : fallback;
+};
 
-const DEV_DISCORD_HUB_REDIRECT_URI = process.env.DEV_DISCORD_HUB_REDIRECT_URI as string;
-const MAIN_DISCORD_HUB_REDIRECT_URI = process.env.MAIN_DISCORD_HUB_REDIRECT_URI as string;
+const deriveHubRedirect = (value: string | undefined, fallback: string) =>
+  withFallback(value, fallback).replace("/api/auth/discord/callback", "/api/hub/discord/callback");
+
+const deriveHubClientRedirect = (value: string | undefined, fallback: string) =>
+  withFallback(value, fallback).replace("/discord/callback", "/studio-dashboard/connected-discord");
+
+const DEV_DISCORD_HUB_CLIENT_REDIRECT_URI = deriveHubClientRedirect(
+  process.env.DEV_DISCORD_HUB_CLIENT_REDIRECT_URI,
+  process.env.DEV_DISCORD_CLIENT_REDIRECT_URI || "http://localhost:5173/discord/callback"
+);
+const MAIN_DISCORD_HUB_CLIENT_REDIRECT_URI = deriveHubClientRedirect(
+  process.env.MAIN_DISCORD_HUB_CLIENT_REDIRECT_URI,
+  process.env.MAIN_DISCORD_CLIENT_REDIRECT_URI || "https://nexura.intuition.box/discord/callback"
+);
+
+const DEV_DISCORD_HUB_REDIRECT_URI = deriveHubRedirect(
+  process.env.DEV_DISCORD_HUB_REDIRECT_URI,
+  DEV_DISCORD_REDIRECT_URI || "http://localhost:5600/api/auth/discord/callback"
+);
+const MAIN_DISCORD_HUB_REDIRECT_URI = deriveHubRedirect(
+  process.env.MAIN_DISCORD_HUB_REDIRECT_URI,
+  MAIN_DISCORD_REDIRECT_URI || "https://api-nexura.intuition.box/api/auth/discord/callback"
+);
 
 export const MAIN_DISCORD_CLIENT_REDIRECT_URI = process.env.MAIN_DISCORD_CLIENT_REDIRECT_URI as string;
 export const DEV_DISCORD_CLIENT_REDIRECT_URI = process.env.DEV_DISCORD_CLIENT_REDIRECT_URI as string;

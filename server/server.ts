@@ -38,13 +38,15 @@ client.on(Events.MessageCreate, async (message) => {
 
 	const user_id = message.author.id;
 	const guild_id = message.guild.id;
+	const channel_id = message.channelId;
 	
 	const alreadySentMessage = await firstMessage.findOne({ user_id });
 
 	if (!alreadySentMessage) {
 		await firstMessage.create({
 			user_id,
-			guild_id
+			guild_id,
+			channel_id,
 		});
 	}
 });

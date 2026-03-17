@@ -105,7 +105,7 @@ export default function SharedAccessCredentials() {
               Shared Access Credentials
             </h1>
             <p className="text-base sm:text-xs text-white/60 leading-relaxed">
-              Set up credentials that will allow your team members to access your hub on Nexura Studio
+              Set up credentials that will allow your team members to access your project on Nexura Studio
             </p>
           </div>
 
@@ -217,7 +217,7 @@ export default function SharedAccessCredentials() {
                   </svg>
                 </div>
                 <CardDescription className="text-white/60 text-xs">
-                  Disclaimer: Anyone with these credentials can manage your campaign and hub settings.
+                  Disclaimer: Anyone with these credentials can manage your campaign and project settings.
                 </CardDescription>
               </div>
             </div>

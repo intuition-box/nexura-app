@@ -35,6 +35,8 @@ export default defineConfig({
     exclude: ["@safe-global/safe-gateway-typescript-sdk"],
   },
   server: {
+    host: true,
+    allowedHosts: true,
     port: 5173,
     fs: {
       strict: true,

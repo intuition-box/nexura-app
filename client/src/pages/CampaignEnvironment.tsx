@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { CheckCircle2, Play, RotateCcw } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { CheckCircle2, Play, ExternalLink, Globe, MessageCircle } from "lucide-react";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { apiRequestV2, apiRequest } from "../lib/queryClient";
 import { useToast } from "../hooks/use-toast";
@@ -19,8 +26,25 @@ type Quest = {
   link: string;
   status: string;
   guildId?: string;
+  roleId?: string;
+  channelId?: string;
+  metadata?: {
+    guildId?: string;
+    roleId?: string;
+    channelId?: string;
+  };
   hub?: string;
   done: boolean;
+};
+
+type HubInfo = {
+  id?: string;
+  name: string;
+  description?: string;
+  logo?: string;
+  website?: string;
+  xAccount?: string;
+  discordServer?: string;
 };
 
 const campaignQuestsInitial: Quest[] = [
@@ -61,7 +85,8 @@ export default function CampaignEnvironment() {
   const [maxParticipants, setMaxParticipants] = useState(0);
   const [projectName, setProjectName] = useState("");
   const [projectImage, setProjectImage] = useState("");
-  const [hubDescription, setHubDescription] = useState("");
+  const [hubInfo, setHubInfo] = useState<HubInfo | null>(null);
+  const [showHubModal, setShowHubModal] = useState(false);
   const [campaignNumber, setCampaignNumber] = useState("000");
   const [reward, setReward] = useState<{ trustTokens?: number; trust?: number; xp: number; pool?: number }>({ trustTokens: 0, xp: 0 });
   const [campaignAddress, setCampaignAddress] = useState("");
@@ -90,6 +115,10 @@ export default function CampaignEnvironment() {
         reward: q.reward ?? 0,
         tag: q.tag ?? "other", // default to "other" if missing
         link: q.link ?? "#",
+        guildId: q.guildId ?? q.metadata?.guildId ?? "",
+        roleId: q.roleId ?? q.metadata?.roleId ?? "",
+        channelId: q.channelId ?? q.metadata?.channelId ?? "",
+        metadata: q.metadata ?? {},
         done: q.done ?? false,
       }));
 
@@ -100,9 +129,17 @@ export default function CampaignEnvironment() {
       setDescription(res.description || "");
       setTitle(res.title || "");
       setSubTitle(res.sub_title || "");
-      setProjectName(res.project_name || "");
-      setProjectImage(res.project_image || "");
-      setHubDescription(res.hubDescription || "");
+      const nextHubInfo: HubInfo = res.hubInfo ?? {
+        name: res.project_name || "Unknown Project",
+        description: res.hubDescription || "",
+        logo: res.project_image || "",
+        website: "",
+        xAccount: "",
+        discordServer: "",
+      };
+      setHubInfo(nextHubInfo);
+      setProjectName(nextHubInfo.name || res.project_name || "");
+      setProjectImage(nextHubInfo.logo || res.project_image || "");
       setCampaignNumber(res.campaignNumber || "000");
       setReward(res.reward || { trustTokens: 0, xp: 0 });
       setTrustClaimed(res.trustClaimed || 0);
@@ -241,12 +278,23 @@ export default function CampaignEnvironment() {
           //     throw new Error(`Kindly ${quest.tag !== "follow" ? quest.tag + " the post" : "follow the account"}`);
           //   }
           // } else 
-          if (["join", "message", "join-discord", "message-discord"].includes(quest.tag)) {
+          if (["join", "message", "join-discord", "message-discord", "acquire-role-discord", "send-message-discord"].includes(quest.tag)) {
             if (!user?.socialProfiles.discord.connected) {
               throw new Error("discord not connected yet, go to profile to connect");
             }
 
-            const { success } = await apiRequestV2("POST", "/api/check-discord", { campaignId, id: quest._id, channelId: id, tag: quest.tag, guildId: quest.guildId });
+            const isLegacyDiscordTag = ["join", "message", "join-discord", "message-discord"].includes(quest.tag);
+            const resolvedGuildId = quest.guildId || quest.metadata?.guildId;
+            const resolvedChannelId = quest.channelId || quest.metadata?.channelId || (isLegacyDiscordTag ? id : "");
+            const resolvedRoleId = quest.roleId || quest.metadata?.roleId;
+            const { success } = await apiRequestV2("POST", "/api/check-discord", {
+              campaignId,
+              id: quest._id,
+              tag: quest.tag,
+              ...(resolvedGuildId ? { guildId: resolvedGuildId } : {}),
+              ...(resolvedChannelId ? { channelId: resolvedChannelId } : {}),
+              ...(resolvedRoleId ? { roleId: resolvedRoleId } : {}),
+            });
             if (!success) {
               throw new Error(`Kindly ${quest.tag} the discord channel`);
             }
@@ -292,7 +340,7 @@ export default function CampaignEnvironment() {
         throw new Error("Kindly complete quests to claim reward");
       }
 
-      if (campaignAddress && trustClaimed < 4000) {
+      if (campaignAddress && trustClaimed < totalTrustAvailable) {
         await claimCampaignOnchainReward({ campaignAddress, userId });
       }
 
@@ -308,6 +356,24 @@ export default function CampaignEnvironment() {
   const progressPercentage = quests.length
     ? Math.round((quests.filter(q => q.done).length / quests.length) * 100)
     : 0;
+  const trustReward = (reward.trustTokens && reward.trustTokens > 0)
+    ? reward.trustTokens
+    : (reward.trust && reward.trust > 0)
+    ? reward.trust
+    : (reward.pool && maxParticipants > 0)
+    ? Number((reward.pool / maxParticipants).toFixed(2))
+    : (totalTrustAvailable && maxParticipants > 0)
+    ? Number((totalTrustAvailable / maxParticipants).toFixed(2))
+    : 0;
+  const hasTrustReward = Number(reward.pool ?? totalTrustAvailable ?? 0) > 0;
+  const activeHubInfo: HubInfo = hubInfo ?? {
+    name: projectName || "Unknown Project",
+    description: "",
+    logo: projectImage || "",
+    website: "",
+    xAccount: "",
+    discordServer: "",
+  };
 
   return (
 
@@ -319,22 +385,26 @@ export default function CampaignEnvironment() {
         {/* Banner with Progress */}
         <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <button
+              type="button"
+              onClick={() => setShowHubModal(true)}
+              className="flex items-center gap-3 sm:gap-4 min-w-0 text-left hover:opacity-90 transition"
+            >
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-white/10 border border-white/10 shrink-0">
-                {projectImage ? (
+                {activeHubInfo.logo ? (
                   <img
-                    src={projectImage}
-                    alt={projectName || "Hub image"}
+                    src={activeHubInfo.logo}
+                    alt={activeHubInfo.name || "Project image"}
                     className="w-full h-full object-cover"
                   />
                 ) : null}
               </div>
               <div className="min-w-0">
-                <p className="uppercase text-[0.6rem] sm:text-xs opacity-60">Hub</p>
-                <p className="text-lg sm:text-xl font-semibold truncate">{projectName || "Unknown Hub"}</p>
-                <p className="text-sm opacity-80 mt-1 line-clamp-2">{hubDescription || "No hub description available."}</p>
+                <p className="uppercase text-[0.6rem] sm:text-xs opacity-60">Project</p>
+                <p className="text-lg sm:text-xl font-semibold truncate">{activeHubInfo.name || "Unknown Project"}</p>
+                <p className="text-xs opacity-70 mt-1">View project info</p>
               </div>
-            </div>
+            </button>
 
             <div className="flex items-center gap-2 sm:gap-3">
               <p className="text-[0.65rem] sm:text-sm opacity-70 uppercase">Total XP</p>
@@ -379,15 +449,7 @@ export default function CampaignEnvironment() {
                 </div>
                 <div className="mt-3 space-y-1">
                   <p className="text-xs opacity-50 uppercase">Rewards</p>
-                  <p className="text-sm">{reward.xp} XP + {(reward.trustTokens && reward.trustTokens > 0)
-                    ? reward.trustTokens
-                    : (reward.trust && reward.trust > 0)
-                    ? reward.trust
-                    : (reward.pool && maxParticipants > 0)
-                    ? Number((reward.pool / maxParticipants).toFixed(2))
-                    : (totalTrustAvailable && maxParticipants > 0)
-                    ? Number((totalTrustAvailable / maxParticipants).toFixed(2))
-                    : 0} $TRUST</p>
+                  <p className="text-sm">{hasTrustReward ? `${reward.xp} XP + ${trustReward} $TRUST` : `${reward.xp} XP`}</p>
                 </div>
               </div>
 
@@ -537,6 +599,84 @@ export default function CampaignEnvironment() {
           )}
         </div>
       </div>
+
+      <Dialog open={showHubModal} onOpenChange={setShowHubModal}>
+        <DialogContent className="w-[94vw] max-w-3xl bg-[#0d1117] border-white/10 text-white p-0 overflow-hidden">
+          <div className="p-4 sm:p-5 space-y-4">
+            <DialogHeader className="space-y-1">
+              <DialogTitle>Project Information</DialogTitle>
+              <DialogDescription className="text-white/60">
+                Project details and socials.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 sm:grid-cols-[170px,1fr] gap-4 items-start">
+              <div className="w-full h-28 sm:h-40 rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                {activeHubInfo.logo ? (
+                  <img src={activeHubInfo.logo} alt={activeHubInfo.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#1a2233] to-[#121826] text-white/70 text-2xl font-semibold">
+                    {(activeHubInfo.name || "H").slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              <div className="min-w-0 space-y-3">
+                <p className="text-lg sm:text-xl font-semibold break-words">{activeHubInfo.name || "Unknown Project"}</p>
+                <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                  <p className="text-xs uppercase text-white/50 mb-1.5">Description</p>
+                  <p className="text-sm text-white/85 leading-relaxed whitespace-pre-wrap break-words">
+                    {activeHubInfo.description?.trim() ? activeHubInfo.description : "No project description provided."}
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-white/10 space-y-1.5">
+                  <p className="text-xs uppercase text-white/50">Socials</p>
+                  {activeHubInfo.website?.trim() ? (
+                    <a
+                      href={activeHubInfo.website.startsWith("http") ? activeHubInfo.website : `https://${activeHubInfo.website}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200 break-all"
+                    >
+                      <Globe className="w-4 h-4 shrink-0" />
+                      Website
+                    </a>
+                  ) : null}
+                  {activeHubInfo.xAccount?.trim() ? (
+                    <a
+                      href={activeHubInfo.xAccount.startsWith("http")
+                        ? activeHubInfo.xAccount
+                        : `https://x.com/${activeHubInfo.xAccount.replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200 break-all"
+                    >
+                      <ExternalLink className="w-4 h-4 shrink-0" />
+                      X Account
+                    </a>
+                  ) : null}
+                  {activeHubInfo.discordServer?.trim() ? (
+                    <a
+                      href={activeHubInfo.discordServer.startsWith("http")
+                        ? activeHubInfo.discordServer
+                        : `https://${activeHubInfo.discordServer}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200 break-all"
+                    >
+                      <MessageCircle className="w-4 h-4 shrink-0" />
+                      Discord Server
+                    </a>
+                  ) : null}
+                  {!activeHubInfo.website?.trim() && !activeHubInfo.xAccount?.trim() && !activeHubInfo.discordServer?.trim() ? (
+                    <p className="text-sm text-white/60">No social links added yet.</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 };

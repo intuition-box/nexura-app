@@ -10,7 +10,7 @@ export default function ProjectCreate() {
   const steps: { title: string; description: string; icon: string; borderedIcon?: boolean }[] = [
     {
       title: "Add Details",
-      description: "Upload your project logo and provide a compelling description for your hub",
+      description: "Upload your project logo and provide a compelling description for your project",
       icon: "/add-details.png",
     },
     {
@@ -38,7 +38,7 @@ export default function ProjectCreate() {
             Nexura Studio
           </h1>
           <p className="text-sm sm:text-base text-white/60 max-w-md sm:max-w-xl mx-auto leading-snug">
-            Create a dedicated hub for your Project on Nexura.
+            Create a dedicated project for your team on Nexura.
           </p>
         </div>
 
@@ -76,12 +76,12 @@ export default function ProjectCreate() {
 <div className="flex flex-col gap-1 mt-1">
   <Link href="/projects/create/create-hub">
     <Button className="w-full bg-purple-400 hover:bg-purple-600 hover:shadow-[0_0_14px_rgba(131,58,253,0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-xs py-0.5">
-      Create Your Hub
+      Create Your Project
     </Button>
   </Link>
   <Link href="/projects/create/signin-to-hub">
     <Button className="w-full bg-transparent border border-purple-400 hover:bg-purple-600 hover:border-purple-600 hover:shadow-[0_0_14px_rgba(131,58,253,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-white text-xs py-0.5">
-      Sign in to Existing Hub
+      Sign in to Existing Project
     </Button>
   </Link>
 </div>

@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import React from "react"
 import { Card, CardTitle, CardDescription, CardFooter } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
+import { Switch } from "../../components/ui/switch";
 
-import { projectApiRequest } from "../../lib/projectApi";
-import { payStudioHubFee } from "../../lib/performOnchainAction";
+import { projectApiRequest, getStoredProjectInfo } from "../../lib/projectApi";
+import { addReward, createRewardsContract, payStudioHubFee } from "../../lib/performOnchainAction";
 import { useToast } from "../../hooks/use-toast";
+import { formatEther, parseEther } from "viem";
 import {
   Calendar,
   ImageIcon,
@@ -34,9 +36,70 @@ interface Campaign {
   createdAt: string;
 }
 
+type RewardsDeploymentState = {
+  txHash: string;
+  fundedAmount: string;
+  rewardPerParticipant: string;
+  maxClaimableParticipants: number;
+};
+
+type EditBaseline = {
+  campaignTitle: string;
+  campaignName: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  hasRewards: boolean;
+  rewardPoolWei: string;
+  participants: string;
+  coverImagePreview: string;
+  tasksSignature: string;
+};
+
+type Task = {
+  _id: string | undefined;
+  type: string;
+  platform: string;
+  handleOrUrl: string;
+  description: string;
+  evidence: string;
+  validation: string;
+  verificationMode: string;
+  roleId: string;
+  channelId: string;
+  guildId: string;
+};
+
+type DiscordRoleOption = {
+  id: string;
+  name: string;
+};
+
+type DiscordChannelOption = {
+  id: string;
+  name: string;
+  type?: number | string;
+};
+
+const DISCORD_JOIN_TASK_TYPE = "Join Us On Discord";
+const DISCORD_ROLE_TASK_TYPE = "Acquire a Role (Discord)";
+const DISCORD_MESSAGE_TASK_TYPE = "Send Message in Channel (Discord)";
+
+const isDiscordRoleTaskType = (type: string) => type === DISCORD_ROLE_TASK_TYPE;
+const isDiscordMessageTaskType = (type: string) => type === DISCORD_MESSAGE_TASK_TYPE;
+const isDiscordFixedTaskType = (type: string) =>
+  type === DISCORD_JOIN_TASK_TYPE || isDiscordRoleTaskType(type) || isDiscordMessageTaskType(type);
+
 
 export default function CreateNewCampaigns() {
   const [, setLocation] = useLocation();
+  const projectSessionInfo = getStoredProjectInfo();
+  const initialDiscordSessionId = String(
+    (projectSessionInfo?.discordSessionId as string | undefined) ??
+    (projectSessionInfo?.sessionId as string | undefined) ??
+    ""
+  ).trim();
 
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -46,7 +109,6 @@ export default function CreateNewCampaigns() {
   const [showModal, setShowModal] = useState(false);
   const [validationType, setValidationType] = useState("manual");
   const { toast } = useToast();
-  type Task = { _id: string | undefined; type: string; platform: string; handleOrUrl: string; description: string; evidence: string; validation: string; verificationMode: string; };
 
 const [tasks, setTasks] = useState<Task[]>([]); 
   const [newTask, setNewTask] = useState({
@@ -58,6 +120,9 @@ const [tasks, setTasks] = useState<Task[]>([]);
   evidence: "",
   validation: "Manual Validation",
   verificationMode: "",
+  roleId: "",
+  channelId: "",
+  guildId: "",
 });
 const [editingIndex, setEditingIndex] = useState<number | null>(null);
 const [error, setError] = useState("");
@@ -79,11 +144,24 @@ const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
 const [rewardPool, setRewardPool] = useState("");
 const [participants, setParticipants] = useState("");
 const [xpRewards, setXpRewards] = useState("200");
+const [hasRewards, setHasRewards] = useState(false);
 const [publishedCampaign, setPublishedCampaign] = useState<any | null>(null);
 const [paymentTxHash, setPaymentTxHash] = useState("");
 const [paymentLoading, setPaymentLoading] = useState(false);
 const [isEditMode, setIsEditMode] = useState(false);
 const [isPublished, setIsPublished] = useState(false);
+const [deployLoading, setDeployLoading] = useState(false);
+const [rewardContractAddress, setRewardContractAddress] = useState("");
+const [rewardsDeployment, setRewardsDeployment] = useState<RewardsDeploymentState | null>(null);
+const [editBaseline, setEditBaseline] = useState<EditBaseline | null>(null);
+const [hubGuildId, setHubGuildId] = useState("");
+const [hubDiscordConnected, setHubDiscordConnected] = useState(false);
+const [discordSessionId, setDiscordSessionId] = useState(initialDiscordSessionId);
+const [discordRoles, setDiscordRoles] = useState<DiscordRoleOption[]>([]);
+const [discordChannels, setDiscordChannels] = useState<DiscordChannelOption[]>([]);
+const [discordRolesError, setDiscordRolesError] = useState("");
+const [discordChannelsError, setDiscordChannelsError] = useState("");
+const [discordOptionsLoading, setDiscordOptionsLoading] = useState(false);
 
 // Pre-fill from existing draft when ?edit=<id> is in the URL
 const parseDateTime = (isoStr: string) => {
@@ -93,9 +171,41 @@ const parseDateTime = (isoStr: string) => {
   return { date: isoStr.slice(0, idx), time: isoStr.slice(idx + 1, idx + 6) };
 };
 
+const toWeiString = (value: string) => {
+  const normalized = value.trim();
+  if (!normalized) return "0";
+  try {
+    return parseEther(normalized).toString();
+  } catch {
+    return "";
+  }
+};
+
+const buildTaskSignature = (list: Task[]) => JSON.stringify(
+  list.map((t) => ({
+    _id: t._id ?? "",
+    type: t.type ?? "",
+    platform: t.platform ?? "",
+    handleOrUrl: t.handleOrUrl ?? "",
+    description: t.description ?? "",
+    verificationMode: t.verificationMode ?? "",
+    validation: t.validation ?? "",
+    roleId: t.roleId ?? "",
+    channelId: t.channelId ?? "",
+    guildId: t.guildId ?? "",
+  }))
+);
+
 useEffect(() => {
   const editId = new URLSearchParams(window.location.search).get("edit");
-  if (!editId) return;
+  if (!editId) {
+    // Default new campaigns to rewards OFF unless the user enables it.
+    setHasRewards(false);
+    setRewardPool("");
+    setRewardContractAddress("");
+    setRewardsDeployment(null);
+    return;
+  }
   (async () => {
     try {
       const res = await projectApiRequest<{ hubCampaigns?: any[] }>({
@@ -115,14 +225,33 @@ useEffect(() => {
       setStartTime(s.time);
       setEndDate(e.date);
       setEndTime(e.time);
-      setRewardPool(String(found.reward?.pool ?? ""));
-      setParticipants(found.maxParticipants !== undefined && found.maxParticipants !== null
+      const existingRewardPool = Number(found.reward?.pool ?? 0);
+      const existingParticipants = found.maxParticipants !== undefined && found.maxParticipants !== null
         ? String(found.maxParticipants)
         : found.participants !== undefined && found.participants !== null
           ? String(found.participants)
-          : "");
+          : "";
+      setHasRewards(existingRewardPool > 0);
+      setRewardPool(String(found.reward?.pool ?? ""));
+      setParticipants(existingParticipants);
+      setRewardContractAddress(found.contractAddress ?? "");
+      if (found.contractAddress) {
+        const participantCount = Number(existingParticipants || 0);
+        const trustPerParticipant = participantCount > 0
+          ? Number((existingRewardPool / participantCount).toFixed(8))
+          : Number(found.reward?.trustTokens ?? 0);
+        setRewardsDeployment({
+          txHash: found.rewardsDeployment?.txHash ?? "",
+          fundedAmount: String(found.rewardsDeployment?.fundedAmount ?? existingRewardPool),
+          rewardPerParticipant: String(found.rewardsDeployment?.rewardPerParticipant ?? trustPerParticipant),
+          maxClaimableParticipants: Number(found.rewardsDeployment?.maxClaimableParticipants ?? participantCount),
+        });
+      } else {
+        setRewardsDeployment(null);
+      }
       setXpRewards("200");
       if (found.projectCoverImage) setCoverImagePreview(found.projectCoverImage);
+      let loadedTasks: Task[] = [];
       // Pre-fill tasks from saved quests
       try {
         const qRes = await projectApiRequest<{ campaignQuests?: any[] }>({
@@ -134,6 +263,8 @@ useEffect(() => {
           if (tag === "comment" || tag === "comment-x") return "Comment on our X post";
           if (tag === "follow" || tag === "follow-x") return "Follow us on X";
           if (tag === "join" || tag === "join-discord") return "Join Us On Discord";
+          if (tag === "acquire-role-discord") return DISCORD_ROLE_TASK_TYPE;
+          if (tag === "send-message-discord" || tag === "message-discord" || tag === "message") return DISCORD_MESSAGE_TASK_TYPE;
           if (tag === "portal") return "Check Out the Portal Claims";
           if (tag === "feedback") return "Give Feedback";
           return "others";
@@ -145,11 +276,12 @@ useEffect(() => {
         };
         const tagToValidation = (tag: string) => {
           if (tag === "join" || tag === "join-discord") return "Discord Auth";
+          if (tag === "acquire-role-discord" || tag === "send-message-discord" || tag === "message-discord" || tag === "message") return "Discord Auth";
           if (tag === "portal") return "Auto Verified";
           return "Manual Validation";
         };
         if (qRes.campaignQuests) {
-          setTasks(qRes.campaignQuests.map((q: any) => ({
+          loadedTasks = qRes.campaignQuests.map((q: any) => ({
             _id: q._id,
             type: tagToType(q.tag),
             platform: catToPlatform(q.category),
@@ -158,9 +290,27 @@ useEffect(() => {
             evidence: "",
             validation: tagToValidation(q.tag),
             verificationMode: q.verificationMode ?? "",
-          })));
+            roleId: String(q.roleId ?? q.metadata?.roleId ?? ""),
+            channelId: String(q.channelId ?? q.metadata?.channelId ?? ""),
+            guildId: String(q.guildId ?? q.metadata?.guildId ?? ""),
+          }));
+          setTasks(loadedTasks);
         }
       } catch { /* ignore */ }
+
+      setEditBaseline({
+        campaignTitle: found.title ?? "",
+        campaignName: found.description ?? found.nameOfProject ?? "",
+        startDate: s.date,
+        startTime: s.time,
+        endDate: e.date,
+        endTime: e.time,
+        hasRewards: existingRewardPool > 0,
+        rewardPoolWei: existingRewardPool > 0 ? toWeiString(String(found.reward?.pool ?? 0)) : "0",
+        participants: existingParticipants,
+        coverImagePreview: found.projectCoverImage ?? "",
+        tasksSignature: buildTaskSignature(loadedTasks),
+      });
     } catch { /* ignore – user will fill in manually */ }
   })();
 }, []);
@@ -168,7 +318,7 @@ useEffect(() => {
 useEffect(() => {
   (async () => {
     try {
-      const res = await projectApiRequest<{ hub?: { pendingTxHash?: string | null } }>({
+      const res = await projectApiRequest<{ hub?: { pendingTxHash?: string | null; guildId?: string; discordConnected?: boolean; discordSessionId?: string } }>({
         method: "GET",
         endpoint: "/hub/me",
       });
@@ -177,11 +327,97 @@ useEffect(() => {
       if (pendingTxHash) {
         setPaymentTxHash(pendingTxHash);
       }
+      setHubGuildId(String(res.hub?.guildId ?? "").trim());
+      setHubDiscordConnected(Boolean(res.hub?.discordConnected));
+      const sessionIdFromHub = String(res.hub?.discordSessionId ?? "").trim();
+      if (sessionIdFromHub) {
+        setDiscordSessionId(sessionIdFromHub);
+      }
     } catch {
       // Ignore hydration failures here; publish flow can still continue in-session.
     }
   })();
 }, []);
+
+const fetchDiscordOptions = async (guildId: string) => {
+  if (!guildId) {
+    setDiscordRoles([]);
+    setDiscordChannels([]);
+    setDiscordRolesError("No Discord server selected. Connect your Discord server first.");
+    setDiscordChannelsError("No Discord server selected. Connect your Discord server first.");
+    return;
+  }
+  if (!discordSessionId) {
+    setDiscordRoles([]);
+    setDiscordChannels([]);
+    setDiscordRolesError("Reconnect Discord in Studio to load server roles.");
+    setDiscordChannelsError("Reconnect Discord in Studio to load server channels.");
+    return;
+  }
+
+  setDiscordOptionsLoading(true);
+  setDiscordRolesError("");
+  setDiscordChannelsError("");
+
+  const baseParams: Record<string, string> = { serverId: guildId };
+  if (discordSessionId) baseParams.id = discordSessionId;
+
+  const [rolesResult, channelsResult] = await Promise.allSettled([
+    projectApiRequest<{ roles?: DiscordRoleOption[] }>({
+      method: "GET",
+      endpoint: "/hub/get-roles",
+      params: baseParams,
+    }),
+    projectApiRequest<{ channels?: DiscordChannelOption[]; data?: DiscordChannelOption[] }>({
+      method: "GET",
+      endpoint: "/hub/get-channels",
+      params: baseParams,
+    }),
+  ]);
+
+  if (rolesResult.status === "fulfilled") {
+    setDiscordRoles(rolesResult.value.roles ?? []);
+  } else {
+    setDiscordRoles([]);
+    const msg = rolesResult.reason instanceof Error ? rolesResult.reason.message : "Failed to fetch Discord roles.";
+    setDiscordRolesError(msg);
+  }
+
+  if (channelsResult.status === "fulfilled") {
+    const channels = channelsResult.value.channels ?? channelsResult.value.data ?? [];
+    setDiscordChannels(channels);
+  } else {
+    setDiscordChannels([]);
+    const msg = channelsResult.reason instanceof Error ? channelsResult.reason.message : "Failed to fetch Discord channels.";
+    setDiscordChannelsError(msg);
+  }
+
+  setDiscordOptionsLoading(false);
+};
+
+useEffect(() => {
+  if (!showModal) return;
+  if (!isDiscordRoleTaskType(newTask.type) && !isDiscordMessageTaskType(newTask.type)) return;
+
+  if (!hubDiscordConnected) {
+    setDiscordRoles([]);
+    setDiscordChannels([]);
+    setDiscordRolesError("Discord is not connected for this hub. Connect Discord to use this task type.");
+    setDiscordChannelsError("Discord is not connected for this hub. Connect Discord to use this task type.");
+    return;
+  }
+
+  if (!hubGuildId) {
+    setDiscordRoles([]);
+    setDiscordChannels([]);
+    setDiscordRolesError("No Discord guild is linked to this hub yet.");
+    setDiscordChannelsError("No Discord guild is linked to this hub yet.");
+    return;
+  }
+
+  void fetchDiscordOptions(hubGuildId);
+}, [showModal, newTask.type, hubDiscordConnected, hubGuildId, discordSessionId]);
+
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "";
   const date = new Date(dateStr);
@@ -193,6 +429,8 @@ const typeToTag = (type: string) => {
   if (type === "Comment on our X post") return "comment-x";
   if (type === "Follow us on X") return "follow-x";
   if (type === "Join Us On Discord") return "join-discord";
+  if (type === DISCORD_ROLE_TASK_TYPE) return "acquire-role-discord";
+  if (type === DISCORD_MESSAGE_TASK_TYPE) return "send-message-discord";
   if (type === "Check Out the Portal Claims") return "portal";
   if (type === "Give Feedback") return "feedback";
   return "other";
@@ -203,11 +441,122 @@ const platformToCategory = (platform: string) => {
   return "other";
 };
 
+const normalizedParticipants = String(Number(participants || 0));
+const normalizedBaselineParticipants = String(Number(editBaseline?.participants || 0));
+const currentRewardPoolWei = hasRewards ? toWeiString(rewardPool || "0") : "0";
+const currentTaskSignature = useMemo(() => buildTaskSignature(tasks), [tasks]);
+
+const captureCurrentEditBaseline = (): EditBaseline => ({
+  campaignTitle,
+  campaignName,
+  startDate,
+  startTime,
+  endDate,
+  endTime,
+  hasRewards,
+  rewardPoolWei: currentRewardPoolWei || "0",
+  participants: normalizedParticipants,
+  coverImagePreview: coverImagePreview ?? "",
+  tasksSignature: currentTaskSignature,
+});
+
+const draftRewardFieldsChanged = useMemo(() => {
+  if (!editBaseline || isPublished || !hasRewards || !rewardContractAddress.trim()) return false;
+  return currentRewardPoolWei !== editBaseline.rewardPoolWei || normalizedParticipants !== normalizedBaselineParticipants;
+}, [
+  editBaseline,
+  isPublished,
+  hasRewards,
+  rewardContractAddress,
+  currentRewardPoolWei,
+  normalizedParticipants,
+  normalizedBaselineParticipants,
+]);
+
+const rewardFieldsChanged = useMemo(() => {
+  if (!editBaseline || !isEditMode || !isPublished || !hasRewards || !rewardContractAddress.trim()) return false;
+  return currentRewardPoolWei !== editBaseline.rewardPoolWei || normalizedParticipants !== normalizedBaselineParticipants;
+}, [
+  editBaseline,
+  isEditMode,
+  isPublished,
+  hasRewards,
+  rewardContractAddress,
+  currentRewardPoolWei,
+  normalizedParticipants,
+  normalizedBaselineParticipants,
+]);
+
+const otherDetailsChanged = useMemo(() => {
+  if (!editBaseline || !isEditMode || !isPublished) return false;
+  return (
+    campaignTitle !== editBaseline.campaignTitle ||
+    campaignName !== editBaseline.campaignName ||
+    startDate !== editBaseline.startDate ||
+    startTime !== editBaseline.startTime ||
+    endDate !== editBaseline.endDate ||
+    endTime !== editBaseline.endTime ||
+    hasRewards !== editBaseline.hasRewards ||
+    !!coverImage ||
+    currentTaskSignature !== editBaseline.tasksSignature
+  );
+}, [
+  editBaseline,
+  isEditMode,
+  isPublished,
+  campaignTitle,
+  campaignName,
+  startDate,
+  startTime,
+  endDate,
+  endTime,
+  hasRewards,
+  coverImage,
+  currentTaskSignature,
+]);
+
+const updateCampaignButtonLabel =
+  rewardFieldsChanged && !otherDetailsChanged ? "Update Rewards Contract" : "Update Campaign Details";
+
+const getDraftRewardsPublishError = () => {
+  if (!hasRewards) return null;
+
+  if (draftRewardFieldsChanged) {
+    return "Save the updated reward pool and participant limit before publishing.";
+  }
+
+  if (!rewardContractAddress.trim() || !rewardsDeployment) {
+    return null;
+  }
+
+  try {
+    const cfg = getRewardDeploymentConfig();
+    const fundedAmount = Number(rewardsDeployment.fundedAmount);
+    if (Math.abs(fundedAmount - cfg.totalPool) > 1e-9) {
+      return "Saved reward pool differs from the funded on-chain amount. Redeploy the rewards contract.";
+    }
+    if (rewardsDeployment.maxClaimableParticipants !== cfg.participantCount) {
+      return "Saved participant count differs from the deployed withdrawal cap. Redeploy the rewards contract.";
+    }
+  } catch (err: unknown) {
+    return err instanceof Error ? err.message : "Invalid rewards configuration.";
+  }
+
+  return null;
+};
+
 const buildCampaignFormData = (isDraft: boolean): FormData => {
   const fd = new FormData();
-  const perParticipantTrust = rewardPool && participants && Number(participants) > 0
-    ? Number((Number(rewardPool) / Number(participants)).toFixed(2))
-    : 0;
+  const normalizedRewardPool = hasRewards ? (Number(rewardPool) || 0) : 0;
+  let perParticipantTrust = 0;
+  if (hasRewards && rewardPool && participants && Number(participants) > 0) {
+    try {
+      const rewardPerParticipantWei = parseEther(rewardPool.trim()) / BigInt(Number(participants));
+      perParticipantTrust = Number(formatEther(rewardPerParticipantWei));
+    } catch {
+      perParticipantTrust = 0;
+    }
+  }
   fd.append("title", campaignTitle);
   fd.append("description", campaignName);
   fd.append("nameOfProject", campaignName);
@@ -216,20 +565,38 @@ const buildCampaignFormData = (isDraft: boolean): FormData => {
   fd.append("maxParticipants", participants);
   fd.append("reward", JSON.stringify({
     xp: Number(xpRewards) || 0,
-    pool: Number(rewardPool) || 0,
+    pool: normalizedRewardPool,
     trust: perParticipantTrust,
   }));
   if (coverImage instanceof File) fd.append("coverImage", coverImage);
   if (isDraft) fd.append("isDraft", "true");
   fd.append("campaignQuests", JSON.stringify(
-    tasks.map(t => ({
-      _id: t._id,
-      quest: t.description || t.type,
-      link: t.handleOrUrl || "https://nexura.io",
-      tag: typeToTag(t.type),
-      category: platformToCategory(t.platform),
-      verificationMode: t.verificationMode || "",
-    }))
+    tasks.map(t => {
+      const taskTag = typeToTag(t.type);
+      const taskGuildId = t.guildId || hubGuildId || "";
+      const payload: Record<string, unknown> = {
+        _id: t._id,
+        quest: t.description || t.type,
+        link: t.handleOrUrl || "https://nexura.io",
+        tag: taskTag,
+        category: platformToCategory(t.platform),
+        verificationMode: t.verificationMode || "",
+      };
+
+      if (t.roleId || t.channelId || taskGuildId) {
+        payload.metadata = {
+          ...(t.roleId ? { roleId: t.roleId } : {}),
+          ...(t.channelId ? { channelId: t.channelId } : {}),
+          ...(taskGuildId ? { guildId: taskGuildId } : {}),
+        };
+      }
+
+      if (t.roleId) payload.roleId = t.roleId;
+      if (t.channelId) payload.channelId = t.channelId;
+      if (taskGuildId) payload.guildId = taskGuildId;
+
+      return payload;
+    })
   ));
   return fd;
 };
@@ -252,6 +619,7 @@ const handleSaveDraft = async (thenNavigate?: string): Promise<string | null> =>
     });
     const savedCampaignId = res.campaignId ?? campaignId;
     if (res.campaignId) setCampaignId(res.campaignId);
+    setEditBaseline(captureCurrentEditBaseline());
     toast({ title: "Campaign saved!", description: "Draft saved successfully." });
     if (thenNavigate) setActiveTab(thenNavigate);
     return savedCampaignId ?? null;
@@ -292,8 +660,24 @@ const convertToBase64 = (file: File): Promise<string> => {
 
 const handleSaveTask = () => {
   const requiresPlatform = newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback";
+  const requiresDiscordConnection = newTask.platform === "Discord" || isDiscordFixedTaskType(newTask.type);
+  const requiresRole = isDiscordRoleTaskType(newTask.type);
+  const requiresChannel = isDiscordMessageTaskType(newTask.type);
+
   if (!newTask.type || (requiresPlatform && !newTask.platform) || !newTask.handleOrUrl || !newTask.description) {
     return setError("All fields are required.");
+  }
+  if (requiresDiscordConnection && !hubDiscordConnected) {
+    return setError("Connect Discord in Studio before creating Discord-related tasks.");
+  }
+  if (requiresDiscordConnection && !hubGuildId) {
+    return setError("Finish Discord setup by selecting a server before creating Discord-related tasks.");
+  }
+  if (requiresRole && !newTask.roleId) {
+    return setError("Please select a Discord role for this task.");
+  }
+  if (requiresChannel && !newTask.channelId) {
+    return setError("Please select a Discord channel for this task.");
   }
 
   if (editingIndex !== null) {
@@ -305,7 +689,7 @@ const handleSaveTask = () => {
     setTasks([...tasks, newTask]);
   }
 
-  setNewTask({ _id: undefined, type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation", verificationMode: "" });
+  setNewTask({ _id: undefined, type: "", platform: "", handleOrUrl: "", description: "", evidence: "", validation: "Manual Validation", verificationMode: "", roleId: "", channelId: "", guildId: "" });
   setShowModal(false);
   setError("");
 };
@@ -330,6 +714,343 @@ const handleSubmit = (e: React.FormEvent) => {
   handleSaveDraft("tasks");
 };
 
+const clearRewardsDeployment = (reason: string) => {
+  if (isPublished || !rewardContractAddress.trim()) return;
+
+  setRewardContractAddress("");
+  setRewardsDeployment(null);
+  toast({
+    title: "Redeploy required",
+    description: `${reason} Redeploy the rewards contract to keep on-chain funding in sync.`,
+  });
+};
+
+const handleCampaignNameChange = (value: string) => {
+  if (value !== campaignName) {
+    clearRewardsDeployment("Campaign name changed.");
+  }
+  setCampaignName(value);
+};
+
+const handleStartDateTimeChange = (value: string) => {
+  const [d, t] = value.split("T");
+  const nextDate = d ?? "";
+  const nextTime = t ? t.slice(0, 5) : "";
+
+  setStartDate(nextDate);
+  setStartTime(nextTime);
+};
+
+const handleEndDateTimeChange = (value: string) => {
+  const [d, t] = value.split("T");
+  const nextDate = d ?? "";
+  const nextTime = t ? t.slice(0, 5) : "";
+
+  setEndDate(nextDate);
+  setEndTime(nextTime);
+};
+
+const handleRewardPoolChange = (value: string) => {
+  setRewardPool(value);
+};
+
+const handleParticipantsChange = (value: string) => {
+  setParticipants(value);
+};
+
+const getCampaignClaimStartTimestamp = () => {
+  const endIso = endDate && endTime ? `${endDate}T${endTime}` : endDate ? `${endDate}T00:00` : "";
+  if (!endIso) {
+    throw new Error("Set a campaign end date and time before deploying rewards.");
+  }
+
+  const endTimestampMs = new Date(endIso).getTime();
+  if (Number.isNaN(endTimestampMs)) {
+    throw new Error("Campaign end date is invalid.");
+  }
+
+  return Math.floor(endTimestampMs / 1000);
+};
+
+const getRewardDeploymentConfig = () => {
+  const normalizedRewardPool = rewardPool.trim();
+  if (!normalizedRewardPool) {
+    throw new Error("Reward pool must be greater than zero.");
+  }
+
+  let totalPoolWei = 0n;
+  try {
+    totalPoolWei = parseEther(normalizedRewardPool);
+  } catch {
+    throw new Error("Reward pool format is invalid.");
+  }
+
+  if (totalPoolWei <= 0n) {
+    throw new Error("Reward pool must be greater than zero.");
+  }
+
+  const totalPool = Number(normalizedRewardPool);
+  if (!Number.isFinite(totalPool) || totalPool <= 0) {
+    throw new Error("Reward pool must be greater than zero.");
+  }
+
+  const participantCount = Number(participants);
+
+  if (!Number.isInteger(participantCount) || participantCount <= 0) {
+    throw new Error("Participant count must be a whole number greater than zero.");
+  }
+
+  const rewardPerParticipantWei = totalPoolWei / BigInt(participantCount);
+  const minimumRewardPerParticipantWei = parseEther("1");
+  if (rewardPerParticipantWei < minimumRewardPerParticipantWei) {
+    throw new Error("Minimum reward per participant is 1 TRUST.");
+  }
+
+  const rewardPerParticipantRaw = formatEther(rewardPerParticipantWei);
+  const rewardPerParticipant = Number(rewardPerParticipantRaw);
+
+  return {
+    totalPool,
+    totalPoolWei,
+    totalPoolRaw: formatEther(totalPoolWei),
+    participantCount,
+    rewardPerParticipant,
+    rewardPerParticipantWei,
+    rewardPerParticipantRaw,
+  };
+};
+
+const getPublishedDeploymentSnapshot = () => {
+  if (!rewardsDeployment) {
+    throw new Error("No rewards deployment record found for this campaign.");
+  }
+
+  const fundedAmount = Number(rewardsDeployment.fundedAmount);
+  const rewardPerParticipant = Number(rewardsDeployment.rewardPerParticipant);
+  const maxClaimableParticipants = Number(rewardsDeployment.maxClaimableParticipants);
+
+  if (!Number.isFinite(fundedAmount) || fundedAmount <= 0) {
+    throw new Error("Invalid deployed reward pool detected.");
+  }
+  if (!Number.isFinite(rewardPerParticipant) || rewardPerParticipant <= 0) {
+    throw new Error("Invalid deployed per-participant reward detected.");
+  }
+  if (!Number.isFinite(maxClaimableParticipants) || maxClaimableParticipants <= 0) {
+    throw new Error("Invalid deployed participant limit detected.");
+  }
+
+  let fundedAmountWei = 0n;
+  let rewardPerParticipantWei = 0n;
+  try {
+    fundedAmountWei = parseEther(rewardsDeployment.fundedAmount);
+    rewardPerParticipantWei = parseEther(rewardsDeployment.rewardPerParticipant);
+  } catch {
+    throw new Error("Invalid deployed rewards precision detected.");
+  }
+
+  return {
+    fundedAmount,
+    rewardPerParticipant,
+    maxClaimableParticipants,
+    fundedAmountWei,
+    rewardPerParticipantWei,
+  };
+};
+
+const getPublishedRewardIncreaseDelta = (config: {
+  totalPool: number;
+  totalPoolWei: bigint;
+  totalPoolRaw: string;
+  participantCount: number;
+  rewardPerParticipant: number;
+  rewardPerParticipantWei: bigint;
+  rewardPerParticipantRaw: string;
+}) => {
+  const deployed = getPublishedDeploymentSnapshot();
+
+  if (config.totalPoolWei < deployed.fundedAmountWei) {
+    throw new Error("Reward pool cannot be reduced after publishing.");
+  }
+  if (config.participantCount < deployed.maxClaimableParticipants) {
+    throw new Error("Participant limit cannot be reduced after publishing.");
+  }
+
+  if (config.rewardPerParticipantWei !== deployed.rewardPerParticipantWei) {
+    throw new Error("For published campaigns, per-participant TRUST reward cannot change.");
+  }
+
+  const addedPoolWei = config.totalPoolWei - deployed.fundedAmountWei;
+  const addedParticipants = config.participantCount - deployed.maxClaimableParticipants;
+
+  if (addedPoolWei === 0n && addedParticipants === 0) {
+    return { deployed, addedPoolWei, addedParticipants, shouldSyncOnchain: false };
+  }
+
+  if (addedPoolWei <= 0n || addedParticipants <= 0) {
+    throw new Error("Increase both reward pool and participants together for published campaigns.");
+  }
+
+  const expectedPoolIncreaseWei = deployed.rewardPerParticipantWei * BigInt(addedParticipants);
+  if (expectedPoolIncreaseWei !== addedPoolWei) {
+    throw new Error(
+      `Increase mismatch. Add ${formatEther(expectedPoolIncreaseWei)} TRUST for ${addedParticipants} more participants at ${deployed.rewardPerParticipant} TRUST each.`
+    );
+  }
+
+  return { deployed, addedPoolWei, addedParticipants, shouldSyncOnchain: true };
+};
+
+const syncPublishedRewardIncrease = async (
+  savedCampaignId: string,
+  config: {
+    totalPool: number;
+    totalPoolWei: bigint;
+    totalPoolRaw: string;
+    participantCount: number;
+    rewardPerParticipant: number;
+    rewardPerParticipantWei: bigint;
+    rewardPerParticipantRaw: string;
+  }
+) => {
+  if (!isPublished || !hasRewards) return;
+  if (!rewardContractAddress.trim()) {
+    throw new Error("Rewards contract is required for published rewards campaigns.");
+  }
+
+  const delta = getPublishedRewardIncreaseDelta(config);
+  if (!delta.shouldSyncOnchain) return;
+
+  const txHash = await addReward(rewardContractAddress.trim(), formatEther(delta.addedPoolWei));
+
+  await projectApiRequest({
+    method: "PATCH",
+    endpoint: "/hub/add-campaign-address",
+    data: {
+      id: savedCampaignId,
+      contractAddress: rewardContractAddress.trim(),
+      deploymentTxHash: txHash,
+      fundedAmount: Number(config.totalPoolRaw),
+      rewardPerParticipant: Number(config.rewardPerParticipantRaw),
+      maxClaimableParticipants: config.participantCount,
+    },
+  });
+
+  setRewardsDeployment({
+    txHash,
+    fundedAmount: config.totalPoolRaw,
+    rewardPerParticipant: config.rewardPerParticipantRaw,
+    maxClaimableParticipants: config.participantCount,
+  });
+
+  toast({
+    title: "Rewards contract updated",
+    description: `Added ${formatEther(delta.addedPoolWei)} TRUST on-chain for ${delta.addedParticipants} additional participants.`,
+  });
+};
+
+const handleDeployRewardsContract = async () => {
+  if (!hasRewards) {
+    toast({ title: "Rewards are disabled", description: "Turn on campaign rewards before deploying a rewards contract.", variant: "destructive" });
+    return;
+  }
+  if (!campaignTitle || !campaignName) {
+    toast({ title: "Incomplete details", description: "Please fill in campaign name and description.", variant: "destructive" });
+    return;
+  }
+  if (tasks.length === 0) {
+    toast({ title: "No tasks", description: "Please add at least one task.", variant: "destructive" });
+    return;
+  }
+
+  let claimStartTimestamp = 0;
+  let totalPool = 0;
+  let totalPoolRaw = "";
+  let participantCount = 0;
+  let rewardPerParticipantRaw = "";
+  try {
+    claimStartTimestamp = getCampaignClaimStartTimestamp();
+    ({
+      totalPool,
+      totalPoolRaw,
+      participantCount,
+      rewardPerParticipantRaw,
+    } = getRewardDeploymentConfig());
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Invalid campaign reward configuration.";
+    toast({ title: "Cannot deploy contract", description: message, variant: "destructive" });
+    return;
+  }
+
+  setDeployLoading(true);
+  try {
+    const savedCampaignId = campaignId ?? await handleSaveDraft();
+    if (!savedCampaignId) return;
+
+    const deployment = await createRewardsContract({
+      nameOfCampaign: campaignName.trim(),
+      totalRewards: totalPoolRaw,
+      rewardToken: rewardPerParticipantRaw,
+      startDate: claimStartTimestamp,
+    });
+    const deployedParticipantCap = Number(deployment.maxClaimableParticipants ?? 0);
+    if (!Number.isInteger(deployedParticipantCap) || deployedParticipantCap <= 0) {
+      throw new Error("Unable to verify participant withdrawal limit from the deployed contract.");
+    }
+    if (deployedParticipantCap !== participantCount) {
+      throw new Error(
+        `Deployment mismatch. Contract allows ${deployedParticipantCap} participants, expected ${participantCount}.`
+      );
+    }
+
+    await projectApiRequest({
+      method: "PATCH",
+      endpoint: "/hub/add-campaign-address",
+      data: {
+        id: savedCampaignId,
+        contractAddress: deployment.contractAddress,
+        deploymentTxHash: deployment.txHash,
+        fundedAmount: Number(deployment.fundedAmount),
+        rewardPerParticipant: Number(deployment.rewardPerParticipant),
+        maxClaimableParticipants: deployedParticipantCap,
+      },
+    });
+
+    setCampaignId(savedCampaignId);
+    setRewardContractAddress(deployment.contractAddress);
+    setRewardPool(deployment.fundedAmount);
+    setParticipants(String(deployedParticipantCap));
+    setRewardsDeployment({
+      txHash: deployment.txHash,
+      fundedAmount: deployment.fundedAmount,
+      rewardPerParticipant: deployment.rewardPerParticipant,
+      maxClaimableParticipants: deployedParticipantCap,
+    });
+    setEditBaseline({
+      campaignTitle,
+      campaignName,
+      startDate,
+      startTime,
+      endDate,
+      endTime,
+      hasRewards: true,
+      rewardPoolWei: toWeiString(deployment.fundedAmount) || "0",
+      participants: String(deployedParticipantCap),
+      coverImagePreview: coverImagePreview ?? "",
+      tasksSignature: currentTaskSignature,
+    });
+
+    toast({
+      title: "Rewards contract deployed",
+      description: `Deducted ${deployment.fundedAmount} TRUST and funded the contract. ${deployedParticipantCap} participants can claim ${deployment.rewardPerParticipant} TRUST each. Tx: ${deployment.txHash}`,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to deploy rewards contract.";
+    toast({ title: "Deployment failed", description: message, variant: "destructive" });
+  } finally {
+    setDeployLoading(false);
+  }
+};
+
 const handleUpdateCampaign = async () => {
   if (!campaignTitle || !campaignName) {
     toast({ title: "Incomplete details", description: "Please fill in campaign name and description.", variant: "destructive" });
@@ -340,10 +1061,28 @@ const handleUpdateCampaign = async () => {
     return;
   }
 
+  let rewardConfig: ReturnType<typeof getRewardDeploymentConfig> | null = null;
+  if (hasRewards) {
+    try {
+      rewardConfig = getRewardDeploymentConfig();
+      if (isPublished) {
+        getPublishedRewardIncreaseDelta(rewardConfig);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Invalid rewards configuration.";
+      toast({ title: "Update blocked", description: message, variant: "destructive" });
+      return;
+    }
+  }
+
   setLoading(true);
   try {
     const savedCampaignId = campaignId ?? await handleSaveDraft();
     if (!savedCampaignId) return;
+
+    if (hasRewards && isPublished && rewardConfig) {
+      await syncPublishedRewardIncrease(savedCampaignId, rewardConfig);
+    }
 
     setCampaignId(savedCampaignId);
     toast({ title: "Campaign updated!", description: "Your campaign changes have been saved." });
@@ -354,6 +1093,29 @@ const handleUpdateCampaign = async () => {
   } finally {
     setLoading(false);
   }
+};
+
+const handlePublishButtonClick = () => {
+  if (Number(rewardPool) > 0 && !rewardContractAddress.trim()) {
+    toast({
+      title: "Rewards contract required",
+      description: "Deploy the rewards contract before publishing this campaign.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  const rewardPublishError = getDraftRewardsPublishError();
+  if (rewardPublishError) {
+    toast({
+      title: "Cannot publish",
+      description: rewardPublishError,
+      variant: "destructive",
+    });
+    return;
+  }
+
+  setShowPublishModal(true);
 };
 
 const isActive =
@@ -451,12 +1213,12 @@ const isActive =
                       <label className="block mb-2 text-sm font-medium">
                         Campaign Name
                       </label>
-                      <Input
+<Input
   placeholder="Enter campaign name..."
   className="bg-white/5 border-white/10"
   required
   value={campaignName}
-  onChange={(e) => setCampaignName(e.target.value)}
+  onChange={(e) => handleCampaignNameChange(e.target.value)}
 />
                     </div>
 
@@ -488,11 +1250,7 @@ const isActive =
                           type="datetime-local"
                           className="w-full rounded-md bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 [color-scheme:dark]"
                           value={startDate && startTime ? `${startDate}T${startTime}` : startDate ? `${startDate}T00:00` : ""}
-                          onChange={(e) => {
-                            const [d, t] = e.target.value.split("T");
-                            setStartDate(d ?? "");
-                            setStartTime(t ? t.slice(0, 5) : "");
-                          }}
+                          onChange={(e) => handleStartDateTimeChange(e.target.value)}
                         />
                       </div>
 
@@ -505,11 +1263,7 @@ const isActive =
                           type="datetime-local"
                           className="w-full rounded-md bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 [color-scheme:dark]"
                           value={endDate && endTime ? `${endDate}T${endTime}` : endDate ? `${endDate}T00:00` : ""}
-                          onChange={(e) => {
-                            const [d, t] = e.target.value.split("T");
-                            setEndDate(d ?? "");
-                            setEndTime(t ? t.slice(0, 5) : "");
-                          }}
+                          onChange={(e) => handleEndDateTimeChange(e.target.value)}
                         />
                       </div>
                       <p className="text-xs text-white/50 -mt-2 col-span-full">
@@ -552,6 +1306,30 @@ const isActive =
                     </div>
 
                     {/* Rewards */}
+<div className="space-y-4">
+  <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+    <div>
+      <p className="text-sm font-medium text-white">Enable TRUST Rewards</p>
+      <p className="text-xs text-white/50">
+        Turn this on to fund a reward pool and deploy a rewards contract.
+      </p>
+    </div>
+    <Switch
+      checked={hasRewards}
+      disabled={isPublished}
+      onCheckedChange={(checked) => {
+        setHasRewards(checked);
+        if (!checked) {
+          setRewardPool("");
+          setRewardContractAddress("");
+          setRewardsDeployment(null);
+        }
+      }}
+      className="data-[state=checked]:bg-[#8B3EFE]"
+      aria-label="Enable campaign rewards"
+    />
+  </div>
+
 <div className="grid grid-cols-3 gap-6">
 <div>
   <label className="block mb-2 text-sm font-medium">
@@ -564,15 +1342,32 @@ const isActive =
       $TRUST
     </span>
 
-    <Input
+<Input
   type="number"
-  className={`bg-white/5 border-white/10 pl-20 ${isPublished ? "cursor-not-allowed opacity-60" : ""}`}
+  step="any"
+  className={`bg-white/5 border-white/10 pl-20 ${(!hasRewards || (isPublished && !rewardContractAddress.trim())) ? "cursor-not-allowed opacity-60" : ""}`}
   placeholder="0"
   value={rewardPool}
-  onChange={(e) => setRewardPool(e.target.value)}
-  readOnly={isPublished}
+  onChange={(e) => handleRewardPoolChange(e.target.value)}
+  readOnly={!hasRewards || (isPublished && !rewardContractAddress.trim())}
 />
   </div>
+  <p className="text-[11px] text-white/50 mt-2">
+    When you deploy the rewards contract, this exact TRUST amount is auto-deducted from your wallet and locked as the reward pool.
+  </p>
+  {hasRewards && rewardContractAddress && rewardsDeployment && (
+    <div className="mt-3 rounded-md border border-green-500/30 bg-green-900/20 px-3 py-2 text-[11px] text-green-200 space-y-1">
+      <p>On-chain funding confirmed: {rewardsDeployment.fundedAmount} TRUST deducted.</p>
+      <p>Participant withdrawals enabled: {rewardsDeployment.maxClaimableParticipants}.</p>
+      <p>Per participant reward: {rewardsDeployment.rewardPerParticipant} TRUST.</p>
+      {rewardsDeployment.txHash && <p className="truncate">Tx: {rewardsDeployment.txHash}</p>}
+    </div>
+  )}
+  {draftRewardFieldsChanged && (
+    <p className="text-[11px] text-amber-300 mt-2">
+      You changed the reward pool or participant limit after deployment. Save the campaign before publishing.
+    </p>
+  )}
 </div>
 
                       <div className="relative">
@@ -588,13 +1383,13 @@ const isActive =
       className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none"
     />
 
-    <Input
+<Input
   type="number"
   placeholder="Enter number of participants"
-  className={`bg-white/5 border-white/10 pl-10 ${isPublished ? "cursor-not-allowed opacity-60" : ""}`}
+  className={`bg-white/5 border-white/10 pl-10 ${(isPublished && (!hasRewards || !rewardContractAddress.trim())) ? "cursor-not-allowed opacity-60" : ""}`}
   value={participants}
-  onChange={(e) => setParticipants(e.target.value)}
-  readOnly={isPublished}
+  onChange={(e) => handleParticipantsChange(e.target.value)}
+  readOnly={isPublished && (!hasRewards || !rewardContractAddress.trim())}
 />
   </div>
 </div>
@@ -607,7 +1402,7 @@ const isActive =
     <Input
       type="number"
       placeholder="200 XP per participant"
-      className="bg-white/5 border-white/10 pr-16 cursor-not-allowed opacity-60"
+      className={`bg-white/5 border-white/10 pr-16 cursor-not-allowed opacity-60 ${!hasRewards ? "opacity-40" : ""}`}
       value={xpRewards}
       readOnly
     />
@@ -615,6 +1410,7 @@ const isActive =
   </div>
 </div>
                     </div>
+</div>
 
                     {/* Disclaimer */}
                     
@@ -627,9 +1423,9 @@ const isActive =
                       </div>
                       {/* Text */}
                       <CardDescription className="text-white/60 text-sm">
-                        {isPublished
-                          ? "The reward pool and number of participants cannot be changed after the campaign has been published."
-                          : "The reward pool and number of participants cannot be changed once the campaign is published. Please make sure these values are correct before publishing."}
+                        {!hasRewards
+                          ? "You have chosen to run this campaign without TRUST rewards, so it can be published without deploying a contract."
+                          : "The reward pool and number of participants cannot be reduced once the campaign is published. They can only be increased, so please ensure these values are correct before publishing. TRUST tokens can only be withdrawn from the contract after the campaign end date."}
                       </CardDescription>
                     </div>
 
@@ -712,7 +1508,12 @@ const isActive =
               <button
                 className="px-3 py-1 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition"
                 onClick={() => {
-                  setNewTask(task);
+                  setNewTask({
+                    ...task,
+                    roleId: task.roleId ?? "",
+                    channelId: task.channelId ?? "",
+                    guildId: task.guildId || hubGuildId || "",
+                  });
                   setShowModal(true);
                   setEditingIndex(index);
                 }}
@@ -789,7 +1590,9 @@ const isActive =
             value={newTask.type}
             onChange={(e) => {
               const type = e.target.value;
-              const isDiscord = type === "Join Us On Discord";
+              const isDiscord = isDiscordFixedTaskType(type);
+              const isDiscordRole = isDiscordRoleTaskType(type);
+              const isDiscordMessage = isDiscordMessageTaskType(type);
               const isTwitter = type === "Comment on our X post" || type === "Follow us on X";
               const isPortal = type === "Check Out the Portal Claims";
               const isOther = type === "others";
@@ -801,6 +1604,9 @@ const isActive =
                 evidence: isDiscord || isPortal ? "" : isTwitter ? "submit_link" : isFeedback ? "" : newTask.evidence,
                 validation: isDiscord ? "Discord Auth" : isPortal ? "Auto Verified" : isFeedback ? "Manual Validation" : (newTask.validation === "Discord Auth" || newTask.validation === "Auto Verified" ? "Manual Validation" : newTask.validation),
                 verificationMode: isFeedback ? "feedback" : "",
+                roleId: isDiscordRole ? newTask.roleId : "",
+                channelId: isDiscordMessage ? newTask.channelId : "",
+                guildId: isDiscord ? (newTask.guildId || hubGuildId || "") : "",
               });
             }}
           >
@@ -808,6 +1614,8 @@ const isActive =
             <option value="Comment on our X post">Comment on X</option>
             <option value="Follow us on X">Follow on X</option>
             <option value="Join Us On Discord">Join Discord</option>
+            <option value={DISCORD_ROLE_TASK_TYPE}>Acquire a Role (Discord)</option>
+            <option value={DISCORD_MESSAGE_TASK_TYPE}>Send Message in Channel (Discord)</option>
             <option value="Check Out the Portal Claims">Portal Claims</option>
             <option value="Give Feedback">Give Feedback</option>
             <option value="others">Others</option>
@@ -815,13 +1623,13 @@ const isActive =
         </div>
 
         {/* Platform */}
-        {newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback" && (
+        {newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback" && !isDiscordFixedTaskType(newTask.type) && (
         <div>
           <label className="text-sm text-white/70 mb-2 block">Platform</label>
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setNewTask({ ...newTask, platform: "Twitter", evidence: "submit_link", validation: newTask.validation === "Discord Auth" ? "Manual Validation" : newTask.validation })}
+              onClick={() => setNewTask({ ...newTask, platform: "Twitter", evidence: "submit_link", validation: newTask.validation === "Discord Auth" ? "Manual Validation" : newTask.validation, roleId: "", channelId: "", guildId: "" })}
               className={`flex-1 border py-2 rounded-lg transition ${
                 newTask.platform === "Twitter"
                   ? "bg-[#8B3EFE] text-white border-purple-500"
@@ -837,6 +1645,7 @@ const isActive =
                 platform: "Discord",
                 evidence: "",
                 validation: "Discord Auth",
+                guildId: newTask.guildId || hubGuildId || "",
               })}
               className={`flex-1 border py-2 rounded-lg transition ${
                 newTask.platform === "Discord"
@@ -857,11 +1666,31 @@ const isActive =
         {/* Handle or URL */}
         <div className="mb-4">
           <label className="text-sm text-white/70 mb-2 block">
-            {newTask.type === "Give Feedback" ? "Website URL" : newTask.platform === "Discord" ? "Discord Invite Link" : newTask.type === "Comment on our X post" ? "Post URL" : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "Profile URL" : "Handle or URL"}
+            {newTask.type === "Give Feedback"
+              ? "Website URL"
+              : isDiscordMessageTaskType(newTask.type)
+                ? "Discord Channel Link"
+                : newTask.platform === "Discord"
+                  ? "Discord Invite Link"
+                  : newTask.type === "Comment on our X post"
+                    ? "Post URL"
+                    : newTask.type === "Follow us on X" || newTask.platform === "Twitter"
+                      ? "Profile URL"
+                      : "Handle or URL"}
           </label>
           <input
             type="text"
-            placeholder={newTask.type === "Give Feedback" ? "https://example.com" : newTask.platform === "Discord" ? "https://discord.gg/..." : newTask.type === "Comment on our X post" ? "https://x.com/username/status/..." : newTask.type === "Follow us on X" || newTask.platform === "Twitter" ? "https://x.com/username" : "..."}
+            placeholder={newTask.type === "Give Feedback"
+              ? "https://example.com"
+              : isDiscordMessageTaskType(newTask.type)
+                ? "https://discord.com/channels/..."
+                : newTask.platform === "Discord"
+                  ? "https://discord.gg/..."
+                  : newTask.type === "Comment on our X post"
+                    ? "https://x.com/username/status/..."
+                    : newTask.type === "Follow us on X" || newTask.platform === "Twitter"
+                      ? "https://x.com/username"
+                      : "..."}
             value={newTask.handleOrUrl}
             onChange={(e) =>
               setNewTask({ ...newTask, handleOrUrl: e.target.value })
@@ -884,8 +1713,78 @@ const isActive =
           />
         </div>
 
+        {(newTask.platform === "Discord" || isDiscordFixedTaskType(newTask.type)) && (!hubDiscordConnected || !hubGuildId) && (
+          <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            {!hubDiscordConnected
+              ? "Discord is optional for your studio overall, but you must connect it before creating Discord-related tasks."
+              : "Finish the Discord setup by selecting a server before creating Discord-related tasks."}
+          </div>
+        )}
+
+        {(isDiscordRoleTaskType(newTask.type) || isDiscordMessageTaskType(newTask.type)) && (
+          <div className="mb-4 space-y-2">
+            {(!hubDiscordConnected || !hubGuildId) && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                {!hubDiscordConnected
+                  ? "Discord is not connected for this hub. Connect Discord first."
+                  : "No Discord guild is linked to this hub. Select a guild first in Discord setup."}
+              </div>
+            )}
+
+            {isDiscordRoleTaskType(newTask.type) && (
+              <div>
+                <label className="text-sm text-white/70 mb-2 block">Discord Role</label>
+                <select
+                  value={newTask.roleId}
+                  disabled={!hubDiscordConnected || !hubGuildId || discordOptionsLoading}
+                  onChange={(e) => setNewTask({ ...newTask, roleId: e.target.value, guildId: hubGuildId || newTask.guildId })}
+                  className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 disabled:opacity-60 focus:outline-none focus:border-purple-500 [&>option]:bg-[#0d0d14]"
+                >
+                  <option value="">{discordOptionsLoading ? "Loading roles..." : "Select a role"}</option>
+                  {discordRoles.map((role) => (
+                    <option key={role.id} value={role.id}>{role.name}</option>
+                  ))}
+                  {newTask.roleId && !discordRoles.some((role) => role.id === newTask.roleId) && (
+                    <option value={newTask.roleId}>Selected role ({newTask.roleId})</option>
+                  )}
+                </select>
+                {discordRolesError && <p className="text-xs text-red-300 mt-1">{discordRolesError}</p>}
+                {!discordOptionsLoading && !discordRolesError && hubDiscordConnected && hubGuildId && discordRoles.length === 0 && (
+                  <p className="text-xs text-white/50 mt-1">No roles available for this guild.</p>
+                )}
+              </div>
+            )}
+
+            {isDiscordMessageTaskType(newTask.type) && (
+              <div>
+                <label className="text-sm text-white/70 mb-2 block">Discord Channel</label>
+                <select
+                  value={newTask.channelId}
+                  disabled={!hubDiscordConnected || !hubGuildId || discordOptionsLoading}
+                  onChange={(e) => setNewTask({ ...newTask, channelId: e.target.value, guildId: hubGuildId || newTask.guildId })}
+                  className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 disabled:opacity-60 focus:outline-none focus:border-purple-500 [&>option]:bg-[#0d0d14]"
+                >
+                  <option value="">{discordOptionsLoading ? "Loading channels..." : "Select a channel"}</option>
+                  {discordChannels.map((channel) => (
+                    <option key={channel.id} value={channel.id}>
+                      {String(channel.name ?? "").startsWith("#") ? String(channel.name ?? "") : `#${String(channel.name ?? "Unknown channel")}`}
+                    </option>
+                  ))}
+                  {newTask.channelId && !discordChannels.some((channel) => channel.id === newTask.channelId) && (
+                    <option value={newTask.channelId}>Selected channel ({newTask.channelId})</option>
+                  )}
+                </select>
+                {discordChannelsError && <p className="text-xs text-red-300 mt-1">{discordChannelsError}</p>}
+                {!discordOptionsLoading && !discordChannelsError && hubDiscordConnected && hubGuildId && discordChannels.length === 0 && (
+                  <p className="text-xs text-white/50 mt-1">No channels available for this guild.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Evidence + Validation */}
-        {newTask.platform === "Discord" || newTask.type === "Join Us On Discord" ? (
+        {newTask.platform === "Discord" || isDiscordFixedTaskType(newTask.type) ? (
           <div className="flex items-center gap-3 rounded-lg bg-indigo-900/50 border border-indigo-500/50 px-4 py-3">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-indigo-400 flex-shrink-0">
               <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
@@ -1056,7 +1955,7 @@ const isActive =
             <img src="/reward-pool.png" alt="" className="w-4 h-4 opacity-60" />
             Reward Pool
           </div>
-          <span className="text-white text-lg font-semibold">{rewardPool ? `${rewardPool} $TRUST` : "—"}</span>
+          <span className="text-white text-lg font-semibold">{Number(rewardPool) > 0 ? `${rewardPool} $TRUST` : "—"}</span>
         </div>
 
         {/* Target Users */}
@@ -1084,7 +1983,7 @@ const isActive =
             Per Participant
           </div>
           <span className="text-white text-lg font-semibold">
-            {rewardPool && participants && Number(participants) > 0
+            {Number(rewardPool) > 0 && participants && Number(participants) > 0
               ? `${(Number(rewardPool) / Number(participants)).toFixed(2)} $TRUST`
               : "—"}
           </span>
@@ -1139,7 +2038,12 @@ const isActive =
               <button
                 className="px-3 py-1 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 transition"
                 onClick={() => {
-                  setNewTask(task);
+                  setNewTask({
+                    ...task,
+                    roleId: task.roleId ?? "",
+                    channelId: task.channelId ?? "",
+                    guildId: task.guildId || hubGuildId || "",
+                  });
                   setShowModal(true);
                   setEditingIndex(index);
                 }}
@@ -1172,24 +2076,31 @@ const isActive =
 
   {/* Right buttons */}
   <div className="flex items-center gap-2 mt-4">
+{hasRewards && !isPublished && (
 <button
   type="button"
+  onClick={handleDeployRewardsContract}
   className="px-4 py-2 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
-  disabled={loading || saveLoading}
+  disabled={loading || saveLoading || deployLoading || !!rewardContractAddress.trim()}
 >
-  Deploy Rewards Contract
+  {deployLoading
+    ? "Deploying..."
+    : rewardContractAddress
+      ? "Rewards Contract Deployed"
+      : "Deploy Rewards Contract"}
 </button>
+)}
 {isEditMode && isPublished ? (
   <button
     onClick={() => handleUpdateCampaign()}
     className="px-4 py-2 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
     disabled={loading || saveLoading}
   >
-    Update Campaign
+    {updateCampaignButtonLabel}
   </button>
 ) : (
   <button
-    onClick={() => setShowPublishModal(true)}
+    onClick={handlePublishButtonClick}
     className="px-4 py-2 bg-[#8B3EFE] text-white rounded-lg text-sm hover:bg-[#7b35e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
     disabled={loading || saveLoading}
   >
@@ -1198,6 +2109,18 @@ const isActive =
 )}
   </div>
 </div>
+{hasRewards && rewardContractAddress && (
+  <div className="mt-2 space-y-1">
+    <p className="text-xs text-white/60 break-all">
+      Rewards Contract: {rewardContractAddress}
+    </p>
+    {rewardsDeployment && (
+      <p className="text-xs text-green-300">
+        Funded {rewardsDeployment.fundedAmount} TRUST for {rewardsDeployment.maxClaimableParticipants} participants.
+      </p>
+    )}
+  </div>
+)}
   </Card>
   
     )}
@@ -1304,6 +2227,20 @@ const isActive =
       toast({ title: "Payment required", description: "Please complete the 1000 $TRUST payment before publishing.", variant: "destructive" });
       return;
     }
+    const rewardPoolRequiresContract = Number(rewardPool) > 0;
+    if (hasRewards && (!rewardPool || Number(rewardPool) <= 0)) {
+      toast({ title: "Reward pool required", description: "Set a reward pool before publishing a rewards-enabled campaign.", variant: "destructive" });
+      return;
+    }
+    if (rewardPoolRequiresContract && !rewardContractAddress.trim()) {
+      toast({ title: "Rewards contract required", description: "Deploy the rewards contract before publishing this campaign.", variant: "destructive" });
+      return;
+    }
+    const rewardPublishError = getDraftRewardsPublishError();
+    if (rewardPublishError) {
+      toast({ title: "Cannot publish", description: rewardPublishError, variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -1319,7 +2256,13 @@ const isActive =
 
       toast({ title: "Campaign published!", description: "Your campaign is now live." });
       setPaymentTxHash("");
-      setPublishedCampaign({ title: campaignName, description: campaignTitle, name: campaignName, rewardPool, coverImage: coverImagePreview ?? undefined });
+      setPublishedCampaign({
+        title: campaignName,
+        description: campaignTitle,
+        name: campaignName,
+        rewardPool: hasRewards && Number(rewardPool) > 0 ? rewardPool : "",
+        coverImage: coverImagePreview ?? undefined
+      });
       setShowPublishModal(false);
       setShowSuccessModal(true);
     } catch (err: unknown) {
@@ -1329,7 +2272,7 @@ const isActive =
       setLoading(false);
     }
   }}
-  disabled={loading || !paymentTxHash}
+  disabled={loading || !paymentTxHash || (Number(rewardPool) > 0 && !rewardContractAddress.trim())}
 >
   {loading ? <span className="flex items-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Publishing...</span> : "Publish"}
 </button>
@@ -1425,7 +2368,7 @@ const isActive =
         Total Reward Pool
       </span>
       <span className="text-white mt-1 text-sm font-semibold">
-        {publishedCampaign?.rewardPool} $TRUST
+        {publishedCampaign?.rewardPool ? `${publishedCampaign.rewardPool} $TRUST` : "—"}
       </span>
     </div>
 

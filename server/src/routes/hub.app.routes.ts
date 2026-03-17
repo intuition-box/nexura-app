@@ -3,12 +3,15 @@ import {
   closeCampaign,
   createCampaign,
   deleteCampaign,
+  recordCampaignRewardsWithdrawal,
+  reopenCampaign,
   updateCampaign
 } from "@/controllers/campaign.controller";
 import {
   addHubAdmin,
   deleteCampaignQuest,
   deleteHub,
+  disconnectHubDiscord,
   getCampaign,
   removeHubAdmin,
   saveCampaign,
@@ -36,6 +39,7 @@ router
   .delete("/remove-admin", removeHubAdmin)
   .post("/create-hub", upload.single("logo"), createHub)
   .patch("/update-hub", upload.single("logo"), updateHub)
+  .patch("/disconnect-discord", disconnectHubDiscord)
   .patch("/save-payment-hash", savePaymentHash)
   .post("/add-admin", addHubAdmin)
   .post("/resend-invite", resendInvite)
@@ -47,6 +51,8 @@ router
   .patch("/update-campaign", upload.single("coverImage"), updateCampaign)
   .patch("/update-campaign-quest", updateCamapaignQuest)
   .patch("/close-campaign", closeCampaign)
-  .patch("/add-campaign-address", addCampaignAddress);
+  .patch("/reopen-campaign", reopenCampaign)
+  .patch("/add-campaign-address", addCampaignAddress)
+  .patch("/record-campaign-rewards-withdrawal", recordCampaignRewardsWithdrawal);
 
 export default router;

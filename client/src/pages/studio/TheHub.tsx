@@ -9,10 +9,14 @@ import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
 import { projectApiRequest, storeProjectSession, getStoredProjectToken, getStoredProjectInfo, base64ToBlob } from "../../lib/projectApi";
 import { useToast } from "../../hooks/use-toast";
+import { Globe, Twitter } from "lucide-react";
+import { setStudioDiscordReturnPath } from "../../lib/studioDiscord";
 
 export default function TheHub() {
   const [hubName, setHubName] = useState("");
   const [description, setDescription] = useState("");
+  const [website, setWebsite] = useState("");
+  const [xAccount, setXAccount] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,7 +24,7 @@ export default function TheHub() {
   const { toast } = useToast();
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target?.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
@@ -53,6 +57,8 @@ export default function TheHub() {
       const fd = new FormData();
       fd.append("name", hubName.trim());
       fd.append("description", description ?? "");
+      fd.append("website", website.trim());
+      fd.append("xAccount", xAccount.trim());
 
       if (imagePreview) {
         const blob = base64ToBlob(imagePreview);
@@ -72,8 +78,8 @@ export default function TheHub() {
         });
       }
 
-      // setLocation("/connect-discord");
-      setLocation("/studio-dashboard");
+      setStudioDiscordReturnPath("/studio-dashboard");
+      setLocation("/studio-dashboard/connect-discord");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign-up failed. Please try again.";
       toast({ title: "Sign up failed", description: msg, variant: "destructive" });
@@ -95,7 +101,7 @@ export default function TheHub() {
             Welcome to Nexura Studio
           </h1>
           <p className="text-white/60 max-w-2xl mx-auto">
-            Setup a dedicated hub for your project or community on Nexura
+            Set up a dedicated project space for your project or community on Nexura
           </p>
         </div>
 
@@ -123,7 +129,7 @@ export default function TheHub() {
               </CardTitle>
 
               <CardDescription className="text-white/60 max-w-xs">
-                Perfect for building a centralized community hub for your dApp or protocol
+                Perfect for building a centralized project space for your dApp or protocol
               </CardDescription>
             </Card>
 
@@ -189,6 +195,32 @@ export default function TheHub() {
             )}
           </div>
 
+          {/* Optional Social Info */}
+          <div className="space-y-3">
+            <CardTitle className="text-lg">Project Links (Optional)</CardTitle>
+            <div className="relative">
+              <Globe className="w-4 h-4 text-white/50 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="Project website (e.g. https://example.com)"
+                className="bg-gray-800 border-purple-500 text-white pl-10"
+              />
+            </div>
+            <div className="relative">
+              <Twitter className="w-4 h-4 text-white/50 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                value={xAccount}
+                onChange={(e) => setXAccount(e.target.value)}
+                placeholder="X account (e.g. @myproject or https://x.com/myproject)"
+                className="bg-gray-800 border-purple-500 text-white pl-10"
+              />
+            </div>
+            <p className="text-xs text-white/50">
+              Discord server is now set through Discord connection after this step.
+            </p>
+          </div>
+
           {/* Logo Upload */}
           <div className="space-y-3 w-full">
             <CardTitle className="text-lg text-center">Project Logo</CardTitle>
@@ -235,7 +267,7 @@ export default function TheHub() {
               onClick={handleSubmit}
               disabled={loading}
             >
-              {loading ? "Creating Hub..." : "Create Hub"}
+              {loading ? "Creating Project..." : "Create Project"}
             </Button>
           </div>
         </Card>

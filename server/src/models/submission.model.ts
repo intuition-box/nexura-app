@@ -42,8 +42,7 @@ const submissionSchema = new mongoose.Schema({
     required: true
   },
   hub: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "hubs",
+    type: String,
     required: true
   },
   rejectedCount: {

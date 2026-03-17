@@ -15,6 +15,7 @@ import {
 } from "../ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { cn } from "../../lib/utils";
+import { TASKS } from "../../types/admin";
 import {
   Search,
   RefreshCw,
@@ -132,7 +133,6 @@ interface CampaignSubmissionsProps {
   handleView: (id: string, taskType: string, link: string) => void;
   handleAction: (id: string, action: "accept" | "reject") => void;
   onRefresh: () => void;
-  createdAt: string;
 }
 
 export default function CampaignSubmissions({
@@ -148,8 +148,6 @@ export default function CampaignSubmissions({
   onRefresh,
 }: CampaignSubmissionsProps) {
 
-  const [pendingOpen, setPendingOpen] = useState(true);
-  const [completedOpen, setCompletedOpen] = useState(true);
   const [campaignPendingOpen, setCampaignPendingOpen] = useState(true);
   const [campaignCompletedOpen, setCampaignCompletedOpen] = useState(true);
 
@@ -306,7 +304,7 @@ const completedTasks = tasks.filter(task =>
 
     {/* Submitted */}
     <TableCell className="text-white/80">
-  {timeAgo(submission.createdAt)}
+  {timeAgo(submission.createdAt ?? new Date().toISOString())}
 </TableCell>
 
     {/* Status */}

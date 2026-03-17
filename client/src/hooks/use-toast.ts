@@ -1,4 +1,5 @@
 import * as React from "react"
+import { toUserFriendlyErrorMessage } from "../lib/errorMessages"
 
 import type {
   ToastActionElement,
@@ -141,6 +142,18 @@ type Toast = Omit<ToasterToast, "id">
 
 function toast({ ...props }: Toast) {
   const id = genId()
+  const normalizedProps: Toast = { ...props }
+
+  const normalizedTitle =
+    typeof normalizedProps.title === "string" ? normalizedProps.title.toLowerCase() : ""
+  const shouldSanitizeDescription =
+    normalizedProps.variant === "destructive" ||
+    normalizedTitle.includes("error") ||
+    normalizedTitle.includes("failed")
+
+  if (shouldSanitizeDescription && typeof normalizedProps.description === "string") {
+    normalizedProps.description = toUserFriendlyErrorMessage(normalizedProps.description)
+  }
 
   const update = (props: ToasterToast) =>
     dispatch({
@@ -152,7 +165,7 @@ function toast({ ...props }: Toast) {
   dispatch({
     type: "ADD_TOAST",
     toast: {
-      ...props,
+      ...normalizedProps,
       id,
       open: true,
       onOpenChange: (open) => {

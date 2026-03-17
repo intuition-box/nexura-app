@@ -89,23 +89,24 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/portal-claims" component={PortalClaims} />
       <Route path="/portal-claims/:id" component={ClaimDetails} />
-      {/*<Route path="/studio" component={NexuraStudio} />*/}
+      <Route path="/studio" component={NexuraStudio} />
       {/* Profile pages */}
       <Route path="/profile" component={Profile} />
       <Route path="/profile/edit" component={EditProfile} />
       <Route path="/achievements" component={Achievements} />
       <Route path="/leaderboard" component={Leaderboard} />
       {/* Developer pages */}
-      {/*<Route path="/projects/create" component={ProjectCreate} />
+      <Route path="/projects/create" component={ProjectCreate} />
       <Route path="/projects/create/create-hub" component={CreateHub} />
       <Route path="/projects/create/signin-to-hub" component={SignInToHub} />
       <Route path="/projects/create/the-hub" component={TheHub} />
-      <Route path="/connect-discord" component={ConnectDiscord} />
-      <Route path="/project/connected-discord" component={ConnectedDiscord} />
       <Route path="/studio-dashboard">
         <StudioDashboard onLogout={handleLogout} />
-      </Route>*/}
-      {/*<Route path="/studio-dashboard/create-new-campaign">
+      </Route>
+      <Route path="/studio-dashboard/dashboard">
+        <StudioDashboard onLogout={handleLogout} />
+      </Route>
+      <Route path="/studio-dashboard/create-new-campaign">
         <StudioLayout title="Create Campaign" onLogout={handleLogout}>
           <CreateNewCampaigns />
         </StudioLayout>
@@ -126,13 +127,33 @@ function Router() {
         </StudioLayout>
       </Route>
       <Route path="/studio-dashboard/hub-profile">
-        <StudioLayout title="Hub Profile" onLogout={handleLogout}>
+        <StudioLayout title="Project Profile" onLogout={handleLogout}>
           <HubProfile />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/connect-discord">
+        <StudioLayout title="Connect Discord" onLogout={handleLogout}>
+          <ConnectDiscord />
+        </StudioLayout>
+      </Route>
+      <Route path="/studio-dashboard/connected-discord">
+        <StudioLayout title="Connect Discord" onLogout={handleLogout}>
+          <ConnectedDiscord />
+        </StudioLayout>
+      </Route>
+      <Route path="/connect-discord">
+        <StudioLayout title="Connect Discord" onLogout={handleLogout}>
+          <ConnectDiscord />
+        </StudioLayout>
+      </Route>
+      <Route path="/project/connected-discord">
+        <StudioLayout title="Connect Discord" onLogout={handleLogout}>
+          <ConnectedDiscord />
         </StudioLayout>
       </Route>
       <Route path="/studio/register" component={AdminSignUp} />
       <Route path="/project/:projectId/*" component={ProjectDashboard} />
-      <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />*/}
+      <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
       {/* Referral */}
       <Route path="/ref/:referrerCode" component={UserReferred} />
       {/* Fallback to 404 */}
@@ -180,7 +201,12 @@ function App() {
                 
 
                 const isHome = location === "/" || location === "/home";
-                const isStudio = location.startsWith("/studio-dashboard");
+                const isStudio =
+                  location === "/studio" ||
+                  location.startsWith("/studio-dashboard") ||
+                  location.startsWith("/connect-discord") ||
+                  location.startsWith("/project/connected-discord") ||
+                  location.startsWith("/studio/register");
                 const isProject = location.startsWith("/project/");
                 const isProjectCreate = location.startsWith("/projects/create");
                 return (

@@ -9,4 +9,5 @@ export type TASKS = {
   campaignCompleted: string;
   validatedBy: string;
   user: string;
+  createdAt?: string;
 };

@@ -8,6 +8,7 @@ import {
   superAdminSignUp,
   hubDiscordCallback,
   fetchRoles,
+  fetchChannels,
   fetchServers
 } from "@/controllers/hub.auth.controller";
 import { authenticateHubAdmin, authenticateHubAdmin2 } from "@/middlewares/auth.middleware";
@@ -33,6 +34,7 @@ router
   .post("/sign-up", superAdminSignUp)
   .get("/discord/callback", hubDiscordCallback)
   .get("/get-roles", fetchRoles)
+  .get("/get-channels", fetchChannels)
   .get("/get-servers", fetchServers)
   .post("/admin/sign-up", hubAdminSignUp)
   // --- Superadmin-only routes ---

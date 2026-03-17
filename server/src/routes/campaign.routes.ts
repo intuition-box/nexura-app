@@ -5,6 +5,7 @@ import {
 	closeCampaign,
 	createCampaign,
 	joinCampaign,
+	reopenCampaign,
 	updateCampaign,
 } from "@/controllers/campaign.controller";
 import {
@@ -25,6 +26,7 @@ router
 	.patch("/add-campaign-address", authenticateHubAdmin, addCampaignAddress)
 	.post("/complete-campaign", authenticateUser, claimCampaignRewards)
 	.patch("/close-campaign", authenticateHubAdmin, closeCampaign)
+	.patch("/reopen-campaign", authenticateHubAdmin, reopenCampaign)
 	.post("/create-campaign", authenticateHubAdmin, upload.single("coverImage"), createCampaign)
 	.post("/create-campaign-quests", authenticateHubAdmin, createCampaignQuests)
 	.post("/create-ecosystem-quests", authenticateHubAdmin, createEcosystemQuests)

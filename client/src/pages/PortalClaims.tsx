@@ -17,6 +17,7 @@ interface Claim {
   user: { address: Address };
   term_id: Address;
   counter_term_id: Address;
+  createdAt?: string;
   total_market_cap: string;
   total_position_count: string;
   total_assets: string;
@@ -251,15 +252,6 @@ export default function PortalClaims() {
     loadMore();
   }, [sortOption]);
 
-  const inputRef = useRef(null);
-
-  // optional: focus programmatically if you need more control
-  useEffect(() => {
-    if (showModal && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [showModal]);
-
   const formatTrust = (shares: bigint, decimals = 18, precision = 4) => {
     const divisor = 10n ** BigInt(decimals);
     const formatted = Number(shares) / Number(divisor);
@@ -430,7 +422,7 @@ export default function PortalClaims() {
   };
 
   // Sorting function
-  const sortClaims = (claims, option) => {
+  const sortClaims = (claims: Claim[], option: string): Claim[] => {
     const sorted = [...claims]; // clone to avoid mutating original
     switch (option) {
       case "totalMarketCap_desc":
@@ -456,20 +448,20 @@ export default function PortalClaims() {
       case "positions_desc":
         return sorted.sort(
           (a, b) =>
-            (b.total_position_count || 0) - (a.total_position_count || 0)
+            Number(b.total_position_count || 0) - Number(a.total_position_count || 0)
         );
       case "positions_asc":
         return sorted.sort(
           (a, b) =>
-            (a.total_position_count || 0) - (b.total_position_count || 0)
+            Number(a.total_position_count || 0) - Number(b.total_position_count || 0)
         );
       case "createdAt_desc":
         return sorted.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
         );
       case "createdAt_asc":
         return sorted.sort(
-          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+          (a, b) => new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()
         );
       default:
         return claims;
@@ -1658,7 +1650,7 @@ export default function PortalClaims() {
           )}
 
           <div ref={observerRef} className="h-10"></div>
-          <XPRewardPopup show={showPopup} onClose={() => setShowPopup(false)} />
+          <XPRewardPopup forceShow={showPopup} onClose={() => setShowPopup(false)} />
         </div>
       </div>
     </div>

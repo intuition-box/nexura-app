@@ -29,6 +29,15 @@ import {
 import mongoose from "mongoose";
 import { hub } from "@/models/hub.model";
 
+const DISCORD_CAMPAIGN_TAGS = new Set([
+	"join",
+	"message",
+	"join-discord",
+	"message-discord",
+	"acquire-role-discord",
+	"send-message-discord",
+]);
+
 // todo: add ecosystem completed to eco quests
 export const fetchEcosystemDapps = async (
 	req: GlobalRequest,
@@ -174,6 +183,15 @@ export const fetchCampaignQuests = async (
 		}
 
 		const currentHub = await hub.findById(currentCampaign.hub).lean();
+		const hubInfo = {
+			id: currentHub?._id?.toString?.() ?? "",
+			name: currentHub?.name ?? currentCampaign.project_name ?? "",
+			description: currentHub?.description ?? "",
+			logo: currentHub?.logo ?? currentCampaign.project_image ?? "",
+			website: currentHub?.website ?? "",
+			xAccount: currentHub?.xAccount ?? "",
+			discordServer: currentHub?.discordServer ?? "",
+		};
 
 		const quests = await campaignQuest.find({ campaign: id }).lean();
 
@@ -207,17 +225,17 @@ export const fetchCampaignQuests = async (
 
 		const campaignQuestsMarkedAsDone = campaignQuestsCompleted.filter((c_q: { done: boolean }) => c_q.done === true);
 
-		if (currentCampaign.noOfQuests === campaignQuestsMarkedAsDone.length && !completedCampaign?.questsCompleted) {
-			if (currentCampaign.trustClaimed < currentCampaign.totalTrustAvailable) {
+		if (currentCampaign.noOfQuests === campaignQuestsMarkedAsDone.length && completedCampaign && !completedCampaign.questsCompleted) {
+			if (currentCampaign.trustClaimed < currentCampaign.totalTrustAvailable && currentCampaign.contractAddress) {
 				await performIntuitionOnchainAction({
 					action: "allow-claim",
 					userId,
-					contractAddress: currentCampaign.contractAddress!,
+					contractAddress: currentCampaign.contractAddress,
 				});
 			}
 
-			completedCampaign!.questsCompleted = true;
-			await completedCampaign!.save();
+			completedCampaign.questsCompleted = true;
+			await completedCampaign.save();
 		}
 
 		const campaignNumber = padNumber(currentCampaign.campaignNumber);
@@ -237,6 +255,7 @@ export const fetchCampaignQuests = async (
 			project_name: currentCampaign.project_name,
 			project_image: currentCampaign.project_image,
 			hubDescription: currentHub?.description ?? "",
+			hubInfo,
 			sub_title: currentCampaign.sub_title,
 			projectCoverImage: currentCampaign.projectCoverImage,
 			joined,
@@ -342,15 +361,65 @@ export const performCampaignQuest = async (
 			return;
 		}
 
+		const normalizedTag = String(campaignQuestk.tag ?? "").trim().toLowerCase();
+		const isDiscordQuest = DISCORD_CAMPAIGN_TAGS.has(normalizedTag);
+		const normalizedCampaignId = String(campaignId ?? campaignQuestk.campaign ?? "").trim();
+
 		let campaignDone = await campaignQuestCompleted.findOne({
 			user: req.id,
 			campaignQuest: id,
 		});
+
+		const failDiscordCompletion = async (errorMessage: string) => {
+			if (campaignDone && campaignDone.done !== true) {
+				campaignDone.status = "retry";
+				await campaignDone.save();
+			}
+
+			res.status(FORBIDDEN).json({ error: errorMessage });
+		};
+
+		if (isDiscordQuest) {
+			if (!normalizedCampaignId) {
+				res.status(BAD_REQUEST).json({ error: "campaign id is required for discord task completion" });
+				return;
+			}
+
+			const relatedCampaign = await campaign.findById(normalizedCampaignId).select("hub").lean();
+			if (!relatedCampaign?.hub) {
+				res.status(NOT_FOUND).json({ error: "campaign project not found for this discord task" });
+				return;
+			}
+
+			const studioHub = await hub.findById(relatedCampaign.hub).select("discordConnected guildId").lean();
+			const studioGuildId = String(studioHub?.guildId ?? "").trim();
+			const questGuildId = String(campaignQuestk.guildId ?? "").trim();
+
+			if (!studioHub?.discordConnected || !studioGuildId) {
+				await failDiscordCompletion(
+					"this project's Discord connection is not active in Studio. The campaign team needs to reconnect Discord before Discord tasks can be completed."
+				);
+				return;
+			}
+
+			if (questGuildId && studioGuildId !== questGuildId) {
+				await failDiscordCompletion(
+					"this campaign's Discord setup no longer matches the project's active Studio Discord connection."
+				);
+				return;
+			}
+		}
+
 		if (!campaignDone) {
+			if (isDiscordQuest) {
+				res.status(FORBIDDEN).json({ error: "discord tasks must be verified before they can be completed" });
+				return;
+			}
+
 			// Auto-create completion record for tasks that skip the submit step
 			// (e.g. X follow/comment where verification is deferred)
 			campaignDone = await campaignQuestCompleted.create({
-				campaign: campaignId,
+				campaign: normalizedCampaignId,
 				campaignQuest: id,
 				user: req.id,
 				done: true,

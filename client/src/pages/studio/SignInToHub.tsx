@@ -97,10 +97,10 @@ export default function SignInToHub() {
         {/* Header */}
         <div className="text-center py-4 sm:py-6 px-2 sm:px-0">
           <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">
-            Sign in to Your Hub
+            Sign in to Your Project
           </h1>
           <p className="text-sm sm:text-base text-white/60 leading-relaxed">
-            Enter your credentials to access your existing your project's Hub.
+            Enter your credentials to access your existing project.
           </p>
         </div>
 
@@ -166,7 +166,7 @@ export default function SignInToHub() {
         <p className="text-center text-xs text-white/30 -mt-8">
           Don't have an account?{" "}
           <a href="/projects/create" className="text-purple-400 hover:underline">
-            Create a Hub
+            Create a Project
           </a>
         </p>
       </div>

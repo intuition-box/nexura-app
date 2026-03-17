@@ -2,13 +2,31 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
-import { ExternalLink, Clock, Users } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { ExternalLink, Clock, Users, Globe } from "lucide-react";
 import { useLocation } from "wouter";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { apiRequestV2 } from "../lib/queryClient";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../lib/auth";
 import { useWallet } from "../hooks/use-wallet";
+
+interface HubInfo {
+  id?: string;
+  name: string;
+  description?: string;
+  logo?: string;
+  website?: string;
+  xAccount?: string;
+  discordServer?: string;
+  guildId?: string;
+}
 
 interface Campaign {
   _id: string;
@@ -25,6 +43,7 @@ interface Campaign {
   reward: { trustTokens?: number; trust?: number; xp: number; pool?: number };
   joined: boolean;
   status?: string;
+  hubInfo?: HubInfo;
 }
 
 // Main TASKS card
@@ -100,14 +119,16 @@ export default function Campaigns() {
   const [loadingCampaign, setLoadingCampaign] = useState<string | null>(null);
   const [serverOffset, setServerOffset] = useState<number>(0);
   const [countdowns, setCountdowns] = useState<Record<string, string>>({});
+  const [selectedHub, setSelectedHub] = useState<HubInfo | null>(null);
 
   const { toast } = useToast();
 
   const now = Date.now() + serverOffset;
 
-  const isCompletedCampaign = (campaign: Campaign) => !!campaign.ends_at && new Date(campaign.ends_at).getTime() <= now;
-  const isScheduledCampaign = (campaign: Campaign) => !isCompletedCampaign(campaign) && !!campaign.starts_at && new Date(campaign.starts_at).getTime() > now;
-  const isActiveCampaign = (campaign: Campaign) => !isScheduledCampaign(campaign) && !isCompletedCampaign(campaign);
+  const isEndedCampaign = (campaign: Campaign) =>
+    campaign.status === "Ended" || (!!campaign.ends_at && new Date(campaign.ends_at).getTime() <= now);
+  const isScheduledCampaign = (campaign: Campaign) => !isEndedCampaign(campaign) && !!campaign.starts_at && new Date(campaign.starts_at).getTime() > now;
+  const isActiveCampaign = (campaign: Campaign) => !isScheduledCampaign(campaign) && !isEndedCampaign(campaign);
 
   // Fetch server time offset once
   useEffect(() => {
@@ -196,6 +217,13 @@ export default function Campaigns() {
       }
 
       await apiRequestV2("POST", `/api/campaign/join-campaign?id=${campaign._id}`);
+      setCampaigns((prev) =>
+        prev.map((c) =>
+          c._id === campaign._id
+            ? { ...c, joined: true }
+            : c
+        )
+      );
       setLocation(`/campaign/${campaign._id}`);
     } catch (error: any) {
       console.error(error);
@@ -205,12 +233,31 @@ export default function Campaigns() {
   };
 
   const allCampaigns = [...campaigns];
+  const websiteHref = selectedHub?.website?.trim()
+    ? (selectedHub.website.startsWith("http") ? selectedHub.website : `https://${selectedHub.website}`)
+    : "";
+  const xHref = selectedHub?.xAccount?.trim()
+    ? (selectedHub.xAccount.startsWith("http")
+      ? selectedHub.xAccount
+      : `https://x.com/${selectedHub.xAccount.replace(/^@/, "")}`)
+    : "";
+  const discordHref = selectedHub?.discordServer?.trim()
+    ? (
+      selectedHub.discordServer.startsWith("http")
+        ? selectedHub.discordServer
+        : (selectedHub.guildId ? `https://discord.com/channels/${selectedHub.guildId}` : "")
+    )
+    : (selectedHub?.guildId ? `https://discord.com/channels/${selectedHub.guildId}` : "");
 
   const activeCampaigns = allCampaigns.filter((c) => isActiveCampaign(c));
 
   const upcomingCampaigns = allCampaigns.filter((c) => isScheduledCampaign(c));
 
-  const renderCampaignCard = (campaign: Campaign, isActive: boolean) => {
+  const endedCampaigns = allCampaigns.filter((c) => isEndedCampaign(c));
+
+  const renderCampaignCard = (campaign: Campaign, state: "active" | "upcoming" | "ended") => {
+    const isActive = state === "active";
+    const isUpcoming = state === "upcoming";
     let metadata: any = {};
     try {
       metadata = campaign.metadata ? JSON.parse(campaign.metadata) : {};
@@ -236,6 +283,16 @@ export default function Campaigns() {
       : (campaign.totalTrustAvailable && allowedParticipants > 0)
       ? Number((campaign.totalTrustAvailable / allowedParticipants).toFixed(2))
       : 0;
+    const hasTrustReward = Number(campaign.reward?.pool ?? campaign.totalTrustAvailable ?? 0) > 0;
+    const hubInfo: HubInfo = campaign.hubInfo ?? {
+      name: campaign.project_name || "Unknown Project",
+      description: "",
+      logo: "",
+      website: "",
+      xAccount: "",
+      discordServer: "",
+      guildId: "",
+    };
 
     return (
       <Card
@@ -259,13 +316,17 @@ export default function Campaigns() {
               <Badge className="bg-green-500/20 text-green-400 border border-green-500/30 text-[0.65rem] sm:text-xs">
                 Active
               </Badge>
-            ) : (
+            ) : isUpcoming ? (
               <div className="bg-black/60 backdrop-blur-sm border border-purple-500/30 rounded-lg px-2 py-1 flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-purple-400 animate-pulse" />
                 <span className="text-purple-300 text-[0.6rem] sm:text-xs font-mono font-semibold">
                   {countdowns[campaign._id] || "Loading..."}
                 </span>
               </div>
+            ) : (
+              <Badge className="bg-gray-500/20 text-gray-200 border border-gray-500/30 text-[0.65rem] sm:text-xs">
+                Ended
+              </Badge>
             )}
           </div>
 
@@ -280,15 +341,25 @@ export default function Campaigns() {
         {/* Campaign Details */}
         <div className="p-3 sm:p-4 flex flex-1 flex-col space-y-1.5">
           <h2
-          className="text-sm font-semibold text-white truncate"
+          className="text-sm font-semibold text-white leading-snug line-clamp-2 min-h-[2.25rem] break-words"
           title={campaign.description || campaign.title}
           >
           {campaign.description || campaign.title}
           </h2>
 
-          <div className="flex flex-row justify-between text-xs gap-1">
+          <div className="flex flex-row justify-between text-xs gap-1 items-center">
             <span className="text-gray-500">Project:</span>
-          <span className="text-white truncate max-w-[55%] text-right" title={campaign.project_name}>{campaign.project_name}</span>
+            <button
+              type="button"
+              className="text-white underline-offset-2 hover:underline line-clamp-1 break-all max-w-[65%] text-right"
+              title={hubInfo.name}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedHub(hubInfo);
+              }}
+            >
+              {hubInfo.name}
+            </button>
           </div>
 
           <div className="flex flex-row justify-between text-xs gap-1 items-center">
@@ -301,15 +372,15 @@ export default function Campaigns() {
 
           <div className="flex flex-row justify-between text-xs items-center">
             <span className="text-gray-500">Reward:</span>
-            <span className="text-white flex items-center gap-1">
-              {`${trustReward} TRUST + ${campaign.reward.xp} XP`}
+            <span className="text-white flex items-center gap-1 text-right">
+              {hasTrustReward ? `${trustReward} TRUST + ${campaign.reward.xp} XP` : `${campaign.reward.xp} XP`}
             </span>
           </div>
 
           {campaign.reward.pool && (
             <div className="flex flex-row justify-between text-xs items-center">
               <span className="text-gray-500">Reward Pool:</span>
-              <span className="text-white flex items-center gap-1">
+              <span className="text-white flex items-center gap-1 text-right">
                 {campaign.reward.pool} TRUST (FCFS)
               </span>
             </div>
@@ -340,6 +411,11 @@ export default function Campaigns() {
           >
             {loadingCampaign === campaign._id ? (
               <>Joining...</>
+            ) : isActive && campaign.joined ? (
+              <>
+                <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                View Campaign
+              </>
             ) : isActive && (!walletConnected || !user) ? (
               <>Connect Wallet</>
             ) : isActive ? (
@@ -347,9 +423,13 @@ export default function Campaigns() {
                 <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Join Campaign
               </>
-            ) : (
+            ) : isUpcoming ? (
               <>
                 <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Starts in {countdowns[campaign._id] || "..."}
+              </>
+            ) : (
+              <>
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Campaign Ended
               </>
             )}
           </Button>
@@ -384,7 +464,7 @@ export default function Campaigns() {
             </Card>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {activeCampaigns.map((campaign) => renderCampaignCard(campaign, true))}
+              {activeCampaigns.map((campaign) => renderCampaignCard(campaign, "active"))}
             </div>
           )}
         </div>
@@ -400,11 +480,141 @@ export default function Campaigns() {
             </Card>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {upcomingCampaigns.map((campaign) => renderCampaignCard(campaign, false))}
+              {upcomingCampaigns.map((campaign) => renderCampaignCard(campaign, "upcoming"))}
+            </div>
+          )}
+        </div>
+
+        {/* Ended Campaigns */}
+        <div className="space-y-4 sm:space-y-6 mt-8 sm:mt-12">
+          <h2 className="text-lg sm:text-2xl font-semibold text-white">Ended Campaigns</h2>
+          {isLoading ? (
+            <div className="text-center py-6 sm:py-12 text-muted-foreground">Loading campaigns...</div>
+          ) : endedCampaigns.length === 0 ? (
+            <Card className="glass glass-hover rounded-3xl p-6 sm:p-8 text-center">
+              <p className="text-white/60">No ended campaigns yet.</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {endedCampaigns.map((campaign) => renderCampaignCard(campaign, "ended"))}
             </div>
           )}
         </div>
       </div>
+
+      <Dialog open={!!selectedHub} onOpenChange={(open) => { if (!open) setSelectedHub(null); }}>
+        <DialogContent className="w-[94vw] max-w-3xl bg-[#0d1117] border-white/10 text-white p-0 overflow-hidden">
+          {selectedHub && (
+            <div className="p-4 sm:p-5 space-y-4">
+              <DialogHeader className="space-y-1">
+                <DialogTitle>Project Information</DialogTitle>
+                <DialogDescription className="text-white/60">
+                  Project details and socials.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-1 sm:grid-cols-[170px,1fr] gap-4 items-start">
+                <div className="w-full h-28 sm:h-40 rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                  {selectedHub.logo ? (
+                    <img src={selectedHub.logo} alt={selectedHub.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#1a2233] to-[#121826] text-white/70 text-2xl font-semibold">
+                      {(selectedHub.name || "H").slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 space-y-3">
+                  <p className="text-lg sm:text-xl font-semibold break-words">{selectedHub.name || "Unknown Project"}</p>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                    <p className="text-xs uppercase text-white/50 mb-1.5">Description</p>
+                    <p className="text-sm text-white/85 leading-relaxed whitespace-pre-wrap break-words">
+                      {selectedHub.description?.trim() ? selectedHub.description : "No project description provided."}
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-white/10 space-y-2">
+                    <p className="text-xs uppercase text-white/50">Socials</p>
+                    <div className="flex items-center gap-3">
+                      {websiteHref ? (
+                        <a
+                          href={websiteHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label="Project website"
+                          title="Website"
+                          className="w-10 h-10 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
+                        >
+                          <Globe className="w-4 h-4 text-blue-300" />
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          aria-label="Project website not set"
+                          title="Website not set"
+                          className="w-10 h-10 rounded-full border border-white/10 bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"
+                        >
+                          <Globe className="w-4 h-4 text-white/70" />
+                        </button>
+                      )}
+
+                      {xHref ? (
+                        <a
+                          href={xHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label="Project X account"
+                          title="X account"
+                          className="w-10 h-10 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
+                        >
+                          <img src="/x-logo-icon.png" alt="X" className="w-4 h-4 object-contain" />
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          aria-label="Project X account not set"
+                          title="X account not set"
+                          className="w-10 h-10 rounded-full border border-white/10 bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"
+                        >
+                          <img src="/x-logo-icon.png" alt="X" className="w-4 h-4 object-contain" />
+                        </button>
+                      )}
+
+                      {discordHref ? (
+                        <a
+                          href={discordHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label="Project Discord server"
+                          title="Discord server"
+                          className="w-10 h-10 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
+                        >
+                          <img src="/discord-logo-icon.png" alt="Discord" className="w-4 h-4 object-contain" />
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          aria-label="Project Discord not set"
+                          title="Discord not set"
+                          className="w-10 h-10 rounded-full border border-white/10 bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"
+                        >
+                          <img src="/discord-logo-icon.png" alt="Discord" className="w-4 h-4 object-contain" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-white/50">Icons are clickable only when links are set.</p>
+                    <p className="text-[11px] text-white/60">
+                      Discord server: {selectedHub.discordServer?.trim() || (selectedHub.guildId ? "Connected" : "Not connected")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

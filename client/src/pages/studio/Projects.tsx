@@ -9,6 +9,7 @@ import SignUpPopup from "../../components/SignUpPopup";
 import { useLocation } from "wouter";
 import AnimatedBackground from "../../components/AnimatedBackground";
 import { buildUrl } from "../../lib/queryClient";
+import { toUserFriendlyErrorMessage } from "../../lib/errorMessages";
 
 export default function Projects() {
   const { isConnected, connectWallet, address } = useWallet();
@@ -34,10 +35,10 @@ export default function Projects() {
         })
         .catch((err) => {
           console.error(err);
-          alert("Failed to create project: " + err.message);
+          alert(`Failed to create project: ${toUserFriendlyErrorMessage(err)}`);
         });
     } catch (err: any) {
-      alert("Validation error: " + err.message);
+      alert(`Validation error: ${toUserFriendlyErrorMessage(err)}`);
     }
   };
 

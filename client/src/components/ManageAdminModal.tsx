@@ -70,7 +70,7 @@ export function ManageAdminModal({ children, adminId, name, email, role, onSucce
         method: "DELETE",
         params: { id: adminId },
       });
-      toast({ title: "Admin removed", description: `${name} has been removed from the hub.` });
+      toast({ title: "Admin removed", description: `${name} has been removed from the project.` });
       onSuccess?.();
       setOpen(false);
     } catch (err: unknown) {
@@ -93,7 +93,7 @@ export function ManageAdminModal({ children, adminId, name, email, role, onSucce
             Manage Access
           </DialogTitle>
           <DialogDescription className="text-white/50">
-            Change this admin's role or remove them from the hub.
+            Change this admin's role or remove them from the project.
           </DialogDescription>
         </DialogHeader>
 

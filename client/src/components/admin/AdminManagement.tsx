@@ -66,7 +66,7 @@ export default function AdminManagement() {
     try {
       await projectApiRequest({ method: "DELETE", endpoint: "/hub/remove-admin", params: { id } });
       setAdmins((prev) => prev.filter((a) => a._id !== id));
-      toast({ title: "Admin removed", description: "The admin has been removed from your hub." });
+      toast({ title: "Admin removed", description: "The admin has been removed from your project." });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to remove admin.";
       toast({ title: "Error", description: msg, variant: "destructive" });

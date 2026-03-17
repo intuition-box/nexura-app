@@ -1,15 +1,15 @@
 import { cn } from "../../lib/utils";
-import { Zap, Shield, Users, LogOut } from "lucide-react";
+import { Zap, Shield, Users, LogOut, User } from "lucide-react";
 import { useLocation } from "wouter";
 import AnimatedBackground from "../../components/AnimatedBackground";
 import { useEffect, useState } from "react";
 import { getStoredProjectInfo, clearProjectSession, projectApiRequest, getStoredProjectToken, storeProjectSession } from "../../lib/projectApi";
 
-type TabType = "campaignSubmissions" | "adminManagement" | "campaignsTab";
+type TabType = "hubProfile" | "campaignSubmissions" | "adminManagement" | "campaignsTab";
 
 interface StudioSidebarProps {
-  activeTab: TabType | null;
-  setActiveTab: (tab: TabType | null) => void;
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
 }
 
 export default function StudioSidebar({
@@ -25,6 +25,7 @@ export default function StudioSidebar({
   const [adminName, setAdminName] = useState<string>("Administrator");
 
   const sidebarItems = [
+    { title: "Profile", icon: User, id: "hubProfile" as TabType },
     { title: "Campaigns", icon: Users, id: "campaignsTab" as TabType },
     { title: "Dashboard", icon: Zap, id: "campaignSubmissions" as TabType },
     ...(adminRole === "superadmin" ? [{ title: "Admin Management", icon: Shield, id: "adminManagement" as TabType }] : []),
@@ -66,7 +67,8 @@ export default function StudioSidebar({
   }, []);
 
   const routeByTab: Record<TabType, string> = {
-    campaignSubmissions: "/studio-dashboard",
+    hubProfile: "/studio-dashboard/hub-profile",
+    campaignSubmissions: "/studio-dashboard/dashboard",
     campaignsTab: "/studio-dashboard/campaigns-tab",
     adminManagement: "/studio-dashboard/admin-management",
   };
@@ -90,7 +92,7 @@ export default function StudioSidebar({
           {/* Project pill — clickable, navigates to hub profile */}
           <button
             onClick={() => {
-              setActiveTab(null);
+              setActiveTab("hubProfile");
               setLocation("/studio-dashboard/hub-profile");
             }}
             className="flex items-center gap-3 border-2 border-purple-500 rounded-2xl px-3 py-2 relative z-10 w-full min-w-0 hover:bg-white/5 transition-colors cursor-pointer text-left"
@@ -156,7 +158,7 @@ export default function StudioSidebar({
         <img src="/nexura-logo.png" alt="Nexura" className="h-7 w-auto" />
         <button
           onClick={() => {
-            setActiveTab(null);
+            setActiveTab("hubProfile");
             setLocation("/studio-dashboard/hub-profile");
           }}
           className="flex items-center gap-2 border border-purple-500 rounded-xl px-2 py-1 max-w-[55%] min-w-0 hover:bg-white/10 transition-colors cursor-pointer"

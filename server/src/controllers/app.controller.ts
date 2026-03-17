@@ -45,7 +45,7 @@ export const getStudioPaymentConfig = async (_req: GlobalRequest, res: GlobalRes
     network: "testnet",
     contractAddress: STUDIO_FEE_CONTRACT,
     chainId: "0x350b",
-    amount: "2",
+    amount: "1000",
   });
 };
 
@@ -1499,7 +1499,11 @@ export const saveCv = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { guildId, tag, campaignId, id } = req.body;
+    const { guildId: guildIdFromBody, tag: tagFromBody, campaignId: campaignIdFromBody, channelId: channelIdFromBody, roleId: roleIdFromBody, id } = req.body;
+    if (!id) {
+      res.status(BAD_REQUEST).json({ error: "campaign quest id is required" });
+      return;
+    }
 
     const userToCheck = await user.findById(req.id);
     if (!userToCheck) {
@@ -1514,94 +1518,247 @@ export const checkDiscordTask = async (req: GlobalRequest, res: GlobalResponse) 
       return;
     }
 
-    const completed = await campaignQuestCompleted.findOne({ user: req.id, campaignQuest: id, campaign: campaignId });
+    const questInCampaign = await campaignQuest.findById(id).lean();
+    if (!questInCampaign) {
+      res.status(NOT_FOUND).json({ error: "campaign quest not found" });
+      return;
+    }
+
+    const questCampaignId = questInCampaign.campaign?.toString?.() ?? "";
+    if (campaignIdFromBody && questCampaignId && questCampaignId !== String(campaignIdFromBody)) {
+      res.status(BAD_REQUEST).json({ error: "campaign quest does not belong to the provided campaign" });
+      return;
+    }
+
+    const campaignId = String(campaignIdFromBody ?? questCampaignId ?? "").trim();
+    if (!campaignId) {
+      res.status(BAD_REQUEST).json({ error: "campaign id is required for discord verification" });
+      return;
+    }
+
+    let completed = await campaignQuestCompleted.findOne({ user: req.id, campaignQuest: id, campaign: campaignId });
     if (completed?.done) {
       res.status(BAD_REQUEST).json({ error: "user has already completed the task" });
       return
     }
 
-    const serverInfo = await hub.findOne({ guildId });
-    if (!serverInfo) {
-      res.status(BAD_REQUEST).json({ error: "discord server not found" });
+    const setDiscordTaskStatus = async (status: "pending" | "retry") => {
+      if (!completed) {
+        completed = await campaignQuestCompleted.create({
+          user: req.id,
+          status,
+          campaign: campaignId,
+          campaignQuest: id,
+        });
+        return;
+      }
+
+      completed.status = status;
+      await completed.save();
+    };
+
+    const failDiscordTask = async (errorMessage: string, statusCode: number = BAD_REQUEST) => {
+      await setDiscordTaskStatus("retry");
+      res.status(statusCode).json({ error: errorMessage });
+    };
+
+    const passDiscordTask = async (message = "validated") => {
+      await setDiscordTaskStatus("pending");
+      res.status(OK).json({ message, success: true });
+    };
+
+    const resolvedTag = String(questInCampaign.tag ?? tagFromBody ?? "").trim().toLowerCase();
+    const resolvedGuildId = String(questInCampaign.guildId ?? guildIdFromBody ?? "").trim();
+    const resolvedRoleId = String(questInCampaign.roleId ?? roleIdFromBody ?? "").trim();
+    const resolvedChannelId = String(questInCampaign.channelId ?? channelIdFromBody ?? "").trim();
+
+    if (!BOT_TOKEN) {
+      await failDiscordTask("discord task verification is currently unavailable. Please try again shortly.", INTERNAL_SERVER_ERROR);
       return;
     }
 
-    switch (tag) {
-      case "join":
-        const {
-          status,
-          data: { roles }
-          // remove hardcoded guild id
-        } = await axios.get(`https://discord.com/api/guilds/${guildId}/members/${discordId}`,
+    const relatedCampaign = await campaign.findById(campaignId).select("hub").lean();
+    if (!relatedCampaign?.hub) {
+      await failDiscordTask("campaign project not found for this discord task", NOT_FOUND);
+      return;
+    }
+
+    const studioHub = await hub.findById(relatedCampaign.hub).select("discordConnected guildId verifiedId").lean();
+    const studioGuildId = String(studioHub?.guildId ?? "").trim();
+    const verifiedRoleId = String(studioHub?.verifiedId ?? "").trim();
+
+    if (!studioHub?.discordConnected || !studioGuildId) {
+      await failDiscordTask(
+        "this project's Discord connection is not active in Studio. The campaign team needs to reconnect Discord before Discord tasks can be completed.",
+        FORBIDDEN
+      );
+      return;
+    }
+
+    if (resolvedGuildId && studioGuildId !== resolvedGuildId) {
+      await failDiscordTask(
+        "this campaign's Discord setup no longer matches the project's active Studio Discord connection. Please contact the campaign team.",
+        FORBIDDEN
+      );
+      return;
+    }
+
+    const fetchGuildMember = async () => {
+      if (!resolvedGuildId) return null;
+      try {
+        const { data } = await axios.get(
+          `https://discord.com/api/v10/guilds/${resolvedGuildId}/members/${discordId}`,
           {
             headers: {
               Authorization: `Bot ${BOT_TOKEN}`,
             },
           }
         );
+        return data;
+      } catch (error: any) {
+        if (error?.response?.status === 404) return null;
+        throw error;
+      }
+    };
 
-        if (status !== OK) {
-          if (!completed) {
-            await campaignQuestCompleted.create({ user: req.id, status: "retry", campaign: campaignId, campaignQuest: id });
-          } else {
-            completed.status = "retry";
-
-            await completed.save();
-          }
-
-          res.status(BAD_REQUEST).json({ error: "join the discord server and get verified" });
+    switch (resolvedTag) {
+      case "join":
+      case "join-discord": {
+        if (!resolvedGuildId) {
+          await failDiscordTask("discord server is missing for this quest. Please contact the campaign team.");
           return;
         }
 
-        if (!roles.includes(serverInfo.verifiedId)) { // verfied id
-          if (!completed) {
-            await campaignQuestCompleted.create({ user: req.id, status: "retry", campaign: campaignId, campaignQuest: id });
-          } else {
-            completed.status = "retry";
-
-            await completed.save();
-          }
-
-          res.status(BAD_REQUEST).json({ error: "you need to be verified to continue" });
+        if (!verifiedRoleId) {
+          await failDiscordTask("this discord server has no verified role configured yet");
           return;
         }
 
-        if (!completed) {
-          await campaignQuestCompleted.create({ user: req.id, campaign: campaignId, campaignQuest: id });
-        } else {
-          completed.status = "pending";
-
-          await completed.save();
+        let member: any;
+        try {
+          member = await fetchGuildMember();
+        } catch (error) {
+          logger.error(error);
+          await failDiscordTask("could not verify discord membership right now. Please try again.");
+          return;
         }
 
-        res.status(OK).json({ message: "validated", success: true });
+        if (!member) {
+          await failDiscordTask("join the discord server and get verified");
+          return;
+        }
 
+        const memberRoles: string[] = Array.isArray(member.roles) ? member.roles : [];
+        if (!memberRoles.includes(verifiedRoleId)) {
+          await failDiscordTask("you need to be verified to continue");
+          return;
+        }
+
+        await passDiscordTask("validated");
         return;
-      case "message":
-        const sentMessage = await firstMessage.findOne({ user_id: discordId });
-        if (!sentMessage) {
-          if (!completed) {
-            await campaignQuestCompleted.create({ user: req.id, status: "retry", campaign: campaignId, campaignQuest: id });
-          } else {
-            completed.status = "retry";
-
-            await completed.save();
-          }
-
-          res.status(BAD_REQUEST).json({ error: "send a message to the server to continue" });
+      }
+      case "acquire-role-discord": {
+        if (!resolvedGuildId) {
+          await failDiscordTask("discord server is missing for this quest. Please contact the campaign team.");
+          return;
+        }
+        if (!resolvedRoleId) {
+          await failDiscordTask("this quest is missing a discord role to verify");
           return;
         }
 
-        if (!completed) {
-          await campaignQuestCompleted.create({ user: req.id, campaign: campaignId, campaignQuest: id });
-        } else {
-          completed.status = "pending";
-
-          await completed.save();
+        let member: any;
+        try {
+          member = await fetchGuildMember();
+        } catch (error) {
+          logger.error(error);
+          await failDiscordTask("could not verify discord role right now. Please try again.");
+          return;
         }
 
-        res.status(OK).json({ message: "user has sent message", success: true });
+        if (!member) {
+          await failDiscordTask("join the discord server before trying this task");
+          return;
+        }
 
+        const memberRoles: string[] = Array.isArray(member.roles) ? member.roles : [];
+        if (!memberRoles.includes(resolvedRoleId)) {
+          await failDiscordTask("acquire the required discord role and try again");
+          return;
+        }
+
+        await passDiscordTask("validated");
+        return;
+      }
+      case "message":
+      case "message-discord":
+      case "send-message-discord": {
+        if (!resolvedChannelId) {
+          await failDiscordTask("this quest is missing a discord channel to verify");
+          return;
+        }
+
+        let hasSentMessage = false;
+        let canUseChannelHistory = true;
+        let beforeMessageId: string | undefined = undefined;
+
+        try {
+          for (let page = 0; page < 10; page++) {
+            const channelResponse = await axios.get<any[]>(
+              `https://discord.com/api/v10/channels/${resolvedChannelId}/messages`,
+              {
+                params: {
+                  limit: 100,
+                  ...(beforeMessageId ? { before: beforeMessageId } : {}),
+                },
+                headers: {
+                  Authorization: `Bot ${BOT_TOKEN}`,
+                },
+              }
+            );
+
+            const channelMessages: any[] = Array.isArray(channelResponse.data) ? channelResponse.data : [];
+            if (channelMessages.some((messageDoc: any) => String(messageDoc?.author?.id ?? "") === String(discordId))) {
+              hasSentMessage = true;
+              break;
+            }
+
+            if (channelMessages.length < 100) break;
+
+            const oldestMessageId: string | undefined = channelMessages[channelMessages.length - 1]?.id;
+            if (!oldestMessageId) break;
+            beforeMessageId = oldestMessageId;
+          }
+        } catch (error) {
+          logger.error(error);
+          canUseChannelHistory = false;
+        }
+
+        if (!hasSentMessage && !canUseChannelHistory) {
+          const fallbackQueries: Record<string, string>[] = [];
+          if (resolvedGuildId && resolvedChannelId) fallbackQueries.push({ user_id: discordId, guild_id: resolvedGuildId, channel_id: resolvedChannelId });
+          if (resolvedGuildId) fallbackQueries.push({ user_id: discordId, guild_id: resolvedGuildId });
+          fallbackQueries.push({ user_id: discordId });
+
+          for (const query of fallbackQueries) {
+            const sentMessage = await firstMessage.findOne(query).lean();
+            if (sentMessage) {
+              hasSentMessage = true;
+              break;
+            }
+          }
+        }
+
+        if (!hasSentMessage) {
+          await failDiscordTask("send a message in the selected discord channel to continue");
+          return;
+        }
+
+        await passDiscordTask("user has sent message");
+        return;
+      }
+      default:
+        res.status(BAD_REQUEST).json({ error: "invalid discord task tag" });
         return;
     }
   } catch (error) {

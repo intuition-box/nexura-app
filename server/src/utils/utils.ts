@@ -108,8 +108,27 @@ export const validateCampaignData = (reqData: any) => {
 			z.object({
 				link: z.string().optional(),
 				quest: z.string(),
-				tag: z.enum(["like", "follow-x", "repost-x", "join-discord", "portal", "message-discord", "portal", "comment-x", "other"]),
+				tag: z.enum([
+					"like",
+					"follow",
+					"follow-x",
+					"repost",
+					"repost-x",
+					"join",
+					"join-discord",
+					"message",
+					"message-discord",
+					"acquire-role-discord",
+					"send-message-discord",
+					"portal",
+					"comment",
+					"comment-x",
+					"other"
+				]),
 				category: z.enum(["twitter", "discord", "reddit", "instagram", "facebook", "other"]),
+				guildId: z.string().trim().optional(),
+				roleId: z.string().trim().optional(),
+				channelId: z.string().trim().optional(),
 			})
 		),
 		contractAddress: z.string().optional(),
@@ -197,6 +216,9 @@ export const validateHubData = (reqData: any) => {
 	const hubSchema = z.object({
 		name: z.string().trim(),
     description: z.string().trim(),
+		website: z.string().trim().optional(),
+		xAccount: z.string().trim().optional(),
+		discordServer: z.string().trim().optional(),
 	});
 
 	const parseData = hubSchema.safeParse(reqData);

@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { BACKEND_URL } from "./constants";
+import { toUserFriendlyErrorMessage } from "./errorMessages";
 
 export const buildUrl = (path: string) =>  {
   const base = (BACKEND_URL || "").replace(/\/+$/g, "");
@@ -9,8 +10,9 @@ export const buildUrl = (path: string) =>  {
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.json()).error || res.statusText;
-    throw new Error(`${text}`);
+    const payload = await res.json().catch(() => ({} as Record<string, unknown>));
+    const text = (payload as any).error || (payload as any).message || res.statusText;
+    throw new Error(toUserFriendlyErrorMessage(text));
   }
 }
 
@@ -69,16 +71,14 @@ export async function apiRequestV2(
   endpoint: string,
   data?: unknown | null,
 ): Promise<any> {
-  const token = getStoredAccessToken();
-
   const isFormData = data instanceof FormData;
+  const headers = buildAuthHeaders(
+    isFormData ? {} : { "Content-Type": "application/json" }
+  );
 
   const res = await fetch(`${BACKEND_URL || ""}${endpoint}`, {
     method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-    },
+    headers,
     body: isFormData ? data : data ? JSON.stringify(data) : undefined,
   });
 
