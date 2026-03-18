@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { JWT_SECRET, network, REFRESH_SECRET, STUDIO_FEE_CONTRACT } from "./env.utils";
-import { performIntuitionOnchainAction } from "./account";
-import { NexonsAddress } from "./constants";
+import { getPublicClient } from "./account";
+import { NexonsAddress, STUDIO_ABI } from "./constants";
 import { ethers } from "ethers";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
@@ -324,8 +324,7 @@ export const getRefreshToken = (id: any) => {
 	return jwt.sign({ id }, REFRESH_SECRET, { expiresIn: "30d" });
 };
 
-export const checkPayment = async (txHash: string) => {
-	const provider = new ethers.JsonRpcProvider(chain.rpcUrls.default.http[0]);
+export const checkPayment = async (userAddress: string) => {
 	const feeContract = STUDIO_FEE_CONTRACT?.trim();
 
 	if (!feeContract) {
@@ -336,40 +335,14 @@ export const checkPayment = async (txHash: string) => {
 		throw new Error(`Studio fee contract is invalid: ${feeContract}`);
 	}
 
-	const feeInterface = new ethers.Interface(["event FeePaid(uint256 totalCampaigns)"]);
+  const publicClient = getPublicClient();
 
-	// Retry receipt lookup up to 5 times — testnet RPC can return null transiently
-	let receipt: ethers.TransactionReceipt | null = null;
-	for (let attempt = 0; attempt < 5; attempt++) {
-		receipt = await provider.getTransactionReceipt(txHash);
-		if (receipt) break;
-		await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
-	}
-
-	if (!receipt) {
-		throw new Error("Transaction receipt not found. The transaction may still be pending or the hash is incorrect.");
-	}
-	if (receipt.status !== 1) {
-		throw new Error("Transaction failed on-chain");
-	}
-
-	let totalCampaigns: bigint = 0n;
-
-	// Check logs
-	for (const log of receipt.logs) {
-		if (log.address.toLowerCase() !== feeContract.toLowerCase()) continue;
-
-		let parsed;
-		try {
-			parsed = feeInterface.parseLog(log);
-		} catch {
-			continue;
-		}
-
-		if (parsed?.name === "FeePaid") {
-			totalCampaigns = parsed.args.totalCampaigns ?? 0n;
-		}
-	}
+  const totalCampaigns = await publicClient.readContract({
+    abi: STUDIO_ABI,
+    address: feeContract as "0x",
+    functionName: "getTotalCampaigns",
+    args: [userAddress],
+  });
 
 	if (totalCampaigns <= 0n) {
 		throw new Error("Studio fee payment could not be verified from the transaction receipt");

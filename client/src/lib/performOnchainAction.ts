@@ -9,7 +9,6 @@ import { toUserFriendlyError } from "./errorMessages";
 
 const STUDIO_FEE_ABI = [
   "function payFee() external payable",
-  "error AlreadyCreatedSixCampaigns()",
   "error SendTheRequiredFeeAmount(uint fee)",
 ];
 

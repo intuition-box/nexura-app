@@ -224,12 +224,6 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 		const userExists = await user.findOne({ address: lowerCaseAddress });
 		if (!userExists) {
 
-			// const ipAddressExists = await REDIS.get(`ip:${ipAddress}`);
-			// if (ipAddressExists) {
-			// 	res.status(UNAUTHORIZED).json({ error: "account already exists with ip address" });
-			// 	return;
-			// }
-
 			const referrerCode = cryptoRandomString({
 				length: 8,
 				type: "alphanumeric",
@@ -242,8 +236,6 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 			};
 
 			const userReferrer = await user.findOne({ "referral.code": referrer });
-
-			// Use clean truncated address; if it's already taken, append a random suffix
 
 			const newUser = new user({ address: lowerCaseAddress, username: slicedAddress, referral, dateJoined });
 
@@ -267,8 +259,6 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 				secure: true,
 				maxAge: 30 * 24 * 60 * 60,
 			});
-
-			// await REDIS.set({ key: `ip:${ipAddress}`, data: { ipAddress } });
 
 			res.status(CREATED).json({ message: "user created!", accessToken, user: newUser });
 			return;

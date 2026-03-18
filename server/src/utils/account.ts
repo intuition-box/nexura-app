@@ -1,10 +1,11 @@
-import { createWalletClient, parseAbi, http, type WalletClient } from "viem";
+import { createWalletClient, parseAbi, http, type WalletClient, type PublicClient, createPublicClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { PRIVATE_KEY, network } from "./env.utils";
 import { NexonsAddress } from "./constants";
 import chain from "./chain.utils";
 
 let walletClient: WalletClient | undefined = undefined;
+let publicClient: PublicClient | undefined = undefined;
 
 const account = privateKeyToAccount(PRIVATE_KEY);
 
@@ -18,6 +19,17 @@ const getWalletClient = () => {
 	}
 
 	return walletClient;
+};
+
+export const getPublicClient = () => {
+	if (!publicClient) {
+		publicClient = createPublicClient({
+			chain,
+			transport: http(),
+		});
+	}
+
+	return publicClient;
 };
 
 export const performIntuitionOnchainAction = async ({
