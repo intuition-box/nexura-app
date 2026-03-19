@@ -226,11 +226,6 @@ export default function CampaignsTab() {
     setWithdrawingId(campaign._id);
     try {
       const currentBalance = await getRewardContractBalance(campaign.contractAddress);
-      if (currentBalance <= 0n) {
-        setRewardBalances((prev) => ({ ...prev, [campaign._id]: 0n }));
-        toast({ title: "No remainder found", description: "This rewards contract no longer holds any TRUST.", variant: "destructive" });
-        return;
-      }
 
       const txHash = await closeRewardCampaign(campaign.contractAddress);
       const withdrawnAmount = Number(formatEther(currentBalance));

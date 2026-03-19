@@ -155,6 +155,11 @@ const [campaignTasks, setCampaignTasks] = useState<TASKS[]>([]);
 
 const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
 const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+const [sendXpOpen, setSendXpOpen] = useState(false);
+const [xpAddress, setXpAddress] = useState("");
+const [xpAmount, setXpAmount] = useState("");
+const [xpSending, setXpSending] = useState(false);
+const [xpFeedback, setXpFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
 const toggleUserSelection = (id: string) => {
   setSelectedUsers(prev => {
@@ -163,6 +168,23 @@ const toggleUserSelection = (id: string) => {
     else newSet.add(id);
     return newSet;
   });
+};
+
+const handleSendXp = async () => {
+  if (!xpAddress.trim() || !xpAmount.trim()) return;
+  setXpSending(true);
+  setXpFeedback(null);
+  try {
+    await apiRequest({ method: "POST", endpoint: "/api/admin/reward-xp", data: { address: xpAddress.trim(), xp: xpAmount.trim() } });
+    setXpFeedback({ ok: true, msg: "XP sent successfully." });
+    setXpAddress("");
+    setXpAmount("");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to send XP.";
+    setXpFeedback({ ok: false, msg });
+  } finally {
+    setXpSending(false);
+  }
 };
 
 const unbanUser = async (id: string) => {
@@ -229,6 +251,16 @@ const fetchBannedUsers = async () => {
       <Bell className="w-5 h-5" />
     </Button>
 
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => { setSendXpOpen(true); setXpFeedback(null); }}
+      className="text-amber-400/70 hover:text-amber-400 hover:bg-amber-400/5 gap-1.5"
+    >
+      <Zap className="w-4 h-4" />
+      <span className="hidden lg:inline text-xs">Send XP</span>
+    </Button>
+
     <div className="h-6 w-px bg-white/10 mx-2" />
 
     <Button
@@ -274,6 +306,60 @@ const fetchBannedUsers = async () => {
           </main>
         </div>
       </div>
+
+      {/* Send XP Modal */}
+      <Dialog open={sendXpOpen} onOpenChange={(open) => { setSendXpOpen(open); if (!open) setXpFeedback(null); }}>
+        <DialogContent className="sm:max-w-[400px] bg-white/5 border-white/10 backdrop-blur-[125px] text-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <div className="p-2 rounded-full bg-amber-500/20">
+                <Zap className="w-5 h-5 text-amber-400" />
+              </div>
+              Send XP
+            </DialogTitle>
+            <DialogDescription className="text-white/50">
+              Manually award XP to a user by wallet address
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label className="text-white/70">Wallet Address</Label>
+              <Input
+                placeholder="0x..."
+                value={xpAddress}
+                onChange={(e) => setXpAddress(e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-amber-500/50"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-white/70">XP Amount</Label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="100"
+                value={xpAmount}
+                onChange={(e) => setXpAmount(e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-amber-500/50"
+              />
+            </div>
+            {xpFeedback && (
+              <p className={`text-sm ${xpFeedback.ok ? "text-emerald-400" : "text-red-400"}`}>{xpFeedback.msg}</p>
+            )}
+          </div>
+          <div className="flex justify-end gap-3 pt-2 border-t border-white/10">
+            <Button variant="ghost" onClick={() => setSendXpOpen(false)} className="text-white/60 hover:text-white">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleSendXp()}
+              disabled={!xpAddress.trim() || !xpAmount.trim() || xpSending}
+              className="bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/50"
+            >
+              {xpSending ? "Sending..." : "Send XP"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* View Task Modal */}
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>

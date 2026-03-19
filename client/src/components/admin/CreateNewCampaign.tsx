@@ -219,7 +219,7 @@ useEffect(() => {
       setCampaignId(editId);
       setIsEditMode(true);
       setIsPublished(found.status !== "Save");
-      setIsEnded(found.status === "Ended");
+      setIsEnded(found.status === "Ended" || (found.ends_at ? new Date(found.ends_at) <= new Date() : false));
       setCampaignTitle(found.title ?? "");
       setCampaignName(found.description ?? found.nameOfProject ?? "");
       const s = parseDateTime(found.starts_at ?? "");

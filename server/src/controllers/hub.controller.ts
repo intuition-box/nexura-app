@@ -763,23 +763,26 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 
     }
 
-    const updatedCampaign = await campaign.findByIdAndUpdate(id, updateFields, { new: true });
-
-    // Recalculate status when dates change on a live/scheduled campaign
-    if (updatedCampaign && (updatedCampaign.status === "Active" || updatedCampaign.status === "Scheduled" || updatedCampaign.status === "Ended")) {
+    // Recalculate status atomically when dates change on a published campaign
+    if (campaignFound.status !== "Save") {
       const now = new Date();
-      const startsAt = updatedCampaign.starts_at ? new Date(updatedCampaign.starts_at) : null;
-      const endsAt = updatedCampaign.ends_at ? new Date(updatedCampaign.ends_at) : null;
+      const newStartsAt = updateFields.starts_at
+        ? new Date(String(updateFields.starts_at))
+        : campaignFound.starts_at ? new Date(campaignFound.starts_at) : null;
+      const newEndsAt = updateFields.ends_at
+        ? new Date(String(updateFields.ends_at))
+        : campaignFound.ends_at ? new Date(campaignFound.ends_at) : null;
 
-      if (endsAt && endsAt <= now) {
-        updatedCampaign.status = "Ended";
-      } else if (startsAt && startsAt > now) {
-        updatedCampaign.status = "Scheduled";
+      if (newEndsAt && newEndsAt <= now) {
+        updateFields.status = "Ended";
+      } else if (newStartsAt && newStartsAt > now) {
+        updateFields.status = "Scheduled";
       } else {
-        updatedCampaign.status = "Active";
+        updateFields.status = "Active";
       }
-      await updatedCampaign.save();
     }
+
+    const updatedCampaign = await campaign.findByIdAndUpdate(id, updateFields, { new: true });
 
     // Update quests without destroying existing IDs/submissions
     if (questsToSave !== null) {
