@@ -10,6 +10,7 @@ import { miniQuestCompleted, campaignQuestCompleted } from '@/models/questsCompl
 import { campaign } from '@/models/campaign.model';
 import { campaignQuest } from '@/models/quests.model';
 import { uploadImg } from "@/utils/img.utils";
+import { normalizeCampaignDateInput, normalizeCampaignDatesForResponse, parseCampaignDate } from "@/utils/campaignDates";
 
 const DISCORD_CAMPAIGN_TAGS = new Set([
   "discord",
@@ -583,7 +584,7 @@ export const getCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 
     const campaignQuests = await campaignQuest.find({ campaign: id }).lean();
 
-    res.status(OK).json({ campaignQuests, campaignFound });
+    res.status(OK).json({ campaignQuests, campaignFound: normalizeCampaignDatesForResponse(campaignFound) });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching campaign" });
@@ -592,15 +593,6 @@ export const getCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const normalizeCampaignDateInput = (value: unknown) => {
-      if (typeof value !== "string") return value;
-      const trimmed = value.trim();
-      if (!trimmed) return trimmed;
-      const parsed = new Date(trimmed);
-      if (Number.isNaN(parsed.getTime())) return trimmed;
-      return parsed.toISOString();
-    };
-
     // FormData sends JSON fields as strings — parse them before validation
     if (typeof req.body.reward === "string") {
       try { req.body.reward = JSON.parse(req.body.reward); } catch { /* leave as-is */ }
@@ -741,15 +733,15 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 
     const existingPool = Number(campaignFound.reward?.pool ?? 0);
     const existingMaxParticipants = Number((campaignFound as any).maxParticipants ?? campaignFound.participants ?? 0);
-    const existingStartsAt = campaignFound.starts_at ? new Date(campaignFound.starts_at) : null;
-    const existingEndsAt = campaignFound.ends_at ? new Date(campaignFound.ends_at) : null;
+    const existingStartsAt = parseCampaignDate(campaignFound.starts_at);
+    const existingEndsAt = parseCampaignDate(campaignFound.ends_at);
     const incomingPool = updateFields.reward
       ? Number((updateFields.reward as Record<string, unknown>).pool ?? existingPool)
       : existingPool;
     const incomingMaxParticipants = updateFields.maxParticipants !== undefined
       ? Number(updateFields.maxParticipants ?? existingMaxParticipants)
       : existingMaxParticipants;
-    const incomingEndsAt = updateFields.ends_at ? new Date(String(updateFields.ends_at)) : existingEndsAt;
+    const incomingEndsAt = updateFields.ends_at ? parseCampaignDate(updateFields.ends_at) : existingEndsAt;
     const rewardsContractSettled = Boolean((campaignFound as any).rewardsDeployment?.remainderWithdrawalTxHash);
     const campaignHasStarted = existingStartsAt ? existingStartsAt.getTime() <= Date.now() : false;
 
@@ -783,11 +775,11 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
     if (campaignFound.status !== "Save") {
       const now = new Date();
       const newStartsAt = updateFields.starts_at
-        ? new Date(String(updateFields.starts_at))
-        : campaignFound.starts_at ? new Date(campaignFound.starts_at) : null;
+        ? parseCampaignDate(updateFields.starts_at)
+        : parseCampaignDate(campaignFound.starts_at);
       const newEndsAt = updateFields.ends_at
-        ? new Date(String(updateFields.ends_at))
-        : campaignFound.ends_at ? new Date(campaignFound.ends_at) : null;
+        ? parseCampaignDate(updateFields.ends_at)
+        : parseCampaignDate(campaignFound.ends_at);
 
       if (newEndsAt && newEndsAt <= now) {
         updateFields.status = "Ended";

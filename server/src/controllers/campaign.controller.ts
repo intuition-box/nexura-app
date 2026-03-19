@@ -4,6 +4,7 @@ import { hub } from "@/models/hub.model";
 import { referredUsers } from "@/models/referrer.model";
 import { user } from "@/models/user.model";
 import { getCampaignContractStartDate, performIntuitionOnchainAction } from "@/utils/account";
+import { normalizeCampaignDateInput, normalizeCampaignDatesForResponse, parseCampaignDate } from "@/utils/campaignDates";
 import { uploadImg } from "@/utils/img.utils";
 import {
 	OK,
@@ -124,8 +125,8 @@ const getTemporalCampaignStatus = (campaignDoc: {
 	if (campaignDoc.status === "Ended") return "Ended";
 
 	const now = new Date();
-	const startsAt = campaignDoc.starts_at ? new Date(campaignDoc.starts_at) : null;
-	const endsAt = campaignDoc.ends_at ? new Date(campaignDoc.ends_at) : null;
+	const startsAt = parseCampaignDate(campaignDoc.starts_at);
+	const endsAt = parseCampaignDate(campaignDoc.ends_at);
 
 	if (endsAt && endsAt <= now) return "Ended";
 	if (startsAt && startsAt > now) return "Scheduled";
@@ -176,7 +177,7 @@ export const fetchCampaigns = async (
 					guildId: "",
 				};
 
-			return { ...c, status: publicStatus, hubInfo };
+			return normalizeCampaignDatesForResponse({ ...c, status: publicStatus, hubInfo });
 		});
 
 		if (statusUpdates.length > 0) {
@@ -261,9 +262,10 @@ export const createCampaign = async (
 			maxSize: 2 * 1024 ** 2, // 2 MB
 		});
 
-		const ends_at = new Date(requestData.ends_at);
-
-		requestData.ends_at = ends_at;
+		const startsAt = parseCampaignDate(requestData.starts_at);
+		const endsAt = parseCampaignDate(requestData.ends_at);
+		if (startsAt) requestData.starts_at = startsAt;
+		if (endsAt) requestData.ends_at = endsAt;
 
 		requestData.creator = hubUserId as string;
 
@@ -419,8 +421,8 @@ export const joinCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
 		}
 
 		const now = new Date();
-		const startsAt = campaignToJoin.starts_at ? new Date(campaignToJoin.starts_at) : null;
-		const endsAt = campaignToJoin.ends_at ? new Date(campaignToJoin.ends_at) : null;
+		const startsAt = parseCampaignDate(campaignToJoin.starts_at);
+		const endsAt = parseCampaignDate(campaignToJoin.ends_at);
 		if (startsAt && startsAt > now) {
 			res.status(FORBIDDEN).json({ error: "campaign has not started yet" });
 			return;
@@ -503,6 +505,9 @@ export const updateCampaign = async (
 			return;
 		}
 
+		req.body.starts_at = normalizeCampaignDateInput(req.body.starts_at);
+		req.body.ends_at = normalizeCampaignDateInput(req.body.ends_at);
+
     const campaignUpdateData: Record<string, unknown> = {};
 
     const coverImageBuffer = req.file?.buffer;
@@ -519,12 +524,7 @@ export const updateCampaign = async (
 
 		for (const field of ["description", "title", "ends_at", "starts_at", "projectCoverImage", "reward", "maxParticipants"]) {
 			const value = req.body[field];
-			if (field !== "ends_at") {
-				campaignUpdateData[field] = value;
-			} else {
-				const ends_at = new Date(value);
-				campaignUpdateData[field] = ends_at;
-			}
+			campaignUpdateData[field] = value;
 		}
 
 		if (typeof campaignUpdateData.reward === "string") {
@@ -563,15 +563,15 @@ export const updateCampaign = async (
 
 		const existingPool = Number(existingCampaign.reward?.pool ?? 0);
 		const existingMaxParticipants = Number((existingCampaign as any).maxParticipants ?? existingCampaign.participants ?? 0);
-		const existingStartsAt = existingCampaign.starts_at ? new Date(existingCampaign.starts_at) : null;
-		const existingEndsAt = existingCampaign.ends_at ? new Date(existingCampaign.ends_at) : null;
+		const existingStartsAt = parseCampaignDate(existingCampaign.starts_at);
+		const existingEndsAt = parseCampaignDate(existingCampaign.ends_at);
 		const incomingPool = campaignUpdateData.reward
 			? Number((campaignUpdateData.reward as Record<string, unknown>).pool ?? existingPool)
 			: existingPool;
 		const incomingMaxParticipants = campaignUpdateData.maxParticipants !== undefined
 			? Number(campaignUpdateData.maxParticipants ?? existingMaxParticipants)
 			: existingMaxParticipants;
-		const incomingEndsAt = campaignUpdateData.ends_at ? new Date(String(campaignUpdateData.ends_at)) : existingEndsAt;
+		const incomingEndsAt = campaignUpdateData.ends_at ? parseCampaignDate(campaignUpdateData.ends_at) : existingEndsAt;
 		const rewardsContractSettled = Boolean((existingCampaign as any).rewardsDeployment?.remainderWithdrawalTxHash);
 		const campaignHasStarted = existingStartsAt ? existingStartsAt.getTime() <= Date.now() : false;
 
@@ -606,8 +606,8 @@ export const updateCampaign = async (
 		// Recalculate status when dates change on a live/scheduled campaign
 		if (updated && (updated.status === "Active" || updated.status === "Scheduled")) {
 			const now = new Date();
-			const startsAt = updated.starts_at ? new Date(updated.starts_at) : null;
-			const endsAt = updated.ends_at ? new Date(updated.ends_at) : null;
+			const startsAt = parseCampaignDate(updated.starts_at);
+			const endsAt = parseCampaignDate(updated.ends_at);
 
 			if (endsAt && endsAt <= now) {
 				updated.status = "Ended";
@@ -767,8 +767,8 @@ export const reopenCampaign = async (
 		}
 
 		const now = new Date();
-		const startsAt = foundCampaign.starts_at ? new Date(foundCampaign.starts_at) : null;
-		const endsAt = foundCampaign.ends_at ? new Date(foundCampaign.ends_at) : null;
+		const startsAt = parseCampaignDate(foundCampaign.starts_at);
+		const endsAt = parseCampaignDate(foundCampaign.ends_at);
 		const rewardsContractSettled = Boolean((foundCampaign as any).rewardsDeployment?.remainderWithdrawalTxHash);
 
 		if (endsAt && endsAt <= now) {
@@ -903,7 +903,7 @@ export const fetchHubCampaigns = async (req: GlobalRequest, res: GlobalResponse)
 			if (normalizedStatus !== c.status) {
 				statusUpdates.push({ _id: c._id, status: normalizedStatus });
 			}
-			return { ...c, status: normalizedStatus };
+			return normalizeCampaignDatesForResponse({ ...c, status: normalizedStatus });
 		});
 
 		if (statusUpdates.length > 0) {
@@ -1016,7 +1016,7 @@ export const publishCampaign = async (req: GlobalRequest, res: GlobalResponse) =
 			);
 		}
 
-		const startsAt = campaignExists.starts_at ? new Date(campaignExists.starts_at) : null;
+		const startsAt = parseCampaignDate(campaignExists.starts_at);
 		campaignExists.status = startsAt && startsAt > new Date() ? "Scheduled" : "Active";
 		createdHub.campaignsCreated += 1;
 		(createdHub as any).pendingTxHash = null;
