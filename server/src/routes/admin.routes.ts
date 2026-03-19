@@ -2,9 +2,8 @@ import { Router } from "express";
 import {
   addAdmin,
   adminLogout,
-  adminLogin,
+  rewardXp,
   banUser,
-  createAdmin,
   unBanUser,
   getBannedUsers,
   createQuest,
@@ -14,23 +13,21 @@ import {
   removeAdmin,
   manageAdmin
 } from "@/controllers/admin.controller";
-import { authenticateAdmin } from "@/middlewares/auth.middleware";
 
 const router = Router();
 
 router
-  .post("/create-quest", authenticateAdmin, createQuest)
-  .post("/validate-task", authenticateAdmin, markTask)
-  .post("/add-admin", authenticateAdmin, addAdmin)
-  .post("/register", createAdmin)
-  .post("/login", adminLogin)
-  .post("/logout", authenticateAdmin, adminLogout)
-  .post("/remove-admin", authenticateAdmin, removeAdmin)
-  .post("/manage-admin", authenticateAdmin, manageAdmin)
-  .post("/ban-user", authenticateAdmin, banUser)
-  .post("/unban-user", authenticateAdmin, unBanUser)
-  .get("/get-banned-users", authenticateAdmin, getBannedUsers)
-  .get("/get-quests", authenticateAdmin, getTasks)
-  .get("/get-admins", authenticateAdmin, getAdmins);
+  .post("/create-quest", createQuest)
+  .post("/validate-task", markTask)
+  .post("/add-admin", addAdmin)
+  .post("/logout", adminLogout)
+  .post("/remove-admin", removeAdmin)
+  .post("/manage-admin", manageAdmin)
+  .post("/reward-xp", rewardXp)
+  .post("/ban-user", banUser)
+  .post("/unban-user", unBanUser)
+  .get("/get-banned-users", getBannedUsers)
+  .get("/get-quests", getTasks)
+  .get("/get-admins", getAdmins);
 
 export default router;

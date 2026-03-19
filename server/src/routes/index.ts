@@ -11,7 +11,9 @@ import {
 	fetchEcosystemDapps,
 	fetchQuests,
 } from "@/controllers/quest.controller.ts";
-import { authenticateUser2 } from "@/middlewares/auth.middleware";
+import { signIn } from "@/controllers/auth.controller";
+import { createAdmin, adminLogin } from "@controllers/admin.controller";
+import { authenticateUser2, authenticateAdmin, authenticateUser } from "@/middlewares/auth.middleware";
 
 const router = Router();
 
@@ -19,8 +21,11 @@ router
 	.get("/server-time", (_req, res) => {
 		res.json({ serverTime: Date.now() });
 	})
+  .post("/admin/register", createAdmin)
+  .post("/admin/login", adminLogin)
+  .post("/user/sign-in", signIn)
 	.use("/", appRoutes)
-	.use("/admin", adminRoutes)
+	.use("/admin", authenticateAdmin, adminRoutes)
 	.get("/ecosystem-quests", authenticateUser2, fetchEcosystemDapps)
 	.get("/quests", authenticateUser2, fetchQuests)
 	.get("/campaigns", authenticateUser2, fetchCampaigns)
@@ -28,6 +33,6 @@ router
 	.get("/leaderboard", authenticateUser2, getLeaderboard)
 	.use("/hub", hubRoutes)
 	.use("/quest", questRoutes)
-	.use("/user", userRoutes);
+	.use("/user", authenticateUser, userRoutes);
 
 export default router;

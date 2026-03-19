@@ -9,22 +9,20 @@ import {
 	performDailySignIn,
 	setApproved
 } from "@/controllers/app.controller";
-import { signIn, logout } from "@/controllers/auth.controller";
-import { authenticateUser } from "@/middlewares/auth.middleware";
+import { logout } from "@/controllers/auth.controller";
 import { upload } from "@/config/multer";
 
 const router = Router();
 
 router
-	.get("/profile", authenticateUser, fetchUser)
-	.post("/claim-referral-reward", authenticateUser, claimReferreralReward)
-  .patch("/update-badge", authenticateUser, updateBadge)
-	.post("/claim-deposit-xp", authenticateUser, claimDepositXp)
-	.post("/set-approved", authenticateUser, setApproved)
-	.get("/referral-info", authenticateUser, referralInfo)
-	.post("/logout", authenticateUser, logout)
-	.post("/sign-in", signIn)
-	.post("/perform-daily-sign-in", authenticateUser, performDailySignIn)
-	.patch("/update", authenticateUser, upload.single("profilePic"), updateUser);
+	.get("/profile", fetchUser)
+	.post("/claim-referral-reward", claimReferreralReward)
+  .patch("/update-badge", updateBadge)
+	.post("/claim-deposit-xp", claimDepositXp)
+	.post("/set-approved", setApproved)
+	.get("/referral-info", referralInfo)
+	.post("/logout", logout)
+	.post("/perform-daily-sign-in", performDailySignIn)
+	.patch("/update", upload.single("profilePic"), updateUser);
 
 export default router;

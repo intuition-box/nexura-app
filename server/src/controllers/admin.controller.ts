@@ -37,6 +37,24 @@ export const createQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 	}
 };
 
+export const rewardXp = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { address, xp }: { address: string, xp: string } = req.body;
+
+    if (!address || !xp) {
+      res.status(BAD_REQUEST).json({ error: "address and xp are required" });
+      return;
+    }
+
+    await user.updateOne({ address: address.toLowerCase() }, { $inc: { xp: ParseInt(xp) } });
+
+    res.status(OK).json({ message: "xp rewarded" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Internal Server Error" });
+  }
+}
+
 export const banUser = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const { userId }: { userId: string } = req.body;

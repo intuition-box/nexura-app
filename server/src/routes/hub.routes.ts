@@ -25,7 +25,7 @@ router
   .post("/validate-campaign-submissions", authenticateHubAdmin2, validateCampaignSubmissions)
   .get("/me", authenticateHubAdmin2, getHub)
   .get("/hub-admins", authenticateHubAdmin2, getHubAdmins)
-  .patch("/publish-campaign", authenticateHubAdmin2, publishCampaign)
+  .patch("/publish-campaign", authenticateHubAdmin, publishCampaign)
   // --- Public routes ---
   .post("/sign-in", signIn)
   .post("/logout", authenticateHubAdmin2, logout)
