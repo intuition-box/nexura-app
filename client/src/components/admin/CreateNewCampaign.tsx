@@ -9,7 +9,7 @@ import { Button } from "../../components/ui/button";
 import { Switch } from "../../components/ui/switch";
 
 import { projectApiRequest, getStoredProjectInfo } from "../../lib/projectApi";
-import { addReward, closeRewardCampaign, createRewardsContract, payStudioHubFee, syncRewardContractStartDate } from "../../lib/performOnchainAction";
+import { addReward, closeRewardCampaign, createRewardsContract, getRewardContractStartDate, payStudioHubFee, syncRewardContractStartDate } from "../../lib/performOnchainAction";
 import { useToast } from "../../hooks/use-toast";
 import { formatEther, parseEther } from "viem";
 import {
@@ -174,6 +174,16 @@ const parseDateTime = (isoStr: string) => {
   return { date: isoStr.slice(0, idx), time: isoStr.slice(idx + 1, idx + 6) };
 };
 
+const toLocalInputDateTime = (unixSeconds: number) => {
+  const date = new Date(unixSeconds * 1000);
+  const pad = (value: number) => value.toString().padStart(2, "0");
+
+  return {
+    date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+  };
+};
+
 const toWeiString = (value: string) => {
   const normalized = value.trim();
   if (!normalized) return "0";
@@ -316,19 +326,34 @@ useEffect(() => {
         coverImagePreview: found.projectCoverImage ?? "",
         tasksSignature: buildTaskSignature(loadedTasks),
       });
-      setOnchainBaseline(found.contractAddress ? {
-        campaignTitle: found.title ?? "",
-        campaignName: found.description ?? found.nameOfProject ?? "",
-        startDate: s.date,
-        startTime: s.time,
-        endDate: e.date,
-        endTime: e.time,
-        hasRewards: existingRewardPool > 0,
-        rewardPoolWei: existingRewardPool > 0 ? toWeiString(String(found.reward?.pool ?? 0)) : "0",
-        participants: existingParticipants,
-        coverImagePreview: found.projectCoverImage ?? "",
-        tasksSignature: buildTaskSignature(loadedTasks),
-      } : null);
+      if (found.contractAddress) {
+        let onchainStart = { date: s.date, time: s.time };
+        try {
+          const onchainStartTimestamp = await getRewardContractStartDate(found.contractAddress);
+          onchainStart = toLocalInputDateTime(onchainStartTimestamp);
+        } catch {
+          // Fall back to the saved date if the on-chain read fails.
+        }
+
+        const onchainFundedAmount = String(found.rewardsDeployment?.fundedAmount ?? found.reward?.pool ?? 0);
+        const onchainParticipants = String(found.rewardsDeployment?.maxClaimableParticipants ?? existingParticipants);
+
+        setOnchainBaseline({
+          campaignTitle: found.title ?? "",
+          campaignName: found.description ?? found.nameOfProject ?? "",
+          startDate: onchainStart.date,
+          startTime: onchainStart.time,
+          endDate: e.date,
+          endTime: e.time,
+          hasRewards: existingRewardPool > 0,
+          rewardPoolWei: existingRewardPool > 0 ? toWeiString(onchainFundedAmount) : "0",
+          participants: onchainParticipants,
+          coverImagePreview: found.projectCoverImage ?? "",
+          tasksSignature: buildTaskSignature(loadedTasks),
+        });
+      } else {
+        setOnchainBaseline(null);
+      }
     } catch { /* ignore – user will fill in manually */ }
   })();
 }, []);
