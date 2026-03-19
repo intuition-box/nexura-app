@@ -179,12 +179,22 @@ const showViewOnlyToast = () => {
 // Pre-fill from existing draft when ?edit=<id> is in the URL
 const parseDateTime = (isoStr: string) => {
   if (!isoStr) return { date: "", time: "" };
+  const trimmed = isoStr.trim();
+  if (!trimmed) return { date: "", time: "" };
+
+  const hasExplicitTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(trimmed);
+  if (!hasExplicitTimezone) {
+    const idx = trimmed.indexOf("T");
+    if (idx === -1) return { date: trimmed, time: "" };
+    return { date: trimmed.slice(0, idx), time: trimmed.slice(idx + 1, idx + 6) };
+  }
+
   const parsed = new Date(isoStr);
   if (!Number.isNaN(parsed.getTime())) {
     const pad = (value: number) => value.toString().padStart(2, "0");
     return {
-      date: `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`,
-      time: `${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`,
+      date: `${parsed.getUTCFullYear()}-${pad(parsed.getUTCMonth() + 1)}-${pad(parsed.getUTCDate())}`,
+      time: `${pad(parsed.getUTCHours())}:${pad(parsed.getUTCMinutes())}`,
     };
   }
   const idx = isoStr.indexOf("T");
@@ -193,11 +203,9 @@ const parseDateTime = (isoStr: string) => {
 };
 
 const toIsoDateTime = (date: string, time: string) => {
-  const normalized = date && time ? `${date}T${time}` : date ? `${date}T00:00` : "";
-  if (!normalized) return "";
-  const parsed = new Date(normalized);
-  if (Number.isNaN(parsed.getTime())) return normalized;
-  return parsed.toISOString();
+  if (!date) return "";
+  const normalizedTime = time || "00:00";
+  return `${date}T${normalizedTime}:00.000Z`;
 };
 
 const toLocalInputDateTime = (unixSeconds: number) => {
@@ -205,8 +213,8 @@ const toLocalInputDateTime = (unixSeconds: number) => {
   const pad = (value: number) => value.toString().padStart(2, "0");
 
   return {
-    date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-    time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+    date: `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`,
+    time: `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`,
   };
 };
 
