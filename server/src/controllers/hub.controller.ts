@@ -696,22 +696,35 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
       : "";
     const discordGuildIdForCampaign = lockedDiscordGuildId || String(hubFound.guildId ?? "").trim();
 
+    const incomingNameOfProject = typeof req.body.nameOfProject === "string"
+      ? req.body.nameOfProject.trim()
+      : "";
     const { campaignQuests: _cq, isDraft: _d, existingCoverImage: _e, hubCoverImage: _h, nameOfProject: _n, ...updateFields } = req.body;
 
     if (updateFields.reward && typeof updateFields.reward === "object") {
       const rewardUpdate = updateFields.reward as Record<string, unknown>;
       const pool = Number(rewardUpdate.pool ?? 0);
+      const xp = Number(rewardUpdate.xp ?? 0);
       const trustTokens = Number(rewardUpdate.trust ?? rewardUpdate.trustTokens ?? 0);
       updateFields.reward = {
-        xp: Number(rewardUpdate.xp ?? 0),
+        xp,
         pool,
         trustTokens,
       };
+      updateFields.totalXpAvailable = xp;
       updateFields.totalTrustAvailable = pool;
     }
 
     if (updateFields.maxParticipants !== undefined) {
       updateFields.maxParticipants = Number(updateFields.maxParticipants ?? 0);
+    }
+
+    if (updateFields.description !== undefined) {
+      updateFields.sub_title = String(updateFields.description ?? "").trim();
+    }
+
+    if (req.body.nameOfProject !== undefined || campaignFound.project_name) {
+      updateFields.project_name = hubFound.name ?? incomingNameOfProject ?? campaignFound.project_name;
     }
 
     const existingPool = Number(campaignFound.reward?.pool ?? 0);
@@ -748,31 +761,12 @@ export const saveCampaign = async (req: GlobalRequest, res: GlobalResponse) => {
         return;
       }
 
-      if (incomingPool > existingPool || incomingMaxParticipants > existingMaxParticipants) {
-        const existingRewardPerParticipant = Number(campaignFound.reward?.trustTokens ?? 0);
-        if (existingRewardPerParticipant > 0) {
-          const expectedParticipants = incomingPool / existingRewardPerParticipant;
-          const roundedExpectedParticipants = Math.round(expectedParticipants);
-          if (!Number.isFinite(expectedParticipants) || Math.abs(expectedParticipants - roundedExpectedParticipants) > 1e-9) {
-            res.status(BAD_REQUEST).json({
-              error: "reward pool increase must map to a whole number of participants at the existing per-participant reward",
-            });
-            return;
-          }
-          if (roundedExpectedParticipants !== incomingMaxParticipants) {
-            res.status(BAD_REQUEST).json({
-              error: "for published reward campaigns, participants must scale with reward pool at the deployed per-participant reward",
-            });
-            return;
-          }
-        }
-      }
     }
 
     const updatedCampaign = await campaign.findByIdAndUpdate(id, updateFields, { new: true });
 
     // Recalculate status when dates change on a live/scheduled campaign
-    if (updatedCampaign && (updatedCampaign.status === "Active" || updatedCampaign.status === "Scheduled")) {
+    if (updatedCampaign && (updatedCampaign.status === "Active" || updatedCampaign.status === "Scheduled" || updatedCampaign.status === "Ended")) {
       const now = new Date();
       const startsAt = updatedCampaign.starts_at ? new Date(updatedCampaign.starts_at) : null;
       const endsAt = updatedCampaign.ends_at ? new Date(updatedCampaign.ends_at) : null;

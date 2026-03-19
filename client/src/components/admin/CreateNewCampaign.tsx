@@ -151,6 +151,7 @@ const [paymentTxHash, setPaymentTxHash] = useState("");
 const [paymentLoading, setPaymentLoading] = useState(false);
 const [isEditMode, setIsEditMode] = useState(false);
 const [isPublished, setIsPublished] = useState(false);
+const [isEnded, setIsEnded] = useState(false);
 const [deployLoading, setDeployLoading] = useState(false);
 const [rewardContractAddress, setRewardContractAddress] = useState("");
 const [rewardsDeployment, setRewardsDeployment] = useState<RewardsDeploymentState | null>(null);
@@ -218,6 +219,7 @@ useEffect(() => {
       setCampaignId(editId);
       setIsEditMode(true);
       setIsPublished(found.status !== "Save");
+      setIsEnded(found.status === "Ended");
       setCampaignTitle(found.title ?? "");
       setCampaignName(found.description ?? found.nameOfProject ?? "");
       const s = parseDateTime(found.starts_at ?? "");
@@ -1081,7 +1083,7 @@ const handleUpdateCampaign = async () => {
   if (hasRewards) {
     try {
       rewardConfig = getRewardDeploymentConfig();
-      if (isPublished) {
+      if (isPublished && !isEnded) {
         getPublishedRewardIncreaseDelta(rewardConfig);
       }
     } catch (err: unknown) {
@@ -1096,11 +1098,11 @@ const handleUpdateCampaign = async () => {
     const savedCampaignId = campaignId ?? await handleSaveDraft();
     if (!savedCampaignId) return;
 
-    if (hasRewards && isPublished && rewardConfig) {
+    if (hasRewards && isPublished && !isEnded && rewardConfig) {
       await syncPublishedRewardIncrease(savedCampaignId, rewardConfig);
     }
 
-    if (hasRewards && isPublished) {
+    if (hasRewards && isPublished && !isEnded) {
       await syncPublishedRewardClaimStart();
     }
 
@@ -1422,9 +1424,10 @@ const isActive =
     <Input
       type="number"
       placeholder="200 XP per participant"
-      className={`bg-white/5 border-white/10 pr-16 cursor-not-allowed opacity-60 ${!hasRewards ? "opacity-40" : ""}`}
+      className={`bg-white/5 border-white/10 pr-10 cursor-not-allowed opacity-60 ${!hasRewards ? "opacity-40" : ""}`}
       value={xpRewards}
       readOnly
+      disabled={!hasRewards}
     />
     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 text-xs font-medium select-none">Fixed</span>
   </div>

@@ -487,12 +487,18 @@ export const updateCampaign = async (
 		if (campaignUpdateData.reward && typeof campaignUpdateData.reward === "object") {
 			const rewardUpdate = campaignUpdateData.reward as Record<string, unknown>;
 			const pool = Number(rewardUpdate.pool ?? 0);
+			const xp = Number(rewardUpdate.xp ?? 0);
 			campaignUpdateData.reward = {
-				xp: Number(rewardUpdate.xp ?? 0),
+				xp,
 				pool,
 				trustTokens: Number(rewardUpdate.trust ?? rewardUpdate.trustTokens ?? 0),
 			};
+			campaignUpdateData.totalXpAvailable = xp;
 			campaignUpdateData.totalTrustAvailable = pool;
+		}
+
+		if (campaignUpdateData.description !== undefined) {
+			campaignUpdateData.sub_title = String(campaignUpdateData.description ?? "").trim();
 		}
 
 		if (Object.keys(campaignUpdateData).length === 0) {
@@ -536,25 +542,6 @@ export const updateCampaign = async (
 				return;
 			}
 
-			if (incomingPool > existingPool || incomingMaxParticipants > existingMaxParticipants) {
-				const existingRewardPerParticipant = Number(existingCampaign.reward?.trustTokens ?? 0);
-				if (existingRewardPerParticipant > 0) {
-					const expectedParticipants = incomingPool / existingRewardPerParticipant;
-					const roundedExpectedParticipants = Math.round(expectedParticipants);
-					if (!Number.isFinite(expectedParticipants) || Math.abs(expectedParticipants - roundedExpectedParticipants) > 1e-9) {
-						res.status(BAD_REQUEST).json({
-							error: "reward pool increase must map to a whole number of participants at the existing per-participant reward",
-						});
-						return;
-					}
-					if (roundedExpectedParticipants !== incomingMaxParticipants) {
-						res.status(BAD_REQUEST).json({
-							error: "for published reward campaigns, participants must scale with reward pool at the deployed per-participant reward",
-						});
-						return;
-					}
-				}
-			}
 		}
 
 		const updated = await campaign.findByIdAndUpdate(id, campaignUpdateData, { new: true });
