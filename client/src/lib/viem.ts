@@ -3,6 +3,7 @@ import chain from "./chain";
 
 let walletClient: WalletClient | undefined = undefined;
 let publicClient: PublicClient | undefined = undefined;
+let walletClientAccount: Address | undefined = undefined;
 
 export const getPublicClient = () => {
   if (typeof window === 'undefined') {
@@ -41,12 +42,13 @@ export const getWalletClient = async () => {
     throw new Error("No connected wallet account found. Connect a wallet with RainbowKit first.");
   }
 
-  if (!walletClient) {
+  if (!walletClient || walletClientAccount?.toLowerCase() !== String(account).toLowerCase()) {
     walletClient = createWalletClient({
       chain,
       account,
       transport: custom(window.ethereum!)
     });
+    walletClientAccount = account;
 
     return walletClient;
   }

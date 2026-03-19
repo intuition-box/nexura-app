@@ -278,6 +278,19 @@ export const getRewardContractStartDate = async (contractAddress: string): Promi
   return Number(startDate);
 };
 
+export const getRewardCampaignCreator = async (contractAddress: string): Promise<string> => {
+  const validatedCampaignAddress = requireContractAddress(contractAddress, "Campaign contract");
+  const publicClient = getReadonlyPublicClient();
+
+  const creator = await publicClient.readContract({
+    abi: REWARD_ABI,
+    address: validatedCampaignAddress as Address,
+    functionName: "campaignCreator",
+  }) as Address;
+
+  return String(creator);
+};
+
 export const updateRewardStartTime = async (contractAddress: string, newDate: number): Promise<string> => {
   try {
     const walletClient = await getWalletClient();
@@ -288,7 +301,7 @@ export const updateRewardStartTime = async (contractAddress: string, newDate: nu
 
     const [account] = await walletClient.getAddresses();
     const validatedCampaignAddress = requireContractAddress(contractAddress, "Campaign contract");
-    const normalizedDate = normalizeUnixTimestamp(newDate, "Reward claim date");
+    const normalizedDate = normalizeUnixTimestamp(newDate, "Campaign start date");
 
     const { request } = await publicClient.simulateContract({
       abi: REWARD_ABI,
@@ -320,7 +333,7 @@ export const updateRewardStartTime = async (contractAddress: string, newDate: nu
 }
 
 export const syncRewardContractStartDate = async (contractAddress: string, newDate: number) => {
-  const normalizedDate = normalizeUnixTimestamp(newDate, "Reward claim date");
+  const normalizedDate = normalizeUnixTimestamp(newDate, "Campaign start date");
   const currentStartDate = await getRewardContractStartDate(contractAddress);
 
   if (normalizedDate <= currentStartDate) {

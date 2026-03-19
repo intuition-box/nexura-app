@@ -76,6 +76,10 @@ export default function CampaignEnvironment() {
   const [failedQuests, setFailedQuests] = useState<string[]>([]);
   const [campaignCompleted, setCampaignCompleted] = useState<boolean>(false);
   const [projectCoverImage, setProjectCoverImage] = useState<string>("");
+  const [joinedCampaign, setJoinedCampaign] = useState<boolean>(false);
+  const [joiningCampaign, setJoiningCampaign] = useState(false);
+  const [campaignReady, setCampaignReady] = useState(false);
+  const [campaignRefreshToken, setCampaignRefreshToken] = useState(0);
 
   const [description, setDescription] = useState("");
   const [title, setTitle] = useState("");
@@ -99,13 +103,8 @@ export default function CampaignEnvironment() {
   // Fetch campaign quests
   useEffect(() => {
     (async () => {
+      setCampaignReady(false);
       const res = await apiRequestV2("GET", `/api/campaign/quests?id=${campaignId}`);
-
-      if (!res.joined) {
-        setLocation("/campaigns");
-        toast({ title: "Error", description: "kindly join campaign to proceed", variant: "destructive" });
-        return;
-      }
 
       // Ensure every quest has a tag to prevent undefined errors
       const safeQuests = (res.campaignQuests || []).map((q: any) => ({
@@ -123,6 +122,7 @@ export default function CampaignEnvironment() {
       }));
 
       setQuests(safeQuests);
+  setJoinedCampaign(Boolean(res.joined));
       setProjectCoverImage(res.projectCoverImage);
       setCampaignCompleted(res.campaignCompleted?.campaignCompleted || false);
       setCampaignAddress(res.address || "");
@@ -147,9 +147,10 @@ export default function CampaignEnvironment() {
       setMaxParticipants(res.maxParticipants || 0);
       setQuestsCompleted(res.campaignCompleted?.questsCompleted || false);
       setCampaignHub(res.hub?.toString() || "");
+      setCampaignReady(true);
 
     })();
-  }, [claimedQuests, userId]);
+  }, [campaignId, claimedQuests, userId, campaignRefreshToken]);
 
   useEffect(() => {
     if (!userId || !campaignId) return;
@@ -263,6 +264,10 @@ export default function CampaignEnvironment() {
 
   const claimQuest = async (quest: Quest) => {
     try {
+      if (!joinedCampaign) {
+        throw new Error("Join this campaign before completing quests.");
+      }
+
       const id = getId(quest.link);
 
       try {
@@ -336,6 +341,10 @@ export default function CampaignEnvironment() {
   // Claim campaign reward
   const claimCampaignReward = async () => {
     try {
+      if (!joinedCampaign) {
+        throw new Error("Join this campaign before claiming rewards.");
+      }
+
       if (!questsCompleted) {
         throw new Error("Kindly complete quests to claim reward");
       }
@@ -350,6 +359,24 @@ export default function CampaignEnvironment() {
     } catch (error: any) {
       console.error(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleJoinCampaign = async () => {
+    try {
+      if (!user) {
+        throw new Error("Please sign in and connect your wallet to join this campaign.");
+      }
+
+      setJoiningCampaign(true);
+      await apiRequestV2("POST", `/api/campaign/join-campaign?id=${campaignId}`);
+      setJoinedCampaign(true);
+      setCampaignRefreshToken((prev) => prev + 1);
+      toast({ title: "Campaign joined", description: "You can now start completing quests." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setJoiningCampaign(false);
     }
   };
 
@@ -381,6 +408,24 @@ export default function CampaignEnvironment() {
       <AnimatedBackground />
 
       <div className="max-w-4xl mx-auto relative z-10 space-y-10">
+
+        {campaignReady && !joinedCampaign && (
+          <Card className="rounded-2xl bg-amber-500/10 border-amber-400/30 text-white shadow-xl">
+            <div className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-amber-300 uppercase tracking-wide">Join Required</p>
+                <p className="text-sm text-white/80 mt-1">You can view this campaign here, but you need to join it before starting quests or claiming rewards.</p>
+              </div>
+              <Button
+                onClick={handleJoinCampaign}
+                disabled={joiningCampaign}
+                className="bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-xl px-5 py-3"
+              >
+                {joiningCampaign ? "Joining..." : "Join Campaign"}
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Banner with Progress */}
         <div className="w-full bg-gradient-to-r from-purple-700/40 to-purple-900/40 border border-white/10 rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
@@ -454,14 +499,16 @@ export default function CampaignEnvironment() {
               </div>
 
               <Button
-                onClick={claimCampaignReward}
-                disabled={!questsCompleted || campaignCompleted}
+                onClick={joinedCampaign ? claimCampaignReward : handleJoinCampaign}
+                disabled={joinedCampaign ? (!questsCompleted || campaignCompleted) : joiningCampaign}
                 className={`w-full font-semibold rounded-xl py-3 mt-6 ${!campaignCompleted
                     ? "bg-purple-600 hover:bg-purple-700 text-white"
                     : "bg-gray-600 cursor-not-allowed text-gray-300"
                   }`}
               >
-                {campaignCompleted ? "Completed" : "Claim Rewards"}
+                {joinedCampaign
+                  ? (campaignCompleted ? "Completed" : "Claim Rewards")
+                  : (joiningCampaign ? "Joining..." : "Join Campaign")}
               </Button>
             </div>
           </div>
@@ -504,16 +551,18 @@ export default function CampaignEnvironment() {
                     <div className="flex gap-2 w-full sm:w-auto">
                       {!visited && !claimed && (
                         <button
+                          disabled={!joinedCampaign}
                           onClick={() => markQuestAsVisited(quest)}
-                          className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold bg-purple-700 hover:bg-purple-800"
+                          className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold bg-purple-700 hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Start Quest
+                          {joinedCampaign ? "Start Quest" : "Join First"}
                         </button>
                       )}
                       {visited && !claimed && !requiresProof && (
                         <button
+                          disabled={!joinedCampaign}
                           onClick={() => claimQuest(quest)}
-                          className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold bg-purple-700 hover:bg-purple-800"
+                          className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold bg-purple-700 hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Claim
                         </button>

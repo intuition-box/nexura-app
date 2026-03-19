@@ -5,10 +5,11 @@ import { Card } from "../ui/card";
 import { Link, useLocation } from "wouter";
 import { projectApiRequest, getStoredProjectInfo } from "../../lib/projectApi";
 import { useToast } from "../../hooks/use-toast";
+import { useWallet } from "../../hooks/use-wallet";
 import { ArrowDownToLine, RefreshCw, Trash2, XCircle, Loader2, Clock } from "lucide-react";
 import { Button } from "../ui/button";
 import { apiRequestV2 } from "../../lib/queryClient";
-import { closeRewardCampaign, getRewardContractBalance, syncRewardContractStartDate } from "../../lib/performOnchainAction";
+import { closeRewardCampaign, getRewardCampaignCreator, getRewardContractBalance, syncRewardContractStartDate } from "../../lib/performOnchainAction";
 import { formatEther } from "viem";
 import {
   Dialog,
@@ -58,6 +59,7 @@ export default function CampaignsTab() {
   const [rewardBalances, setRewardBalances] = useState<Record<string, bigint>>({});
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { address, isConnected, connectWallet } = useWallet();
 
   const info = getStoredProjectInfo();
   const isSuperAdmin = (info?.role as string) === "superadmin";
@@ -199,10 +201,10 @@ export default function CampaignsTab() {
     setPendingAction(null);
     try {
       if (campaign.contractAddress && Number(campaign.reward?.pool ?? 0) > 0) {
-        const claimStartTimestamp = Math.floor(new Date(campaign.ends_at).getTime() / 1000);
+        const contractStartTimestamp = Math.floor(new Date(campaign.starts_at).getTime() / 1000);
 
-        if (Number.isFinite(claimStartTimestamp) && claimStartTimestamp > 0) {
-          await syncRewardContractStartDate(campaign.contractAddress, claimStartTimestamp);
+        if (Number.isFinite(contractStartTimestamp) && contractStartTimestamp > 0) {
+          await syncRewardContractStartDate(campaign.contractAddress, contractStartTimestamp);
         }
       }
 
@@ -225,6 +227,19 @@ export default function CampaignsTab() {
 
     setWithdrawingId(campaign._id);
     try {
+      let connectedAddress = address;
+      if (!isConnected || !connectedAddress) {
+        connectedAddress = await connectWallet({ noReload: true });
+      }
+      if (!connectedAddress) {
+        throw new Error("Connect the wallet that deployed this rewards contract to withdraw the remainder.");
+      }
+
+      const campaignCreator = await getRewardCampaignCreator(campaign.contractAddress);
+      if (campaignCreator.toLowerCase() !== connectedAddress.toLowerCase()) {
+        throw new Error(`Switch to the contract creator wallet ${campaignCreator.slice(0, 6)}...${campaignCreator.slice(-4)} to withdraw the remainder.`);
+      }
+
       const currentBalance = await getRewardContractBalance(campaign.contractAddress);
 
       const txHash = await closeRewardCampaign(campaign.contractAddress);

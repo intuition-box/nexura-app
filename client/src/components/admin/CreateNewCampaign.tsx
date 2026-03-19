@@ -519,6 +519,13 @@ const otherDetailsChanged = useMemo(() => {
   currentTaskSignature,
 ]);
 
+const hasDeployedRewardsContract = Boolean(
+  isPublished &&
+  hasRewards &&
+  rewardContractAddress.trim() &&
+  rewardsDeployment
+);
+
 const updateCampaignButtonLabel =
   rewardFieldsChanged && !otherDetailsChanged ? "Update Rewards Contract" : "Update Campaign Details";
 
@@ -762,18 +769,18 @@ const handleParticipantsChange = (value: string) => {
   setParticipants(value);
 };
 
-const getCampaignClaimStartTimestamp = () => {
-  const endIso = endDate && endTime ? `${endDate}T${endTime}` : endDate ? `${endDate}T00:00` : "";
-  if (!endIso) {
-    throw new Error("Set a campaign end date and time before deploying rewards.");
+const getCampaignStartTimestamp = () => {
+  const startIso = startDate && startTime ? `${startDate}T${startTime}` : startDate ? `${startDate}T00:00` : "";
+  if (!startIso) {
+    throw new Error("Set a campaign start date and time before deploying rewards.");
   }
 
-  const endTimestampMs = new Date(endIso).getTime();
-  if (Number.isNaN(endTimestampMs)) {
-    throw new Error("Campaign end date is invalid.");
+  const startTimestampMs = new Date(startIso).getTime();
+  if (Number.isNaN(startTimestampMs)) {
+    throw new Error("Campaign start date is invalid.");
   }
 
-  return Math.floor(endTimestampMs / 1000);
+  return Math.floor(startTimestampMs / 1000);
 };
 
 const getRewardDeploymentConfig = () => {
@@ -952,17 +959,21 @@ const syncPublishedRewardIncrease = async (
   });
 };
 
-const syncPublishedRewardClaimStart = async () => {
+const syncPublishedRewardStart = async () => {
   if (!isPublished || !hasRewards || !rewardContractAddress.trim()) return;
 
-  const claimStartTimestamp = getCampaignClaimStartTimestamp();
-  const syncResult = await syncRewardContractStartDate(rewardContractAddress.trim(), claimStartTimestamp);
+  const contractStartTimestamp = getCampaignStartTimestamp();
+  const syncResult = await syncRewardContractStartDate(rewardContractAddress.trim(), contractStartTimestamp);
+
+  if (!syncResult.updated && syncResult.currentStartDate !== syncResult.nextStartDate) {
+    throw new Error("Published rewards campaigns can only move the on-chain start date later.");
+  }
 
   if (!syncResult.updated) return;
 
   toast({
-    title: "Rewards contract reopened",
-    description: "Updated the on-chain claim date to match the latest campaign end date.",
+    title: "Rewards contract updated",
+    description: "Updated the on-chain start date to match the latest campaign start date.",
   });
 };
 
@@ -980,13 +991,13 @@ const handleDeployRewardsContract = async () => {
     return;
   }
 
-  let claimStartTimestamp = 0;
+  let contractStartTimestamp = 0;
   let totalPool = 0;
   let totalPoolRaw = "";
   let participantCount = 0;
   let rewardPerParticipantRaw = "";
   try {
-    claimStartTimestamp = getCampaignClaimStartTimestamp();
+    contractStartTimestamp = getCampaignStartTimestamp();
     ({
       totalPool,
       totalPoolRaw,
@@ -1008,7 +1019,7 @@ const handleDeployRewardsContract = async () => {
       nameOfCampaign: campaignName.trim(),
       totalRewards: totalPoolRaw,
       rewardToken: rewardPerParticipantRaw,
-      startDate: claimStartTimestamp,
+      startDate: contractStartTimestamp,
     });
     const deployedParticipantCap = Number(deployment.maxClaimableParticipants ?? 0);
     if (!Number.isInteger(deployedParticipantCap) || deployedParticipantCap <= 0) {
@@ -1083,7 +1094,7 @@ const handleUpdateCampaign = async () => {
   if (hasRewards) {
     try {
       rewardConfig = getRewardDeploymentConfig();
-      if (isPublished && !isEnded) {
+      if (hasDeployedRewardsContract && !isEnded) {
         getPublishedRewardIncreaseDelta(rewardConfig);
       }
     } catch (err: unknown) {
@@ -1095,22 +1106,28 @@ const handleUpdateCampaign = async () => {
 
   setLoading(true);
   try {
-    const savedCampaignId = campaignId ?? await handleSaveDraft();
-    if (!savedCampaignId) return;
+    const savedCampaignId = campaignId;
+    if (!savedCampaignId) {
+      toast({ title: "Update failed", description: "Campaign id is missing.", variant: "destructive" });
+      return;
+    }
 
-    const endDateChanged =
+    const startDateChanged =
       editBaseline &&
-      (endDate !== editBaseline.endDate || endTime !== editBaseline.endTime);
+      (startDate !== editBaseline.startDate || startTime !== editBaseline.startTime);
 
-    if (hasRewards && isPublished && !isEnded && campaignHasStarted && rewardConfig) {
+    if (hasDeployedRewardsContract && !isEnded && rewardConfig) {
       await syncPublishedRewardIncrease(savedCampaignId, rewardConfig);
     }
 
-    if (hasRewards && isPublished && !isEnded && endDateChanged && rewardContractAddress.trim()) {
-      await syncPublishedRewardClaimStart();
+    if (hasDeployedRewardsContract && !isEnded && startDateChanged) {
+      await syncPublishedRewardStart();
     }
 
-    setCampaignId(savedCampaignId);
+    const persistedCampaignId = await handleSaveDraft();
+    if (!persistedCampaignId) return;
+
+    setCampaignId(persistedCampaignId);
     toast({ title: "Campaign updated!", description: "Your campaign changes have been saved." });
     setLocation("/studio-dashboard/campaigns-tab");
   } catch (err: unknown) {
