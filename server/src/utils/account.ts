@@ -9,6 +9,8 @@ let publicClient: PublicClient | undefined = undefined;
 
 const account = privateKeyToAccount(PRIVATE_KEY);
 
+export const serverWalletAddress = account.address;
+
 const getWalletClient = () => {
 	if (!walletClient) {
 		walletClient = createWalletClient({

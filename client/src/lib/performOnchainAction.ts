@@ -1,6 +1,6 @@
 import chain from "./chain";
 import { getWalletClient, getPublicClient } from "./viem";
-import { network, NEXONS, NEXONS_ABI, REWARD_ABI, REWARD_BYTECODE, AUTHORIZED_ADDRESS } from "./constants";
+import { network, NEXONS, NEXONS_ABI, REWARD_ABI, REWARD_BYTECODE } from "./constants";
 import { ethers } from "ethers";
 import { createPublicClient, http, parseAbi, type Address, parseEther, formatEther } from "viem";
 import { getIntuitionNetworkParams } from "./utils";
@@ -17,6 +17,7 @@ type StudioPaymentConfig = {
   contractAddress?: string;
   chainId: string;
   amount: string;
+  authorizedAddress?: string;
 };
 
 const mainnet = network === "mainnet";
@@ -153,6 +154,12 @@ export const createRewardsContract = async ({ nameOfCampaign, totalRewards, rewa
 
     await ensureSwitch(chainId);
 
+    const config = await getStudioPaymentConfig();
+    const authorizedAddress = config.authorizedAddress?.trim();
+    if (!authorizedAddress || !ethers.isAddress(authorizedAddress)) {
+      throw new Error("Server authorized address is not configured. Contact the Nexura team.");
+    }
+
     const totalRewardsWei = toWeiAmount(totalRewards, "Total rewards");
     const rewardTokenWei = toWeiAmount(rewardToken, "Reward per participant");
 
@@ -168,7 +175,7 @@ export const createRewardsContract = async ({ nameOfCampaign, totalRewards, rewa
     const hash = await walletClient.deployContract({
       abi: REWARD_ABI,
       bytecode: REWARD_BYTECODE,
-      args: [nameOfCampaign, totalRewardsWei, rewardTokenWei, AUTHORIZED_ADDRESS, startDate],
+      args: [nameOfCampaign, totalRewardsWei, rewardTokenWei, authorizedAddress, startDate],
       account,
       chain,
       value: totalRewardsWei

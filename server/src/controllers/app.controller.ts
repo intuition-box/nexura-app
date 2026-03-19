@@ -6,7 +6,7 @@ import { token } from "@/models/tokens.model";
 import { campaignQuest, miniQuest, quest } from "@/models/quests.model";
 import { user } from "@/models/user.model";
 import { hub } from "@/models/hub.model";
-import { performIntuitionOnchainAction } from "@/utils/account";
+import { performIntuitionOnchainAction, serverWalletAddress } from "@/utils/account";
 import { BOT_TOKEN, network, STUDIO_FEE_CONTRACT, THIRD_PARTY_API_KEY } from "@/utils/env.utils";
 import {
   INTERNAL_SERVER_ERROR,
@@ -46,6 +46,7 @@ export const getStudioPaymentConfig = async (_req: GlobalRequest, res: GlobalRes
     contractAddress: STUDIO_FEE_CONTRACT,
     chainId: "0x350b",
     amount: "2",
+    authorizedAddress: serverWalletAddress,
   });
 };
 
