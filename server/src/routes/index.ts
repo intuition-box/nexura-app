@@ -12,7 +12,7 @@ import {
 	fetchQuests,
 } from "@/controllers/quest.controller.ts";
 import { signIn } from "@/controllers/auth.controller";
-import { createAdmin, adminLogin } from "@controllers/admin.controller";
+import { createAdmin, adminLogin } from "@/controllers/admin.controller";
 import { authenticateUser2, authenticateAdmin, authenticateUser } from "@/middlewares/auth.middleware";
 
 const router = Router();
