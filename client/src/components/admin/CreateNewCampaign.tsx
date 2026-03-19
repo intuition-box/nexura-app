@@ -616,11 +616,30 @@ const buildCampaignFormData = (isDraft: boolean): FormData => {
   return fd;
 };
 
-const handleSaveDraft = async (thenNavigate?: string): Promise<string | null> => {
+const handleSaveDraft = async (
+  thenNavigate?: string,
+  options?: { skipPublishedRewardsGuard?: boolean }
+): Promise<string | null> => {
   if (!campaignTitle) {
     toast({ title: "Missing description", description: "Please enter a campaign description.", variant: "destructive" });
     return null;
   }
+
+  const startDateChanged =
+    Boolean(editBaseline) &&
+    (startDate !== editBaseline.startDate || startTime !== editBaseline.startTime);
+
+  if (!options?.skipPublishedRewardsGuard && hasDeployedRewardsContract && !isEnded) {
+    if (rewardFieldsChanged || startDateChanged) {
+      toast({
+        title: "On-chain update required",
+        description: "Use Update Campaign Details so the rewards contract can be updated before saving these changes.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  }
+
   setSaveLoading(true);
   try {
     const fd = buildCampaignFormData(true);
@@ -1213,7 +1232,7 @@ const handleUpdateCampaign = async () => {
       await syncPublishedRewardStart();
     }
 
-    const persistedCampaignId = await handleSaveDraft();
+    const persistedCampaignId = await handleSaveDraft(undefined, { skipPublishedRewardsGuard: true });
     if (!persistedCampaignId) return;
 
     setCampaignId(persistedCampaignId);
