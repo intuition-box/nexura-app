@@ -156,6 +156,7 @@ const [deployLoading, setDeployLoading] = useState(false);
 const [rewardContractAddress, setRewardContractAddress] = useState("");
 const [rewardsDeployment, setRewardsDeployment] = useState<RewardsDeploymentState | null>(null);
 const [editBaseline, setEditBaseline] = useState<EditBaseline | null>(null);
+const [onchainBaseline, setOnchainBaseline] = useState<EditBaseline | null>(null);
 const [hubGuildId, setHubGuildId] = useState("");
 const [hubDiscordConnected, setHubDiscordConnected] = useState(false);
 const [discordSessionId, setDiscordSessionId] = useState(initialDiscordSessionId);
@@ -315,6 +316,19 @@ useEffect(() => {
         coverImagePreview: found.projectCoverImage ?? "",
         tasksSignature: buildTaskSignature(loadedTasks),
       });
+      setOnchainBaseline(found.contractAddress ? {
+        campaignTitle: found.title ?? "",
+        campaignName: found.description ?? found.nameOfProject ?? "",
+        startDate: s.date,
+        startTime: s.time,
+        endDate: e.date,
+        endTime: e.time,
+        hasRewards: existingRewardPool > 0,
+        rewardPoolWei: existingRewardPool > 0 ? toWeiString(String(found.reward?.pool ?? 0)) : "0",
+        participants: existingParticipants,
+        coverImagePreview: found.projectCoverImage ?? "",
+        tasksSignature: buildTaskSignature(loadedTasks),
+      } : null);
     } catch { /* ignore – user will fill in manually */ }
   })();
 }, []);
@@ -447,6 +461,7 @@ const platformToCategory = (platform: string) => {
 
 const normalizedParticipants = String(Number(participants || 0));
 const normalizedBaselineParticipants = String(Number(editBaseline?.participants || 0));
+const normalizedOnchainParticipants = String(Number(onchainBaseline?.participants || 0));
 const currentRewardPoolWei = hasRewards ? toWeiString(rewardPool || "0") : "0";
 const currentTaskSignature = useMemo(() => buildTaskSignature(tasks), [tasks]);
 
@@ -478,17 +493,17 @@ const draftRewardFieldsChanged = useMemo(() => {
 ]);
 
 const rewardFieldsChanged = useMemo(() => {
-  if (!editBaseline || !isEditMode || !isPublished || !hasRewards || !rewardContractAddress.trim()) return false;
-  return currentRewardPoolWei !== editBaseline.rewardPoolWei || normalizedParticipants !== normalizedBaselineParticipants;
+  if (!onchainBaseline || !isEditMode || !isPublished || !hasRewards || !rewardContractAddress.trim()) return false;
+  return currentRewardPoolWei !== onchainBaseline.rewardPoolWei || normalizedParticipants !== normalizedOnchainParticipants;
 }, [
-  editBaseline,
+  onchainBaseline,
   isEditMode,
   isPublished,
   hasRewards,
   rewardContractAddress,
   currentRewardPoolWei,
   normalizedParticipants,
-  normalizedBaselineParticipants,
+  normalizedOnchainParticipants,
 ]);
 
 const otherDetailsChanged = useMemo(() => {
@@ -525,8 +540,8 @@ const hasDeployedRewardsContract = Boolean(
   rewardContractAddress.trim() &&
   rewardsDeployment
 );
-const publishedCampaignStartMs = editBaseline
-  ? new Date(`${editBaseline.startDate}T${editBaseline.startTime || "00:00"}`).getTime()
+const publishedCampaignStartMs = onchainBaseline
+  ? new Date(`${onchainBaseline.startDate}T${onchainBaseline.startTime || "00:00"}`).getTime()
   : Number.NaN;
 const publishedCampaignHasStarted = Number.isFinite(publishedCampaignStartMs) && publishedCampaignStartMs <= Date.now();
 
@@ -623,21 +638,6 @@ const handleSaveDraft = async (
   if (!campaignTitle) {
     toast({ title: "Missing description", description: "Please enter a campaign description.", variant: "destructive" });
     return null;
-  }
-
-  const startDateChanged =
-    Boolean(editBaseline) &&
-    (startDate !== editBaseline.startDate || startTime !== editBaseline.startTime);
-
-  if (!options?.skipPublishedRewardsGuard && hasDeployedRewardsContract && !isEnded) {
-    if (rewardFieldsChanged || startDateChanged) {
-      toast({
-        title: "On-chain update required",
-        description: "Use Update Campaign Details so the rewards contract can be updated before saving these changes.",
-        variant: "destructive",
-      });
-      return null;
-    }
   }
 
   setSaveLoading(true);
@@ -753,6 +753,7 @@ const clearRewardsDeployment = (reason: string) => {
 
   setRewardContractAddress("");
   setRewardsDeployment(null);
+  setOnchainBaseline(null);
   toast({
     title: "Redeploy required",
     description: `${reason} Redeploy the rewards contract to keep on-chain funding in sync.`,
@@ -975,6 +976,7 @@ const syncPublishedRewardIncrease = async (
     rewardPerParticipant: config.rewardPerParticipantRaw,
     maxClaimableParticipants: config.participantCount,
   });
+  setOnchainBaseline(captureCurrentEditBaseline());
 
   toast({
     title: "Rewards contract updated",
@@ -993,6 +995,8 @@ const syncPublishedRewardStart = async () => {
   }
 
   if (!syncResult.updated) return;
+
+  setOnchainBaseline(captureCurrentEditBaseline());
 
   toast({
     title: "Rewards contract updated",
@@ -1058,6 +1062,7 @@ const replaceScheduledRewardsContract = async (
     rewardPerParticipant: deployment.rewardPerParticipant,
     maxClaimableParticipants: deployedParticipantCap,
   });
+  setOnchainBaseline(captureCurrentEditBaseline());
 
   toast({
     title: "Rewards contract replaced",
@@ -1142,6 +1147,7 @@ const handleDeployRewardsContract = async () => {
       rewardPerParticipant: deployment.rewardPerParticipant,
       maxClaimableParticipants: deployedParticipantCap,
     });
+    setOnchainBaseline(captureCurrentEditBaseline());
     setEditBaseline({
       campaignTitle,
       campaignName,
@@ -1184,8 +1190,8 @@ const handleUpdateCampaign = async () => {
     ? new Date(`${startDate}T${startTime || "00:00"}`).getTime()
     : Number.NaN;
   const startDateChanged =
-    Boolean(editBaseline) &&
-    (startDate !== editBaseline.startDate || startTime !== editBaseline.startTime);
+    Boolean(onchainBaseline) &&
+    (startDate !== onchainBaseline.startDate || startTime !== onchainBaseline.startTime);
   const movesStartEarlier =
     startDateChanged &&
     Number.isFinite(publishedCampaignStartMs) &&
