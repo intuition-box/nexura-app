@@ -60,7 +60,11 @@ const campaignSchema = new Schema({
 	status: {
 		type: String,
 		default: "Save",
-		enum: ["Active", "Scheduled", "Ended", "Save"],
+		enum: ["Active", "Scheduled", "Ended", "Save", "Deleted"],
+	},
+	deletedAt: {
+		type: Date,
+		default: null,
 	},
 	discordLaunchGuildId: {
 		type: String,

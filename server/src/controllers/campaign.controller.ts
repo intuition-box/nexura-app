@@ -115,9 +115,11 @@ const normalizeJoinCampaignError = (error: any) => {
 
 const getTemporalCampaignStatus = (campaignDoc: {
 	status?: string;
+	deletedAt?: string | Date | null;
 	starts_at?: string | Date;
 	ends_at?: string | Date;
 }) => {
+	if (campaignDoc.deletedAt || campaignDoc.status === "Deleted") return "Deleted";
 	if (campaignDoc.status === "Save") return "Save";
 	if (campaignDoc.status === "Ended") return "Ended";
 
@@ -139,7 +141,7 @@ export const fetchCampaigns = async (
 		// (Active, Scheduled, Ended, or legacy campaigns with no status field)
 		// remain visible so non-studio campaigns are unaffected.
 		const campaigns = await campaign
-			.find({ status: { $ne: "Save" } })
+			.find({ status: { $nin: ["Save", "Deleted"] }, deletedAt: null })
 			.populate({
 				path: "hub",
 				select: "name description logo website xAccount discordServer guildId",
@@ -893,7 +895,7 @@ export const claimCampaignRewards = async (
 
 export const fetchHubCampaigns = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-		const hubCampaigns = await campaign.find({ hub: req.admin.hub }).lean();
+		const hubCampaigns = await campaign.find({ hub: req.admin.hub, status: { $ne: "Deleted" }, deletedAt: null }).lean();
 		const statusUpdates: Array<{ _id: unknown; status: string }> = [];
 		const normalizedCampaigns = hubCampaigns.map((c) => {
 			const normalizedStatus = getTemporalCampaignStatus(c);
@@ -1045,8 +1047,14 @@ export const deleteCampaign = async (req: GlobalRequest, res: GlobalResponse) =>
 			res.status(FORBIDDEN).json({ error: "you are not allowed to delete this campaign" });
 			return;
 		}
+		if (campaignToBeDeleted.status === "Deleted" || campaignToBeDeleted.deletedAt) {
+			res.status(NO_CONTENT).send();
+			return;
+		}
 
-    await campaign.findByIdAndDelete(id);
+		campaignToBeDeleted.status = "Deleted";
+		campaignToBeDeleted.deletedAt = new Date();
+		await campaignToBeDeleted.save();
 
     res.status(NO_CONTENT).send();
   } catch (error) {
