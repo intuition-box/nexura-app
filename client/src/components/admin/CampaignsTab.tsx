@@ -196,7 +196,7 @@ export default function CampaignsTab() {
 
     setWithdrawingId(campaign._id);
     try {
-      let connectedAddress = address;
+      let connectedAddress: string | null = address;
       if (!isConnected || !connectedAddress) {
         connectedAddress = await connectWallet({ noReload: true });
       }

@@ -1573,9 +1573,9 @@ const isActive =
                           onChange={(e) => handleEndDateTimeChange(e.target.value)}
                         />
                       </div>
-                      <p className="text-xs text-white/50 -mt-2 col-span-full">
-                        Set the start and end date &amp; time of the campaign.
-                      </p>
+                        <p className="text-xs text-white/50 -mt-2 col-span-full">
+                          Set the start and end date &amp; time of the campaign in UTC.
+                        </p>
                     </div>
 
                     {/* Cover Image */}
