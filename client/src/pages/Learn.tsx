@@ -10,12 +10,12 @@ import { useEffect, useState } from "react";
 const lessons = [
   {
     id: "intro-to-web3",
-    title: "Intro to Web3",
+    title: "Introduction to Web3",
     description:
     "Learn how the internet evolved into Web3, how blockchain enables ownership and transparency and how trust is verified through decentralized layer.",
     progress: "1/9",
     progressWidth: "11%",
-    image: "/campaign1.png",
+    image: "/learn-image.png",
     icon: "/intro.png",
     xp: "/xp-500.png",
   },
@@ -69,7 +69,7 @@ useEffect(() => {
 
         {/* Top Card */}
         <Card
-  className="rounded-2xl sm:rounded-3xl p-4 sm:p-8 animate-slide-up delay-300"
+  className="rounded-2xl sm:rounded-3xl p-4 sm:p-4 animate-slide-up delay-300"
   style={{
     background: "linear-gradient(135deg, #2A085E 0%, #3D0F8A 100%)",
     border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -91,7 +91,7 @@ useEffect(() => {
                   <img
                     src={xpRewardIcon}
                     alt="XP Rewards"
-                    className="w-32 sm:w-36 object-contain"
+                    className="w-32 sm:w-32 object-contain"
                   />
                 </button>
               </div>
@@ -131,6 +131,7 @@ const isNotStarted = progress === 0;
 
               return (
               <div
+              onClick={() => setLocation(`/learn/intro-to-web3`)}
                 key={lesson.id}
                 className="rounded-2xl overflow-hidden bg-[#1C0E3480] border border-white/10 cursor-pointer hover:scale-[1.02] transition"
               >
@@ -143,12 +144,19 @@ const isNotStarted = progress === 0;
                     className="w-full h-36 object-cover"
                   />
 
-                  <div className="absolute top-2 right-2 px-2 py-1 text-[10px] font-semibold text-black bg-[#DFDFDF] rounded-full">
+<div
+  className="absolute top-2 right-2 px-2 py-1 text-[10px] font-semibold"
+  style={{
+    color: "#00CCF933",
+    background: "#000000A6",
+    boxShadow: "0px 3px 10px 0px rgba(0, 0, 0, 0.5)",
+  }}
+>
   {isCompleted
-  ? "COMPLETED"
-  : isInProgress
-  ? "IN PROGRESS"
-  : "NOT STARTED"}
+    ? "COMPLETED"
+    : isInProgress
+    ? "IN PROGRESS"
+    : "NOT STARTED"}
 </div>
 
                   <img
@@ -171,13 +179,16 @@ const isNotStarted = progress === 0;
 
                   <div className="flex justify-between text-[10px] text-white/60">
                     <span>PROGRESS</span>
-                    <span>{progress}/9</span>
+                    <span>{progress}/9 LESSONS</span>
                   </div>
 
-                  <div className="w-full h-1 bg-white rounded-full overflow-hidden">
+<div className="w-full h-1 bg-white rounded-3xl overflow-hidden">
   <div
-    className="h-full bg-purple-600 rounded-full"
-    style={{ width: `${percent}%` }}
+    className="h-full rounded-3xl"
+    style={{
+      width: `${percent}%`,
+      background: "linear-gradient(90deg, #94E2FF, #8A3FFC)",
+    }}
   />
 </div>
 
@@ -188,13 +199,14 @@ const isNotStarted = progress === 0;
                       className="w-14 object-contain"
                     />
 
-                    <button
-  onClick={() =>
-  setLocation(`/learn/${lesson.id}`)
-}
-  className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#8B3EFE] text-white text-xs"
+<button
+    onClick={(e) => {
+    e.stopPropagation();
+    setLocation(`/learn/${lesson.id}`);
+  }}
+  className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#8B3EFE] text-white text-xs transition-all duration-200 hover:scale-105 hover:bg-[#7A2FE0]"
 >
-{isCompleted ? "REVIEW →" : isInProgress ? "CONTINUE →" : "START →"}
+  {isCompleted ? "REVIEW →" : isInProgress ? "CONTINUE →" : "START →"}
 </button>
                   </div>
 

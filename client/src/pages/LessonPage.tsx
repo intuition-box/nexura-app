@@ -347,14 +347,17 @@ useEffect(() => {
           }}
         >
 
-          {/* Left Arrow */}
           <button
-            onClick={goPrev}
-            className="text-white text-2xl font-bold px-2 disabled:opacity-30"
-            disabled={currentStep === 0}
-          >
-            ←
-          </button>
+  onClick={goPrev}
+  disabled={currentStep === 0}
+  className="px-2 disabled:opacity-30 transition hover:scale-110"
+>
+  <img
+    src="/prev-arrow.png"
+    alt="Previous"
+    className="w-12 h-14 object-contain"
+  />
+</button>
 
           {/* Content */}
           <div className="flex-1 px-2">
@@ -464,14 +467,17 @@ useEffect(() => {
 )}
           </div>
 
-          {/* Right Arrow */}
           <button
-            onClick={goNext}
-            className="text-white text-2xl font-bold px-2 disabled:opacity-30"
-            disabled={currentStep === steps.length - 1}
-          >
-            →
-          </button>
+  onClick={goNext}
+  disabled={currentStep === steps.length - 1}
+  className="p-1 disabled:opacity-30 transition-all duration-150 hover:scale-110 active:scale-95"
+>
+  <img
+    src="/next-arrow.png"
+    alt="Next"
+    className="w-12 h-14 object-contain"
+  />
+</button>
 
           {/* Ticker */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
@@ -488,12 +494,12 @@ useEffect(() => {
 
           {/* Continue */}
           {!(showCompletionSlide && completionType === "gold") && (
-  <button
-    onClick={goNext}
-    className="absolute bottom-4 right-4 border border-white/40 text-white bg-transparent px-4 py-1.5 rounded-md text-sm hover:bg-white/10 transition"
-  >
-    Continue
-  </button>
+<button
+  onClick={goNext}
+  className="absolute bottom-4 right-4 px-4 py-1.5 rounded-3xl text-sm text-white transition-all duration-200 bg-[#8B3EFE] hover:bg-[#7A2FE0]"
+>
+  Continue
+</button>
 )}
         </div>
 
