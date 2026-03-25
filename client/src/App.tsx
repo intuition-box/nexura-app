@@ -76,7 +76,7 @@ function Router() {
       <Route path="/home" component={Home} />
       <Route path="/discover" component={Discover} />
       <Route path="/levels" component={Levels} />
-      <Route path="/docs" component={Docs} />
+      {/*<Route path="/docs" component={Docs} />*/}
       {/* NEXURA pages */}
       <Route path="/learn" component={Learn} />
       <Route path="/learn/:id" component={LessonPage } />
