@@ -3558,3 +3558,172 @@ body {
     opacity: 1;
   }
 }
+
+@keyframes badgePop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-badge {
+  animation: badgePop 0.6s ease-out;
+}
+
+@keyframes glowGold {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 215, 0, 1);
+  }
+}
+
+.gold-glow {
+  animation: glowGold 1.5s infinite ease-in-out;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 0.5s ease forwards;
+}
+
+@keyframes slideFromLeft {
+  from {
+    transform: translateX(-40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideFromRight {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideFromBottom {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.word-left {
+  animation: slideFromLeft 0.5s ease forwards;
+}
+
+.word-right {
+  animation: slideFromRight 0.5s ease forwards;
+  animation-delay: 0.2s;
+}
+
+.word-bottom {
+  animation: slideFromBottom 0.5s ease forwards;
+  animation-delay: 0.4s;
+}
+
+/* Fly in from bottom with fade and scale */
+@keyframes fly-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.05);
+  }
+  80% {
+    transform: translateY(0px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fly-up {
+  animation: fly-in-up 0.8s ease-out forwards;
+}
+
+/* Keyframes for the bounce */
+@keyframes letter-wave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Container hover triggers the animation */
+.word-hover:hover .letter {
+  animation: letter-wave 0.6s ease-in-out forwards;
+}
+
+/* Stagger letters using animation-delay */
+.letter {
+  display: inline-block;
+}
+
+@keyframes fly-in {
+  0% {
+    transform: translate(var(--x-start), var(--y-start)) rotate(var(--rotate-start));
+    opacity: 0;
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.fly-letter {
+  display: inline-block;
+  opacity: 0;
+  animation: fly-in 0.8s forwards;
+}
+
+.letter {
+  display: inline-block;
+  transform: translateY(20px) rotate(10deg);
+  opacity: 0;
+}
+
+.animate-letter {
+  animation: fly-in 0.6s forwards ease-out;
+}
+
+@keyframes fly-in {
+  to {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}

@@ -4,8 +4,8 @@ import AnimatedBackground from "../components/AnimatedBackground";
 import learnIcon from "/learn-icon.png";
 import xpRewardIcon from "/xp-reward.png";
 import { useEffect, useState } from "react";
-
-
+import { useWallet } from "../hooks/use-wallet"; 
+import { useAuth } from "../lib/auth";
 
 const lessons = [
   {
@@ -23,10 +23,13 @@ const lessons = [
 
 export default function Learn() {
 
+  const { address, isConnected, connectWallet } = useWallet();
+const { user, loading } = useAuth();
   const [location, setLocation] = useLocation();
   const walletAddress = "0x123";
   const storageKey = `learn-progress-${walletAddress}`;
   const [progressData, setProgressData] = useState({});
+  const [xpClaimed, setXpClaimed] = useState(false);
 
 useEffect(() => {
   const loadProgress = () => {
@@ -192,17 +195,35 @@ const isNotStarted = progress === 0;
   />
 </div>
 
-                  <div className="flex justify-between items-center pt-1">
-                    <img
-                      src={lesson.xp}
-                      alt="XP"
-                      className="w-14 object-contain"
-                    />
+
+<div className="flex justify-between items-center pt-1">
+  {/* XP Image */}
+  <img
+    src={isCompleted ? "/xp-claimed.png" : lesson.xp}
+    alt="XP"
+    className="w-16 object-contain"
+  />
+
 
 <button
-    onClick={(e) => {
+  onClick={async (e) => {
     e.stopPropagation();
-    setLocation(`/learn/${lesson.id}`);
+
+    if (!isConnected) {
+      // Prompt wallet connection first
+      await connectWallet();
+      return;
+    }
+
+    if (!user) {
+      alert("You must sign in to start this lesson."); 
+      return;
+    }
+
+    const url = isCompleted
+      ? `/learn/${lesson.id}?review=1`
+      : `/learn/${lesson.id}`;
+    setLocation(url);
   }}
   className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#8B3EFE] text-white text-xs transition-all duration-200 hover:scale-105 hover:bg-[#7A2FE0]"
 >
