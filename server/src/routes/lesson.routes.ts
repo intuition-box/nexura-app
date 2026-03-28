@@ -4,9 +4,6 @@ import {
 	getMiniLessonAndQuestions,
 	startLesson,
 	getLessons,
-	createMiniLesson,
-	createLesson,
-	createQuestion,
 	rewardLessonXp,
 	answerQuestion
 } from "@/controllers/lesson.controller";
@@ -17,9 +14,6 @@ router
 	.get("/get-lesson-details", authenticateUser2, getMiniLessonAndQuestions)
 	.get("/get-lessons", authenticateUser2, getLessons)
 	.post("/start-lesson", authenticateUser, startLesson)
-	.post("/create-question", authenticateUser, createQuestion)
-	.post("/create-mini-lesson", authenticateUser, createMiniLesson)
-	.post("/create-lesson", authenticateUser, createLesson)
 	.post("/reward-lesson-xp", authenticateUser, rewardLessonXp)
 	.post("/answer-question", authenticateUser, answerQuestion)
 

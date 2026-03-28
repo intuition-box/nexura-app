@@ -26,6 +26,9 @@ router
   .post("/reward-xp", rewardXp)
   .post("/ban-user", banUser)
   .post("/unban-user", unBanUser)
+  .post("/create-lesson", createLesson)
+  .post("/create-mini-lesson", createMiniLesson)
+	.post("/create-question", createQuestion)
   .get("/get-banned-users", getBannedUsers)
   .get("/get-quests", getTasks)
   .get("/get-admins", getAdmins);
