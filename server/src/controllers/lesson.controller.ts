@@ -43,7 +43,7 @@ export const createQuestion = async (req: GlobalRequest, res: GlobalResponse) =>
 export const createMiniLesson = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { text, lesson: lessonId } = req.body;
-    if (!text && !lessonId) {
+    if (!text || !lessonId) {
       res.status(BAD_REQUEST).json({ error: "Send the required values. Required values are: lesson id as 'lesson' and text" });
       return;
     }
@@ -118,26 +118,38 @@ export const getLessons = async (req: GlobalRequest, res: GlobalResponse) => {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error getting lesson" });
   }
-}
+};
+
+export const getAllLessons = async (_req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const lessons = await lesson.find().lean();
+    res.status(OK).json({ message: "lessons fetched!", lessons });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error getting lessons" });
+  }
+};
 
 export const getMiniLessonAndQuestions = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { id } = req;
     const { id: lessonId } = req.query as { id: string };
-    if (lessonId) {
+    if (!lessonId) {
       res.status(BAD_REQUEST).json({ error: "lesson id is required" });
       return;
     }
 
-    const miniLessons = await miniLesson.find({ lesson: lessonId });
+    const miniLessons = await miniLesson.find({ lesson: lessonId }).lean();
 
-    const questions = await question.find({ lesson: lessonId }).select("options question lesson");
-    const questionsCompleted = await questionCompleted.find({ user: id, lesson: lessonId });
+    const questions = await question.find({ lesson: lessonId }).select("options question lesson").lean();
+    const questionsCompleted = id
+      ? await questionCompleted.find({ user: id, lesson: lessonId }).lean()
+      : [];
 
     const mergedLessonsQuestions: any = [];
 
     for (const singleQuestion of questions) {
-      const singleQuestionCompleted = questionCompleted.find(
+      const singleQuestionCompleted = questionsCompleted.find(
         (completedSingleQuestion) =>
           completedSingleQuestion.question?.toString() === singleQuestion._id.toString()
       );
@@ -147,7 +159,7 @@ export const getMiniLessonAndQuestions = async (req: GlobalRequest, res: GlobalR
       mergedSingleQuestion.done = singleQuestionCompleted ? singleQuestionCompleted.done : false;
       mergedSingleQuestion.answer = singleQuestionCompleted ? singleQuestionCompleted.answer : "";
 
-      mergedQuestionsQuestions.push(mergedSingleQuestion);
+      mergedLessonsQuestions.push(mergedSingleQuestion);
     }
 
     res.status(OK).json({ message: "mini lessons and questions fetched", miniLessons, questions: mergedLessonsQuestions });
@@ -164,7 +176,7 @@ export const answerQuestion = async (req: GlobalRequest, res: GlobalResponse) =>
 
     const lowerAnswer = answer.toLowerCase();
 
-    if (!questionId || !answer) {
+    if (!questionId || !answer || !lessonId) {
 			res.status(BAD_REQUEST).json({ error: "Send the required values. The values are question id as 'question', lesson id as 'lesson' and the answer" });
 			return;
     }
