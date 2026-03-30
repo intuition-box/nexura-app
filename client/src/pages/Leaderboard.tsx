@@ -50,7 +50,7 @@ const currentUserId = user?._id;
   return (
     <div className="min-h-screen bg-black text-white p-6 relative">
       <AnimatedBackground />
-      <div className="w-full max-w-3xl mx-auto space-y-8 relative z-10">
+      <div className="w-full max-w-6xl mx-auto space-y-8 relative z-10">
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 
           {/* LEFT SIDE */}
@@ -91,11 +91,20 @@ const currentUserId = user?._id;
       </div>
     </div>
 
-    {/* RIGHT SIDE */}
-<div className="-mt-24 w-full max-w-[380px] flex bg-transparent border border-white/20 rounded-xl overflow-hidden text-center text-sm">
+    {/* RIGHT SIDE MINI LEADERBOARD */}
+<div
+  className="-mt-24 w-full max-w-[450px] flex text-sm justify-between px-2 rounded-2xl overflow-hidden"
+  style={{
+    borderWidth: "2px",
+    borderStyle: "solid",
+    borderImage: "linear-gradient(90deg, #FF69B4, #8B3EFE, #00E1A2, #3498DB, #FFB400, #FF5F6D) 1",
+    backgroundColor: "transparent",
+  }}
+
+>
 
   {/* YOUR RANK */}
-  <div className="flex-1 flex flex-col items-center justify-center py-2">
+  <div className="flex flex-col items-center justify-center py-2">
     <span className="font-semibold text-[#FFFFFFB2]">YOUR RANK</span>
     <div className="mt-1 flex items-baseline gap-1">
       <span className="text-lg font-bold text-[#B65FC8]">#45</span>
@@ -103,31 +112,42 @@ const currentUserId = user?._id;
     </div>
   </div>
 
-  {/* Divider */}
-  <div className="w-[1px] bg-[#9143F6] self-center h-[calc(1rem+1.25rem)] mx-1" />
-
-  {/* QUESTS */}
-  <div className="flex-1 flex flex-col items-center justify-center py-2">
-    <span className="font-semibold text-[#FFFFFFB2]">QUESTS</span>
-    <span className="mt-1 text-lg font-bold text-[#B65FC8]">24</span>
-  </div>
-
-  {/* Divider */}
-  <div className="w-[1px] bg-[#9143F6] self-center h-[calc(1rem+1.25rem)] mx-1" />
-
-  {/* CAMPAIGNS */}
-  <div className="flex-1 flex flex-col items-center justify-center py-2">
-    <span className="font-semibold text-[#FFFFFFB2]">CAMPAIGNS</span>
-    <span className="mt-1 text-lg font-bold text-[#B65FC8]">8</span>
-  </div>
-
-  {/* Divider */}
+    {/* Divider */}
   <div className="w-[1px] bg-[#9143F6] self-center h-[calc(1rem+1.25rem)] mx-1" />
 
   {/* EVENTS */}
-  <div className="flex-1 flex flex-col items-center justify-center py-2">
-    <span className="font-semibold text-[#FFFFFFB2]">EVENTS</span>
-    <span className="mt-1 text-lg font-bold text-[#B65FC8]">5</span>
+  <div className="flex flex-col items-center text-center py-3">
+    <span className="font-bold text-white text-lg">5</span>
+    <span className="text-[#00E1A2E5] bg-[#00E1A233] px-1 rounded-3xl text-[9px]">EVENTS</span>
+  </div>
+
+    {/* Divider */}
+  <div className="w-[1px] bg-[#9143F6] self-center h-[calc(1rem+1.25rem)] mx-1" />
+
+  {/* QUESTS */}
+  <div className="flex flex-col items-center text-center py-3">
+    <span className="font-bold text-white text-lg">24</span>
+    <span className="text-[#8B3EFEE5] bg-[#8B3EFE33] px-1 rounded-3xl text-[9px]">QUESTS</span>
+  </div>
+
+    {/* Divider */}
+  <div className="w-[1px] bg-[#9143F6] self-center h-[calc(1rem+1.25rem)] mx-1" />
+
+  {/* CAMPAIGNS */}
+  <div className="flex flex-col items-center text-center py-3">
+    <span className="font-bold text-white text-lg">8</span>
+    <span className="text-[#B65FC8E5] bg-[#B65FC833] px-1 rounded-3xl text-[9px]">CAMPAIGNS</span>
+  </div>
+
+    {/* Divider */}
+  <div className="w-[1px] bg-[#9143F6] self-center h-[calc(1rem+1.25rem)] mx-1" />
+
+  {/* XP */}
+  <div className="flex flex-col items-center justify-center text-center py-3">
+    <div className="flex items-center justify-center gap-1 text-white font-bold text-lg">
+      <span>29,000</span>
+      <img src={xpIcon} alt="XP" className="w-5 h-5" />
+    </div>
   </div>
 </div>
         </header>
@@ -204,129 +224,182 @@ const currentUserId = user?._id;
 
 {/* TOTAL LIST */}
 <div className="space-y-2 relative mt-4 text-sm px-2">
-  {/* Border SVG under podium with thicker top line */}
-  <div className="absolute inset-x-0 top-0 z-0 -translate-y-[57px] translate-x-[1.7px]">
-    <svg
-      width="100%"
-      height="auto"
-      viewBox="0 0 1067 831"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-full h-auto"
-    >
-      <path
-        d="M528.229 1.02734C541.064 0.595123 555.864 5.338 568.648 10.9219C581.46 16.5176 592.372 23.0147 597.47 26.208C599.342 27.3807 601.476 28.0263 603.663 28.0264H1053C1060.18 28.0264 1066 33.8467 1066 41.0264V817C1066 824.18 1060.18 830 1053 830H14C6.82031 830 1 824.18 1 817V41.0264L1.00391 40.6904C1.18187 33.6658 6.93248 28.0264 14 28.0264H459.553C461.808 28.0264 464 27.3444 465.907 26.1025C470.691 22.9883 480.474 16.9249 491.938 11.541C503.377 6.16819 516.599 1.41911 528.229 1.02734Z"
-        stroke="#8B3EFE"
-        strokeWidth="4"
+  {loading ? (
+  <div className="flex flex-col items-center justify-center py-16 gap-3">
+    <div className="w-10 h-10 rounded-full border-4 border-[#8B3EFE33] border-t-[#8B3EFE] animate-spin" />
+    <span className="text-sm text-white/60 font-medium tracking-wide">
+      Loading leaderboard...
+    </span>
+  </div>
+) : (
+  <>
+  {/* Table headers + border */}
+  <div className="relative">
+    {/* Custom border as image */}
+    <div className="absolute inset-x-0 top-0 z-0 -translate-y-[57px]">
+      <img
+        src="/leaderboard-border.png"
+        alt="Podium border"
+        className="w-max h-auto object-contain mx-auto"
       />
-    </svg>
-  </div>
+    </div>
 
-{/* Table headers */}
-<div className="grid grid-cols-[40px_2fr_1fr_1fr_1fr_1fr] gap-2 px-1 font-bold text-[#FFFFFF99] text-xs">
-  <div>RANK</div>
-  <div>USER</div>
+    {/* Table headers */}
+      <div
+    className="grid grid-cols-[40px_2fr_1fr_1fr_1fr_1fr] gap-2 font-bold text-[#FFFFFF99] text-sm relative z-10"
+    style={{
+      transform: "translateY(-5px)",
+    }}
+  >
+      <div className="ml-5">RANK</div>
+      <div className="ml-10 ">USER</div>
 
-  <div className="flex items-center justify-center gap-1">
-    <span>EVENTS</span>
-    <img src="/question.png" alt="Events" className="w-3 h-3" />
-  </div>
+<div className="relative flex items-center justify-center gap-1 text-[#00E1A2E5] group">
+  <span>EVENTS</span>
+  <img
+    src="/question.png"
+    alt="Events"
+    className="w-3 h-3 cursor-pointer"
+  />
 
-  <div className="flex items-center justify-center gap-1">
-    <span>QUESTS</span>
-    <img src="/question.png" alt="Quests" className="w-3 h-3" />
-  </div>
-
-  <div className="flex items-center justify-center gap-1">
-    <span>CAMPAIGNS</span>
-    <img src="/question.png" alt="Campaigns" className="w-3 h-3" />
-  </div>
-
-  <div className="flex items-center justify-center gap-1">
-    <span>XP</span>
-    <img src="/nexura-xp.png" alt="XP" className="w-3 h-3" />
+  {/* Tooltip */}
+  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 rounded-md border border-[#8B3EFE66] bg-[#141414] text-white text-xs p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+    <div className="font-semibold mb-1 flex items-center gap-1">
+      <img src="/question.png" alt="Events" className="w-3 h-3" />
+      EVENTS
+    </div>
+    <div>
+      This is the total number of XP-based community events or activities a user has participated in and been rewarded for.
+    </div>
   </div>
 </div>
 
+<div className="relative flex items-center justify-center gap-1 text-[#8B3EFE33] group">
+  <span>QUESTS</span>
+  <img
+    src="/question.png"
+    alt="Quests"
+    className="w-3 h-3 cursor-pointer"
+  />
+
+  {/* Tooltip */}
+  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 rounded-md border border-[#8B3EFE66] bg-[#141414] text-white text-xs p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+    <div className="font-semibold mb-1 flex items-center gap-1">
+      <img src="/question.png" alt="Quests" className="w-3 h-3" />
+      QUESTS
+    </div>
+    <div>
+      This is the total number of quests completed by a user.
+    </div>
+  </div>
+</div>
+
+<div className="relative flex items-center justify-center gap-1 text-[#B65FC833] group">
+  <span>CAMPAIGNS</span>
+  <img
+    src="/question.png"
+    alt="Campaigns"
+    className="w-3 h-3 cursor-pointer"
+  />
+
+  {/* Tooltip */}
+  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 rounded-md border border-[#8B3EFE66] bg-[#141414] text-white text-xs p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+    <div className="font-semibold mb-1 flex items-center gap-1">
+      <img src="/question.png" alt="Campaigns" className="w-3 h-3" />
+      CAMPAIGNS
+    </div>
+    <div>
+      This is the total number of campaigns completed by a user.
+    </div>
+  </div>
+</div>
+
+      <div className="flex items-center justify-center gap-1">
+        <span>XP</span>
+        <img src="/nexura-xp.png" alt="XP" className="w-6 h-6" />
+      </div>
+    </div>
+  </div>
+
   {/* Leaderboard entries */}
-  {list.map((entry, idx) => {
-  const name = entry?.display_name || entry?.username || "Anonymous";
-  const isCurrentUser = currentUserId && entry._id === currentUserId;
-  const rank = idx + 1;
+  <div className="space-y-2 pt-[10px] pl-[10px]">
+    {list.map((entry, idx) => {
+      const name = entry?.display_name || entry?.username || "Anonymous";
+      const isCurrentUser = currentUserId && entry._id === currentUserId;
+      const rank = idx + 1;
 
-  // Top 3 colors
-  let rankBg = "";
-  if (rank === 1) rankBg = "bg-yellow-400 text-white border border-white";
-  else if (rank === 2) rankBg = "bg-gray-300 text-white border border-white";
-  else if (rank === 3) rankBg = "bg-orange-400 text-white border border-white";
+      let rankBg = "";
+      if (rank === 1) rankBg = "bg-yellow-400 text-white border border-white";
+      else if (rank === 2) rankBg = "bg-gray-300 text-white border border-white";
+      else if (rank === 3) rankBg = "bg-orange-400 text-white border border-white";
 
-  // Plain solid colors for borders
-  const borderColors = ["#FF69B4", "#8B3EFE", "#00E1A2", "#3498DB", "#FFB400", "#FF5F6D"];
-  const borderColor = borderColors[idx % borderColors.length]; // cycles through colors
+      const borderColors = ["#FF69B4", "#8B3EFE", "#00E1A2", "#3498DB", "#FFB400", "#FF5F6D"];
+      const borderColor = borderColors[idx % borderColors.length];
 
-  return (
-    <Card
-      key={entry._id}
-      className="grid grid-cols-[40px_2fr_1fr_1fr_1fr_1fr] items-center gap-2 p-1 rounded-2xl hover:brightness-110 overflow-hidden"
-      style={{
-        borderWidth: "2px",
-        borderStyle: "solid",
-        borderColor: borderColor, // solid color per card
-        borderRadius: "1rem",
-        boxShadow: isCurrentUser
-          ? "0 0 10px #f5c54266, 0 0 12px #f5c54244"
-          : "0 0 6px rgba(255,255,255,0.1)",
-        background: isCurrentUser
-          ? "linear-gradient(to right, rgba(245,197,66,0.06), rgba(0,0,0,0.2))"
-          : "linear-gradient(to right, rgba(255,255,255,0.02), rgba(0,0,0,0.1))",
-        maxWidth: "calc(100% - 4px)",
-      }}
-    >
-      {/* RANK */}
-      <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold ${rankBg}`}>
-        #{rank}
-      </div>
+      return (
+        <Card
+          key={entry._id}
+          className="grid grid-cols-[40px_2fr_1fr_1fr_1fr_1fr] items-center gap-2 p-1 rounded-2xl hover:brightness-110 overflow-hidden"
+          style={{
+            borderWidth: "2px",
+            borderStyle: "solid",
+            borderColor: borderColor,
+            borderRadius: "1rem",
+            boxShadow: isCurrentUser
+              ? "0 0 10px #f5c54266, 0 0 12px #f5c54244"
+              : "0 0 6px rgba(255,255,255,0.1)",
+            background: isCurrentUser
+              ? "linear-gradient(to right, rgba(245,197,66,0.06), rgba(0,0,0,0.2))"
+              : "linear-gradient(to right, rgba(255,255,255,0.02), rgba(0,0,0,0.1))",
+            maxWidth: "calc(100% - 4px)",
+          }}
+        >
+          {/* RANK */}
+          <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold ${rankBg}`}>
+            #{rank}
+          </div>
 
-      {/* USER */}
-      <div className="flex items-center gap-1 truncate">
-        <Avatar className="w-6 h-6 rounded-full overflow-hidden">
-          {entry?.avatar ? (
-            <AvatarImage src={entry.avatar} className="w-full h-full object-cover" />
-          ) : (
-            <AvatarFallback className="bg-white/10 text-white font-bold">
-              {name.charAt(0)}
-            </AvatarFallback>
-          )}
-        </Avatar>
-        <span className="truncate">{name}</span>
-      </div>
+          {/* USER */}
+          <div className="flex items-center gap-1 truncate">
+            <Avatar className="w-10 h-10 rounded-full overflow-hidden">
+              {entry?.avatar ? (
+                <AvatarImage src={entry.avatar} className="w-full h-full object-cover" />
+              ) : (
+                <AvatarFallback className="bg-white/10 text-white font-bold">{name.charAt(0)}</AvatarFallback>
+              )}
+            </Avatar>
+            <span className="truncate">{name}</span>
+          </div>
 
-      {/* EVENTS */}
-      <div className="flex flex-col items-center text-center">
-        <span className="font-bold">{entry?.events || 0}</span>
-        <span className="text-[#00E1A2E5] bg-[#00E1A233] px-1 rounded text-[9px]">EVENTS</span>
-      </div>
+          {/* EVENTS */}
+          <div className="flex flex-col items-center text-center">
+            <span className="font-bold">{entry?.events || 0}</span>
+            <span className="text-[#00E1A2E5] bg-[#00E1A233] px-1 rounded text-[9px]">EVENTS</span>
+          </div>
 
-      {/* QUESTS */}
-      <div className="flex flex-col items-center text-center">
-        <span className="font-bold">{entry?.questsCompleted || 0}</span>
-        <span className="text-[#8B3EFEE5] bg-[#8B3EFE33] px-1 rounded text-[9px]">QUESTS</span>
-      </div>
+          {/* QUESTS */}
+          <div className="flex flex-col items-center text-center">
+            <span className="font-bold">{entry?.questsCompleted || 0}</span>
+            <span className="text-[#8B3EFEE5] bg-[#8B3EFE33] px-1 rounded text-[9px]">QUESTS</span>
+          </div>
 
-      {/* CAMPAIGNS */}
-      <div className="flex flex-col items-center text-center">
-        <span className="font-bold">{entry?.campaignsCompleted || 0}</span>
-        <span className="text-[#B65FC8E5] bg-[#B65FC833] px-1 rounded text-[9px]">CAMPAIGNS</span>
-      </div>
+          {/* CAMPAIGNS */}
+          <div className="flex flex-col items-center text-center">
+            <span className="font-bold">{entry?.campaignsCompleted || 0}</span>
+            <span className="text-[#B65FC8E5] bg-[#B65FC833] px-1 rounded text-[9px]">CAMPAIGNS</span>
+          </div>
 
-      {/* XP */}
-      <div className="flex items-center justify-center gap-1 text-white font-bold">
-        <span>{entry?.xp || 0}</span>
-        <img src={xpIcon} alt="XP" className="w-3 h-3" />
-      </div>
-    </Card>
-  );
-})}
+          {/* XP */}
+          <div className="flex items-center justify-center gap-1 text-white font-bold">
+            <span>{entry?.xp || 0}</span>
+            <img src={xpIcon} alt="XP" className="w-3 h-3" />
+          </div>
+        </Card>
+      );
+    })}
+  </div>
+  </>
+)}
 </div>
       </div>
     </div>
