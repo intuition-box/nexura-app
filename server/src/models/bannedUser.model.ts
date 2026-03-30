@@ -11,6 +11,6 @@ const bannedUserSchema = new mongoose.Schema({
     required: true,
     unique: true
   }
-});
+}, { timestamps: true });
 
 export const bannedUser = mongoose.model("banned-users", bannedUserSchema);

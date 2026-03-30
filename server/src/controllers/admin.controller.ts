@@ -1,5 +1,6 @@
 import { updateAdminLastActivity } from "@/utils/adminActivityCron";
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 import logger from "@/config/logger";
 import { quest } from "@/models/quests.model";
 import { admin } from "@/models/admin.model";
@@ -47,6 +48,19 @@ const formatAdminRecord = (record: {
 	lastActivity: record.lastActivity ?? null,
 	isOnline: Boolean(record.isOnline),
 });
+
+const deriveBanTimestamp = (record: { _id: unknown; createdAt?: Date | string }) => {
+  if (record.createdAt) {
+    return record.createdAt;
+  }
+
+  const id = typeof record._id === "string" ? record._id : String(record._id);
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return new mongoose.Types.ObjectId(id).getTimestamp();
+  }
+
+  return null;
+};
 
 export const createQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
@@ -404,7 +418,10 @@ export const getTasks = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const getBannedUsers = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
-		const bannedUsers = await bannedUser.find().lean();
+		const bannedUsers = (await bannedUser.find().sort({ createdAt: -1 }).lean()).map((entry) => ({
+      ...entry,
+      bannedAt: deriveBanTimestamp(entry),
+    }));
 
 		res.status(OK).json({ message: "banned users fetched", bannedUsers });
 	} catch (error) {
