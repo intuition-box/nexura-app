@@ -335,7 +335,7 @@ export const forgotPassword = async (req: GlobalRequest, res: GlobalResponse) =>
 		}
 
 		const id = hubAdminExists._id.toString();
-		const clientLink = `${CLIENT_URL}/hub/reset-password?token=`;
+		const clientLink = `${CLIENT_URL}/studio/reset-password?token=`;
 
 		const token = JWT.sign(id, "10m");
 		const link = clientLink + token;
@@ -381,7 +381,26 @@ export const resetPassword = async (req: GlobalRequest, res: GlobalResponse) => 
 
 		await REDIS.set({ key: `reset-access-token:${token}`, data: { token }, ttl: 10 * 60 });
 
-		res.status(OK).json({ message: "admin password reset successful!" });
+		const accessToken = JWT.sign(id);
+		const refreshToken = getRefreshToken(id);
+
+		res.cookie("refreshToken", refreshToken, {
+			httpOnly: true,
+			secure: true,
+			maxAge: 30 * 24 * 60 * 60,
+		});
+
+		res.status(OK).json({
+			message: "admin password reset successful!",
+			accessToken,
+			admin: {
+				_id: adminExists._id,
+				name: adminExists.name,
+				email: adminExists.email,
+				role: adminExists.role,
+				hub: adminExists.hub,
+			},
+		});
 	} catch (error) {
 		logger.error(error);
 		res

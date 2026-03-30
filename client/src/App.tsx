@@ -53,6 +53,7 @@ import ClaimDetails from "./pages/ClaimDetails";
 import ConnectDiscord from "./pages/studio/ConnectDiscord.tsx";
 import Docs from "./pages/Docs.tsx"
 import LessonPage from "./pages/LessonPage";
+import ResetHubPassword from "./pages/studio/ResetHubPassword.tsx";
 
 function Router() {
    const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -156,6 +157,7 @@ function Router() {
         </StudioLayout>
       </Route>
       <Route path="/studio/register" component={AdminSignUp} />
+      <Route path="/studio/reset-password" component={ResetHubPassword} />
       <Route path="/project/:projectId/*" component={ProjectDashboard} />
       <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
       {/* Referral */}
@@ -181,7 +183,8 @@ function App() {
       location.startsWith("/projects/create") ||
       location.startsWith("/connect-discord") ||
       location.startsWith("/project/connected-discord") ||
-      location.startsWith("/studio/register");
+      location.startsWith("/studio/register") ||
+      location.startsWith("/studio/reset-password");
 
     document.body.classList.toggle("studio-theme", isStudioRoute);
 
@@ -210,7 +213,8 @@ function App() {
                   location.startsWith("/studio-dashboard") ||
                   location.startsWith("/connect-discord") ||
                   location.startsWith("/project/connected-discord") ||
-                  location.startsWith("/studio/register");
+                  location.startsWith("/studio/register") ||
+                  location.startsWith("/studio/reset-password");
                 const isProject = location.startsWith("/project/");
                 const isProjectCreate = location.startsWith("/projects/create");
                 const isDocs = location.startsWith("/docs")

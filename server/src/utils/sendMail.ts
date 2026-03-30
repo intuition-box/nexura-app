@@ -94,6 +94,25 @@ export const resetEmail = async (email: string, link: string) => {
   }
 };
 
+export const sendAdminResetEmail = async (email: string, token: string, origin?: string) => {
+  try {
+    const baseUrl = (origin || ADMIN_URL).replace(/\/$/, "");
+    const link = `${baseUrl}/?reset=1&token=${encodeURIComponent(token)}`;
+
+    await transporter.sendMail({
+      from: EMAIL_USER,
+      to: email,
+      subject: "Reset Admin Password",
+      template: "reset",
+      context: {
+        link,
+      },
+    } as MailOptions);
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};
+
 export const addHubAdminEmail = async (email: string, code: string, origin?: string) => {
   try {
     const baseUrl = origin || CLIENT_URL;

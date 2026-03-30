@@ -6,7 +6,7 @@ import { quest } from "@/models/quests.model";
 import { admin } from "@/models/admin.model";
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, UNAUTHORIZED } from "@/utils/status.utils";
 import { generateOTP, getRefreshToken, hashPassword, JWT, validateQuestData } from "@/utils/utils";
-import { sendEmailToAdmin } from "@/utils/sendMail";
+import { sendAdminResetEmail, sendEmailToAdmin } from "@/utils/sendMail";
 import { campaignQuestCompleted, miniQuestCompleted } from "@/models/questsCompleted.models";
 import { submission } from "@/models/submission.model";
 import { user } from "@/models/user.model";
@@ -29,10 +29,11 @@ const normalizeAdminRole = (role: unknown): "superadmin" | "admin" =>
 	role === "superadmin" ? "superadmin" : "admin";
 
 const buildAdminInviteCode = () => generateOTP();
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 const formatAdminRecord = (record: {
 	_id: unknown;
-	username?: string;
+	username?: string | null;
 	email: string;
 	role: "superadmin" | "admin";
 	createdAt?: Date;
@@ -40,8 +41,8 @@ const formatAdminRecord = (record: {
 	isOnline?: boolean;
 }) => ({
 	_id: record._id,
-	name: record.username || record.email.split("@")[0],
-	username: record.username,
+	name: record.username?.trim() || record.email.split("@")[0],
+	username: record.username ?? undefined,
 	email: record.email,
 	role: record.role,
 	createdAt: record.createdAt,
@@ -60,6 +61,27 @@ const deriveBanTimestamp = (record: { _id: unknown; createdAt?: Date | string })
   }
 
   return null;
+};
+
+const buildAdminAuthPayload = (record: {
+  _id: unknown;
+  username?: string | null;
+  email: string;
+  role: "superadmin" | "admin";
+  createdAt?: Date;
+  lastActivity?: Date | null;
+  isOnline?: boolean;
+}) => {
+  const id = String(record._id);
+  const accessToken = JWT.sign(id);
+  const refreshToken = getRefreshToken(id);
+
+  return {
+    id,
+    accessToken,
+    refreshToken,
+    admin: formatAdminRecord(record),
+  };
 };
 
 export const createQuest = async (req: GlobalRequest, res: GlobalResponse) => {
@@ -208,13 +230,18 @@ export const addAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
-    const { email, role, clientUrl }: { email: string, role: "superadmin" | "admin", clientUrl?: string } = req.body;
+		const { email, role, clientUrl }: { email: string, role: "superadmin" | "admin", clientUrl?: string } = req.body;
 		if (!email) {
 			res.status(BAD_REQUEST).json({ error: "send admin email" });
 			return;
 		}
 
 		const normalizedEmail = email.trim().toLowerCase();
+		if (!isValidEmail(normalizedEmail)) {
+			res.status(BAD_REQUEST).json({ error: "send a valid admin email" });
+			return;
+		}
+
 		const normalizedRole = normalizeAdminRole(role);
 		const existingAdmin = await admin.findOne({ email: normalizedEmail });
 		if (existingAdmin?.verified) {
@@ -318,10 +345,7 @@ export const adminLogin = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
     }
 		
-    const id = adminExists._id.toString();
-
-		const accessToken = JWT.sign(id);
-		const refreshToken = getRefreshToken(id);
+    const { id, accessToken, refreshToken, admin: authAdmin } = buildAdminAuthPayload(adminExists.toObject());
 
 		req.id = id;
 
@@ -336,7 +360,7 @@ export const adminLogin = async (req: GlobalRequest, res: GlobalResponse) => {
 		res.status(OK).json({
       message: "admin logged in",
       accessToken,
-      admin: formatAdminRecord(adminExists.toObject()),
+      admin: authAdmin,
     });
 	} catch (error) {
 		logger.error(error);
@@ -380,10 +404,7 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 
     await semiAdmin.save();
 
-    const id = semiAdmin._id.toString();
-
-		const accessToken = JWT.sign(id);
-		const refreshToken = getRefreshToken(id);
+    const { id, accessToken, refreshToken, admin: authAdmin } = buildAdminAuthPayload(semiAdmin.toObject());
 
 		req.id = id;
 
@@ -396,7 +417,7 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 		res.status(OK).json({
       message: "admin verified",
       accessToken,
-      admin: formatAdminRecord(semiAdmin.toObject()),
+      admin: authAdmin,
     });
 	} catch (error) {
 		logger.error(error);
@@ -428,6 +449,83 @@ export const getBannedUsers = async (req: GlobalRequest, res: GlobalResponse) =>
 		logger.error(error);
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
 	}
+};
+
+export const forgotAdminPassword = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { email, clientUrl }: { email?: string; clientUrl?: string } = req.body;
+    if (!email) {
+      res.status(BAD_REQUEST).json({ error: "email is required" });
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isValidEmail(normalizedEmail)) {
+      res.status(BAD_REQUEST).json({ error: "send a valid admin email" });
+      return;
+    }
+
+    const adminExists = await admin.findOne({ email: normalizedEmail, verified: true }).lean();
+    if (!adminExists) {
+      res.status(NOT_FOUND).json({ error: "email associated with admin is invalid or does not exist" });
+      return;
+    }
+
+    const token = JWT.sign(adminExists._id.toString(), "10m");
+    await sendAdminResetEmail(normalizedEmail, token, clientUrl);
+
+    res.status(OK).json({ message: "password reset email sent!" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Error sending admin password reset email" });
+  }
+};
+
+export const resetAdminPassword = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { token, password } = req.body as { token?: string; password?: string };
+
+    if (!token || !password) {
+      res.status(BAD_REQUEST).json({ error: "send token and password" });
+      return;
+    }
+
+    const accessTokenUsed = await REDIS.get(`admin-reset-access-token:${token}`);
+    if (accessTokenUsed) {
+      res.status(BAD_REQUEST).json({ error: "access token already used, request a new one to change your password" });
+      return;
+    }
+
+    const { id } = await JWT.verify(token) as { id: string };
+    const adminExists = await admin.findOne({ _id: id, verified: true });
+
+    if (!adminExists) {
+      res.status(BAD_REQUEST).json({ error: "id associated with admin is invalid" });
+      return;
+    }
+
+    adminExists.password = await hashPassword(password);
+    await adminExists.save();
+
+    await REDIS.set({ key: `admin-reset-access-token:${token}`, data: { token }, ttl: 10 * 60 });
+
+    const { accessToken, refreshToken, admin: authAdmin } = buildAdminAuthPayload(adminExists.toObject());
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      maxAge: 30 * 24 * 60 * 60,
+    });
+
+    res.status(OK).json({
+      message: "admin password reset successful!",
+      accessToken,
+      admin: authAdmin,
+    });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "Error resetting admin password" });
+  }
 };
 
 export const getUserSummary = async (_req: GlobalRequest, res: GlobalResponse) => {

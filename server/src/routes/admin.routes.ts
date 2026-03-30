@@ -17,7 +17,16 @@ import {
   removeAdmin,
   manageAdmin
 } from "@/controllers/admin.controller";
-import { createLesson, createQuestion, createMiniLesson, getAllLessons, getLessonDetailsForAdmin } from "@/controllers/lesson.controller";
+import {
+  createLesson,
+  createQuestion,
+  createMiniLesson,
+  getAllLessons,
+  getLessonDetailsForAdmin,
+  updateLesson,
+  updateMiniLesson,
+  updateQuestion,
+} from "@/controllers/lesson.controller";
 
 const router = Router();
 
@@ -33,8 +42,11 @@ router
   .post("/ban-user", banUser)
   .post("/unban-user", unBanUser)
   .post("/create-lesson", createLesson)
+  .patch("/update-lesson", updateLesson)
   .post("/create-mini-lesson", createMiniLesson)
+  .patch("/update-mini-lesson", updateMiniLesson)
 	.post("/create-question", createQuestion)
+  .patch("/update-question", updateQuestion)
   .get("/get-banned-users", getBannedUsers)
   .get("/get-quests", getTasks)
   .get("/get-admins", getAdmins)

@@ -13,7 +13,7 @@ import {
 	fetchQuests,
 } from "@/controllers/quest.controller.ts";
 import { signIn } from "@/controllers/auth.controller";
-import { createAdmin, adminLogin } from "@/controllers/admin.controller";
+import { createAdmin, adminLogin, forgotAdminPassword, resetAdminPassword } from "@/controllers/admin.controller";
 import { authenticateUser2, authenticateAdmin, authenticateUser } from "@/middlewares/auth.middleware";
 
 const router = Router();
@@ -24,6 +24,8 @@ router
 	})
   .post("/admin/register", createAdmin)
   .post("/admin/login", adminLogin)
+  .post("/admin/forgot-password", forgotAdminPassword)
+  .post("/admin/reset-password", resetAdminPassword)
   .post("/user/sign-in", signIn)
 	.use("/", appRoutes)
 	.use("/admin", authenticateAdmin, adminRoutes)

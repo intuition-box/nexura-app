@@ -174,7 +174,7 @@ export default function Learn() {
                     >
                       {lesson.done ? "COMPLETED" : "NOT STARTED"}
                     </div>
-                    <span className="text-4xl">📚</span>
+                    <span className="text-sm font-semibold uppercase tracking-[0.35em] text-white/50">Learn</span>
                   </div>
 
                   {/* Content */}
@@ -206,7 +206,7 @@ export default function Learn() {
                         }}
                         className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#8B3EFE] text-white text-xs transition-all duration-200 hover:scale-105 hover:bg-[#7A2FE0]"
                       >
-                        {lesson.done ? "REVIEW →" : "START →"}
+                        {lesson.done ? "REVIEW ->" : "START ->"}
                       </button>
                     </div>
 

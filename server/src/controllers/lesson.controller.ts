@@ -21,6 +21,52 @@ export const createLesson = async (req: GlobalRequest, res: GlobalResponse) => {
   }
 }
 
+export const updateLesson = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { lessonId, title, description, reward } = req.body as {
+      lessonId?: string;
+      title?: string;
+      description?: string;
+      reward?: number;
+    };
+
+    if (!lessonId) {
+      res.status(BAD_REQUEST).json({ error: "lessonId is required" });
+      return;
+    }
+
+    const lessonExists = await lesson.findById(lessonId);
+    if (!lessonExists) {
+      res.status(NOT_FOUND).json({ error: "lesson does not exist" });
+      return;
+    }
+
+    if (typeof title === "string" && title.trim()) {
+      lessonExists.title = title.trim();
+    }
+
+    if (typeof description === "string" && description.trim()) {
+      lessonExists.description = description.trim();
+    }
+
+    if (reward !== undefined) {
+      const normalizedReward = Number(reward);
+      if (!Number.isFinite(normalizedReward) || normalizedReward < 0) {
+        res.status(BAD_REQUEST).json({ error: "reward must be a valid number" });
+        return;
+      }
+      lessonExists.reward = normalizedReward;
+    }
+
+    await lessonExists.save();
+
+    res.status(OK).json({ message: "lesson updated" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating lesson" });
+  }
+};
+
 export const createQuestion = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { success } = validateCreateQuestion(req.body);
@@ -40,6 +86,58 @@ export const createQuestion = async (req: GlobalRequest, res: GlobalResponse) =>
   }
 }
 
+export const updateQuestion = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { questionId, question: questionText, options, solution } = req.body as {
+      questionId?: string;
+      question?: string;
+      options?: string[];
+      solution?: string;
+    };
+
+    if (!questionId) {
+      res.status(BAD_REQUEST).json({ error: "questionId is required" });
+      return;
+    }
+
+    const questionExists = await question.findById(questionId);
+    if (!questionExists) {
+      res.status(NOT_FOUND).json({ error: "question does not exist" });
+      return;
+    }
+
+    const normalizedOptions = Array.isArray(options)
+      ? options.map((option) => option.trim()).filter(Boolean)
+      : questionExists.options;
+
+    const normalizedSolution = typeof solution === "string" ? solution.trim() : questionExists.solution;
+
+    if (normalizedOptions.length < 2) {
+      res.status(BAD_REQUEST).json({ error: "at least two options are required" });
+      return;
+    }
+
+    if (!normalizedOptions.includes(normalizedSolution)) {
+      res.status(BAD_REQUEST).json({ error: "solution must match one of the options" });
+      return;
+    }
+
+    if (typeof questionText === "string" && questionText.trim()) {
+      questionExists.question = questionText.trim();
+    }
+
+    questionExists.options = normalizedOptions;
+    questionExists.solution = normalizedSolution;
+
+    await questionExists.save();
+
+    res.status(OK).json({ message: "question updated" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating lesson question" });
+  }
+};
+
 export const createMiniLesson = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { text, lesson: lessonId } = req.body;
@@ -56,6 +154,30 @@ export const createMiniLesson = async (req: GlobalRequest, res: GlobalResponse) 
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error creating mini lesson" });
   }
 }
+
+export const updateMiniLesson = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { miniLessonId, text } = req.body as { miniLessonId?: string; text?: string };
+    if (!miniLessonId || !text?.trim()) {
+      res.status(BAD_REQUEST).json({ error: "miniLessonId and text are required" });
+      return;
+    }
+
+    const miniLessonExists = await miniLesson.findById(miniLessonId);
+    if (!miniLessonExists) {
+      res.status(NOT_FOUND).json({ error: "mini lesson does not exist" });
+      return;
+    }
+
+    miniLessonExists.text = text.trim();
+    await miniLessonExists.save();
+
+    res.status(OK).json({ message: "mini lesson updated" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating mini lesson" });
+  }
+};
 
 export const rewardLessonXp = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
