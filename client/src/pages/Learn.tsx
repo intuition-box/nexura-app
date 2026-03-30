@@ -1,3 +1,5 @@
+"use client";
+
 import { useLocation } from "wouter";
 import { Card, CardContent } from "../components/ui/card";
 import AnimatedBackground from "../components/AnimatedBackground";
@@ -6,45 +8,62 @@ import xpRewardIcon from "/xp-reward.png";
 import { useEffect, useState } from "react";
 import { useWallet } from "../hooks/use-wallet"; 
 import { useAuth } from "../lib/auth";
+import { apiRequestV2 } from "../lib/queryClient";
+import { Loader2 } from "lucide-react";
 
-const lessons = [
-  {
-    id: "intro-to-web3",
-    title: "Introduction to Web3",
-    description:
-    "Learn how the internet evolved into Web3, how blockchain enables ownership and transparency and how trust is verified through decentralized layer.",
-    progress: "1/9",
-    progressWidth: "11%",
-    image: "/learn-image.png",
-    icon: "/intro.png",
-    xp: "/xp-500.png",
-  },
-];
+interface Lesson {
+  _id: string;
+  title: string;
+  description: string;
+  reward: number;
+  noOfQuestions: number;
+  done: boolean;
+  createdAt: string;
+}
 
 export default function Learn() {
-
-  const { address, isConnected, connectWallet } = useWallet();
-const { user, loading } = useAuth();
+  const { isConnected, connectWallet } = useWallet();
+  const { user, loading: authLoading } = useAuth();
   const [location, setLocation] = useLocation();
-  const walletAddress = "0x123";
-  const storageKey = `learn-progress-${walletAddress}`;
-  const [progressData, setProgressData] = useState({});
-  const [xpClaimed, setXpClaimed] = useState(false);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-useEffect(() => {
-  const loadProgress = () => {
-    const stored = JSON.parse(localStorage.getItem(storageKey)) || {};
-    setProgressData(stored);
+  useEffect(() => {
+    const fetchLessons = async () => {
+      try {
+        setLoading(true);
+        const json = await apiRequestV2("GET", "/api/lesson/get-lessons");
+        if (json.lessons) {
+          setLessons(json.lessons);
+        }
+      } catch (err: any) {
+        console.error("Error fetching lessons:", err);
+        setError(err.message || "Failed to load lessons");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!authLoading) {
+      fetchLessons();
+    }
+  }, [authLoading]);
+
+  const handleStartLesson = async (lessonId: string, isDone: boolean) => {
+    if (!isConnected) {
+      await connectWallet();
+      return;
+    }
+
+    if (!user) {
+      alert("You must sign in to start this lesson.");
+      return;
+    }
+
+    const url = isDone ? `/learn/${lessonId}?review=1` : `/learn/${lessonId}`;
+    setLocation(url);
   };
-
-  loadProgress();
-
-  window.addEventListener("progress-update", loadProgress);
-
-  return () => {
-    window.removeEventListener("progress-update", loadProgress);
-  };
-}, [storageKey]);
 
   return (
     <div className="min-h-screen bg-black text-white overflow-auto p-6 relative">
@@ -72,12 +91,12 @@ useEffect(() => {
 
         {/* Top Card */}
         <Card
-  className="rounded-2xl sm:rounded-3xl p-4 sm:p-4 animate-slide-up delay-300"
-  style={{
-    background: "linear-gradient(135deg, #2A085E 0%, #3D0F8A 100%)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-  }}
->
+          className="rounded-2xl sm:rounded-3xl p-4 sm:p-4 animate-slide-up delay-300"
+          style={{
+            background: "linear-gradient(135deg, #2A085E 0%, #3D0F8A 100%)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+          }}
+        >
           <CardContent className="p-0">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
 
@@ -121,123 +140,83 @@ useEffect(() => {
             <div className="flex-1 h-[1px] bg-[#FFFFFF33]"></div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+            </div>
+          ) : error ? (
+            <Card className="rounded-2xl p-6 bg-red-500/10 border-red-500/20">
+              <p className="text-red-400 text-center">{error}</p>
+            </Card>
+          ) : lessons.length === 0 ? (
+            <Card className="rounded-2xl p-8 bg-white/5 border-white/10">
+              <p className="text-white/60 text-center">No lessons available yet. Check back soon!</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {lessons.map((lesson) => {
-              const progress = progressData[lesson.id]?.progress || 0;
-              const quizCompleted = progressData[lesson.id]?.quizCompleted === true;
-              const isCompleted = progress === 9 && quizCompleted;
+              {lessons.map((lesson) => (
+                <div
+                  key={lesson._id}
+                  onClick={() => handleStartLesson(lesson._id, lesson.done)}
+                  className="rounded-2xl overflow-hidden bg-[#1C0E3480] border border-white/10 cursor-pointer hover:scale-[1.02] transition"
+                >
 
-const isInProgress = progress > 0 && !isCompleted;
-const isNotStarted = progress === 0;
-              const percent = (progress / 9) * 100;
-
-              return (
-              <div
-              onClick={() => setLocation(`/learn/intro-to-web3`)}
-                key={lesson.id}
-                className="rounded-2xl overflow-hidden bg-[#1C0E3480] border border-white/10 cursor-pointer hover:scale-[1.02] transition"
-              >
-
-                {/* Image */}
-                <div className="relative">
-                  <img
-                    src={lesson.image}
-                    alt="Lesson"
-                    className="w-full h-36 object-cover"
-                  />
-
-<div
-  className="absolute top-2 right-2 px-2 py-1 text-[10px] font-semibold"
-  style={{
-    color: "#00CCF933",
-    background: "#000000A6",
-    boxShadow: "0px 3px 10px 0px rgba(0, 0, 0, 0.5)",
-  }}
->
-  {isCompleted
-    ? "COMPLETED"
-    : isInProgress
-    ? "IN PROGRESS"
-    : "NOT STARTED"}
-</div>
-
-                  <img
-                    src={lesson.icon}
-                    alt="Intro"
-                    className="absolute bottom-2 left-2 w-6 h-6 object-contain"
-                  />
-                </div>
-
-                {/* Content */}
-                <div className="p-3 space-y-3">
-
-                  <h3 className="text-sm font-bold text-white">
-                    {lesson.title}
-                  </h3>
-
-                  <p className="text-xs text-white/70 leading-relaxed">
-                    {lesson.description}
-                  </p>
-
-                  <div className="flex justify-between text-[10px] text-white/60">
-                    <span>PROGRESS</span>
-                    <span>{progress}/9 LESSONS</span>
+                  {/* Image Placeholder */}
+                  <div className="relative bg-gradient-to-br from-purple-900/50 to-blue-900/50 h-36 flex items-center justify-center">
+                    <div
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-semibold"
+                      style={{
+                        color: lesson.done ? "#00FF88" : "#00CCF933",
+                        background: "#000000A6",
+                        boxShadow: "0px 3px 10px 0px rgba(0, 0, 0, 0.5)",
+                      }}
+                    >
+                      {lesson.done ? "COMPLETED" : "NOT STARTED"}
+                    </div>
+                    <span className="text-4xl">📚</span>
                   </div>
 
-<div className="w-full h-1 bg-white rounded-3xl overflow-hidden">
-  <div
-    className="h-full rounded-3xl"
-    style={{
-      width: `${percent}%`,
-      background: "linear-gradient(90deg, #94E2FF, #8A3FFC)",
-    }}
-  />
-</div>
+                  {/* Content */}
+                  <div className="p-3 space-y-3">
 
+                    <h3 className="text-sm font-bold text-white">
+                      {lesson.title}
+                    </h3>
 
-<div className="flex justify-between items-center pt-1">
-  {/* XP Image */}
-  <img
-    src={isCompleted ? "/xp-claimed.png" : lesson.xp}
-    alt="XP"
-    className="w-16 object-contain"
-  />
+                    <p className="text-xs text-white/70 leading-relaxed line-clamp-2">
+                      {lesson.description}
+                    </p>
 
+                    <div className="flex justify-between text-[10px] text-white/60">
+                      <span>QUESTIONS</span>
+                      <span>{lesson.noOfQuestions} QUESTIONS</span>
+                    </div>
 
-<button
-  onClick={async (e) => {
-    e.stopPropagation();
+                    <div className="flex justify-between items-center pt-1">
+                      {/* XP Badge */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-yellow-400 font-semibold">+{lesson.reward} XP</span>
+                      </div>
 
-    if (!isConnected) {
-      // Prompt wallet connection first
-      await connectWallet();
-      return;
-    }
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartLesson(lesson._id, lesson.done);
+                        }}
+                        className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#8B3EFE] text-white text-xs transition-all duration-200 hover:scale-105 hover:bg-[#7A2FE0]"
+                      >
+                        {lesson.done ? "REVIEW →" : "START →"}
+                      </button>
+                    </div>
 
-    if (!user) {
-      alert("You must sign in to start this lesson."); 
-      return;
-    }
-
-    const url = isCompleted
-      ? `/learn/${lesson.id}?review=1`
-      : `/learn/${lesson.id}`;
-    setLocation(url);
-  }}
-  className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#8B3EFE] text-white text-xs transition-all duration-200 hover:scale-105 hover:bg-[#7A2FE0]"
->
-  {isCompleted ? "REVIEW →" : isInProgress ? "CONTINUE →" : "START →"}
-</button>
                   </div>
 
                 </div>
+              ))}
 
-              </div>
-            )}
-            )}
-
-          </div>
+            </div>
+          )}
 
         </div>
 

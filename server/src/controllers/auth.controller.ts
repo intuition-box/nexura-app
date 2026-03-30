@@ -28,6 +28,25 @@ import { token } from "@/models/tokens.model";
 import { bannedUser } from "@/models/bannedUser.model";
 import { REDIS } from "@/utils/redis.utils";
 
+const buildWalletUsernameBase = (address: string) =>
+	`${address.slice(0, 4)}...${address.slice(-4)}`;
+
+const buildUniqueWalletUsername = async (address: string) => {
+	const baseUsername = buildWalletUsernameBase(address);
+	const exactMatch = await user.exists({ username: baseUsername });
+	if (!exactMatch) return baseUsername;
+
+	let attempt = 1;
+	while (attempt < 100) {
+		const candidate = `${baseUsername}-${attempt}`;
+		const candidateExists = await user.exists({ username: candidate });
+		if (!candidateExists) return candidate;
+		attempt += 1;
+	}
+
+	return `${baseUsername}-${cryptoRandomString({ length: 4, type: "alphanumeric" }).toLowerCase()}`;
+};
+
 export const discordCallback = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const { code } = req.query as { code: string };
@@ -211,8 +230,6 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 
 	const lowerCaseAddress = address.toLowerCase();
 
-  const slicedAddress = lowerCaseAddress.slice(0, 4) + "..." + lowerCaseAddress.slice(-4);
-
 	try {
 
 		const userBanned = await bannedUser.findOne({ walletAddress: lowerCaseAddress });
@@ -230,6 +247,7 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 			});
 
 			const dateJoined = formatDate(new Date(), "MMM, y");
+			const username = await buildUniqueWalletUsername(lowerCaseAddress);
 
 			const referral = {
 				code: referrerCode,
@@ -237,14 +255,14 @@ export const signIn = async (req: GlobalRequest, res: GlobalResponse) => {
 
 			const userReferrer = await user.findOne({ "referral.code": referrer });
 
-			const newUser = new user({ address: lowerCaseAddress, username: slicedAddress, referral, dateJoined });
+			const newUser = new user({ address: lowerCaseAddress, username, referral, dateJoined });
 
 			const id = newUser._id;
 
 			if (userReferrer) {
 				const signedUp = formatDate(new Date(), "MMM dd, y");
 
-				await referredUsers.create({ user: userReferrer._id, newUser: id, signedUp, username: slicedAddress });
+				await referredUsers.create({ user: userReferrer._id, newUser: id, signedUp, username });
 			}
 
 			await newUser.save();
