@@ -7,11 +7,18 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import Confetti from "react-confetti";
 import { Trophy } from "lucide-react";
+import { apiRequestV2 } from "../lib/queryClient";
+import { useWallet } from "../hooks/use-wallet";
+import { useAuth } from "../lib/auth";
 
+const CLAIMABLE_LESSON_REF = "intro-to-web3";
+const CLAIMABLE_XP_REWARD = 500;
 
 export default function LessonPage() {
   const [location, setLocation] = useLocation();
   const { id } = useParams();
+  const { isConnected, connectWallet } = useWallet();
+  const { user } = useAuth();
   const walletAddress = "0x123";
 const storageKey = `learn-progress-${walletAddress}`;
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
@@ -97,6 +104,8 @@ const xpClaimed = quizCompleted || (() => {
   const [animate, setAnimate] = useState(false);
     const [startBounce, setStartBounce] = useState(false);
     const isGoldCompleted = showCompletionSlide && completionType === "gold";
+  const [claimingReward, setClaimingReward] = useState(false);
+  const [claimMessage, setClaimMessage] = useState("");
 
   useEffect(() => {
     // Start bounce 1s after component mounts + fly-in duration (0.6s)
@@ -127,21 +136,74 @@ useEffect(() => {
 
   ///////////////// local storage
   const handleClaimXP = () => {
-  if (quizCompleted) return; // prevent double-clicks
+  if (quizCompleted || claimingReward) return; // prevent double-clicks
 
-  const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+  const claimReward = async () => {
+    if (!isConnected) {
+      await connectWallet();
+      return;
+    }
 
-  data[id] = {
-    ...data[id],
-    completed: true,
-    quizCompleted: true,
+    if (!user) {
+      setClaimMessage("Sign in with your wallet before claiming lesson XP.");
+      return;
+    }
+
+    setClaimingReward(true);
+    setClaimMessage("");
+
+    try {
+      try {
+        await apiRequestV2("POST", `/api/lesson/start-lesson?lessonId=${CLAIMABLE_LESSON_REF}`);
+      } catch (error) {
+        const message = error?.message || String(error || "");
+        if (!message.toLowerCase().includes("already started") && !message.toLowerCase().includes("already completed")) {
+          throw error;
+        }
+      }
+
+      const response = await apiRequestV2("POST", `/api/lesson/reward-lesson-xp?id=${CLAIMABLE_LESSON_REF}`);
+      const claimedReward = Number(response?.reward || CLAIMABLE_XP_REWARD);
+
+      const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+
+      data[id] = {
+        ...data[id],
+        completed: true,
+        quizCompleted: true,
+        claimedReward,
+      };
+
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      window.dispatchEvent(new Event("progress-update"));
+
+      setQuizCompleted(true);
+      setClaimMessage(response?.message || "XP reward claimed successfully.");
+      setShowXPModal(true);
+    } catch (error) {
+      const message = error?.message || String(error || "Unable to claim lesson XP.");
+      if (message.toLowerCase().includes("already been claimed")) {
+        const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+        data[id] = {
+          ...data[id],
+          completed: true,
+          quizCompleted: true,
+          claimedReward: CLAIMABLE_XP_REWARD,
+        };
+        localStorage.setItem(storageKey, JSON.stringify(data));
+        window.dispatchEvent(new Event("progress-update"));
+        setQuizCompleted(true);
+        setClaimMessage("XP for this lesson has already been claimed.");
+        setShowXPModal(true);
+      } else {
+        setClaimMessage(message);
+      }
+    } finally {
+      setClaimingReward(false);
+    }
   };
 
-  localStorage.setItem(storageKey, JSON.stringify(data));
-  window.dispatchEvent(new Event("progress-update"));
-
-  setQuizCompleted(true);
-  setShowXPModal(true);
+  void claimReward();
 };
 
 const goNext = () => {
@@ -628,12 +690,15 @@ useEffect(() => {
 
         <button
           onClick={handleClaimXP}
-          disabled={quizCompleted}
-          className={`mt-3 px-5 py-2 rounded-md text-white ${quizCompleted ? "bg-gray-500 cursor-not-allowed" : "bg-[#8B3EFE] hover:bg-[#7A2FE0]"}`}
+          disabled={quizCompleted || claimingReward}
+          className={`mt-3 px-5 py-2 rounded-md text-white ${(quizCompleted || claimingReward) ? "bg-gray-500 cursor-not-allowed" : "bg-[#8B3EFE] hover:bg-[#7A2FE0]"}`}
           style={{ animationDelay: "0.7s" }}
         >
-          {quizCompleted ? "XP Claimed" : "Claim XP"}
+          {quizCompleted ? "XP Claimed" : claimingReward ? "Claiming..." : "Claim XP"}
         </button>
+        {claimMessage ? (
+          <p className="text-xs text-white/80 max-w-sm text-center">{claimMessage}</p>
+        ) : null}
       </div>
     )
   ) : showBronze ? (
@@ -787,7 +852,7 @@ useEffect(() => {
           XP Earned
         </p>
         <div className="mt-2 flex items-center justify-center gap-2 text-2xl font-extrabold text-white">
-          <span>+500 XP</span>
+          <span>+{CLAIMABLE_XP_REWARD} XP</span>
           <img src="/claimed.png" className="h-5 w-12 object-contain" />
         </div>
       </div>
