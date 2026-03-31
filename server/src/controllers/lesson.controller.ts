@@ -4,33 +4,6 @@ import { user } from "@/models/user.model";
 import { BAD_REQUEST, OK, NOT_FOUND, INTERNAL_SERVER_ERROR, CREATED, FORBIDDEN } from "@/utils/status.utils";
 import { uploadImg } from "@/utils/img.utils";
 import { validateCreateLesson, validateCreateQuestion } from "@/utils/utils";
-import mongoose from "mongoose";
-
-const RESTORED_LOCAL_LESSON_SLUG = "intro-to-web3";
-const RESTORED_LOCAL_LESSON_TITLE = "Introduction To Web3";
-const RESTORED_LOCAL_LESSON_REWARD = 500;
-
-const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const resolveLessonByReference = async (lessonReference: string) => {
-  const normalizedReference = String(lessonReference || "").trim();
-  if (!normalizedReference) {
-    return null;
-  }
-
-  if (mongoose.Types.ObjectId.isValid(normalizedReference)) {
-    const lessonById = await lesson.findById(normalizedReference);
-    if (lessonById) return lessonById;
-  }
-
-  if (normalizedReference.toLowerCase() === RESTORED_LOCAL_LESSON_SLUG) {
-    return lesson.findOne({
-      title: new RegExp(`^${escapeRegex(RESTORED_LOCAL_LESSON_TITLE)}$`, "i"),
-    });
-  }
-
-  return null;
-};
 
 const getUploadedLessonImage = async (
   req: GlobalRequest,
@@ -246,52 +219,41 @@ export const updateMiniLesson = async (req: GlobalRequest, res: GlobalResponse) 
 
 export const rewardLessonXp = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { id: lessonReference } = req.query as { id: string };
+    const { id: lessonId } = req.query as { id: string };
     const { id } = req;
 
-    const lessonExists = await resolveLessonByReference(lessonReference);
+    const lessonExists = await lesson.findById(lessonId).lean().select("reward noOfQuestions");
     if (!lessonExists) {
       res.status(NOT_FOUND).json({ error: "lesson does not exist" });
       return;
     }
 
-    const actualLessonId = String(lessonExists._id);
-    const isRestoredLocalLesson = lessonReference?.trim().toLowerCase() === RESTORED_LOCAL_LESSON_SLUG;
+    const questionsAnswered = await questionCompleted.countDocuments({ done: true, user: id, lesson: lessonId });
 
-    const existingLessonProgress = await lessonCompleted.findOne({ lesson: actualLessonId, user: id });
-    if (!existingLessonProgress) {
-      res.status(BAD_REQUEST).json({ error: "lesson has not been started" });
-      return;
-    }
-
-    if (existingLessonProgress.done) {
-      res.status(BAD_REQUEST).json({ error: "xp has already been claimed for this lesson" });
-      return;
-    }
-
-    const questionsAnswered = await questionCompleted.countDocuments({ done: true, user: id, lesson: actualLessonId });
-
-    if (!isRestoredLocalLesson && lessonExists.noOfQuestions !== questionsAnswered) {
+    if (lessonExists.noOfQuestions !== questionsAnswered) {
       res.status(FORBIDDEN).json({ error: "answer all questions before reward can be claimed" });
       return;
     }
 
-    const rewardAmount = isRestoredLocalLesson ? RESTORED_LOCAL_LESSON_REWARD : Number(lessonExists.reward || 0);
-
-    if (isRestoredLocalLesson && Number(lessonExists.reward || 0) !== RESTORED_LOCAL_LESSON_REWARD) {
-      lessonExists.reward = RESTORED_LOCAL_LESSON_REWARD;
+    const notCompletedLesson = await lessonCompleted.findOne({ status: "in-progress", lesson: lessonId, user: id });
+    if (!notCompletedLesson) {
+      res.status(BAD_REQUEST).json({ error: "lesson has been completed or does not exist" });
+      return;
     }
 
-    existingLessonProgress.status = "completed";
-    existingLessonProgress.done = true;
-
-    await user.updateOne({ _id: id }, { $inc: { xp: rewardAmount } });
-    await existingLessonProgress.save();
-    if (isRestoredLocalLesson) {
-      await lessonExists.save();
+    if (notCompletedLesson.done) {
+      res.status(BAD_REQUEST).json({ error: "lesson reward already claimed" });
+      return;
     }
 
-    res.status(OK).json({ message: "xp reward claimed", reward: rewardAmount });
+    notCompletedLesson.status = "completed";
+    notCompletedLesson.done = true;
+
+    await user.updateOne({ _id: id }, { $inc: { xp: lessonExists.reward, lessonsCompleted: 1 } });
+
+    await notCompletedLesson.save();
+
+    res.status(OK).json({ message: "xp reward claimed" });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error rewarding lesson xp" });
@@ -461,23 +423,21 @@ export const answerQuestion = async (req: GlobalRequest, res: GlobalResponse) =>
 export const startLesson = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const id = req.id as string;
-    const lessonReference = req.query.lessonId as string;
+    const lessonId = req.query.lessonId as string;
 
-    const lessonExists = await resolveLessonByReference(lessonReference);
+    const lessonExists = await lesson.exists({ _id: lessonId });
     if (!lessonExists) {
       res.status(NOT_FOUND).json({ error: "lesson id in invalid" });
       return;
     }
 
-    const actualLessonId = String(lessonExists._id);
-
-    const lessonStarted = await lessonCompleted.exists({ user: id, lesson: actualLessonId });
+    const lessonStarted = await lessonCompleted.exists({ user: id, lesson: lessonId });
     if (lessonStarted) {
       res.status(BAD_REQUEST).json({ error: "lesson already started or completed" });
       return;
     }
 
-    await lessonCompleted.create({ lesson: actualLessonId, user: id });
+    await lessonCompleted.create({ lesson: lessonId, user: id });
 
     res.status(OK).json({ message: "lesson started!" });
   } catch (error) {
