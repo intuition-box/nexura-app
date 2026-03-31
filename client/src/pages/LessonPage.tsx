@@ -1,376 +1,818 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useParams } from "wouter";
-import { Loader2 } from "lucide-react";
-import { useAuth } from "../lib/auth";
-import { apiRequestV2 } from "../lib/queryClient";
-import { useWallet } from "../hooks/use-wallet";
+import { useParams } from "wouter";
+import { useState } from "react";
+import { quiz } from "./quiz";
+import { quiz as quiz2 } from "./quiz2";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import Confetti from "react-confetti";
 
-type LessonSummary = {
-  _id: string;
-  title: string;
-  description: string;
-  reward: number;
-  noOfQuestions: number;
-  done: boolean;
-};
-
-type MiniLesson = {
-  _id: string;
-  text: string;
-  lesson: string;
-};
-
-type LessonQuestion = {
-  _id: string;
-  question: string;
-  options: string[];
-  lesson: string;
-  done: boolean;
-  answer?: string;
-};
-
-const normalizeApiMessage = (error: unknown, fallback: string) => {
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-};
 
 export default function LessonPage() {
-  const params = useParams<{ id: string }>();
-  const lessonId = params.id;
-  const [, setLocation] = useLocation();
-  const { isConnected, connectWallet } = useWallet();
-  const { user, loading: authLoading } = useAuth();
+  const [location, setLocation] = useLocation();
+  const { id } = useParams();
+  const walletAddress = "0x123";
+const storageKey = `learn-progress-${walletAddress}`;
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+    // track window size
+  useEffect(() => {
+    const updateSize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
 
-  const [lesson, setLesson] = useState<LessonSummary | null>(null);
-  const [miniLessons, setMiniLessons] = useState<MiniLesson[]>([]);
-  const [questions, setQuestions] = useState<LessonQuestion[]>([]);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [starting, setStarting] = useState(false);
-  const [claiming, setClaiming] = useState(false);
-  const [submittingQuestionId, setSubmittingQuestionId] = useState<string | null>(null);
-  const [pageError, setPageError] = useState("");
-  const [actionMessage, setActionMessage] = useState("");
+  const title = "Introduction to Web3";
 
-  const completedQuestions = useMemo(
-    () => questions.filter((question) => question.done).length,
-    [questions]
-  );
-  const allQuestionsDone = questions.length > 0 && completedQuestions === questions.length;
-  const progressPercent = questions.length > 0 ? (completedQuestions / questions.length) * 100 : 0;
+  const steps = [
+    "The internet has evolved through three main stages: Web1 (read-only), Web2 (read-write), and now Web3 (read, write, and own).",
+    "Web3 is a decentralized web powered by blockchain technology, where users control their data, identities, and assets instead of centralized platforms.",
+    "While blockchain secures “what happened,” Web3 also needs a trust layer to verify “who and what can be trusted.” This is where Intuition comes in.",
+    "It ensures credibility, transparency, and a more intelligent digital ecosystem.",
 
-  const loadLesson = async () => {
-    if (!lessonId) return;
+    "QUIZ_STEP",
 
-    setLoading(true);
-    setPageError("");
+    "Blockchain is a decentralized digital ledger where every participant holds the same record.",
+    "Each block contains verified transactions and is permanently linked to previous blocks, ensuring transparency and immutability.",
+    "Blockchain empowers individuals by removing intermediaries and allowing them to verify truth themselves.",
+    "Tokens and wallets give users control over value and identity."
+  ];
 
-    try {
-      const [lessonsResponse, detailsResponse] = await Promise.all([
-        apiRequestV2("GET", "/api/lesson/get-lessons"),
-        apiRequestV2("GET", `/api/lesson/get-lesson-details?id=${lessonId}`),
-      ]);
+useEffect(() => {
+  const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+  if (data[id]?.quizCompleted) {
+    setQuizCompleted(true);
+  }
+}, [id, storageKey]);
 
-      const lessonMatch = (lessonsResponse.lessons || []).find(
-        (entry: LessonSummary) => entry._id === lessonId
-      );
+const searchParams = new URLSearchParams(location.split("?")[1]);
+const isReview = searchParams.get("review") === "1";
 
-      setLesson(lessonMatch || null);
-      setMiniLessons(detailsResponse.miniLessons || []);
-      setQuestions(detailsResponse.questions || []);
-      setSelectedAnswers({});
-    } catch (error) {
-      setPageError(normalizeApiMessage(error, "Failed to load lesson"));
-    } finally {
-      setLoading(false);
-    }
-  };
+const [currentStep, setCurrentStep] = useState(() => {
+  const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+  const saved = data[id];
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const isReview = searchParams.get("review") === "1";
+
+  if (isReview) return 0; // force review to step 1 visually
+  return saved?.progress ? saved.progress - 1 : 0;
+});
+// Force review to step 1 visually
+useEffect(() => {
+  if (isReview) {
+    setCurrentStep(0); // visual step
+    setCurrentQuizIndex(0); // reset quiz display
+    setShowBronze(true); // show bronze screen if applicable
+    setShowCompletionSlide(false);
+    setSelected(null);
+    setStatus(null);
+  }
+}, [isReview]);
+  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [status, setStatus] = useState(null); // "correct" | "wrong"
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [showCompletionSlide, setShowCompletionSlide] = useState(false);
+  const [showBronze, setShowBronze] = useState(true);
+  const [completionType, setCompletionType] = useState(null); // "silver" | "gold"
+//   const [activeQuiz, setActiveQuiz] = useState(1);
+const initialQuiz = currentStep >= 8 ? 2 : 1;
+const [activeQuiz, setActiveQuiz] = useState(initialQuiz);
+//   const isQuizStep = currentStep === 4;
+const isQuiz1Step = currentStep === 4;
+const isQuiz2Step = currentStep >= 8 && currentStep <= 12;
+const isQuizStep = isQuiz1Step || isQuiz2Step;
+const isWrongAnswer = status === "wrong";
+const xpClaimed = quizCompleted || (() => {
+  const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+  return data[id]?.quizCompleted || false;
+})();
+
+  const progress = ((currentStep + 1) / steps.length) * 100;
+  const [showXPModal, setShowXPModal] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [runConfetti, setRunConfetti] = useState(false);
+  const [animate, setAnimate] = useState(false);
+    const [startBounce, setStartBounce] = useState(false);
+    const isGoldCompleted = showCompletionSlide && completionType === "gold";
 
   useEffect(() => {
-    if (!authLoading) {
-      loadLesson();
-    }
-  }, [authLoading, lessonId]);
+    // Start bounce 1s after component mounts + fly-in duration (0.6s)
+    const timer = setTimeout(() => setStartBounce(true), 1600); // 0.6s fly-in + 1s delay
+    return () => clearTimeout(timer);
+  }, []);
 
-  const ensureReadyForProtectedAction = async () => {
-    if (!isConnected) {
-      await connectWallet();
-      return false;
-    }
+  useEffect(() => {
+  if (currentStep >= 8) {
+    setActiveQuiz(2);
+  } else if (currentStep >= 4) {
+    setActiveQuiz(1);
+}
+}, [currentStep]);
 
-    if (!user) {
-      setActionMessage("Sign in with your wallet before continuing this lesson.");
-      return false;
-    }
+useEffect(() => {
+  const data = JSON.parse(localStorage.getItem(storageKey)) || {};
 
-    return true;
+  data[id] = {
+    progress: currentStep + 1,
+    quizCompleted: quizCompleted, // use real state
   };
 
-  const startLesson = async () => {
-    if (!lessonId) return false;
+  localStorage.setItem(storageKey, JSON.stringify(data));
+  window.dispatchEvent(new Event("progress-update"));
+}, [currentStep, quizCompleted]);
 
-    const canContinue = await ensureReadyForProtectedAction();
-    if (!canContinue) return false;
 
-    setStarting(true);
-    setActionMessage("");
+  ///////////////// local storage
+  const handleClaimXP = () => {
+  if (quizCompleted) return; // prevent double-clicks
 
-    try {
-      await apiRequestV2("POST", `/api/lesson/start-lesson?lessonId=${lessonId}`);
-      return true;
-    } catch (error) {
-      const message = normalizeApiMessage(error, "Unable to start lesson");
+  const data = JSON.parse(localStorage.getItem(storageKey)) || {};
 
-      if (!message.toLowerCase().includes("already started")) {
-        setActionMessage(message);
-        return false;
+  data[id] = {
+    ...data[id],
+    completed: true,
+    quizCompleted: true,
+  };
+
+  localStorage.setItem(storageKey, JSON.stringify(data));
+  window.dispatchEvent(new Event("progress-update"));
+
+  setQuizCompleted(true);
+  setShowXPModal(true);
+};
+
+const goNext = () => {
+  if (isQuizStep) {
+    const currentQuiz = activeQuiz === 1 ? quiz : quiz2;
+
+    // Enter quiz from bronze screen
+    if (showBronze) {
+      setShowBronze(false);
+      return;
+    }
+
+    // Completion slide handling
+    if (showCompletionSlide) {
+      const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+
+      if (!data[id]) data[id] = {};
+      if (!data[id].quizState) data[id].quizState = {};
+
+      const quizKey = `quiz-${activeQuiz}`;
+
+    data[id].quizState[quizKey] = {
+  ...data[id].quizState?.[quizKey],
+  activeQuiz,
+  currentQuizIndex,
+  showBronze,
+  showCompletionSlide,
+  isQuizStep: true,
+};
+
+      localStorage.setItem(storageKey, JSON.stringify(data));
+
+      setShowCompletionSlide(false);
+      setShowBronze(true);
+
+      if (completionType === "silver") {
+        setActiveQuiz(2);
+        setCurrentQuizIndex(0);
+        setShowBronze(true);
+        setCurrentStep((prev) => prev + 1);
       }
 
-      return true;
-    } finally {
-      setStarting(false);
+      if (completionType === "gold") {
+        setCurrentStep((prev) => prev + 1);
+      }
+
+      return;
     }
-  };
 
-  const submitAnswer = async (questionId: string) => {
-    const answer = selectedAnswers[questionId];
-    if (!answer || !lessonId) return;
+    if (!selected) return;
 
-    const started = await startLesson();
-    if (!started) return;
+    // SAVE current answer
+    const data = JSON.parse(localStorage.getItem(storageKey)) || {};
 
-    setSubmittingQuestionId(questionId);
-    setActionMessage("");
+    if (!data[id]) data[id] = {};
+    if (!data[id].quizState) data[id].quizState = {};
 
-    try {
-      const response = await apiRequestV2("POST", "/api/lesson/answer-question", {
-        question: questionId,
-        lesson: lessonId,
-        answer,
-      });
+    const quizKey = `quiz-${activeQuiz}`;
 
-      setActionMessage(response.message || "Correct answer saved.");
-      await loadLesson();
-    } catch (error) {
-      setActionMessage(normalizeApiMessage(error, "Unable to submit answer"));
-    } finally {
-      setSubmittingQuestionId(null);
+    if (!data[id].quizState[quizKey]) {
+      data[id].quizState[quizKey] = { answers: {} };
     }
-  };
 
-  const claimXp = async () => {
-    if (!lessonId) return;
-
-    const canContinue = await ensureReadyForProtectedAction();
-    if (!canContinue) return;
-
-    setClaiming(true);
-    setActionMessage("");
-
-    try {
-      const response = await apiRequestV2("POST", `/api/lesson/reward-lesson-xp?id=${lessonId}`);
-      setActionMessage(response.message || "XP reward claimed.");
-      await loadLesson();
-    } catch (error) {
-      setActionMessage(normalizeApiMessage(error, "Unable to claim XP"));
-    } finally {
-      setClaiming(false);
+    if (!data[id].quizState[quizKey].answers) {
+      data[id].quizState[quizKey].answers = {};
     }
-  };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-      </div>
-    );
+    data[id].quizState[quizKey].answers[currentQuizIndex] = {
+      selected,
+      status,
+    };
+
+    localStorage.setItem(storageKey, JSON.stringify(data));
+
+    // MOVE NEXT (DO NOT RESET STATE HERE)
+    if (status === "correct") {
+      if (currentQuizIndex < currentQuiz.length - 1) {
+        setCurrentQuizIndex((prev) => prev + 1);
+
+        // ⚠️ DO NOT clear blindly — let rehydration handle it
+        // setSelected(null);
+        // setStatus(null);
+      } else {
+        setCompletionType(activeQuiz === 1 ? "silver" : "gold");
+        setShowCompletionSlide(true);
+      }
+    }
+
+    return;
   }
 
-  if (pageError) {
-    return (
-      <div className="min-h-screen bg-black text-white p-6">
-        <div className="max-w-3xl mx-auto space-y-4">
-          <button onClick={() => setLocation("/learn")} className="text-sm text-purple-300 hover:text-white">
-            Back to lessons
-          </button>
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
-            <p className="text-red-300">{pageError}</p>
-          </div>
-        </div>
-      </div>
-    );
+  if (currentStep < steps.length - 1) {
+    setCurrentStep((prev) => prev + 1);
   }
+};
+
+const goPrev = () => {
+  // 🚨 If completion slide is showing, exit it first
+if (showCompletionSlide) {
+  setShowCompletionSlide(false);
+  setShowBronze(true);
+
+  // 🔥 CRITICAL RESET
+  setCurrentQuizIndex(0);
+  setSelected(null);
+  setStatus(null);
+
+  return;
+}
+
+  // 🚫 Outside quiz → normal step navigation
+  if (!isQuizStep) {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1);
+    }
+    return;
+  }
+
+  // 🚨 Inside quiz
+  if (showBronze) {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1);
+    }
+    return;
+  }
+
+  const quizList = activeQuiz === 1 ? quiz : quiz2;
+
+  if (currentQuizIndex > 0) {
+    const prevIndex = currentQuizIndex - 1;
+
+    setCurrentQuizIndex(prevIndex);
+
+    const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+    const quizKey = `quiz-${activeQuiz}`;
+    const saved = data[id]?.quizState?.[quizKey];
+
+    const savedAnswer = saved?.answers?.[prevIndex];
+
+    if (savedAnswer) {
+      setSelected(savedAnswer.selected);
+      setStatus(savedAnswer.status);
+    } else {
+      setSelected(null);
+      setStatus(null);
+    }
+
+    return;
+  }
+
+  if (currentQuizIndex === 0) {
+    setShowBronze(true);
+    setSelected(null);
+    setStatus(null);
+  }
+};
+
+useEffect(() => {
+  const handleKeyDown = (e) => {
+    // ignore if user is typing in an input/textarea
+    const tag = document.activeElement.tagName.toLowerCase();
+    if (tag === "input" || tag === "textarea") return;
+
+    if (e.key === "ArrowRight") {
+      // match exactly your button logic
+      if (!isWrongAnswer && !isGoldCompleted) {
+        goNext();
+      }
+    }
+
+    if (e.key === "ArrowLeft") {
+      if (currentStep > 0 && status !== "wrong") {
+        goPrev();
+      }
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [currentStep, status, isWrongAnswer, isGoldCompleted, showCompletionSlide, showBronze, currentQuizIndex, activeQuiz, selected]);
+
+// Called whenever user selects an answer
+const handleAnswer = (option) => {
+  const currentQuiz = activeQuiz === 1 ? quiz : quiz2;
+  const currentQuestion = currentQuiz[currentQuizIndex];
+
+  // Set local state for immediate feedback
+  setSelected(option);
+  const newStatus = option === currentQuestion.answer ? "correct" : "wrong";
+  setStatus(newStatus);
+
+  // Save in localStorage
+  const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+  if (!data[id]) data[id] = {};
+  if (!data[id].quizState) data[id].quizState = {};
+
+  const quizKey = `quiz-${activeQuiz}`;
+
+  if (!data[id].quizState[quizKey]) {
+    data[id].quizState[quizKey] = { answers: {} };
+  }
+
+  data[id].quizState[quizKey].answers = {
+    ...(data[id].quizState[quizKey].answers || {}),
+    [currentQuizIndex]: {
+      selected: option,
+      status: newStatus,
+    },
+  };
+
+  // Save quiz state as well for navigation
+  data[id].quizState[quizKey] = {
+    ...data[id].quizState[quizKey],
+    activeQuiz,
+    currentQuizIndex,
+    showBronze,
+    showCompletionSlide,
+    answers: data[id].quizState[quizKey].answers,
+  };
+
+  localStorage.setItem(storageKey, JSON.stringify(data));
+  window.dispatchEvent(new Event("progress-update"));
+};
+
+useEffect(() => {
+  const handleKeyDown = (e) => {
+    // ignore typing in inputs
+    const tag = document.activeElement.tagName.toLowerCase();
+    if (tag === "input" || tag === "textarea") return;
+
+    if (!isQuizStep || showBronze || showCompletionSlide) return;
+
+    const currentQuiz = activeQuiz === 1 ? quiz : quiz2;
+    const currentQuestion = currentQuiz[currentQuizIndex];
+    const optionCount = currentQuestion.options.length;
+
+    // Map A/B/C/D to 0/1/2/3
+    const key = e.key.toUpperCase();
+    const keyCode = key.charCodeAt(0) - 65; // A → 0, B → 1, ...
+
+    if (keyCode >= 0 && keyCode < optionCount) {
+      const selectedOption = currentQuestion.options[keyCode];
+      handleAnswer(selectedOption);
+    }
+
+    // Existing arrow navigation
+    if (e.key === "ArrowRight" && !isWrongAnswer && !isGoldCompleted) {
+      goNext();
+    }
+
+    if (e.key === "ArrowLeft" && currentStep > 0 && status !== "wrong") {
+      goPrev();
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [currentStep, status, isWrongAnswer, isGoldCompleted, showCompletionSlide, showBronze, currentQuizIndex, activeQuiz, selected]);
+
+const resetLesson = () => {
+  const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+
+  if (data[id]) {
+    delete data[id];
+  }
+
+  localStorage.setItem(storageKey, JSON.stringify(data));
+  window.dispatchEvent(new Event("progress-update"));
+
+  // close modal FIRST (important)
+  setShowXPModal(false);
+
+  // hard reload for guaranteed clean state
+  window.location.reload();
+};
+// Rehydrate answers on mount / when quiz index changes
+useEffect(() => {
+  const data = JSON.parse(localStorage.getItem(storageKey)) || {};
+  const quizKey = `quiz-${activeQuiz}`;
+  const saved = data[id]?.quizState?.[quizKey];
+
+  if (!saved) {
+    setSelected(null);
+    setStatus(null);
+    return;
+  }
+
+  const savedAnswer = saved.answers?.[currentQuizIndex];
+  if (savedAnswer) {
+    setSelected(savedAnswer.selected);
+    setStatus(savedAnswer.status);
+  } else {
+    setSelected(null);
+    setStatus(null);
+  }
+}, [currentQuizIndex, activeQuiz, id]);
+
+useEffect(() => {
+  if (showCompletionSlide && (completionType === "gold" || completionType === "silver")) {
+    const audio = new Audio("/sounds/cheering.mp3");
+    audio.play();
+
+    // trigger confetti only for gold
+    if (completionType === "gold") {
+      setRunConfetti(false); // reset first (optional)
+      setTimeout(() => setRunConfetti(true)); // tiny delay forces update
+    }
+  }
+}, [showCompletionSlide, completionType]);
+
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimate(true), 1500); // 1.5s delay
+    return () => clearTimeout(timer);
+  }, []);
+  
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="space-y-3">
-          <button onClick={() => setLocation("/learn")} className="text-sm text-purple-300 hover:text-white">
-            Back to lessons
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-            <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">
-              Learn
-            </span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
-            {lesson?.title || "Lesson"}
-          </h1>
-          <p className="text-white/70 max-w-2xl">
-            {lesson?.description || "Complete each section and answer every question to unlock your XP reward."}
-          </p>
-        </div>
+    <div className="min-h-screen bg-black text-white space-y-3 flex flex-col items-center">
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <p className="text-sm text-white/50">Progress</p>
-              <p className="text-lg font-semibold">{completedQuestions}/{questions.length} questions completed</p>
-            </div>
-            <div className="text-left sm:text-right">
-              <p className="text-sm text-white/50">Reward</p>
-              <p className="text-lg font-semibold text-yellow-400">+{lesson?.reward ?? 0} XP</p>
-            </div>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-sky-400 to-purple-500 transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          {actionMessage ? (
-            <p className="text-sm text-purple-200">{actionMessage}</p>
-          ) : null}
-        </div>
+      {/* Header */}
+<div className="w-full max-w-3xl space-y-1">
+  <div className="flex items-center gap-1.5">
+    <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+    <span className="text-purple-400 text-xs font-semibold uppercase tracking-widest">
+      Learn
+    </span>
+  </div>
+</div>
 
-        <section className="space-y-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold whitespace-nowrap">Lesson Content</h2>
-            <div className="h-px flex-1 bg-white/10" />
-          </div>
+{/* Title */}
+<h1 className="w-full max-w-3xl text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
+  {title}
+</h1>
 
-          {miniLessons.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-white/60">
-              No lesson content has been added yet.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {miniLessons.map((entry, index) => (
-                <article key={entry._id} className="rounded-2xl border border-white/10 bg-[#1C0E3480] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">
-                    Section {index + 1}
-                  </p>
-                  <p className="mt-3 text-white/85 leading-7 whitespace-pre-wrap">{entry.text}</p>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
+{/* Progress */}
+<div className="w-full max-w-3xl mt-1">
+  <div className="w-full h-2 rounded-full overflow-hidden bg-white/20">
+    <div
+      className="h-full"
+      style={{
+        width: `${progress}%`,
+        background: "linear-gradient(90deg, #94E2FF, #8A3FFC)",
+      }}
+    />
+  </div>
 
-        <section className="space-y-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold whitespace-nowrap">Knowledge Check</h2>
-            <div className="h-px flex-1 bg-white/10" />
-          </div>
+  <div className="flex justify-between text-[10px] text-white/60 mt-1">
+    <span style={{ color: "#94E2FF" }}>{title.toUpperCase()}</span>
+    <span>STEP {currentStep + 1}/{steps.length}</span>
+  </div>
+</div>
 
-          {questions.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-white/60">
-              No questions have been added to this lesson yet.
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {questions.map((question, index) => {
-                const currentAnswer = selectedAnswers[question._id] ?? question.answer ?? "";
-                const isSubmitting = submittingQuestionId === question._id;
+{/* Content */}
+<div className="w-full max-w-3xl space-y-3">
 
-                return (
-                  <div key={question._id} className="rounded-2xl border border-white/10 bg-[#120B20] p-5 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">
-                          Question {index + 1}
-                        </p>
-                        <h3 className="mt-2 text-lg font-semibold">{question.question}</h3>
-                      </div>
-                      <span
-                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                          question.done ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-white/60"
-                        }`}
-                      >
-                        {question.done ? "Completed" : "Pending"}
-                      </span>
-                    </div>
+  <div
+    className="relative sm:p-6 rounded-2xl min-h-[300px] flex items-center justify-between gap-4 text-center"
+    style={{
+      background: "linear-gradient(135deg, #8B3EFE, #532598)",
+    }}
+  >
 
-                    <div className="grid gap-3">
-                      {question.options.map((option, optionIndex) => {
-                        const isSelected = currentAnswer === option;
-                        return (
-                          <button
-                            key={option}
-                            type="button"
-                            disabled={question.done}
-                            onClick={() =>
-                              setSelectedAnswers((current) => ({
-                                ...current,
-                                [question._id]: option,
-                              }))
-                            }
-                            className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
-                              isSelected
-                                ? "border-purple-400 bg-purple-500/15 text-white"
-                                : "border-white/10 bg-white/5 text-white/80 hover:border-white/20"
-                            } ${question.done ? "cursor-default opacity-80" : ""}`}
-                          >
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/30 text-xs font-bold">
-                              {String.fromCharCode(65 + optionIndex)}
-                            </span>
-                            <span>{option}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+<button
+  onClick={goPrev}
+  disabled={currentStep === 0 || status === "wrong"}
+  className="px-2 disabled:opacity-30 transition hover:scale-110"
+>
+  <img
+    src="/prev-arrow.png"
+    alt="Previous"
+    className="w-12 h-14 object-contain"
+  />
+</button>
 
-                    {!question.done ? (
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          disabled={!selectedAnswers[question._id] || isSubmitting || starting}
-                          onClick={() => submitAnswer(question._id)}
-                          className="rounded-full bg-[#8B3EFE] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#7A2FE0] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {isSubmitting ? "Checking..." : "Submit answer"}
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-emerald-300">Correct answer recorded.</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+{/* Content */}
+<div className="flex-1 px-2">
+  {!isQuizStep ? (
+    // STEP CONTENT
+    <p className="text-lg sm:text-xl leading-relaxed">
+      {steps[currentStep]}
+    </p>
+  ) : showCompletionSlide ? (
+    // COMPLETION SLIDES
+    completionType === "silver" ? (
+      <div className="flex flex-col items-center space-y-4 text-center">
+        <img src="/nexura-silver.png" className="w-20 h-20 animate-bounce-slow" />
+    <h2 className="text-xl sm:text-2xl font-bold flex flex-wrap justify-center">
+      {"You nailed this section!".split("").map((char, i) => (
+        <span
+          key={i}
+          className={`letter ${animate ? "animate-letter" : ""} ${animate ? "letter-bounce" : ""}`}
+          style={{ animationDelay: `${i * 0.05}s` }}
+        >
+          {char === " " ? "\u00A0" : char}
+        </span>
+      ))}
+    </h2>
+        <p className="text-sm sm:text-base text-white/80 max-w-sm text-center">
+  {"You have finished this part. Continue your learning with understanding blockchain.".split("").map((char, i) => {
+    // random starting positions
+    const xStart = `${Math.floor(Math.random() * 200 - 100)}px`; // -100px to +100px
+    const yStart = `${Math.floor(Math.random() * 200 - 100)}px`;
+    const rotateStart = `${Math.floor(Math.random() * 60 - 30)}deg`; // -30 to +30deg
 
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#22103F] to-[#12081F] p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold">Claim your reward</h2>
-              <p className="text-white/65">
-                Finish every question, then claim the lesson reward through the backend lesson API.
-              </p>
-            </div>
-            <button
-              type="button"
-              disabled={!allQuestionsDone || claiming || lesson?.done}
-              onClick={claimXp}
-              className="rounded-full bg-yellow-400 px-5 py-2 text-sm font-semibold text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {lesson?.done ? "XP Claimed" : claiming ? "Claiming..." : `Claim +${lesson?.reward ?? 0} XP`}
-            </button>
-          </div>
-        </section>
+    return (
+      <span
+        key={i}
+        className="fly-letter"
+        style={{
+          "--x-start": xStart,
+          "--y-start": yStart,
+          "--rotate-start": rotateStart,
+          animationDelay: `${i * 0.03}s`, 
+        }}
+      >
+        {char === " " ? "\u00A0" : char}
+      </span>
+    );
+  })}
+</p>
       </div>
+    ) : (
+<div className="relative flex flex-col items-center space-y-4 text-center">
+    {/* FULL SCREEN CONFETTI */}
+{runConfetti && (
+<Confetti
+  width={window.innerWidth}
+  height={window.innerHeight}
+  numberOfPieces={200}    
+  gravity={0.6}            
+  initialVelocity={10}     
+  friction={0.9}           
+  wind={0.05}            
+  recycle={false}
+  run={true}
+  style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    pointerEvents: "none",
+    zIndex: 9999
+  }}
+/>
+)}
+
+        {/* GOLD BADGE */}
+        <img src="/nexura-gold.png" className="w-20 h-20 animate-bounce-slow" />
+
+    <h2 className="text-xl sm:text-2xl font-bold flex flex-wrap justify-center">
+      {"CONGRATULATIONS".split("").map((char, i) => (
+        <span
+          key={i}
+          className={`letter ${animate ? "animate-letter" : ""} ${animate ? "letter-bounce" : ""}`}
+          style={{ animationDelay: `${i * 0.05}s` }}
+        >
+          {char}
+        </span>
+      ))}
+    </h2>
+        <p className="text-sm sm:text-base text-white/80 max-w-sm text-center">
+  {"You have mastered the basics of Web3 and blockchain. Your XP rewards are ready to be claimed.".split("").map((char, i) => {
+    // random starting positions
+    const xStart = `${Math.floor(Math.random() * 200 - 100)}px`; // -100px to +100px
+    const yStart = `${Math.floor(Math.random() * 200 - 100)}px`;
+    const rotateStart = `${Math.floor(Math.random() * 60 - 30)}deg`; // -30 to +30deg
+
+    return (
+      <span
+        key={i}
+        className="fly-letter"
+        style={{
+          "--x-start": xStart,
+          "--y-start": yStart,
+          "--rotate-start": rotateStart,
+          animationDelay: `${i * 0.03}s`, 
+        }}
+      >
+        {char === " " ? "\u00A0" : char}
+      </span>
+    );
+  })}
+</p>
+
+        <button
+          onClick={handleClaimXP}
+          disabled={quizCompleted}
+          className={`mt-3 px-5 py-2 rounded-md text-white ${quizCompleted ? "bg-gray-500 cursor-not-allowed" : "bg-[#8B3EFE] hover:bg-[#7A2FE0]"}`}
+          style={{ animationDelay: "0.7s" }}
+        >
+          {quizCompleted ? "XP Claimed" : "Claim XP"}
+        </button>
+      </div>
+    )
+  ) : showBronze ? (
+    // BRONZE SLIDE
+    <div className="flex flex-col items-center space-y-4 text-center">
+      <img src="/nexura-bronze.png" className="w-20 h-20 animate-badge" />
+      <h2 className="text-xl sm:text-2xl font-bold">
+        Test Your Knowledge
+      </h2>
+      <p className="text-sm sm:text-base text-white/80 max-w-sm text-center">
+        Take a quiz to see how much you understand {activeQuiz === 1 ? "Web3" : "Blockchain"}.
+      </p>
+    </div>
+  ) : (
+    // QUIZ
+    <div className="flex flex-col space-y-4 text-left">
+      <h2 className="text-xl sm:text-2xl font-bold text-center">
+        {(activeQuiz === 1 ? quiz : quiz2)[currentQuizIndex].question.toUpperCase()}
+      </h2>
+
+      <div className="space-y-3">
+        {(activeQuiz === 1 ? quiz : quiz2)[currentQuizIndex].options.map((opt, i) => {
+          let style = "flex justify-between items-center px-4 py-3 rounded-lg cursor-pointer border bg-[#181C2180]";
+
+          if (selected === opt) {
+            if (status === "correct") {
+              style = "flex justify-between items-center px-4 py-3 rounded-lg border bg-[#00E1A233] border-[#00E1A2E5]";
+            } else if (status === "wrong") {
+              style = "flex justify-between items-center px-4 py-3 rounded-lg border bg-[#F43F5E33] border-[#F43F5E]";
+            }
+          }
+
+          return (
+            <div key={i} onClick={() => handleAnswer(opt)} className={style}>
+              <span className="flex items-center gap-2">
+                <span className="bg-[#31353B] px-2 py-1 rounded text-xs font-bold">
+                  {String.fromCharCode(65 + i)}
+                </span>
+                <span className="capitalize">{opt}</span>
+              </span>
+
+              {selected === opt && status === "correct" && (
+                <span className="w-5 h-5 flex items-center justify-center rounded-full bg-[#00E1A2] text-black font-bold">
+                  ✓
+                </span>
+              )}
+              {selected === opt && status === "wrong" && (
+                <span className="w-5 h-5 flex items-center justify-center rounded-full bg-[#F43F5E] text-black font-bold">
+                  ✕
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="text-center text-sm text-white/70 mt-2">
+        Question {currentQuizIndex + 1} of {(activeQuiz === 1 ? quiz : quiz2).length}
+      </p>
+    </div>
+  )}
+</div>
+
+<button
+  onClick={goNext}
+  disabled={isWrongAnswer || isGoldCompleted}
+  className="px-2 disabled:opacity-30 transition hover:scale-110"
+>
+  <img
+    src="/next-arrow.png"
+    alt="Next"
+    className="w-12 h-14 object-contain"
+  />
+</button>
+
+          {/* Ticker */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            {steps.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentStep(index)}
+                className={`w-2 h-2 rounded-full transition ${
+                  index === currentStep ? "bg-white" : "bg-white/40"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Continue */}
+          {!(showCompletionSlide && completionType === "gold") && (
+<button
+  onClick={goNext}
+  disabled={isWrongAnswer}
+  className={`absolute bottom-4 right-4 px-4 py-1.5 rounded-3xl text-sm text-white transition-all duration-200
+    ${isWrongAnswer
+      ? "bg-gray-500/50 blur-[1px] cursor-not-allowed opacity-60"
+      : "bg-[#8B3EFE] hover:bg-[#7A2FE0]"
+    }
+  `}
+>
+  Continue
+</button>
+)}
+        </div>
+
+{/* XP Reward Button */}
+<button
+  className="flex items-center gap-2 px-4 py-3 rounded-lg border"
+  style={{ 
+    background: "#1D182E80",
+    borderColor: "#D4BBFF1A",
+    borderWidth: "1px"
+  }}
+>
+  {/* XP Icon */}
+  <img src="/xp-icon.png" alt="XP Icon" className="w-12 h-12 object-contain" />
+
+  {/* Text */}
+  <div className="flex flex-col leading-none">
+    <span className="text-[15px] font-bold" style={{ color: "#94E2FF" }}>
+      XP REWARDS
+    </span>
+    <span className="text-xl font-bold text-white">500</span>
+  </div>
+</button>
+      </div>
+
+      {showXPModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+
+    <div
+      className="w-[90%] max-w-sm rounded-xl p-4 text-center space-y-3"
+      style={{
+        background: "linear-gradient(135deg, #8B3EFE, #532598)",
+      }}
+    >
+      {/* Icon */}
+      <img src="/claim500.png" className="w-14 h-14 mx-auto" />
+
+      {/* Title */}
+      <h2 className="text-lg sm:text-xl font-bold">
+        Lesson Complete!
+      </h2>
+
+      {/* Text */}
+      <p className="text-xs text-white/80">
+        You've successfully mastered the basics of web3 and blockchain
+      </p>
+
+      {/* XP */}
+      <div className="flex items-center justify-center gap-2 text-lg font-extrabold">
+        <span>+500 XP</span>
+        <img src="/claimed.png" className="w-12 h-5" />
+      </div>
+
+      {/* Buttons */}
+      <div className="flex flex-col gap-2 mt-3">
+
+<button
+  onClick={() => {
+    handleClaimXP();
+    setLocation("/learn");
+  }}
+  className="w-full py-2 text-sm rounded-md text-white"
+  style={{ background: "#8A3FFC66" }}
+>
+  RETURN TO LESSONS
+</button>
+
+        <button
+          onClick={resetLesson}
+          className="w-full py-2 text-sm rounded-md text-white border border-white bg-transparent"
+        >
+          TAKE LESSON AGAIN
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
