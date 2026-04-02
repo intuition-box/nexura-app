@@ -466,19 +466,19 @@ export default function LessonPage() {
 
         {/* Step card */}
         <div
-          className="rounded-3xl min-h-[400px] sm:min-h-[360px] flex flex-col overflow-hidden"
+          className="rounded-3xl min-h-[460px] sm:min-h-[380px] flex flex-col overflow-hidden"
           style={{ background: "linear-gradient(145deg, #8B3EFE, #4A1B8A)" }}
         >
           {/* Content row: prev | content | next */}
-          <div className="flex items-center gap-1 sm:gap-3 px-0.5 sm:px-2 pt-6 sm:pt-7 pb-2 flex-1">
+          <div className="flex items-center gap-1 sm:gap-3 px-1 sm:px-2 pt-6 sm:pt-7 pb-2 flex-1">
 
             {/* Prev button */}
             <button
               onClick={goPrev}
               disabled={currentStep === 0}
-              className="shrink-0 p-1 sm:p-2 transition-opacity opacity-55 hover:opacity-90 disabled:opacity-15 sm:opacity-75 sm:disabled:opacity-25"
+              className="shrink-0 w-11 h-11 sm:w-auto sm:h-auto sm:p-2 flex items-center justify-center transition-opacity opacity-60 hover:opacity-90 disabled:opacity-20"
             >
-              <img src="/prev-arrow.png" alt="Previous" className="w-7 h-9 sm:w-11 sm:h-14 object-contain" />
+              <img src="/prev-arrow.png" alt="Previous" className="w-6 h-8 sm:w-10 sm:h-14 object-contain" />
             </button>
 
             {/* Animated content */}
@@ -499,12 +499,12 @@ export default function LessonPage() {
               >
                 {/* Intro / Outro */}
                 {(activeStep?.kind === "intro" || activeStep?.kind === "outro") ? (
-                  <div className="flex flex-col items-center gap-3 sm:gap-5">
+                  <div className="flex flex-col items-center gap-4 sm:gap-5">
                     {activeStep.trophy && (
                       <img
                         src={`/nexura-${activeStep.trophy}.png`}
                         alt={`${activeStep.trophy} trophy`}
-                        className="w-28 h-28 sm:w-44 sm:h-44 object-contain"
+                        className="w-32 h-32 sm:w-44 sm:h-44 object-contain"
                       />
                     )}
                     {activeStep.header && (
@@ -579,14 +579,14 @@ export default function LessonPage() {
 
                 /* Congratulations / Claim */
                 ) : (
-                  <div className="flex flex-col items-center gap-3 w-full">
+                  <div className="flex flex-col items-center gap-2 sm:gap-3 w-full">
                     <img
                       src="/nexura-gold.png"
                       alt="Gold Trophy"
-                      className="w-28 h-28 sm:w-40 sm:h-40 object-contain"
+                      className="w-24 h-24 sm:w-40 sm:h-40 object-contain"
                     />
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Congratulations</h2>
-                    <p className="text-sm sm:text-base text-white/80 leading-relaxed max-w-xs">
+                    <h2 className="text-xl sm:text-3xl font-extrabold text-white">Congratulations</h2>
+                    <p className="text-sm sm:text-base text-white/80 leading-relaxed max-w-[240px] sm:max-w-xs">
                       {allQuestionsDone
                         ? `You have mastered the basics of ${lesson?.title ?? "this lesson"}. Your XP rewards are ready to be claimed.`
                         : "Finish every question to unlock your XP reward."}
@@ -594,7 +594,7 @@ export default function LessonPage() {
                     <button
                       onClick={() => void claimXp()}
                       disabled={!allQuestionsDone || claiming || lesson?.done}
-                      className={`w-full sm:w-auto px-8 py-3 rounded-full font-bold text-sm text-white transition ${
+                      className={`w-full sm:w-auto px-8 py-3.5 rounded-full font-bold text-sm text-white transition ${
                         !allQuestionsDone || lesson?.done
                           ? "bg-white/20 cursor-not-allowed opacity-60"
                           : "bg-[#5B1BA0] hover:bg-[#4a1585] active:scale-95"
@@ -602,7 +602,7 @@ export default function LessonPage() {
                     >
                       {lesson?.done ? "XP Claimed" : claiming ? "Claiming…" : "Claim XP"}
                     </button>
-                    <div className="w-full border-t border-white/15 pt-2.5">
+                    <div className="w-full border-t border-white/15 pt-2">
                       <p className="text-[11px] text-yellow-300/70">
                         Original Content by Nexura. Adapted by Nexura.
                       </p>
@@ -620,21 +620,21 @@ export default function LessonPage() {
                 (activeStep?.kind === "question" && !activeStep.question.done && !currentSelection) ||
                 submittingQuestionId === currentQuestion?._id
               }
-              className="shrink-0 p-1 sm:p-2 transition-opacity opacity-55 hover:opacity-90 disabled:opacity-15 sm:opacity-75 sm:disabled:opacity-25"
+              className="shrink-0 w-11 h-11 sm:w-auto sm:h-auto sm:p-2 flex items-center justify-center transition-opacity opacity-60 hover:opacity-90 disabled:opacity-20"
             >
-              <img src="/next-arrow.png" alt="Next" className="w-7 h-9 sm:w-11 sm:h-14 object-contain" />
+              <img src="/next-arrow.png" alt="Next" className="w-6 h-8 sm:w-10 sm:h-14 object-contain" />
             </button>
           </div>
 
           {/* Bottom bar: dots + Continue — in normal flow, no overlap possible */}
-          <div className="flex items-center px-4 sm:px-5 pb-5 pt-2 gap-3">
+          <div className="flex items-center px-3 sm:px-5 pb-6 sm:pb-5 pt-2 gap-2 sm:gap-3">
             {/* Invisible mirror spacer keeps dots centered */}
             {activeStep?.kind !== "claim" ? (
-              <span className="shrink-0 invisible px-4 py-2 text-xs font-semibold" aria-hidden>Continue</span>
+              <span className="shrink-0 invisible px-4 py-2.5 sm:py-2 text-sm font-semibold" aria-hidden>Continue</span>
             ) : null}
 
             {/* Step dots */}
-            <div className="flex-1 flex flex-wrap justify-center gap-1.5 sm:gap-2">
+            <div className="flex-1 flex flex-wrap justify-center gap-0.5 sm:gap-1">
               {lessonSteps.map((step, index) => (
                 <button
                   key={step.key}
@@ -642,12 +642,16 @@ export default function LessonPage() {
                     direction.current = index > currentStep ? 1 : -1;
                     setCurrentStep(index);
                   }}
-                  className={`rounded-full transition-all duration-200 ${
-                    index === currentStep
-                      ? "w-4 h-1.5 bg-white"
-                      : "w-1.5 h-1.5 bg-white/35 hover:bg-white/60"
-                  }`}
-                />
+                  className="w-5 h-5 flex items-center justify-center shrink-0"
+                >
+                  <span
+                    className={`block rounded-full transition-all duration-200 ${
+                      index === currentStep
+                        ? "w-4 h-1.5 bg-white"
+                        : "w-1.5 h-1.5 bg-white/35 hover:bg-white/60"
+                    }`}
+                  />
+                </button>
               ))}
             </div>
 
@@ -661,7 +665,7 @@ export default function LessonPage() {
                     (!currentSelection || currentFeedback === "wrong")) ||
                   submittingQuestionId === currentQuestion?._id
                 }
-                className={`shrink-0 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white transition-all duration-200 ${
+                className={`shrink-0 px-4 py-2.5 sm:py-2 rounded-full text-sm font-semibold text-white transition-all duration-200 ${
                   activeStep?.kind === "question" &&
                   !activeStep.question.done &&
                   (!currentSelection || currentFeedback === "wrong")
@@ -699,16 +703,19 @@ export default function LessonPage() {
       {/* Lesson Complete modal */}
       {showXPModal ? (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4">
-          <div className="w-full sm:max-w-sm rounded-t-[32px] sm:rounded-[28px] bg-[#2D1B6B] px-5 pt-6 pb-8 sm:p-8 text-center shadow-[0_-8px_40px_rgba(0,0,0,0.5)]">
+          <div
+            className="w-full sm:max-w-sm rounded-t-[32px] sm:rounded-[28px] bg-[#2D1B6B] px-5 pt-6 sm:p-8 text-center shadow-[0_-8px_40px_rgba(0,0,0,0.5)]"
+            style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 0px))" }}
+          >
             {/* Drag handle (mobile sheet feel) */}
             <div className="mx-auto w-10 h-1 rounded-full bg-white/20 mb-5 sm:hidden" />
 
-            <div className="mx-auto flex h-[68px] w-[68px] sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-[#3D2080]">
-              <img src="/nexura-gold.png" alt="Gold Trophy" className="h-11 w-11 sm:h-16 sm:w-16 object-contain" />
+            <div className="mx-auto flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-[#3D2080]">
+              <img src="/nexura-gold.png" alt="Gold Trophy" className="h-14 w-14 sm:h-16 sm:w-16 object-contain" />
             </div>
 
-            <h2 className="mt-4 sm:mt-6 text-xl sm:text-3xl font-extrabold text-white">Lesson Complete!</h2>
-            <p className="mt-1.5 text-sm text-white/65 leading-relaxed">
+            <h2 className="mt-4 sm:mt-6 text-2xl sm:text-3xl font-extrabold text-white">Lesson Complete!</h2>
+            <p className="mt-2 text-sm text-white/65 leading-relaxed px-1">
               {lesson?.description || "You've successfully completed this lesson."}
             </p>
 
@@ -723,14 +730,14 @@ export default function LessonPage() {
               <button
                 type="button"
                 onClick={() => setLocation("/learn")}
-                className="w-full rounded-xl bg-[#7C3AED] px-4 py-3.5 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#6D28D9] active:scale-[0.98]"
+                className="w-full rounded-xl bg-[#7C3AED] px-4 py-4 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#6D28D9] active:scale-[0.98]"
               >
                 Return to Lessons
               </button>
               <button
                 type="button"
                 onClick={resetLessonView}
-                className="w-full rounded-xl border border-[#7C3AED] bg-transparent px-4 py-3.5 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#7C3AED]/20 active:scale-[0.98]"
+                className="w-full rounded-xl border border-[#7C3AED] bg-transparent px-4 py-4 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#7C3AED]/20 active:scale-[0.98]"
               >
                 Take Lesson Again
               </button>
