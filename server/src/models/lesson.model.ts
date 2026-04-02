@@ -25,6 +25,10 @@ const lessonSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  order: {
+    type: Number,
+    default: 0,
+  },
   status: {
     type: String,
     enum: ["draft", "published"],
