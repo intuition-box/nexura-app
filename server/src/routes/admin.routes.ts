@@ -34,6 +34,7 @@ import {
   updateMiniLesson,
   updateQuestion,
   reorderLessonContent,
+  reorderLessons,
   publishLesson,
   unpublishLesson,
   updateQuestionIntro,
@@ -78,6 +79,7 @@ router
   .patch("/update-question", updateQuestion)
   .delete("/delete-question", deleteQuestion)
   .patch("/reorder-lesson-content", reorderLessonContent)
+  .patch("/reorder-lessons", reorderLessons)
   .patch("/publish-lesson", publishLesson)
   .patch("/unpublish-lesson", unpublishLesson)
   .patch("/update-question-intro", updateQuestionIntro)

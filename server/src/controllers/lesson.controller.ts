@@ -628,3 +628,25 @@ export const reorderLessonContent = async (req: GlobalRequest, res: GlobalRespon
   }
 };
 
+export const reorderLessons = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { items } = req.body as {
+      items?: Array<{ id: string; order: number }>;
+    };
+
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(BAD_REQUEST).json({ error: "items array is required" });
+      return;
+    }
+
+    await Promise.all(
+      items.map((item) => lesson.updateOne({ _id: item.id }, { $set: { order: item.order } }))
+    );
+
+    res.status(OK).json({ message: "lesson order updated" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error reordering lessons" });
+  }
+};
+
