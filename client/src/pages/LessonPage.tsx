@@ -526,7 +526,7 @@ export default function LessonPage() {
               >
                 {/* Intro / Outro */}
                 {(activeStep?.kind === "intro" || activeStep?.kind === "outro") ? (
-                  <div className="flex flex-col items-center gap-4 sm:gap-5">
+                  <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 w-full">
                     {activeStep.trophy && (
                       <motion.div
                         initial={{ scale: 0, opacity: 0 }}
@@ -537,7 +537,7 @@ export default function LessonPage() {
                         <img
                           src={`/nexura-${activeStep.trophy}.png`}
                           alt={`${activeStep.trophy} trophy`}
-                          className="w-32 h-32 sm:w-44 sm:h-44 object-contain relative z-10"
+                          className="w-20 h-20 sm:w-28 sm:h-28 object-contain relative z-10"
                         />
                         <div
                           className="absolute inset-0 z-0 rounded-full animate-ping opacity-20"
@@ -565,7 +565,7 @@ export default function LessonPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5, duration: 0.4 }}
-                        className="text-xl sm:text-2xl font-bold leading-snug"
+                        className="text-base sm:text-lg font-bold leading-snug text-center"
                       >
                         {activeStep.header}
                       </motion.p>
@@ -575,7 +575,7 @@ export default function LessonPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6, duration: 0.4 }}
-                        className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap text-white/80"
+                        className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap text-white/80 text-center"
                       >
                         {activeStep.body}
                       </motion.p>
@@ -584,7 +584,7 @@ export default function LessonPage() {
 
                 /* Mini lesson */
                 ) : activeStep?.kind === "mini" ? (
-                  <p className="text-base sm:text-lg leading-relaxed whitespace-pre-wrap py-2">
+                  <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap py-2 text-center">
                     {activeStep.text}
                   </p>
 
@@ -644,14 +644,14 @@ export default function LessonPage() {
 
                 /* Congratulations / Claim */
                 ) : (
-                  <div className="flex flex-col items-center gap-2 sm:gap-3 w-full">
+                  <div className="flex flex-col items-center justify-center gap-2 sm:gap-3 w-full">
                     <img
                       src="/nexura-gold.png"
                       alt="Gold Trophy"
-                      className="w-24 h-24 sm:w-40 sm:h-40 object-contain"
+                      className="w-16 h-16 sm:w-24 sm:h-24 object-contain"
                     />
-                    <h2 className="text-xl sm:text-3xl font-extrabold text-white">Congratulations</h2>
-                    <p className="text-sm sm:text-base text-white/80 leading-relaxed max-w-[240px] sm:max-w-xs">
+                    <h2 className="text-lg sm:text-xl font-extrabold text-white text-center">Congratulations</h2>
+                    <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-[220px] sm:max-w-xs text-center">
                       {allQuestionsDone
                         ? `You have mastered the basics of ${lesson?.title ?? "this lesson"}. Your XP rewards are ready to be claimed.`
                         : "Finish every question to unlock your XP reward."}
