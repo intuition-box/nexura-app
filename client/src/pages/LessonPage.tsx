@@ -228,12 +228,10 @@ export default function LessonPage() {
     }
   }, [authLoading, lessonId]);
 
-  // Clamp currentStep to valid range once lessonSteps are loaded
+  // Clamp currentStep to valid range once REAL lesson content is loaded (not just the claim step)
   useEffect(() => {
-    if (!lessonSteps.length || didInitStepRef.current) return;
+    if (lessonSteps.length <= 1 || didInitStepRef.current) return;
     didInitStepRef.current = true;
-    // currentStep was already initialized from localStorage in useState
-    // Just clamp it to the valid range now that we know lessonSteps.length
     const clamped = Math.min(currentStep, lessonSteps.length - 1);
     if (clamped !== currentStep) {
       setCurrentStep(clamped);
