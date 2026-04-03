@@ -566,7 +566,7 @@ export default function LessonPage() {
                         />
                         {/* Rotating sun rays */}
                         <div
-                          className="absolute inset-[-40%] z-0 opacity-50"
+                          className="absolute inset-[-40%] z-0 opacity-50 rounded-full"
                           style={{
                             background: `conic-gradient(from 0deg, transparent 0deg, #C0C0C0 10deg, transparent 20deg, transparent 45deg, #C0C0C0 55deg, transparent 65deg, transparent 90deg, #C0C0C0 100deg, transparent 110deg, transparent 135deg, #C0C0C0 145deg, transparent 155deg, transparent 180deg, #C0C0C0 190deg, transparent 200deg, transparent 225deg, #C0C0C0 235deg, transparent 245deg, transparent 270deg, #C0C0C0 280deg, transparent 290deg, transparent 315deg, #C0C0C0 325deg, transparent 335deg)`,
                             animation: "spin 5s linear infinite",
@@ -725,36 +725,8 @@ export default function LessonPage() {
             </button>
           </div>
 
-          {/* Bottom bar: dots left, Continue right — same row */}
-          <div className="px-4 sm:px-5 pb-6 sm:pb-5 pt-3 flex items-center">
-            {/* Step dots — centered */}
-            <div className="flex-1" />
-            <div className="flex items-center gap-1">
-              {lessonSteps.slice(dotsWinStart, dotsWinEnd).map((step, wi) => {
-                const gi = dotsWinStart + wi;
-                const dist = Math.abs(gi - currentStep);
-                const dotClass =
-                  dist === 0 ? "w-4 h-2 bg-white" :
-                  dist === 1 ? "w-2 h-2 bg-white/65" :
-                  dist === 2 ? "w-1.5 h-1.5 bg-white/45" :
-                               "w-1 h-1 bg-white/25";
-                return (
-                  <button
-                    key={step.key}
-                    onClick={() => {
-                      direction.current = gi > currentStep ? 1 : -1;
-                      setCurrentStep(gi);
-                    }}
-                    className="w-5 h-5 flex items-center justify-center shrink-0"
-                  >
-                    <span className={`block rounded-full transition-all duration-300 ${dotClass}`} />
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex-1" />
-
-            {/* Continue — right-aligned, same row as dots */}
+          {/* Bottom bar: Continue button */}
+          <div className="px-4 sm:px-5 pb-6 sm:pb-5 pt-3 flex items-center justify-end">
             {activeStep?.kind !== "claim" ? (
               <div className="flex shrink-0">
                 <button
