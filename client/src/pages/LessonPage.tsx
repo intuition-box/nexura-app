@@ -216,18 +216,33 @@ export default function LessonPage() {
     }
   }, [authLoading, lessonId]);
 
+  // Restore step position from localStorage — try both wallet and guest keys
   useEffect(() => {
     if (!lessonSteps.length || didInitStepRef.current) return;
 
-    const data = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    const savedStepIndex = Number(data[lessonId]?.stepIndex || 0);
+    // Try current key first, then fallback to guest/wallet variants
+    const tryRestore = (key: string) => {
+      const data = JSON.parse(localStorage.getItem(key) || "{}");
+      return data[lessonId]?.stepIndex ?? -1;
+    };
+
+    let savedStepIndex = tryRestore(storageKey);
+    if (savedStepIndex < 0) {
+      // Try guest key as fallback
+      const guestKey = `learn-progress-guest`;
+      if (guestKey !== storageKey) savedStepIndex = tryRestore(guestKey);
+    }
+    if (savedStepIndex < 0) savedStepIndex = 0;
+
     const nextIndex = isReview ? 0 : Math.min(Math.max(savedStepIndex, 0), lessonSteps.length - 1);
-    setCurrentStep(nextIndex);
+
     didInitStepRef.current = true;
     skipNextSave.current = true;
+    setCurrentStep(nextIndex);
     setDidInitStep(true);
   }, [isReview, lessonId, lessonSteps.length, storageKey]);
 
+  // Save step position + selected answers to localStorage
   useEffect(() => {
     if (!lessonId || !lessonSteps.length || !didInitStepRef.current) return;
     if (skipNextSave.current) {
@@ -550,15 +565,7 @@ export default function LessonPage() {
                         <div
                           className="absolute inset-[-20%] z-0 opacity-40"
                           style={{
-                            background: `conic-gradient(from 0deg, transparent 0deg, ${
-                              activeStep.trophy === "gold" ? "#FFD700" : activeStep.trophy === "silver" ? "#C0C0C0" : "#CD7F32"
-                            } 15deg, transparent 30deg, transparent 90deg, ${
-                              activeStep.trophy === "gold" ? "#FFD700" : activeStep.trophy === "silver" ? "#C0C0C0" : "#CD7F32"
-                            } 105deg, transparent 120deg, transparent 180deg, ${
-                              activeStep.trophy === "gold" ? "#FFD700" : activeStep.trophy === "silver" ? "#C0C0C0" : "#CD7F32"
-                            } 195deg, transparent 210deg, transparent 270deg, ${
-                              activeStep.trophy === "gold" ? "#FFD700" : activeStep.trophy === "silver" ? "#C0C0C0" : "#CD7F32"
-                            } 285deg, transparent 300deg)`,
+                            background: `conic-gradient(from 0deg, transparent 0deg, #C0C0C0 15deg, transparent 30deg, transparent 90deg, #C0C0C0 105deg, transparent 120deg, transparent 180deg, #C0C0C0 195deg, transparent 210deg, transparent 270deg, #C0C0C0 285deg, transparent 300deg)`,
                             animation: "spin 6s linear infinite",
                             filter: "blur(5px)",
                           }}
