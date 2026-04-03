@@ -64,6 +64,8 @@ const normalizeApiMessage = (error: unknown, fallback: string) => {
 const getProgressStorageKey = (walletAddress?: string | null) =>
   `learn-progress-${walletAddress?.toLowerCase() || "guest"}`;
 
+const LESSON_STEP_KEY = "tenor-lesson-steps";
+
 export default function LessonPage() {
   const params = useParams<{ id: string }>();
   const lessonId = params.id;
@@ -216,51 +218,40 @@ export default function LessonPage() {
     }
   }, [authLoading, lessonId]);
 
-  // Restore step position from localStorage — try both wallet and guest keys
+  // Restore step position from a wallet-independent key
   useEffect(() => {
     if (!lessonSteps.length || didInitStepRef.current) return;
 
-    // Try current key first, then fallback to guest/wallet variants
-    const tryRestore = (key: string) => {
-      const data = JSON.parse(localStorage.getItem(key) || "{}");
-      return data[lessonId]?.stepIndex ?? -1;
-    };
-
-    let savedStepIndex = tryRestore(storageKey);
-    if (savedStepIndex < 0) {
-      // Try guest key as fallback
-      const guestKey = `learn-progress-guest`;
-      if (guestKey !== storageKey) savedStepIndex = tryRestore(guestKey);
-    }
-    if (savedStepIndex < 0) savedStepIndex = 0;
-
+    const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
+    const saved = allSteps[lessonId];
+    const savedStepIndex = Number(saved?.stepIndex || 0);
     const nextIndex = isReview ? 0 : Math.min(Math.max(savedStepIndex, 0), lessonSteps.length - 1);
+
+    // Also restore selected answers from this key
+    if (saved?.selectedAnswers) {
+      setSelectedAnswers((current) => ({ ...saved.selectedAnswers, ...current }));
+    }
 
     didInitStepRef.current = true;
     skipNextSave.current = true;
     setCurrentStep(nextIndex);
     setDidInitStep(true);
-  }, [isReview, lessonId, lessonSteps.length, storageKey]);
+  }, [isReview, lessonId, lessonSteps.length]);
 
-  // Save step position + selected answers to localStorage
+  // Save step position + selected answers (wallet-independent)
   useEffect(() => {
     if (!lessonId || !lessonSteps.length || !didInitStepRef.current) return;
     if (skipNextSave.current) {
       skipNextSave.current = false;
       return;
     }
-    const data = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    data[lessonId] = {
-      ...(data[lessonId] || {}),
+    const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
+    allSteps[lessonId] = {
       stepIndex: currentStep,
       selectedAnswers: selectedAnswers,
-      progress: data[lessonId]?.progress || 0,
-      totalQuestions: questions.length,
-      quizCompleted: Boolean(lesson?.done),
-      claimedReward: Number(lesson?.reward || 0),
     };
-    localStorage.setItem(storageKey, JSON.stringify(data));
-  }, [currentStep, selectedAnswers, lesson?.done, lesson?.reward, lessonId, lessonSteps.length, questions.length, storageKey]);
+    localStorage.setItem(LESSON_STEP_KEY, JSON.stringify(allSteps));
+  }, [currentStep, selectedAnswers, lessonId, lessonSteps.length]);
 
   useEffect(() => {
     if (!lessonId || !didInitStep) return;
@@ -385,6 +376,10 @@ export default function LessonPage() {
         delete data[lessonId].selectedAnswers;
         localStorage.setItem(storageKey, JSON.stringify(data));
       }
+      // Also reset the wallet-independent step key
+      const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
+      delete allSteps[lessonId];
+      localStorage.setItem(LESSON_STEP_KEY, JSON.stringify(allSteps));
       await loadLesson();
       setShowXPModal(true);
     } catch (error) {
