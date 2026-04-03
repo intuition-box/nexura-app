@@ -667,18 +667,18 @@ export default function LessonPage() {
 
                 /* Congratulations / Claim */
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-4 sm:gap-5 w-full py-4">
+                  <div className="flex flex-col items-center justify-center gap-2 sm:gap-3 w-full">
                     <motion.img
                       src="/nexura-gold.png"
                       alt="Gold Trophy"
-                      className="w-24 h-24 sm:w-32 sm:h-32 object-contain drop-shadow-[0_0_20px_rgba(255,215,0,0.3)]"
-                      initial={{ scale: 0, rotate: -20 }}
-                      animate={{ scale: [0, 1.15, 1], rotate: 0, y: [0, -3, 0] }}
+                      className="w-14 h-14 sm:w-18 sm:h-18 object-contain"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 200, damping: 15 }}
                     />
-                    <div className="space-y-2 text-center">
-                      <h2 className="text-xl sm:text-2xl font-extrabold text-white">Congratulations!</h2>
-                      <p className="text-sm sm:text-base text-white/80 leading-relaxed max-w-[280px] sm:max-w-sm mx-auto">
+                    <div className="space-y-1 text-center">
+                      <h2 className="text-base sm:text-lg font-extrabold text-white">Congratulations!</h2>
+                      <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-[220px] sm:max-w-[280px] mx-auto">
                         {allQuestionsDone
                           ? `You have mastered the basics of ${lesson?.title ?? "this lesson"}. Your XP rewards are ready to be claimed.`
                           : "Finish every question to unlock your XP reward."}
@@ -687,7 +687,7 @@ export default function LessonPage() {
                     <button
                       onClick={() => void claimXp()}
                       disabled={!allQuestionsDone || claiming || lesson?.done}
-                      className={`px-10 py-3 rounded-full font-bold text-sm text-white transition-all duration-200 ${
+                      className={`px-6 py-2 rounded-full font-bold text-xs text-white transition-all duration-200 ${
                         !allQuestionsDone || lesson?.done
                           ? "bg-white/20 cursor-not-allowed opacity-60"
                           : "bg-[#5B1BA0] hover:bg-[#4a1585] active:scale-95 shadow-[0_0_24px_rgba(91,27,160,0.4)]"
