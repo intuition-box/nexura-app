@@ -250,11 +250,11 @@ export default function LessonPage() {
   }, [didInitStep, lessonId, lesson?.done, lesson?.reward, questions]);
 
   useEffect(() => {
-    if (!showXPModal) return;
+    if (!showXPModal && activeStep?.kind !== "claim") return;
     setShowConfetti(true);
-    const timeout = window.setTimeout(() => setShowConfetti(false), 4000);
+    const timeout = window.setTimeout(() => setShowConfetti(false), 5000);
     return () => window.clearTimeout(timeout);
-  }, [showXPModal]);
+  }, [showXPModal, activeStep?.kind]);
 
   const ensureReadyForProtectedAction = async () => {
     if (!isConnected) {
