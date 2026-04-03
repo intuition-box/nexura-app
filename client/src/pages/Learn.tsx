@@ -155,7 +155,7 @@ export default function Learn() {
               No lessons are available right now.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6">
               {lessons.map((lesson) => {
                 const storedProgress = progressData[lesson._id] || {};
                 const totalQuestions = Math.max(
