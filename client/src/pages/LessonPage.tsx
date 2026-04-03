@@ -624,7 +624,7 @@ export default function LessonPage() {
                           <div
                             key={`${activeStep.question._id}-${option}`}
                             onClick={() => {
-                              if (activeStep.question.done) return;
+                              if (lesson?.done) return;
                               setSelectedAnswers((current) => ({
                                 ...current,
                                 [activeStep.question._id]: option,
