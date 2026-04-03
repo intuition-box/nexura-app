@@ -552,22 +552,42 @@ export default function LessonPage() {
                   <div className="flex flex-col items-center w-full pt-4 sm:pt-6">
                     {activeStep.trophy && (
                       <motion.div
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0 }}
+                        initial={{ scale: 0, opacity: 0, rotate: -30 }}
+                        animate={{ scale: [0, 1.2, 1], opacity: 1, rotate: 0 }}
+                        transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0, duration: 0.8 }}
                         className="relative mt-4 sm:mt-6"
                       >
-                        <img
+                        <motion.img
                           src={`/nexura-${activeStep.trophy}.png`}
                           alt={`${activeStep.trophy} trophy`}
                           className="w-28 h-28 sm:w-36 sm:h-36 object-contain relative z-10"
+                          animate={{ y: [0, -4, 0] }}
+                          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                         />
+                        {/* Rotating sun rays */}
                         <div
-                          className="absolute inset-[-30%] z-0 opacity-40"
+                          className="absolute inset-[-40%] z-0 opacity-50"
                           style={{
                             background: `conic-gradient(from 0deg, transparent 0deg, #C0C0C0 10deg, transparent 20deg, transparent 45deg, #C0C0C0 55deg, transparent 65deg, transparent 90deg, #C0C0C0 100deg, transparent 110deg, transparent 135deg, #C0C0C0 145deg, transparent 155deg, transparent 180deg, #C0C0C0 190deg, transparent 200deg, transparent 225deg, #C0C0C0 235deg, transparent 245deg, transparent 270deg, #C0C0C0 280deg, transparent 290deg, transparent 315deg, #C0C0C0 325deg, transparent 335deg)`,
-                            animation: "spin 6s linear infinite",
-                            filter: "blur(5px)",
+                            animation: "spin 5s linear infinite",
+                            filter: "blur(4px)",
+                          }}
+                        />
+                        {/* Soft glow underneath */}
+                        <div
+                          className="absolute inset-[-15%] z-0 rounded-full"
+                          style={{
+                            background: "radial-gradient(circle, rgba(192,192,192,0.35) 0%, transparent 65%)",
+                            animation: "pulse 2s ease-in-out infinite",
+                          }}
+                        />
+                        {/* Shimmer overlay */}
+                        <div
+                          className="absolute inset-0 z-20 overflow-hidden rounded-full pointer-events-none"
+                          style={{
+                            background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
+                            backgroundSize: "200% 100%",
+                            animation: "shimmer 2.5s ease-in-out infinite",
                           }}
                         />
                       </motion.div>
