@@ -595,18 +595,18 @@ export default function LessonPage() {
 
                 /* Question */
                 ) : activeStep?.kind === "question" ? (
-                  <div className="flex flex-col gap-2 sm:gap-3 text-left">
-                    <h2 className="text-xs sm:text-base font-bold text-center leading-snug uppercase tracking-wide">
+                  <div className="flex flex-col gap-1.5 sm:gap-2 text-left">
+                    <h2 className="text-[11px] sm:text-sm font-bold text-center leading-snug uppercase tracking-wide">
                       {activeStep.question.question}
                     </h2>
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1.5">
                       {activeStep.question.options.map((option, index) => {
                         const isSelected = currentSelection === option;
                         const isCorrect = isSelected && (activeStep.question.done || currentFeedback === "correct");
                         const isWrong = isSelected && currentFeedback === "wrong" && !activeStep.question.done;
 
-                        const base = "flex items-center justify-between px-2.5 sm:px-3 py-2 rounded-lg border transition-colors cursor-pointer";
+                        const base = "flex items-center justify-between px-2 sm:px-2.5 py-1.5 rounded-md border transition-colors cursor-pointer";
                         const style = isCorrect
                           ? `${base} bg-[#00E1A220] border-[#00E1A2CC]`
                           : isWrong
@@ -626,16 +626,16 @@ export default function LessonPage() {
                             }}
                             className={style}
                           >
-                            <span className="flex items-center gap-2 min-w-0">
-                              <span className="shrink-0 w-5 h-5 flex items-center justify-center rounded-md bg-white/15 text-[10px] font-bold">
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              <span className="shrink-0 w-4 h-4 flex items-center justify-center rounded bg-white/15 text-[9px] font-bold">
                                 {String.fromCharCode(65 + index)}
                               </span>
-                              <span className="capitalize text-xs sm:text-sm break-words leading-snug">{option}</span>
+                              <span className="capitalize text-[11px] sm:text-xs break-words leading-snug">{option}</span>
                             </span>
                             {isCorrect ? (
-                              <span className="shrink-0 ml-2 w-5 h-5 flex items-center justify-center rounded-full bg-[#00E1A2] text-black font-bold text-xs">✓</span>
+                              <span className="shrink-0 ml-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-[#00E1A2] text-black font-bold text-[9px]">✓</span>
                             ) : isWrong ? (
-                              <span className="shrink-0 ml-2 w-5 h-5 flex items-center justify-center rounded-full bg-[#F43F5E] text-black font-bold text-xs">✕</span>
+                              <span className="shrink-0 ml-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-[#F43F5E] text-black font-bold text-[9px]">✕</span>
                             ) : null}
                           </div>
                         );
