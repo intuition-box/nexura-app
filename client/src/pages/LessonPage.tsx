@@ -514,7 +514,7 @@ export default function LessonPage() {
 
         {/* Step card */}
         <div
-          className="rounded-3xl h-[380px] sm:h-[320px] flex flex-col overflow-hidden relative"
+          className="rounded-3xl h-[480px] sm:h-[420px] flex flex-col overflow-hidden relative"
           style={{ background: "linear-gradient(145deg, #8B3EFE, #4A1B8A)" }}
         >
           {/* Content row: prev | content | next */}
@@ -667,37 +667,71 @@ export default function LessonPage() {
 
                 /* Congratulations / Claim */
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1.5 sm:gap-2 w-full">
-                    <motion.img
-                      src="/nexura-gold.png"
-                      alt="Gold Trophy"
-                      className="w-12 h-12 sm:w-16 sm:h-16 object-contain"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
+                  <div className="flex flex-col items-center w-full pt-2">
+                    <motion.div
+                      className="relative"
+                      initial={{ scale: 0, opacity: 0, rotate: -20 }}
+                      animate={{ scale: [0, 1.15, 1], opacity: 1, rotate: 0 }}
                       transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                    />
-                    <div className="space-y-1 text-center">
-                      <h2 className="text-sm sm:text-base font-extrabold text-white">Congratulations!</h2>
-                      <p className="text-[11px] sm:text-xs text-white/80 leading-relaxed max-w-[200px] sm:max-w-[260px] mx-auto">
+                    >
+                      <motion.img
+                        src="/nexura-gold.png"
+                        alt="Gold Trophy"
+                        className="w-20 h-20 sm:w-28 sm:h-28 object-contain relative z-10"
+                        animate={{ y: [0, -3, 0] }}
+                        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                      <div
+                        className="absolute inset-[-20%] z-0 rounded-full"
+                        style={{
+                          background: `conic-gradient(from 0deg, transparent 0deg, rgba(255,215,0,0.4) 5deg, transparent 15deg, transparent 45deg, rgba(255,215,0,0.3) 50deg, transparent 60deg, transparent 90deg, rgba(255,215,0,0.4) 95deg, transparent 105deg, transparent 135deg, rgba(255,215,0,0.3) 140deg, transparent 150deg, transparent 180deg, rgba(255,215,0,0.4) 185deg, transparent 195deg, transparent 225deg, rgba(255,215,0,0.3) 230deg, transparent 240deg, transparent 270deg, rgba(255,215,0,0.4) 275deg, transparent 285deg, transparent 315deg, rgba(255,215,0,0.3) 320deg, transparent 330deg)`,
+                          animation: "spin 8s linear infinite",
+                          filter: "blur(6px)",
+                          opacity: 0.5,
+                        }}
+                      />
+                      <div
+                        className="absolute inset-[-5%] z-0 rounded-full"
+                        style={{
+                          background: "radial-gradient(circle, rgba(255,215,0,0.15) 0%, transparent 60%)",
+                          animation: "pulse 3s ease-in-out infinite",
+                        }}
+                      />
+                    </motion.div>
+                    <div className="mt-6 sm:mt-8 space-y-1.5 text-center">
+                      <motion.h2
+                        className="text-base sm:text-lg font-extrabold text-white"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, duration: 0.4 }}
+                      >
+                        Congratulations!
+                      </motion.h2>
+                      <motion.p
+                        className="text-[10px] sm:text-[11px] text-white/70 leading-relaxed max-w-[200px] sm:max-w-[240px] mx-auto"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6, duration: 0.4 }}
+                      >
                         {allQuestionsDone
-                          ? `You have mastered the basics of ${lesson?.title ?? "this lesson"}. Your XP rewards are ready to be claimed.`
+                          ? `You've mastered ${lesson?.title ?? "this lesson"}. Claim your XP rewards.`
                           : "Finish every question to unlock your XP reward."}
-                      </p>
+                      </motion.p>
                     </div>
-                    <button
+                    <motion.button
                       onClick={() => void claimXp()}
                       disabled={!allQuestionsDone || claiming || lesson?.done}
-                      className={`px-6 py-2 rounded-full font-bold text-xs text-white transition-all duration-200 ${
+                      className={`mt-4 px-6 py-2 rounded-full font-bold text-xs text-white transition-all duration-200 ${
                         !allQuestionsDone || lesson?.done
                           ? "bg-white/20 cursor-not-allowed opacity-60"
                           : "bg-[#5B1BA0] hover:bg-[#4a1585] active:scale-95 shadow-[0_0_24px_rgba(91,27,160,0.4)]"
                       }`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7, duration: 0.4 }}
                     >
                       {lesson?.done ? "XP Claimed" : claiming ? "Claiming…" : "Claim XP"}
-                    </button>
-                    <p className="text-[10px] text-white/30 mt-1">
-                      Original Content by Nexura
-                    </p>
+                    </motion.button>
                   </div>
                 )}
               </motion.div>
