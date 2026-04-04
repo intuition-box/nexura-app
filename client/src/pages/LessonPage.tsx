@@ -862,7 +862,9 @@ export default function LessonPage() {
                 Take Lesson Again
               </button>
               <a
-                href={`https://x.com/intent/tweet?text=${encodeURIComponent(`I just completed the "${lesson?.title ?? "a lesson"}" lesson on Nexura! 🎓🚀\n\nJoin me at ${window.location.origin}/learn`)}`}
+                href={`https://x.com/intent/tweet?text=${encodeURIComponent(
+                  `I just completed the ${lesson?.title ?? "a lesson"} lesson on @NexuraXYZ ✅\n\n${lesson?.reward ?? 0} XP secured\n\nSign up here: ${window.location.origin}/ref/${user?.referral?.code ?? "nexura"} and check it out in the Learn tab.`
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full rounded-xl bg-black px-4 py-4 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-black/80 active:scale-[0.98] flex items-center justify-center gap-2 border border-white/10"
