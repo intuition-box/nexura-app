@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useParams } from "wouter";
 import { Loader2 } from "lucide-react";
@@ -64,7 +64,9 @@ const normalizeApiMessage = (error: unknown, fallback: string) => {
 const getProgressStorageKey = (walletAddress?: string | null) =>
   `learn-progress-${walletAddress?.toLowerCase() || "guest"}`;
 
-const LESSON_STEP_KEY = "tenor-lesson-steps";
+const OLD_LESSON_STEP_KEY = "tenor-lesson-steps";
+const getLessonStepKey = (walletAddress?: string | null) =>
+  `tenor-lesson-steps-${walletAddress?.toLowerCase() || "guest"}`;
 
 export default function LessonPage() {
   const params = useParams<{ id: string }>();
@@ -74,6 +76,7 @@ export default function LessonPage() {
   const { user, loading: authLoading } = useAuth();
 
   const storageKey = useMemo(() => getProgressStorageKey(address), [address]);
+  const lessonStepKey = useMemo(() => getLessonStepKey(address), [address]);
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
   const isReview = searchParams.get("review") === "1";
 
@@ -83,15 +86,23 @@ export default function LessonPage() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>(() => {
     try {
       if (!lessonId) return {};
-      const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
-      return allSteps[lessonId]?.selectedAnswers || {};
+      // Try wallet-specific key first, fallback to old shared key for migration
+      const walletKey = getLessonStepKey(address);
+      const allSteps = JSON.parse(localStorage.getItem(walletKey) || "{}");
+      if (allSteps[lessonId]?.selectedAnswers) return allSteps[lessonId].selectedAnswers;
+      const oldSteps = JSON.parse(localStorage.getItem(OLD_LESSON_STEP_KEY) || "{}");
+      return oldSteps[lessonId]?.selectedAnswers || {};
     } catch { return {}; }
   });
   const [currentStep, setCurrentStep] = useState(() => {
     try {
       if (!lessonId || isReview) return 0;
-      const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
-      return Number(allSteps[lessonId]?.stepIndex || 0);
+      // Try wallet-specific key first, fallback to old shared key for migration
+      const walletKey = getLessonStepKey(address);
+      const allSteps = JSON.parse(localStorage.getItem(walletKey) || "{}");
+      if (allSteps[lessonId]?.stepIndex != null) return Number(allSteps[lessonId].stepIndex);
+      const oldSteps = JSON.parse(localStorage.getItem(OLD_LESSON_STEP_KEY) || "{}");
+      return Number(oldSteps[lessonId]?.stepIndex || 0);
     } catch { return 0; }
   });
   const [loading, setLoading] = useState(true);
@@ -106,6 +117,7 @@ export default function LessonPage() {
   const [didInitStep, setDidInitStep] = useState(false);
   const didInitStepRef = useRef(false);
   const confettiFired = useRef(false);
+  const isRedoing = useRef(false);
   const direction = useRef(1);
 
   const lessonSteps = useMemo<LessonStep[]>(() => {
@@ -233,25 +245,27 @@ export default function LessonPage() {
   }, [lessonSteps.length]);
 
   // Explicit save function — called directly from navigation and answer selection
-  const saveProgress = (step: number, answers: Record<string, string>) => {
+  // Accept optional latestQuestions to avoid reading stale React state after submitAnswer
+  const saveProgress = useCallback((step: number, answers: Record<string, string>, latestQuestions?: LessonQuestion[]) => {
     if (!lessonId) return;
-    const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
+    const qs = latestQuestions ?? questions;
+    const allSteps = JSON.parse(localStorage.getItem(lessonStepKey) || "{}");
     allSteps[lessonId] = { stepIndex: step, selectedAnswers: answers };
-    localStorage.setItem(LESSON_STEP_KEY, JSON.stringify(allSteps));
+    localStorage.setItem(lessonStepKey, JSON.stringify(allSteps));
 
     // Also flush question-based progress to the wallet-dependent key so Learn.tsx stays in sync
     const data = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    const completedCount = questions.filter((entry) => entry.done).length;
+    const completedCount = qs.filter((entry) => entry.done).length;
     data[lessonId] = {
       ...(data[lessonId] || {}),
-      progress: lesson?.done ? questions.length : completedCount,
-      totalQuestions: questions.length,
+      progress: lesson?.done ? qs.length : completedCount,
+      totalQuestions: qs.length,
       quizCompleted: Boolean(lesson?.done),
       stepIndex: step,
     };
     localStorage.setItem(storageKey, JSON.stringify(data));
     window.dispatchEvent(new Event("progress-update"));
-  };
+  }, [lessonId, lessonStepKey, storageKey, questions, lesson?.done]);
 
   useEffect(() => {
     if (!lessonId || !didInitStep) return;
@@ -379,10 +393,18 @@ export default function LessonPage() {
         delete data[lessonId].selectedAnswers;
         localStorage.setItem(storageKey, JSON.stringify(data));
       }
-      // Also reset the wallet-independent step key
-      const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
+      // Also reset the wallet-namespaced step key
+      const allSteps = JSON.parse(localStorage.getItem(lessonStepKey) || "{}");
       delete allSteps[lessonId];
-      localStorage.setItem(LESSON_STEP_KEY, JSON.stringify(allSteps));
+      localStorage.setItem(lessonStepKey, JSON.stringify(allSteps));
+      // Clean up old shared key if present (migration)
+      try {
+        const oldSteps = JSON.parse(localStorage.getItem(OLD_LESSON_STEP_KEY) || "{}");
+        if (oldSteps[lessonId]) {
+          delete oldSteps[lessonId];
+          localStorage.setItem(OLD_LESSON_STEP_KEY, JSON.stringify(oldSteps));
+        }
+      } catch {}
       try { await loadLesson(); } catch {}  // don't block modal if reload fails
       setShowXPModal(true);
     } catch (error) {
@@ -410,14 +432,18 @@ export default function LessonPage() {
     if (!activeStep) return;
 
     if (activeStep.kind === "question") {
-      if (!activeStep.question.done) {
+      if (!activeStep.question.done || isRedoing.current) {
         if (!currentSelection) return;
         const saved = await submitAnswer();
         if (saved && currentStep < lessonSteps.length - 1) {
           const nextStep = Math.min(currentStep + 1, lessonSteps.length - 1);
           direction.current = 1;
           setCurrentStep(nextStep);
-          saveProgress(nextStep, selectedAnswers);
+          // Pass updated questions so saveProgress uses the fresh done count (Bug 1 fix)
+          const updatedQs = questions.map((entry) =>
+            entry._id === activeStep.question._id ? { ...entry, done: true, answer: currentSelection } : entry
+          );
+          saveProgress(nextStep, selectedAnswers, updatedQs);
         }
         return;
       }
@@ -434,6 +460,7 @@ export default function LessonPage() {
 
     if (activeStep.kind === "claim") {
       if (!lesson?.done && allQuestionsDone) {
+        isRedoing.current = false;
         await claimXp();
       }
       // Don't block navigation — user can still go back via prev button
@@ -452,6 +479,7 @@ export default function LessonPage() {
   const resetLessonView = () => {
     setShowXPModal(false);
     confettiFired.current = false;
+    isRedoing.current = true;
     setCurrentStep(0);
     setSelectedAnswers({});
     saveProgress(0, {});

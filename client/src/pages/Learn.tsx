@@ -55,16 +55,27 @@ export default function Learn() {
 
   useEffect(() => {
     const loadProgress = () => {
-      const stored: Record<string, StoredLessonProgress> = JSON.parse(localStorage.getItem(storageKey) || "{}");
-      // Also read step positions from the wallet-independent key as a fallback signal
-      const stepData: Record<string, { stepIndex?: number }> = JSON.parse(localStorage.getItem("tenor-lesson-steps") || "{}");
-      for (const lessonId of Object.keys(stepData)) {
-        const stepEntry = stepData[lessonId];
-        if (stepEntry?.stepIndex != null && stepEntry.stepIndex > 0) {
-          stored[lessonId] = {
-            ...(stored[lessonId] || {}),
-            stepIndex: Math.max(stepEntry.stepIndex, stored[lessonId]?.stepIndex ?? 0),
-          };
+      let stored: Record<string, StoredLessonProgress> = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      // If wallet-specific key has no data, fallback to guest key
+      if (Object.keys(stored).length === 0 && storageKey !== "learn-progress-guest") {
+        const guestStored: Record<string, StoredLessonProgress> = JSON.parse(localStorage.getItem("learn-progress-guest") || "{}");
+        if (Object.keys(guestStored).length > 0) {
+          stored = { ...guestStored };
+        }
+      }
+      // Also read step positions from wallet-namespaced and old shared keys as fallback signals
+      const walletStepKey = `tenor-lesson-steps-${address?.toLowerCase() || "guest"}`;
+      const stepSources = [walletStepKey, "tenor-lesson-steps"];
+      for (const key of stepSources) {
+        const stepData: Record<string, { stepIndex?: number }> = JSON.parse(localStorage.getItem(key) || "{}");
+        for (const lessonId of Object.keys(stepData)) {
+          const stepEntry = stepData[lessonId];
+          if (stepEntry?.stepIndex != null && stepEntry.stepIndex > 0) {
+            stored[lessonId] = {
+              ...(stored[lessonId] || {}),
+              stepIndex: Math.max(stepEntry.stepIndex, stored[lessonId]?.stepIndex ?? 0),
+            };
+          }
         }
       }
       setProgressData(stored);
@@ -77,7 +88,7 @@ export default function Learn() {
       window.removeEventListener("storage", loadProgress);
       window.removeEventListener("progress-update", loadProgress);
     };
-  }, [storageKey]);
+  }, [storageKey, address]);
 
   useEffect(() => {
     const loadLessons = async () => {
