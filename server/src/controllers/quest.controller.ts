@@ -110,6 +110,7 @@ export const fetchQuests = async (req: GlobalRequest, res: GlobalResponse) => {
 			const mergedQuest: Record<any, unknown> = weeklyQuest;
 
 			mergedQuest.done = weeklyQuestCompleted ? weeklyQuestCompleted.done : false;
+			mergedQuest.joined = !!weeklyQuestCompleted;
 
 			weeklyQuests.push(mergedQuest);
 		}
@@ -165,6 +166,26 @@ export const fetchMiniQuests = async (req: GlobalRequest, res: GlobalResponse) =
 		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching mini quests" });
 	}
 };
+
+export const startQuest = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const id = req.query.id as string;
+		const { category, questId } = req.body;
+
+		const questStarted = await questCompleted.exists({ quest: questId, user: req.id });
+		if (questStarted) {
+			res.status(BAD_REQUEST).json({ error: "quest already started" });
+			return;
+		}
+
+		await questCompleted.create({ quest: questId, user: req.id, done: false, category });
+
+		res.status(OK).json({ message: "quest started" });
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "error starting quest" });
+	}
+}
 
 export const fetchCampaignQuests = async (
 	req: GlobalRequest,
@@ -548,9 +569,14 @@ export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 			return;
 		}
 
-		const isQuestCompleted = await questCompleted.findOne({ quest: id, user: questUser._id });
-		if (isQuestCompleted) {
-			res.status(FORBIDDEN).json({ error: "quest already completed" });
+		const isQuestCompleted = await questCompleted.findOne({ quest: id, user: questUser._id }).lean();
+		if (!isQuestCompleted) {
+			res.status(FORBIDDEN).json({ error: "quest has not been started" });
+			return;
+		}
+
+		if (isQuestCompleted.done) {
+			res.status(FORBIDDEN).json({ error: "quest already claimed" });
 			return;
 		}
 
@@ -558,29 +584,7 @@ export const claimQuest = async (req: GlobalRequest, res: GlobalResponse) => {
 
 		questUser.xp += questFound.reward;
 
-		const category = questFound.category;
-		if (category === "one-time") {
-			await questCompleted.create({
-				done: true,
-				quest: id,
-				user: questUser._id,
-				category,
-				expires: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000),
-			});
-		} else if (category === "weekly") {
-			const completedMiniQuests = await miniQuestCompleted.find({ user: req.id, quest: id, done: true });
-			if (questFound.noOfQuests !== completedMiniQuests.length) {
-				res.status(FORBIDDEN).json({ error: "complete all the tasks to complete the quest" });
-				return;
-			}
-
-			await questCompleted.create({
-				done: true,
-				quest: id,
-				user: questUser._id,
-				category,
-			});
-		}
+		await questCompleted.updateOne({ quest: id, user: questUser._id }, { expires: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000), done: true });
 
 		if (questUser.status !== "Active") {
 			questUser.status = "Active";
