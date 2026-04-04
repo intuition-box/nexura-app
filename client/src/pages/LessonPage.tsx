@@ -82,18 +82,16 @@ export default function LessonPage() {
   const [questions, setQuestions] = useState<LessonQuestion[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>(() => {
     try {
-      const id = lessonId || window.location.pathname.split("/learn/")[1]?.split("?")[0];
-      if (!id) return {};
+      if (!lessonId) return {};
       const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
-      return allSteps[id]?.selectedAnswers || {};
+      return allSteps[lessonId]?.selectedAnswers || {};
     } catch { return {}; }
   });
   const [currentStep, setCurrentStep] = useState(() => {
     try {
-      const id = lessonId || window.location.pathname.split("/learn/")[1]?.split("?")[0];
-      if (!id || isReview) return 0;
+      if (!lessonId || isReview) return 0;
       const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
-      return Number(allSteps[id]?.stepIndex || 0);
+      return Number(allSteps[lessonId]?.stepIndex || 0);
     } catch { return 0; }
   });
   const [loading, setLoading] = useState(true);
@@ -107,6 +105,7 @@ export default function LessonPage() {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [didInitStep, setDidInitStep] = useState(false);
   const didInitStepRef = useRef(false);
+  const confettiFired = useRef(false);
   const direction = useRef(1);
 
   const lessonSteps = useMemo<LessonStep[]>(() => {
@@ -150,12 +149,6 @@ export default function LessonPage() {
   const allQuestionsDone = questions.length > 0 && completedQuestions === questions.length;
   const progress = lessonSteps.length ? ((currentStep + 1) / lessonSteps.length) * 100 : 0;
   const currentStepLabel = lessonSteps.length ? `STEP ${currentStep + 1}/${lessonSteps.length}` : "STEP 0/0";
-
-  const DOTS_WINDOW = 7;
-  const dotsWinStart = lessonSteps.length > DOTS_WINDOW
-    ? Math.min(Math.max(currentStep - Math.floor(DOTS_WINDOW / 2), 0), lessonSteps.length - DOTS_WINDOW)
-    : 0;
-  const dotsWinEnd = lessonSteps.length > DOTS_WINDOW ? dotsWinStart + DOTS_WINDOW : lessonSteps.length;
 
   useEffect(() => {
     const updateSize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
@@ -241,17 +234,16 @@ export default function LessonPage() {
 
   // Explicit save function — called directly from navigation and answer selection
   const saveProgress = (step: number, answers: Record<string, string>) => {
-    const id = lessonId || window.location.pathname.split("/learn/")[1]?.split("?")[0];
-    if (!id) return;
+    if (!lessonId) return;
     const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
-    allSteps[id] = { stepIndex: step, selectedAnswers: answers };
+    allSteps[lessonId] = { stepIndex: step, selectedAnswers: answers };
     localStorage.setItem(LESSON_STEP_KEY, JSON.stringify(allSteps));
 
     // Also flush question-based progress to the wallet-dependent key so Learn.tsx stays in sync
     const data = JSON.parse(localStorage.getItem(storageKey) || "{}");
     const completedCount = questions.filter((entry) => entry.done).length;
-    data[id] = {
-      ...(data[id] || {}),
+    data[lessonId] = {
+      ...(data[lessonId] || {}),
       progress: lesson?.done ? questions.length : completedCount,
       totalQuestions: questions.length,
       quizCompleted: Boolean(lesson?.done),
@@ -268,10 +260,12 @@ export default function LessonPage() {
 
   useEffect(() => {
     if (!showXPModal && !(activeStep?.kind === "claim" && allQuestionsDone)) return;
+    if (confettiFired.current) return;
+    confettiFired.current = true;
     setShowConfetti(true);
     const timeout = window.setTimeout(() => setShowConfetti(false), 5000);
     return () => window.clearTimeout(timeout);
-  }, [showXPModal, activeStep?.kind]);
+  }, [showXPModal, activeStep?.kind, allQuestionsDone]);
 
   const ensureReadyForProtectedAction = async () => {
     if (!isConnected) {
@@ -422,7 +416,7 @@ export default function LessonPage() {
         if (saved && currentStep < lessonSteps.length - 1) {
           const nextStep = Math.min(currentStep + 1, lessonSteps.length - 1);
           setCurrentStep(nextStep);
-          saveProgress(nextStep, selectedAnswers);
+          // saveProgress already called by the answer onClick handler with fresh answers
         }
         return;
       }
@@ -432,7 +426,7 @@ export default function LessonPage() {
         direction.current = 1;
         const nextStep = Math.min(currentStep + 1, lessonSteps.length - 1);
         setCurrentStep(nextStep);
-        saveProgress(nextStep, selectedAnswers);
+        // saveProgress already called by the answer onClick handler with fresh answers
       }
       return;
     }
@@ -456,6 +450,7 @@ export default function LessonPage() {
 
   const resetLessonView = () => {
     setShowXPModal(false);
+    confettiFired.current = false;
     setCurrentStep(0);
     setSelectedAnswers({});
     saveProgress(0, {});
@@ -823,6 +818,10 @@ export default function LessonPage() {
             <span className="text-xl font-bold text-white">{lesson?.reward ?? 0}</span>
           </div>
         </button>
+
+        {actionMessage ? (
+          <p className="text-sm text-center text-purple-200 px-2 leading-relaxed">{actionMessage}</p>
+        ) : null}
 
       </div>
 
