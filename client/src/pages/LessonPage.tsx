@@ -641,8 +641,8 @@ export default function LessonPage() {
                     <div className="flex flex-col gap-1.5">
                       {activeStep.question.options.map((option, index) => {
                         const isSelected = currentSelection === option;
-                        const isCorrect = isSelected && (activeStep.question.done || currentFeedback === "correct");
-                        const isWrong = isSelected && currentFeedback === "wrong" && !activeStep.question.done;
+                        const isCorrect = isSelected && currentFeedback === "correct";
+                        const isWrong = isSelected && currentFeedback === "wrong";
 
                         const base = "flex items-center justify-between px-2 sm:px-2.5 py-1.5 rounded-md border transition-colors cursor-pointer";
                         const style = isCorrect

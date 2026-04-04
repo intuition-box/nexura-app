@@ -142,6 +142,12 @@ useEffect(() => {
   const handleLogout = () => {
     signOut();
     try { localStorage.removeItem("nexura:wallet"); } catch { }
+    // Clear lesson progress on logout
+    try {
+      localStorage.removeItem("tenor-lesson-steps");
+      const keys = Object.keys(localStorage).filter(k => k.startsWith("learn-progress-"));
+      keys.forEach(k => localStorage.removeItem(k));
+    } catch { }
     try { disconnect?.(); } catch { }
     setLocation("/discover");
     toast({ title: "Signed out", description: "Your session was cleared." });
