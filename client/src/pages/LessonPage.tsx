@@ -749,6 +749,11 @@ export default function LessonPage() {
                     >
                       {lesson?.done ? "XP Claimed" : claiming ? "Claiming…" : "Claim XP"}
                     </motion.button>
+                    <div className="w-full mt-4 pt-3 border-t border-white/15">
+                      <p className="text-[11px] text-white/40 text-center">
+                        Original Content by Nexura. Adapted by Nexura.
+                      </p>
+                    </div>
                   </div>
                 )}
               </motion.div>
@@ -904,6 +909,11 @@ export default function LessonPage() {
                     Return to Lessons
                   </span>
                 </button>
+              </div>
+              <div className="w-full mt-4 pt-3 border-t border-white/15">
+                <p className="text-[11px] text-white/40 text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Original Content by Nexura. Adapted by Nexura.
+                </p>
               </div>
             </div>
           </div>
