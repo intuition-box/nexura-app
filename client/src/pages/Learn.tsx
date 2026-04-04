@@ -28,14 +28,15 @@ type StoredLessonProgress = {
   progress?: number;
   totalQuestions?: number;
   quizCompleted?: boolean;
+  stepIndex?: number;
 };
 
 const getProgressStorageKey = (walletAddress?: string | null) =>
   `learn-progress-${walletAddress?.toLowerCase() || "guest"}`;
 
-const getStatusLabel = (isCompleted: boolean, progress: number) => {
+const getStatusLabel = (isCompleted: boolean, hasStarted: boolean) => {
   if (isCompleted) return "COMPLETED";
-  if (progress > 0) return "IN PROGRESS";
+  if (hasStarted) return "IN PROGRESS";
   return "NOT STARTED";
 };
 
@@ -54,13 +55,28 @@ export default function Learn() {
 
   useEffect(() => {
     const loadProgress = () => {
-      const stored = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      const stored: Record<string, StoredLessonProgress> = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      // Also read step positions from the wallet-independent key as a fallback signal
+      const stepData: Record<string, { stepIndex?: number }> = JSON.parse(localStorage.getItem("tenor-lesson-steps") || "{}");
+      for (const lessonId of Object.keys(stepData)) {
+        const stepEntry = stepData[lessonId];
+        if (stepEntry?.stepIndex != null && stepEntry.stepIndex > 0) {
+          stored[lessonId] = {
+            ...(stored[lessonId] || {}),
+            stepIndex: Math.max(stepEntry.stepIndex, stored[lessonId]?.stepIndex ?? 0),
+          };
+        }
+      }
       setProgressData(stored);
     };
 
     loadProgress();
+    window.addEventListener("storage", loadProgress);
     window.addEventListener("progress-update", loadProgress);
-    return () => window.removeEventListener("progress-update", loadProgress);
+    return () => {
+      window.removeEventListener("storage", loadProgress);
+      window.removeEventListener("progress-update", loadProgress);
+    };
   }, [storageKey]);
 
   useEffect(() => {
@@ -167,8 +183,10 @@ export default function Learn() {
                   ? totalQuestions
                   : Math.min(Number(storedProgress.progress || 0), totalQuestions);
                 const isCompleted = Boolean(lesson.done || storedProgress.quizCompleted);
+                // Treat stepIndex > 0 as "started" even if no questions are completed yet
+                const hasStarted = progress > 0 || (storedProgress.stepIndex ?? 0) > 0;
                 const percent = totalQuestions > 0 ? (progress / totalQuestions) * 100 : 0;
-                const buttonLabel = isCompleted ? "REVIEW →" : progress > 0 ? "CONTINUE →" : "START →";
+                const buttonLabel = isCompleted ? "REVIEW →" : hasStarted ? "CONTINUE →" : "START →";
 
                 return (
                   <div
@@ -191,7 +209,7 @@ export default function Learn() {
                           boxShadow: "0px 3px 10px 0px rgba(0, 0, 0, 0.5)",
                         }}
                       >
-                        {getStatusLabel(isCompleted, progress)}
+                        {getStatusLabel(isCompleted, hasStarted)}
                       </div>
 
                       <img

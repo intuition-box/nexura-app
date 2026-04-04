@@ -246,6 +246,19 @@ export default function LessonPage() {
     const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
     allSteps[id] = { stepIndex: step, selectedAnswers: answers };
     localStorage.setItem(LESSON_STEP_KEY, JSON.stringify(allSteps));
+
+    // Also flush question-based progress to the wallet-dependent key so Learn.tsx stays in sync
+    const data = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    const completedCount = questions.filter((entry) => entry.done).length;
+    data[id] = {
+      ...(data[id] || {}),
+      progress: lesson?.done ? questions.length : completedCount,
+      totalQuestions: questions.length,
+      quizCompleted: Boolean(lesson?.done),
+      stepIndex: step,
+    };
+    localStorage.setItem(storageKey, JSON.stringify(data));
+    window.dispatchEvent(new Event("progress-update"));
   };
 
   useEffect(() => {
@@ -332,13 +345,14 @@ export default function LessonPage() {
       });
 
       if (answerIsCorrect) {
-        setQuestions((current) =>
-          current.map((entry) =>
-            entry._id === currentQuestion._id
-              ? { ...entry, done: true, answer }
-              : entry
-          )
+        const updatedQuestions = questions.map((entry) =>
+          entry._id === currentQuestion._id
+            ? { ...entry, done: true, answer }
+            : entry
         );
+        setQuestions(updatedQuestions);
+        // Immediately persist progress to localStorage so it survives navigation/reload
+        syncLocalProgress(lesson, updatedQuestions, true);
         setActionMessage(response.message || "Correct answer saved.");
         return true;
       }
