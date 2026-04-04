@@ -824,7 +824,7 @@ export default function LessonPage() {
       {showXPModal ? (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4">
           <div
-            className="w-full sm:max-w-[520px] rounded-t-[16px] sm:rounded-[16px] overflow-hidden relative text-center"
+            className="w-full sm:max-w-[380px] rounded-t-[16px] sm:rounded-[16px] overflow-hidden relative text-center"
             style={{
               background: "radial-gradient(ellipse at center, rgba(139,62,254,1) 0%, rgba(111,50,203,0.94) 50%, rgba(83,37,152,0.88) 100%)",
               paddingBottom: "max(2rem, env(safe-area-inset-bottom, 0px))",
@@ -837,30 +837,30 @@ export default function LessonPage() {
             {/* Drag handle (mobile) */}
             <div className="mx-auto w-10 h-1 rounded-full bg-white/20 mt-3 mb-4 sm:hidden" />
 
-            <div className="relative px-6 sm:px-10 pt-6 sm:pt-10 pb-6 sm:pb-8 flex flex-col items-center">
+            <div className="relative px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 flex flex-col items-center">
               {/* Trophy icon in gradient card */}
               <div
-                className="w-[90px] h-[86px] sm:w-[115px] sm:h-[110px] rounded-2xl border border-white/40 overflow-hidden relative flex items-center justify-center shadow-[0_0_24px_rgba(255,255,255,0.2)]"
+                className="w-[70px] h-[66px] sm:w-[85px] sm:h-[80px] rounded-xl border border-white/40 overflow-hidden relative flex items-center justify-center shadow-[0_0_24px_rgba(255,255,255,0.2)]"
                 style={{ background: "linear-gradient(to bottom, #946ecd, #311162)" }}
               >
                 <div className="absolute -top-24 -right-24 w-64 h-64 rounded-xl bg-[#D4BBFF]/10 blur-[40px]" />
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 rounded-xl bg-[#94E2FF]/5 blur-[40px]" />
-                <img src="/nexura-gold.png" alt="Gold Trophy" className="w-[48px] h-[58px] sm:w-[62px] sm:h-[74px] object-contain relative z-10 drop-shadow-[0_0_20px_rgba(138,63,252,0.4)]" />
+                <img src="/nexura-gold.png" alt="Gold Trophy" className="w-[36px] h-[44px] sm:w-[46px] sm:h-[56px] object-contain relative z-10 drop-shadow-[0_0_20px_rgba(138,63,252,0.4)]" />
               </div>
 
               {/* Lesson Complete heading */}
-              <h2 className="mt-5 sm:mt-6 text-[24px] sm:text-[30px] font-semibold text-white" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
+              <h2 className="mt-3 sm:mt-4 text-[18px] sm:text-[22px] font-semibold text-white" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
                 Lesson Complete!
               </h2>
 
               {/* Description */}
-              <p className="mt-2 text-[14px] sm:text-[16px] text-[#c3c6d3] leading-relaxed max-w-[380px] sm:max-w-[446px]" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <p className="mt-1.5 text-[12px] sm:text-[13px] text-[#c3c6d3] leading-relaxed max-w-[280px] sm:max-w-[340px]" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {lesson?.description || "You've successfully mastered the basics of web3 and blockchain"}
               </p>
 
               {/* XP amount */}
-              <div className="mt-5 flex flex-col items-center gap-1.5">
-                <span className="text-[30px] sm:text-[36px] font-bold text-white leading-tight" style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}>
+              <div className="mt-3 flex flex-col items-center gap-1">
+                <span className="text-[24px] sm:text-[28px] font-bold text-white leading-tight" style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}>
                   +{lesson?.reward ?? 0} XP
                 </span>
                 <span
@@ -877,31 +877,31 @@ export default function LessonPage() {
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-6 w-full sm:w-[460px] h-14 rounded-[20px] bg-black/30 border border-white/40 flex items-center justify-center gap-5 transition hover:bg-black/50 active:scale-[0.98]"
+                className="mt-4 w-full h-11 rounded-[14px] bg-black/30 border border-white/40 flex items-center justify-center gap-3 transition hover:bg-black/50 active:scale-[0.98]"
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                <span className="text-[14px] sm:text-[16px] font-semibold uppercase tracking-[1.6px] text-[#bfe4f2]/90" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                <span className="text-[11px] sm:text-[13px] font-semibold uppercase tracking-[1.4px] text-[#bfe4f2]/90" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
                   Share your achievement to X
                 </span>
               </a>
 
               {/* Action buttons row */}
-              <div className="mt-3 flex flex-col sm:flex-row gap-2.5 w-full sm:w-[460px]">
+              <div className="mt-2 flex flex-col sm:flex-row gap-2 w-full">
                 <button
                   type="button"
                   onClick={resetLessonView}
-                  className="flex-1 h-14 rounded-[20px] border border-white/60 bg-transparent flex items-center justify-center transition hover:bg-white/10 active:scale-[0.98]"
+                  className="flex-1 h-11 rounded-[14px] border border-white/60 bg-transparent flex items-center justify-center transition hover:bg-white/10 active:scale-[0.98]"
                 >
-                  <span className="text-[14px] sm:text-[16px] font-semibold uppercase tracking-[1.6px] text-[#bfe4f2]" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
+                  <span className="text-[11px] sm:text-[13px] font-semibold uppercase tracking-[1.4px] text-[#bfe4f2]" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
                     Take lesson again
                   </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setLocation("/learn")}
-                  className="flex-1 h-14 rounded-[20px] bg-[#8b3efe] flex items-center justify-center transition hover:bg-[#7a2fe0] active:scale-[0.98] shadow-[0_0_20px_rgba(138,63,252,0.4)]"
+                  className="flex-1 h-11 rounded-[14px] bg-[#8b3efe] flex items-center justify-center transition hover:bg-[#7a2fe0] active:scale-[0.98] shadow-[0_0_20px_rgba(138,63,252,0.4)]"
                 >
-                  <span className="text-[14px] sm:text-[16px] font-bold uppercase tracking-[1.6px] text-white" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
+                  <span className="text-[11px] sm:text-[13px] font-bold uppercase tracking-[1.4px] text-white" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
                     Return to Lessons
                   </span>
                 </button>
