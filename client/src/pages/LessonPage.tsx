@@ -910,11 +910,6 @@ export default function LessonPage() {
                   </span>
                 </button>
               </div>
-              <div className="w-full mt-4 pt-3 border-t border-white/15">
-                <p className="text-[11px] text-white/40 text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Original Content by Nexura. Adapted by Nexura.
-                </p>
-              </div>
             </div>
           </div>
         </div>
