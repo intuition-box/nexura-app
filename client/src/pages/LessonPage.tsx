@@ -218,7 +218,9 @@ export default function LessonPage() {
       setMiniLessons(nextMiniLessons);
       setQuestions(nextQuestions);
       // Merge server answers (done questions) into existing state without overwriting local selections
-      setSelectedAnswers((current) => ({ ...current, ...nextSelectedAnswers }));
+      if (!isRedoing.current) {
+        setSelectedAnswers((current) => ({ ...current, ...nextSelectedAnswers }));
+      }
       syncLocalProgress(lessonMatch, nextQuestions, !didInitStep);
     } catch (error) {
       setPageError(normalizeApiMessage(error, "Failed to load lesson"));
@@ -243,6 +245,18 @@ export default function LessonPage() {
     }
     setDidInitStep(true);
   }, [lessonSteps.length]);
+
+  // Re-read step from the correct wallet key when address becomes available
+  useEffect(() => {
+    if (!address || !lessonId || isReview) return;
+    try {
+      const allSteps = JSON.parse(localStorage.getItem(lessonStepKey) || "{}");
+      const saved = allSteps[lessonId]?.stepIndex;
+      if (saved != null && saved > 0) {
+        setCurrentStep(Number(saved));
+      }
+    } catch {}
+  }, [address, lessonId, lessonStepKey, isReview]);
 
   // Explicit save function — called directly from navigation and answer selection
   // Accept optional latestQuestions to avoid reading stale React state after submitAnswer
@@ -406,6 +420,14 @@ export default function LessonPage() {
         }
       } catch {}
       try { await loadLesson(); } catch {}  // don't block modal if reload fails
+      // Re-reset stepIndex after loadLesson (it overwrites the cleanup above)
+      try {
+        const dataAfter = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        if (dataAfter[lessonId]) {
+          dataAfter[lessonId].stepIndex = 0;
+          localStorage.setItem(storageKey, JSON.stringify(dataAfter));
+        }
+      } catch {}
       setShowXPModal(true);
     } catch (error) {
       const message = normalizeApiMessage(error, "Unable to claim XP");
@@ -433,6 +455,23 @@ export default function LessonPage() {
 
     if (activeStep.kind === "question") {
       if (!activeStep.question.done || isRedoing.current) {
+        if (isRedoing.current && activeStep.question.done) {
+          // In redo mode for already-done question: just advance without API call
+          if (!currentSelection) return;
+          // Check answer locally
+          if (!isCorrectAnswer(activeStep.question, currentSelection)) {
+            return; // wrong answer, don't advance
+          }
+          // Correct — advance without API
+          if (currentStep < lessonSteps.length - 1) {
+            direction.current = 1;
+            const nextStep = Math.min(currentStep + 1, lessonSteps.length - 1);
+            setCurrentStep(nextStep);
+            saveProgress(nextStep, selectedAnswers);
+          }
+          return;
+        }
+        // Normal flow: not done yet, submit to API
         if (!currentSelection) return;
         const saved = await submitAnswer();
         if (saved && currentStep < lessonSteps.length - 1) {
