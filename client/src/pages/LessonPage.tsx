@@ -246,19 +246,6 @@ export default function LessonPage() {
     const allSteps = JSON.parse(localStorage.getItem(LESSON_STEP_KEY) || "{}");
     allSteps[id] = { stepIndex: step, selectedAnswers: answers };
     localStorage.setItem(LESSON_STEP_KEY, JSON.stringify(allSteps));
-
-    // Also flush question-based progress to the wallet-dependent key so Learn.tsx stays in sync
-    const data = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    const completedCount = questions.filter((entry) => entry.done).length;
-    data[id] = {
-      ...(data[id] || {}),
-      progress: lesson?.done ? questions.length : completedCount,
-      totalQuestions: questions.length,
-      quizCompleted: Boolean(lesson?.done),
-      stepIndex: step,
-    };
-    localStorage.setItem(storageKey, JSON.stringify(data));
-    window.dispatchEvent(new Event("progress-update"));
   };
 
   useEffect(() => {
@@ -345,14 +332,13 @@ export default function LessonPage() {
       });
 
       if (answerIsCorrect) {
-        const updatedQuestions = questions.map((entry) =>
-          entry._id === currentQuestion._id
-            ? { ...entry, done: true, answer }
-            : entry
+        setQuestions((current) =>
+          current.map((entry) =>
+            entry._id === currentQuestion._id
+              ? { ...entry, done: true, answer }
+              : entry
+          )
         );
-        setQuestions(updatedQuestions);
-        // Immediately persist progress to localStorage so it survives navigation/reload
-        syncLocalProgress(lesson, updatedQuestions, true);
         setActionMessage(response.message || "Correct answer saved.");
         return true;
       }
@@ -532,11 +518,11 @@ export default function LessonPage() {
 
         {/* Step card */}
         <div
-          className="rounded-3xl h-[320px] sm:h-[300px] flex flex-col overflow-hidden relative"
+          className="rounded-3xl h-[480px] sm:h-[420px] flex flex-col overflow-hidden relative"
           style={{ background: "linear-gradient(145deg, #8B3EFE, #4A1B8A)" }}
         >
           {/* Content row: prev | content | next */}
-          <div className="flex items-center justify-center gap-1 sm:gap-3 px-1 sm:px-2 pt-3 sm:pt-4 pb-1" style={{ height: "calc(100% - 70px)" }}>
+          <div className="flex items-center gap-1 sm:gap-3 px-1 sm:px-2 pt-4 sm:pt-5 pb-2" style={{ height: "calc(100% - 90px)" }}>
 
             {/* Prev button */}
             <button
@@ -606,7 +592,7 @@ export default function LessonPage() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.5, duration: 0.4 }}
-                          className="text-base sm:text-lg font-bold leading-snug text-center"
+                          className="text-sm sm:text-base font-bold leading-snug text-center"
                         >
                           {activeStep.header}
                         </motion.p>
@@ -616,7 +602,7 @@ export default function LessonPage() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.6, duration: 0.4 }}
-                          className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap text-white/80 text-center"
+                          className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap text-white/80 text-center"
                         >
                           {activeStep.body}
                         </motion.p>
@@ -626,14 +612,14 @@ export default function LessonPage() {
 
                 /* Mini lesson */
                 ) : activeStep?.kind === "mini" ? (
-                  <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap py-2 text-center">
+                  <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap py-2 text-center">
                     {activeStep.text}
                   </p>
 
                 /* Question */
                 ) : activeStep?.kind === "question" ? (
                   <div className="flex flex-col gap-1.5 sm:gap-2 text-left">
-                    <h2 className="text-sm sm:text-base font-bold text-center leading-snug uppercase tracking-wide">
+                    <h2 className="text-[11px] sm:text-sm font-bold text-center leading-snug uppercase tracking-wide">
                       {activeStep.question.question}
                     </h2>
 
@@ -654,6 +640,7 @@ export default function LessonPage() {
                           <div
                             key={`${activeStep.question._id}-${option}`}
                             onClick={() => {
+                              if (lesson?.done) return;
                               const newAnswers = { ...selectedAnswers, [activeStep.question._id]: option };
                               setSelectedAnswers(newAnswers);
                               setActionMessage("");
@@ -665,7 +652,7 @@ export default function LessonPage() {
                               <span className="shrink-0 w-4 h-4 flex items-center justify-center rounded bg-white/15 text-[9px] font-bold">
                                 {String.fromCharCode(65 + index)}
                               </span>
-                              <span className="capitalize text-xs sm:text-sm break-words leading-snug">{option}</span>
+                              <span className="capitalize text-[11px] sm:text-xs break-words leading-snug">{option}</span>
                             </span>
                             {isCorrect ? (
                               <span className="shrink-0 ml-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-[#00E1A2] text-black font-bold text-[9px]">✓</span>
@@ -684,7 +671,7 @@ export default function LessonPage() {
 
                 /* Congratulations / Claim */
                 ) : (
-                  <div className="flex flex-col items-center justify-center w-full h-full gap-2">
+                  <div className="flex flex-col items-center justify-end w-full h-full pb-4">
                     <motion.div
                       className="relative"
                       initial={{ scale: 0, opacity: 0, rotate: -20 }}
@@ -694,12 +681,12 @@ export default function LessonPage() {
                       <motion.img
                         src="/nexura-gold.png"
                         alt="Gold Trophy"
-                        className="w-16 h-16 sm:w-20 sm:h-20 object-contain relative z-10 drop-shadow-[0_0_20px_rgba(255,215,0,0.3)]"
+                        className="w-32 h-32 sm:w-40 sm:h-40 object-contain relative z-10 drop-shadow-[0_0_30px_rgba(255,215,0,0.4)]"
                         animate={{ y: [0, -4, 0] }}
                         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                       />
                       <div
-                        className="absolute inset-[-15%] z-0 rounded-full"
+                        className="absolute inset-[-25%] z-0 rounded-full"
                         style={{
                           background: `conic-gradient(from 0deg, transparent 0deg, rgba(255,215,0,0.4) 5deg, transparent 15deg, transparent 45deg, rgba(255,215,0,0.3) 50deg, transparent 60deg, transparent 90deg, rgba(255,215,0,0.4) 95deg, transparent 105deg, transparent 135deg, rgba(255,215,0,0.3) 140deg, transparent 150deg, transparent 180deg, rgba(255,215,0,0.4) 185deg, transparent 195deg, transparent 225deg, rgba(255,215,0,0.3) 230deg, transparent 240deg, transparent 270deg, rgba(255,215,0,0.4) 275deg, transparent 285deg, transparent 315deg, rgba(255,215,0,0.3) 320deg, transparent 330deg)`,
                           animation: "spin 8s linear infinite",
@@ -715,9 +702,9 @@ export default function LessonPage() {
                         }}
                       />
                     </motion.div>
-                    <div className="mt-1 space-y-1 text-center">
+                    <div className="mt-4 sm:mt-5 space-y-1.5 text-center">
                       <motion.h2
-                        className="text-sm sm:text-base font-extrabold text-white"
+                        className="text-xl sm:text-2xl font-extrabold text-white"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5, duration: 0.4 }}
@@ -725,7 +712,7 @@ export default function LessonPage() {
                         Congratulations!
                       </motion.h2>
                       <motion.p
-                        className="text-[10px] sm:text-xs text-white/60 leading-relaxed max-w-[200px] sm:max-w-[240px] mx-auto"
+                        className="text-[9px] sm:text-[10px] text-white/60 leading-relaxed max-w-[180px] sm:max-w-[220px] mx-auto"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6, duration: 0.4 }}
@@ -738,7 +725,7 @@ export default function LessonPage() {
                     <motion.button
                       onClick={() => void claimXp()}
                       disabled={!allQuestionsDone || claiming || lesson?.done}
-                      className={`mt-2 px-5 py-1.5 rounded-full font-bold text-xs text-white transition-all duration-200 ${
+                      className={`mt-4 px-6 py-2 rounded-full font-bold text-xs text-white transition-all duration-200 ${
                         !allQuestionsDone || lesson?.done
                           ? "bg-white/20 cursor-not-allowed opacity-60"
                           : "bg-[#5B1BA0] hover:bg-[#4a1585] active:scale-95 shadow-[0_0_24px_rgba(91,27,160,0.4)]"
@@ -749,11 +736,6 @@ export default function LessonPage() {
                     >
                       {lesson?.done ? "XP Claimed" : claiming ? "Claiming…" : "Claim XP"}
                     </motion.button>
-                    <div className="w-full mt-4 pt-3 border-t border-white/15">
-                      <p className="text-[11px] text-white/40 text-center">
-                        Original Content by Nexura. Adapted by Nexura.
-                      </p>
-                    </div>
                   </div>
                 )}
               </motion.div>
@@ -774,7 +756,7 @@ export default function LessonPage() {
           </div>
 
           {/* Bottom bar: Continue button */}
-          <div className="px-4 sm:px-5 pb-3 sm:pb-3 pt-2 flex items-center justify-end">
+          <div className="px-4 sm:px-5 pb-6 sm:pb-5 pt-3 flex items-center justify-end">
             {activeStep?.kind !== "claim" ? (
               <div className="flex shrink-0">
                 <button
@@ -824,92 +806,47 @@ export default function LessonPage() {
         {null}
       </div>
 
-      {/* Lesson Complete modal — matches Figma design */}
+      {/* Lesson Complete modal */}
       {showXPModal ? (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4">
           <div
-            className="w-full sm:max-w-[380px] rounded-t-[16px] sm:rounded-[16px] overflow-hidden relative text-center"
-            style={{
-              background: "radial-gradient(ellipse at center, rgba(139,62,254,1) 0%, rgba(111,50,203,0.94) 50%, rgba(83,37,152,0.88) 100%)",
-              paddingBottom: "max(2rem, env(safe-area-inset-bottom, 0px))",
-            }}
+            className="w-full sm:max-w-sm rounded-t-[32px] sm:rounded-[28px] bg-[#2D1B6B] px-5 pt-6 sm:p-8 text-center shadow-[0_-8px_40px_rgba(0,0,0,0.5)]"
+            style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 0px))" }}
           >
-            {/* Decorative glows */}
-            <div className="absolute -top-24 -right-24 w-64 h-64 rounded-xl bg-[#D4BBFF]/10 blur-[40px]" />
-            <div className="absolute -bottom-36 -left-24 w-64 h-64 rounded-xl bg-[#94E2FF]/5 blur-[40px]" />
+            {/* Drag handle (mobile sheet feel) */}
+            <div className="mx-auto w-10 h-1 rounded-full bg-white/20 mb-5 sm:hidden" />
 
-            {/* Drag handle (mobile) */}
-            <div className="mx-auto w-10 h-1 rounded-full bg-white/20 mt-3 mb-4 sm:hidden" />
+            <div className="mx-auto flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-[#3D2080]">
+              <img src="/nexura-gold.png" alt="Gold Trophy" className="h-14 w-14 sm:h-16 sm:w-16 object-contain" />
+            </div>
 
-            <div className="relative px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 flex flex-col items-center">
-              {/* Trophy icon in gradient card */}
-              <div
-                className="w-[70px] h-[66px] sm:w-[85px] sm:h-[80px] rounded-xl border border-white/40 overflow-hidden relative flex items-center justify-center shadow-[0_0_24px_rgba(255,255,255,0.2)]"
-                style={{ background: "linear-gradient(to bottom, #946ecd, #311162)" }}
+            <h2 className="mt-4 sm:mt-6 text-2xl sm:text-3xl font-extrabold text-white">Lesson Complete!</h2>
+            <p className="mt-2 text-sm text-white/65 leading-relaxed px-1">
+              {lesson?.description || "You've successfully completed this lesson."}
+            </p>
+
+            <div className="mt-4 sm:mt-6 flex items-center justify-center gap-2.5">
+              <span className="text-3xl sm:text-4xl font-extrabold text-white">+{lesson?.reward ?? 0} XP</span>
+              <span className="rounded-full border border-white/25 px-2.5 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-white/75">
+                Earned
+              </span>
+            </div>
+
+            <div className="mt-5 sm:mt-7 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => setLocation("/learn")}
+                className="w-full rounded-xl bg-[#7C3AED] px-4 py-4 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#6D28D9] active:scale-[0.98]"
               >
-                <div className="absolute -top-24 -right-24 w-64 h-64 rounded-xl bg-[#D4BBFF]/10 blur-[40px]" />
-                <div className="absolute -bottom-24 -left-24 w-64 h-64 rounded-xl bg-[#94E2FF]/5 blur-[40px]" />
-                <img src="/nexura-gold.png" alt="Gold Trophy" className="w-[36px] h-[44px] sm:w-[46px] sm:h-[56px] object-contain relative z-10 drop-shadow-[0_0_20px_rgba(138,63,252,0.4)]" />
-              </div>
-
-              {/* Lesson Complete heading */}
-              <h2 className="mt-3 sm:mt-4 text-[18px] sm:text-[22px] font-semibold text-white" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
-                Lesson Complete!
-              </h2>
-
-              {/* Description */}
-              <p className="mt-1.5 text-[12px] sm:text-[13px] text-[#c3c6d3] leading-relaxed max-w-[280px] sm:max-w-[340px]" style={{ fontFamily: "'Inter', sans-serif" }}>
-                {lesson?.description || "You've successfully mastered the basics of web3 and blockchain"}
-              </p>
-
-              {/* XP amount */}
-              <div className="mt-3 flex flex-col items-center gap-1">
-                <span className="text-[24px] sm:text-[28px] font-bold text-white leading-tight" style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}>
-                  +{lesson?.reward ?? 0} XP
-                </span>
-                <span
-                  className="rounded-full border border-white/30 bg-[#44227b] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[3px] text-[#94e2ff]"
-                >
-                  Earned
-                </span>
-              </div>
-
-              {/* Share on X button */}
-              <a
-                href={`https://x.com/intent/tweet?text=${encodeURIComponent(
-                  `I just completed the ${lesson?.title ?? "a lesson"} lesson on @NexuraXYZ ✅\n\n${lesson?.reward ?? 0} XP secured\n\nSign up here: ${window.location.origin}/ref/${user?.referral?.code ?? "nexura"} and check it out in the Learn tab.`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 w-full h-11 rounded-[14px] bg-black/30 border border-white/40 flex items-center justify-center gap-3 transition hover:bg-black/50 active:scale-[0.98]"
+                Return to Lessons
+              </button>
+              <button
+                type="button"
+                onClick={resetLessonView}
+                className="w-full rounded-xl border border-[#7C3AED] bg-transparent px-4 py-4 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#7C3AED]/20 active:scale-[0.98]"
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                <span className="text-[11px] sm:text-[13px] font-semibold uppercase tracking-[1.4px] text-[#bfe4f2]/90" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
-                  Share your achievement to X
-                </span>
-              </a>
-
-              {/* Action buttons row */}
-              <div className="mt-2 flex flex-col sm:flex-row gap-2 w-full">
-                <button
-                  type="button"
-                  onClick={resetLessonView}
-                  className="flex-1 h-11 rounded-[14px] border border-white/60 bg-transparent flex items-center justify-center transition hover:bg-white/10 active:scale-[0.98]"
-                >
-                  <span className="text-[11px] sm:text-[13px] font-semibold uppercase tracking-[1.4px] text-[#bfe4f2]" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
-                    Take lesson again
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLocation("/learn")}
-                  className="flex-1 h-11 rounded-[14px] bg-[#8b3efe] flex items-center justify-center transition hover:bg-[#7a2fe0] active:scale-[0.98] shadow-[0_0_20px_rgba(138,63,252,0.4)]"
-                >
-                  <span className="text-[11px] sm:text-[13px] font-bold uppercase tracking-[1.4px] text-white" style={{ fontFamily: "'Geist', 'Inter', sans-serif" }}>
-                    Return to Lessons
-                  </span>
-                </button>
-              </div>
+                Take Lesson Again
+              </button>
             </div>
           </div>
         </div>
