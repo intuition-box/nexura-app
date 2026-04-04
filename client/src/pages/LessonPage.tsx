@@ -441,6 +441,7 @@ export default function LessonPage() {
       if (!lesson?.done && allQuestionsDone) {
         await claimXp();
       }
+      // Don't block navigation — user can still go back via prev button
       return;
     }
 
@@ -456,6 +457,7 @@ export default function LessonPage() {
   const resetLessonView = () => {
     setShowXPModal(false);
     setCurrentStep(0);
+    setSelectedAnswers({});
     saveProgress(0, {});
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -822,7 +824,6 @@ export default function LessonPage() {
           </div>
         </button>
 
-        {null}
       </div>
 
       {/* Lesson Complete modal — matches Figma design */}
