@@ -756,7 +756,57 @@ export default function Leaderboard() {
           </div>
         )}
 
-        <div className="space-y-3 relative">
+        {/* ---- MOBILE COMPACT LIST (< md) ---- */}
+        <div className="md:hidden divide-y divide-white/[0.06] rounded-2xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+          {list.map((entry, idx) => {
+            if (idx < 3) return null;
+            const name = entry?.display_name || entry?.username || "Anonymous";
+            const isCurrentUser = entry?._id === currentUserId;
+            const rank = idx + 1;
+            return (
+              <div
+                key={entry._id}
+                className={`flex items-center gap-3 px-3 py-2.5 ${isCurrentUser ? "bg-[#f5c542]/[0.06]" : ""}`}
+              >
+                {/* Rank badge */}
+                <span
+                  className={`w-7 h-7 shrink-0 flex items-center justify-center rounded-full text-xs font-bold ${
+                    isCurrentUser
+                      ? "bg-[#f5c542]/20 text-[#f5c542] border border-[#f5c542]/40"
+                      : "bg-white/[0.06] text-white/60 border border-white/[0.08]"
+                  }`}
+                >
+                  {rank}
+                </span>
+
+                {/* Avatar 24px */}
+                <Avatar className="w-6 h-6 shrink-0">
+                  {entry?.avatar ? (
+                    <AvatarImage src={entry.avatar} />
+                  ) : (
+                    <AvatarFallback className="bg-white/10 text-white text-[10px]">{name.charAt(0)}</AvatarFallback>
+                  )}
+                </Avatar>
+
+                {/* Name (truncated) */}
+                <span className={`flex-1 min-w-0 truncate text-sm font-medium ${isCurrentUser ? "text-[#f5c542]" : "text-white/90"}`}>
+                  {name}
+                </span>
+
+                {/* XP */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <img src={xpIcon} alt="XP" className="w-4 h-4" />
+                  <span className={`text-sm font-bold tabular-nums ${isCurrentUser ? "text-[#f5c542]" : "text-white/70"}`}>
+                    {entry?.xp || 0}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ---- DESKTOP FANCY CARDS (md+) ---- */}
+        <div className="hidden md:block space-y-3 relative">
           {list.map((entry, idx) => {
             if (idx < 3) return null; // skip podium
 
@@ -792,9 +842,9 @@ export default function Leaderboard() {
                   <div
                     ref={placeholderRef}
                     style={{
-                      height: cardState === "normal" ? 0 : cardHeight, // occupy space only when card is fixed
+                      height: cardState === "normal" ? 0 : cardHeight,
                       transition: "height 0.3s ease-in-out",
-                      pointerEvents: "none", // prevents accidental interactions
+                      pointerEvents: "none",
                     }}
                   />
                 )}
@@ -818,7 +868,6 @@ export default function Leaderboard() {
                   }}
                 >
                   <div className="flex flex-col">
-                    {/* Display "Your Ranking" only for current user */}
                     {isCurrentUser && (
                       <div className="text-lg md:text-xl font-bold mb-2 text-blue-400 bg-gradient-to-r from-blue-300 via-blue-500 to-blue-400 bg-clip-text text-transparent animate-pulse">
                         Your Ranking
