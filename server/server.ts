@@ -7,6 +7,7 @@ import DB from "@/config/db";
 import logger from "@/config/logger";
 import appRoutes from "@/routes";
 import { firstMessage } from "@/models/msg.model";
+import { startAdminActivityCron } from "@/utils/adminActivityCron";
 
 const server = express();
 
@@ -53,6 +54,10 @@ client.on(Events.MessageCreate, async (message) => {
 
 server.listen(port, async () => {
 	await DB();
+	
+	// Start admin activity cron job
+	startAdminActivityCron();
+	
 	if (BOT_TOKEN) {
 		await client.login(BOT_TOKEN);
 	} else {

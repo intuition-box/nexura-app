@@ -50,35 +50,35 @@ export const NEXONS: Record<number, { address: `0x${string}`, metadata: string }
 		metadata: "ipfs://QmcPL2Wvcwn4qWpKgkyyywnYnDATUSa41cnGDsKkLTuBHW"
 	},
 	3: {
-		address: "0x92C2C9139D1289BAD52161219f1BD9CDA7c1B337",
+		address: "0x404b507a362d3D57Dc83528832499D710F97F5A5",
 		metadata: "ipfs://QmPU499cvPM7SSvE6QY73sJxfRpog9NrsBd14yW11C5Tm9"
 	},
 	4: {
-		address: "0x515532aaEE89628f2De00431191819Da69b98a9C",
+		address: "0xDe0c57E2d9A5e0364C17aE0Fc78d3DBFd9810892",
 		metadata: "ipfs://QmRedJkCoFPkcdYdoNJvDc1ydHRVZRJNrc4FKXkUqekm67"
 	},
 	5: {
-		address: "0xd1ecD4085dc2B6596a51a1CF6e614Aac2aBc46Ec",
+		address: "0x4424685e92Dad94A175BFF57e2854D3EEA90345b",
 		metadata: "ipfs://QmScYrEhTjNzcERwUSXmX66cDCfD3yna8fdiUnLTk8DHEa"
 	},
 	6: {
-		address: "0x4C20686b60F3373f9BCbfD382805039bC6855308",
+		address: "0xc1Da18E2FbE40E644015a651C5F02e6cf05A303E",
 		metadata: "ipfs://QmdBrFHCsyxnwEFSuCVTe7tb1dAxxSk9bjNBEodBAs6Cnm"
 	},
 	7: {
-		address: "0x0BDdE2208A1e2b52219C7847A3170331A9274390",
+		address: "0x83804749daEb236372056235620A4100fD33C426",
 		metadata: "ipfs://QmbmiT1e4Sxf6AJhe3nEBqW6wSqA1UqQRn4Pg92ymiiGNS"
 	},
 	8: {
-		address: "0x1506C3eb545444A738Fd1cC28e747163c1107D34",
+		address: "0x07C66482ED8Ff74931D737684EE0466801891078",
 		metadata: "ipfs://Qma7hUkq8JmHLPhL12XAzMyYGovnsa34qoag9iXRtuCKnG"
 	},
 	9: {
-		address: "0xf38D1CB60CcA8554603572662bffd6589594a6A0",
+		address: "0x231835B2438A1a2a6E0B51aD70EFE954BCB2eF4E",
 		metadata: "ipfs://QmNrEQ53aobVuo9nRFJ1CBzzFdkC1QuUXkv7gSAP2RQbGr"
 	},
 	10: {
-		address: "0x9e46710ff92Dd65806140df7F4247D07d3e2d58D",
+		address: "0x9215920DD5d1E5f2F23E148e2735476892269C6A",
 		metadata: "ipfs://QmUdsL5f2v6E5iJRupdJBC7qzxHyvdV7qmMkCeTdg7k3As"
 	}
 };

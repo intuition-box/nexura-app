@@ -1,6 +1,11 @@
 import mongoose, { Schema } from "mongoose";
 
 const hubSchema = new Schema({
+  systemKey: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   name: {
     type: String,
     required: true,

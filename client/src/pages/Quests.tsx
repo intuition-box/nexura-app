@@ -25,6 +25,7 @@ interface Quest {
   ends_at?: string;
   link?: string;
   category: string;
+  joined: boolean;
   reward: string;
   url?: string;
   actionLabel?: string;
@@ -35,6 +36,7 @@ interface Quest {
 export const DUMMY_QUESTS: Quest[] = [
   {
     _id: "tasks-card",
+    joined: true,
     title: "Start Tasks",
     sub_title: "Complete tasks to earn XP and unlock new features",
     done: false,
@@ -49,6 +51,7 @@ export const DUMMY_QUESTS: Quest[] = [
   },
   {
     _id: "social-card",
+    joined: true,
     title: "Social Boost",
     sub_title: "Engage on social platforms to earn rewards",
     done: false,
@@ -63,6 +66,7 @@ export const DUMMY_QUESTS: Quest[] = [
   },
   {
     _id: "referral-card",
+    joined: true,
     title: "Referral Sprint",
     sub_title: "Invite friends and climb the leaderboard",
     done: false,
@@ -123,6 +127,29 @@ export default function Quests() {
   const activeQuests = allQuests.filter((q) => q.status === "active");
   const upcomingQuests = allQuests.filter((q) => q.status === "upcoming");
 
+  const startQuest = async (quest: Quest) => {
+    if (!quest.joined) {
+      try {
+        await apiRequestV2("POST", "/api/quests/start-quest", {
+          questId: quest._id,
+          category: quest.category.toLowerCase(),
+        });
+        toast({
+          title: "Quest Started",
+          description: `You have started the quest: ${quest.title}`,
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to start the quest. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+
+    setLocation(`/quests/${quest._id}`);
+  }
+
   const renderQuestCard = (quest: Quest, isActive: boolean = true, index: number = 0) => {
     return (
       <motion.div
@@ -175,12 +202,12 @@ export default function Quests() {
                 hover:from-purple-600 hover:via-purple-700 hover:to-indigo-800
                 text-white font-medium rounded-lg mt-2 py-2 flex items-center justify-center space-x-2 
                 active:scale-[0.98] transition-all"
-              onClick={() => isActive && setLocation(`/quest/${quest._id}`)}
+              onClick={() => startQuest(quest)}
             >
               {isActive ? (
                 <>
                   <ExternalLink className="w-4 h-4" />
-                  <span>Start Task</span>
+                  <span>{quest.joined ? "Continue Quest" : "Start Task"}</span>
                 </>
               ) : (
                 <>

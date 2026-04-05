@@ -48,6 +48,7 @@ const docsMap = {
 
 const Docs = () => {
   const [active, setActive] = useState("what-is");
+  const [sections, setSections] = useState([]);
 
   const current = docsMap[active];
   const ActiveContent = docsContentMap[active];
@@ -81,7 +82,7 @@ const handlePrev = () => {
 
       <div className="flex-1 p-6 text-white">
         {/* Header */}
-<DocsHeader topic={current.topic} />
+<DocsHeader topic={current.topic} sections={sections} />
 
 {/* Content */}
 <div>
@@ -98,7 +99,11 @@ const handlePrev = () => {
   </h1>
 
 {/* Dynamic Content */}
-  <ActiveContent onNext={handleNext} onPrev={handlePrev} />
+  <ActiveContent
+  onNext={handleNext}
+  onPrev={handlePrev}
+  setSections={setSections}
+/>
 </div>
       </div>
     </div>

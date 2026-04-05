@@ -1,6 +1,20 @@
-const WhyNexuraExists = ({ onNext, onPrev }: any) => {
+import { useEffect } from "react";
+
+const WhyNexuraExists = ({ onNext, onPrev, setSections }: any) => {
+
+useEffect(() => {
+  setSections([
+    { id: "why-nexura-exists", title: "Why Nexura Exists", level: 2 },
+
+    { id: "lack-of-participation", title: "Lack of Participation Status", level: 3 },
+    { id: "cross-platform", title: "Limited Cross-Platform Engagement Tracking", level: 3 },
+    { id: "builder-user-disconnect", title: "Builder-User Disconnect", level: 3 },
+    { id: "ecosystem-role", title: "Nexura's Role in the Ecosystem", level: 2 },
+  ]);
+}, []);
+
   return (
-    <div className="max-w-[59rem]">
+    <div id="why-nexura-exists" className="max-w-[59rem]">
 
       {/* Intro */}
       <p className="text-gray-400 text-sm">
@@ -9,9 +23,12 @@ const WhyNexuraExists = ({ onNext, onPrev }: any) => {
 
       {/* Section 1 */}
       <div className="mt-8">
-        <h3 className="text-[#8B3EFE] text-sm font-medium">
-          Lack of Participation Status
-        </h3>
+        <h3
+  id="lack-of-participation"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  Lack of Participation Status
+</h3>
 
         <p className="text-gray-400 text-sm mt-2">
           Most ecosystems provide tools for building applications, but not for coordinating user participation. This leaves users to discover projects independently, decide how to contribute without guidance, and understand each project's systems on their own. Without structure, the result is low participation and shallow engagement.
@@ -20,9 +37,12 @@ const WhyNexuraExists = ({ onNext, onPrev }: any) => {
 
       {/* Section 2 */}
       <div className="mt-8">
-        <h3 className="text-[#8B3EFE] text-sm font-medium">
-          Limited Cross-Platform Engagement Tracking
-        </h3>
+        <h3
+  id="cross-platform"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  Limited Cross-Platform Engagement Tracking
+</h3>
 
         <p className="text-gray-400 text-sm mt-2">
           Participation is typically scattered across platforms including social networks, Discord servers, and isolated applications. Because there is no unified mechanism for tracking engagement across projects, participation remains fragmented and difficult to measure.
@@ -31,9 +51,12 @@ const WhyNexuraExists = ({ onNext, onPrev }: any) => {
 
       {/* Section 3 */}
       <div className="mt-8">
-        <h3 className="text-[#8B3EFE] text-sm font-medium">
-          Builder-User Disconnect
-        </h3>
+        <h3
+  id="builder-user-disconnect"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  Builder-User Disconnect
+</h3>
 
         <p className="text-gray-400 text-sm mt-2">
           Without a shared or clearly defined framework, builders and users operate in isolation. Builders need feedback providers, contributors, and testers. Users want recognition for their efforts, guidance on how to contribute, and a meaningful sense of progress. Nexura bridges this gap by creating a structure that serves both sides simultaneously.
@@ -45,9 +68,12 @@ const WhyNexuraExists = ({ onNext, onPrev }: any) => {
 
       {/* Ecosystem Role */}
       <div className="mt-8">
-        <h3 className="text-[#8B3EFE] text-sm font-medium">
-          Nexura's Role in the Ecosystem
-        </h3>
+        <h3
+  id="ecosystem-role"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  Nexura's Role in the Ecosystem
+</h3>
 
         <p className="text-gray-400 text-sm mt-2">
           Nexura exists to make participation more meaningful and to help projects attract the authentic, quality contribution they need to grow.
@@ -66,9 +92,12 @@ const WhyNexuraExists = ({ onNext, onPrev }: any) => {
         <div className="flex items-center gap-3">
           <div className="w-[4px] h-[24px] bg-[#8B3EFE]"></div>
 
-          <h3 className="text-[#8B3EFE] text-sm font-medium">
-            This Documentation is written for?
-          </h3>
+          <h3
+  id="documentation-audience"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  This Documentation is written for?
+</h3>
 
           <div className="flex-1 h-[1px] bg-[#FFFFFF33]"></div>
         </div>
@@ -98,7 +127,7 @@ const WhyNexuraExists = ({ onNext, onPrev }: any) => {
         {/* Previous */}
         <div
         onClick={onPrev}
-        className="w-[14rem] cursor-pointer group border border-white/30 rounded-lg p-3 bg-transparent">
+        className="w-[10rem] cursor-pointer group border border-white/30 rounded-lg p-2 bg-transparent">
           <div className="flex justify-start">
             <h4 className="text-[#8B3EFE] text-xs font-medium tracking-wider">
               PREVIOUS
@@ -119,7 +148,7 @@ const WhyNexuraExists = ({ onNext, onPrev }: any) => {
         {/* Next */}
         <div 
         onClick={onNext}
-        className="w-[14rem] cursor-pointer group border border-white/30 rounded-lg p-3 bg-transparent">
+        className="w-[10rem] cursor-pointer group border border-white/30 rounded-lg p-2 bg-transparent">
           <div className="flex justify-end">
             <h4 className="text-[#8B3EFE] text-xs font-medium tracking-wider">
               NEXT

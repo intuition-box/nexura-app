@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch server.ts",
-    "start": "bun server.ts"
+    "start": "bun server.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json --pretty false"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

@@ -7,12 +7,13 @@ import hubRoutes from "./hub.routes.ts";
 import questRoutes from "./quest.routes.ts";
 import userRoutes from "./user.routes.ts";
 import appRoutes from "./app.routes.ts";
+import lessonRoutes from "./lesson.routes.ts";
 import {
 	fetchEcosystemDapps,
 	fetchQuests,
 } from "@/controllers/quest.controller.ts";
 import { signIn } from "@/controllers/auth.controller";
-import { createAdmin, adminLogin } from "@/controllers/admin.controller";
+import { createAdmin, adminLogin, forgotAdminPassword, resetAdminPassword } from "@/controllers/admin.controller";
 import { authenticateUser2, authenticateAdmin, authenticateUser } from "@/middlewares/auth.middleware";
 
 const router = Router();
@@ -23,6 +24,8 @@ router
 	})
   .post("/admin/register", createAdmin)
   .post("/admin/login", adminLogin)
+  .post("/admin/forgot-password", forgotAdminPassword)
+  .post("/admin/reset-password", resetAdminPassword)
   .post("/user/sign-in", signIn)
 	.use("/", appRoutes)
 	.use("/admin", authenticateAdmin, adminRoutes)
@@ -33,6 +36,7 @@ router
 	.get("/leaderboard", authenticateUser2, getLeaderboard)
 	.use("/hub", hubRoutes)
 	.use("/quest", questRoutes)
+	.use("/lesson", lessonRoutes)
 	.use("/user", authenticateUser, userRoutes);
 
 export default router;

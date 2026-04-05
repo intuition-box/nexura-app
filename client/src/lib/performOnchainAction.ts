@@ -497,7 +497,8 @@ export const mintNexon = async (level: number, userId: string) => {
 
     const tx = await contract.mint(
       metadata,
-      userId
+      userId,
+      level > 2 ? { value: ethers.parseEther("1") } : {}
     );
 
     await tx.wait();

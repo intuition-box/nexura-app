@@ -1,6 +1,22 @@
-const NexonSystem = ({ onNext, onPrev }: any) => {
+import { useEffect } from "react";
+
+const NexonSystem = ({ onNext, onPrev, setSections }: any) => {
+
+  useEffect(() => {
+  setSections([
+    { id: "nexon-system", title: "The Nexon System", level: 2 },
+
+    { id: "ascent-of-nexon", title: "Ascent of Nexon", level: 2 },
+    { id: "path-of-nexon", title: "Path of the Nexon", level: 2 },
+    { id: "nexon-progress", title: "Nexura Progression Model", level: 2 },
+    { id: "how-nexons-earned", title: "How Nexons are Earned", level: 2 },
+    { id: "xp-vs-nexon", title: "Difference Between XP And Nexon", level: 2 },
+    { id: "abuse-anti-gaming", title: "Abuse and Anti-Gaming", level: 2 },
+  ]);
+}, []);
+
   return (
-    <div>
+    <div id="nexon-system">
       {/* Intro */}
       <p className="text-gray-400 text-sm max-w-[59rem]">
         Nexon is the identity and progression system within Nexura. It represents the long-term journey of a user through the ecosystem, combining XP, reputation, and participation history. Nexon reflects how users engage, not just how much they engage.
@@ -20,7 +36,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
 
       {/* Ascent */}
       <div className="mt-8 max-w-[59rem]">
-        <h3 className="text-white text-sm font-medium">
+        <h3 id="ascent-of-nexon" className="text-white text-sm font-medium">
           The Ascent of A Nexon
         </h3>
 
@@ -34,7 +50,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
 
       {/* Path */}
       <div className="mt-8 max-w-[59rem]">
-        <h3 className="text-[#8B3EFE] text-sm font-medium">
+        <h3 id="path-of-nexon" className="text-[#8B3EFE] text-sm font-medium">
           The Path of the Nexons
         </h3>
 
@@ -69,7 +85,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
         <div className="flex items-center gap-3 max-w-[59rem]">
           <div className="w-[4px] h-[24px] bg-[#8B3EFE]"></div>
 
-          <h3 className="text-[#8B3EFE] text-sm font-medium">
+          <h3 id="nexon-progress" className="text-[#8B3EFE] text-sm font-medium">
             Nexura Progression Model
           </h3>
 
@@ -90,7 +106,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
 
       {/* How Nexons are Earned */}
       <div className="mt-8 max-w-[59rem]">
-        <h3 className="text-[#8B3EFE] text-sm font-medium">
+        <h3 id="how-nexons-earned" className="text-[#8B3EFE] text-sm font-medium">
           How Nexons are Earned
         </h3>
 
@@ -122,7 +138,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
 
       {/* XP vs Nexon */}
       <div className="mt-8 max-w-[59rem]">
-        <h3 className="text-[#8B3EFE] text-sm font-medium">
+        <h3 id="xp-vs-nexon" className="text-[#8B3EFE] text-sm font-medium">
           Difference Between XP And Nexons
         </h3>
 
@@ -145,7 +161,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
 
       {/* Abuse */}
       <div className="mt-8 max-w-[59rem]">
-        <h3 className="text-[#8B3EFE] text-sm font-medium">
+        <h3 id="abuse-anti-gaming" className="text-[#8B3EFE] text-sm font-medium">
           Abuse and Anti-Gaming
         </h3>
 
@@ -167,7 +183,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
         {/* Previous */}
         <div 
         onClick={onPrev}
-        className="w-[14rem] cursor-pointer group border border-white/30 rounded-lg p-3">
+        className="w-[10rem] cursor-pointer group border border-white/30 rounded-lg p-2">
           <div className="flex justify-start">
             <h4 className="text-[#8B3EFE] text-xs font-medium">PREVIOUS</h4>
           </div>
@@ -181,7 +197,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
         {/* Next */}
         <div 
         onClick={onNext}
-        className="w-[14rem] cursor-pointer group border border-white/30 rounded-lg p-3">
+        className="w-[10rem] cursor-pointer group border border-white/30 rounded-lg p-2">
           <div className="flex justify-end">
             <h4 className="text-[#8B3EFE] text-xs font-medium">NEXT</h4>
           </div>

@@ -16,7 +16,9 @@ const adminSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required(this: { verified?: boolean }) {
+      return Boolean(this.verified);
+    }
   },
   verified: {
     type: Boolean,
@@ -24,6 +26,14 @@ const adminSchema = new mongoose.Schema({
   },
   code: {
     type: String,
+  },
+  lastActivity: {
+    type: Date,
+    default: null
+  },
+  isOnline: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

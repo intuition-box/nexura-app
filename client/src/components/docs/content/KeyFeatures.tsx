@@ -1,6 +1,19 @@
-const KeyFeatures = ({ onNext, onPrev }: any) => {
+import { useEffect } from "react";
+
+const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
+
+  useEffect(() => {
+  setSections([
+    { id: "key-features", title: "Key Features", level: 2 },
+
+    { id: "quests", title: "Quests", level: 3 },
+    { id: "campaigns", title: "Campaigns", level: 3 },
+    { id: "xp", title: "XP (Experience Points)", level: 3 },
+  ]);
+}, []);
+
   return (
-    <div>
+    <div id="key-features">
       {/* Intro */}
       <p className="text-gray-400 text-sm max-w-[59rem]">
         Nexura is built around a small number of core concepts. These concepts define how participation is structured and how users progress through the system. Understanding these concepts is essential to understanding how Nexura works.
@@ -16,7 +29,7 @@ const KeyFeatures = ({ onNext, onPrev }: any) => {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <img src="/quest-icon.png" className="w-4 h-4" />
-            <h3 className="text-[#8B3EFE] text-sm font-medium">
+            <h3 id="quests" className="text-[#8B3EFE] text-sm font-medium">
               Quests
             </h3>
           </div>
@@ -60,7 +73,7 @@ const KeyFeatures = ({ onNext, onPrev }: any) => {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <img src="/campaign-iconx.png" className="w-4 h-4" />
-            <h3 className="text-[#8B3EFE] text-sm font-medium">
+            <h3 id="campaigns" className="text-[#8B3EFE] text-sm font-medium">
               Campaigns
             </h3>
           </div>
@@ -91,7 +104,7 @@ const KeyFeatures = ({ onNext, onPrev }: any) => {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <img src="/xp-icon.png" className="w-4 h-4" />
-            <h3 className="text-[#8B3EFE] text-sm font-medium">
+            <h3 id="xp" className="text-[#8B3EFE] text-sm font-medium">
               XP (Experience Points)
             </h3>
           </div>
@@ -116,7 +129,7 @@ const KeyFeatures = ({ onNext, onPrev }: any) => {
         {/* Previous */}
         <div 
           onClick={onPrev}
-          className="w-[14rem] cursor-pointer group border border-white/30 rounded-lg p-3">
+          className="w-[10rem] cursor-pointer group border border-white/30 rounded-lg p-2">
           <div className="flex justify-start">
             <h4 className="text-[#8B3EFE] text-xs font-medium tracking-wider">
               PREVIOUS
@@ -137,7 +150,7 @@ const KeyFeatures = ({ onNext, onPrev }: any) => {
         {/* Next */}
         <div 
           onClick={onNext}
-          className="w-[14rem] cursor-pointer group border border-white/30 rounded-lg p-3">
+          className="w-[10rem] cursor-pointer group border border-white/30 rounded-lg p-2">
           <div className="flex justify-end">
             <h4 className="text-[#8B3EFE] text-xs font-medium tracking-wider">
               NEXT

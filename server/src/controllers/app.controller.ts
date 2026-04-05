@@ -67,7 +67,11 @@ export const allowNexonsMint = async (req: GlobalRequest, res: GlobalResponse) =
       return;
     }
 
-    await performIntuitionOnchainAction({ action: "allow-mint", level: level.toString(), userId: id! });
+    try {
+      await performIntuitionOnchainAction({ action: "allow-mint", level: level.toString(), userId: id! });
+    } catch (error) {
+      console.error(error);
+    }
 
     res.status(OK).json({ message: "allow user to mint successfully" });
   } catch (error) {
@@ -553,16 +557,16 @@ export const updateSubmission = async (req: GlobalRequest, res: GlobalResponse) 
 
 export const getLeaderboard = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const top200 = await user
+    const top500 = await user
       .find()
       .sort({ xp: -1, trustClaimed: -1 })
-      .limit(200)
-      .select("username xp profilePic _id level questsCompleted campaignsCompleted")
+      .limit(500)
+      .select("username xp profilePic _id level eventsWon lessonsCompleted questsCompleted campaignsCompleted")
       .lean();
 
     let rank: number | null = null;
 
-    const me = await user.findById(req.id).lean();
+    const me = await user.findById(req.id).lean().select("eventsWon questsCompleted campaignsCompleted");
 
     if (!me) {
       rank = null;
@@ -579,7 +583,7 @@ export const getLeaderboard = async (req: GlobalRequest, res: GlobalResponse) =>
         })) + 1;
     }
 
-    res.status(OK).json({ message: "leaderboard info fetched", leaderboardInfo: top200, rank });
+    res.status(OK).json({ message: "leaderboard info fetched", leaderboardInfo: top500, rank, me });
   } catch(error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching leaderboard data" })
@@ -791,9 +795,40 @@ export const validatePortalTask =  async (req: GlobalRequest, res: GlobalRespons
   }
 }
 
+export const updateClaims = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { transactionHash } = req.query as { transactionHash: string };
+    const { id } = req;
+
+    if (!transactionHash) {
+      res.status(BAD_REQUEST).json({ error: "transaction hash is required" });
+      return;
+    }
+
+    const userToUpdate = await user.findById(id);
+    if (!userToUpdate) {
+      res.status(NOT_FOUND).json({ error: "user not found" });
+      return;
+    }
+
+    const { from } = await getAmountPaid(transactionHash);
+
+    if (from.toLowerCase() !== userToUpdate.address) {
+      res.status(FORBIDDEN).json({ error: "transaction must be from the user's address" });
+      return;
+    }
+
+     
+
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating user claims" });
+  }
+}
+
 export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const userFound = await user.find().select("updatedAt createdAt refRewardClaimed badges status").lean();
+    const userFound = await user.find().select("updatedAt createdAt refRewardClaimed badges status xp").lean();
     const totalReferrals = await referredUsers.countDocuments();
 
     const totalCampaigns = await campaign.countDocuments();
@@ -810,6 +845,9 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
     const joinRatio = (totalCampaignsCompleted / totalCampaignsCompletedFound.length) * 100;
 
     const totalUsers = userFound.length;
+    const totalXpInCirculation = userFound.reduce((sum, current) => {
+      return sum + Number(current.xp ?? 0);
+    }, 0);
 
     const now = new Date();
 
@@ -943,6 +981,7 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
         totalCampaignsCompleted,
         joinRatio,
         totalTrustDistributed,
+        totalXpInCirculation,
         usersByDay,
         usersByHour,
         tomorrowName,

@@ -52,6 +52,8 @@ import HubProfile from "./pages/studio/HubProfile.tsx";
 import ClaimDetails from "./pages/ClaimDetails";
 import ConnectDiscord from "./pages/studio/ConnectDiscord.tsx";
 import Docs from "./pages/Docs.tsx"
+import LessonPage from "./pages/LessonPage";
+import ResetHubPassword from "./pages/studio/ResetHubPassword.tsx";
 
 function Router() {
    const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -78,6 +80,7 @@ function Router() {
       {/*<Route path="/docs" component={Docs} />*/}
       {/* NEXURA pages */}
       <Route path="/learn" component={Learn} />
+      <Route path="/learn/:id" component={LessonPage } />
       <Route path="/quests" component={Quests} />
       <Route path="/campaigns" component={Campaigns} />
       <Route path="/ecosystem-dapps" component={EcosystemDapps} />
@@ -88,7 +91,7 @@ function Router() {
       <Route path="/x/callback" component={XCallback} />
       <Route path="/campaigns/tasks" component={CampaignEnvironment} />
       <Route path="/quests/tasks-card" component={QuestEnvironment} />
-      <Route path="/analytics" component={Analytics} />
+      {/* <Route path="/analytics" component={Analytics} /> */}
       <Route path="/portal-claims" component={PortalClaims} />
       <Route path="/portal-claims/:id" component={ClaimDetails} />
       <Route path="/studio" component={NexuraStudio} />
@@ -154,6 +157,7 @@ function Router() {
         </StudioLayout>
       </Route>
       <Route path="/studio/register" component={AdminSignUp} />
+      <Route path="/studio/reset-password" component={ResetHubPassword} />
       <Route path="/project/:projectId/*" component={ProjectDashboard} />
       <Route path="/project/:projectId/:rest*" component={ProjectDashboard} />
       {/* Referral */}
@@ -179,7 +183,8 @@ function App() {
       location.startsWith("/projects/create") ||
       location.startsWith("/connect-discord") ||
       location.startsWith("/project/connected-discord") ||
-      location.startsWith("/studio/register");
+      location.startsWith("/studio/register") ||
+      location.startsWith("/studio/reset-password");
 
     document.body.classList.toggle("studio-theme", isStudioRoute);
 
@@ -208,7 +213,8 @@ function App() {
                   location.startsWith("/studio-dashboard") ||
                   location.startsWith("/connect-discord") ||
                   location.startsWith("/project/connected-discord") ||
-                  location.startsWith("/studio/register");
+                  location.startsWith("/studio/register") ||
+                  location.startsWith("/studio/reset-password");
                 const isProject = location.startsWith("/project/");
                 const isProjectCreate = location.startsWith("/projects/create");
                 const isDocs = location.startsWith("/docs")

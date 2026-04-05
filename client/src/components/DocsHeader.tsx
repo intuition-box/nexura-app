@@ -1,8 +1,13 @@
 type Props = {
   topic: string;
+  sections: any[];
 };
 
-const DocsHeader = ({ topic }: Props) => {
+const DocsHeader = ({ topic, sections }: Props) => {
+
+  const mainSections = sections.filter((sec) => sec.level === 2);
+const subSections = sections.filter((sec) => sec.level === 3);
+
   return (
     <div className="flex items-center justify-between mb-6">
       {/* Left side */}
@@ -34,9 +39,49 @@ const DocsHeader = ({ topic }: Props) => {
       </div>
 
       {/* Right side */}
-      <div className="text-gray-400 text-sm">
-        ON THIS PAGE
+      <div className="border-l border-white/20 pl-3 space-y-3">
+
+  {/* Main Sections */}
+  {mainSections.map((sec: any) => (
+    <div
+      key={sec.id}
+      className="cursor-pointer font-medium text-white"
+      onClick={() => {
+        document.getElementById(sec.id)?.scrollIntoView({
+          behavior: "smooth",
+        });
+      }}
+    >
+      {sec.title}
+    </div>
+  ))}
+
+  {/* Subsections Group */}
+  {subSections.length > 0 && (
+    <div className="relative pl-3">
+
+      {/* ONE continuous vertical line */}
+      <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-white/20"></div>
+
+      <div className="space-y-2">
+        {subSections.map((sec: any) => (
+          <div
+            key={sec.id}
+            className="cursor-pointer text-xs text-gray-400"
+            onClick={() => {
+              document.getElementById(sec.id)?.scrollIntoView({
+                behavior: "smooth",
+              });
+            }}
+          >
+            {sec.title}
+          </div>
+        ))}
       </div>
+
+    </div>
+  )}
+</div>
     </div>
   );
 };

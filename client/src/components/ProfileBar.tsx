@@ -19,9 +19,6 @@ import DailyCheckInModal from "./DailyCheckInModal";
 import NetworkButton from "./NetworkButton";
 import XPRewardPopup from "./XPRewardPopup";
 
-interface ProfileBarProps {
-  userId?: string;
-}
 
 // --- LEVELS ---
 const LEVELS = [
@@ -42,7 +39,7 @@ function getLevelByXp(currentXp: number) {
     const nextLevel = LEVELS[i + 1];
     if (currentXp <= LEVELS[i].xp && (!nextLevel || currentXp < nextLevel.xp)) return { ...LEVELS[i], index: i + 1 };
   }
-  return { ...LEVELS[0], index: 1 };
+  return { ...LEVELS[LEVELS.length - 1], index: LEVELS.length };
 }
 
 const DailySignInBadge = () => {
@@ -118,7 +115,7 @@ const DailySignInBadge = () => {
   );
 };
 
-export default function ProfileBar({ userId = "user-123" }: ProfileBarProps) {
+export default function ProfileBar() {
   const { address, isConnected: walletConnected, connectWallet, disconnect } = useWallet();
   const { user, signOut } = useAuth();
   const connected = Boolean(user) || walletConnected;
@@ -142,6 +139,12 @@ useEffect(() => {
   const handleLogout = () => {
     signOut();
     try { localStorage.removeItem("nexura:wallet"); } catch { }
+    // Clear lesson progress on logout
+    try {
+      localStorage.removeItem("tenor-lesson-steps");
+      const keys = Object.keys(localStorage).filter(k => k.startsWith("learn-progress-"));
+      keys.forEach(k => localStorage.removeItem(k));
+    } catch { }
     try { disconnect?.(); } catch { }
     setLocation("/discover");
     toast({ title: "Signed out", description: "Your session was cleared." });

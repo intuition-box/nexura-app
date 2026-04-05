@@ -1,6 +1,18 @@
-const UserGuide = ({ onNext, onPrev }: any) => {
+import { useEffect } from "react";
+
+const UserGuide = ({ onNext, onPrev, setSections }: any) => {
+
+useEffect(() => {
+  setSections([
+    { id: "user-guide", title: "User Guide", level: 2 },
+
+    { id: "user-participation", title: "User Participation", level: 3 },
+    { id: "builder-engagement", title: "Builder Engagement", level: 3 },
+  ]);
+}, []);
+
   return (
-    <div className="max-w-[59rem]">
+    <div id="user-guide" className="max-w-[59rem]">
 
       {/* Intro */}
       <p className="text-gray-400 text-sm">
@@ -12,9 +24,12 @@ const UserGuide = ({ onNext, onPrev }: any) => {
         <div className="flex items-center gap-3">
           <div className="w-[4px] h-[24px] bg-[#8B3EFE]"></div>
 
-          <h3 className="text-[#8B3EFE] text-sm font-medium">
-            User Participation
-          </h3>
+          <h3
+  id="user-participation"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  User Participation
+</h3>
         </div>
 
         {/* Image */}
@@ -40,9 +55,12 @@ const UserGuide = ({ onNext, onPrev }: any) => {
         <div className="flex items-center gap-3">
           <div className="w-[4px] h-[24px] bg-[#8B3EFE]"></div>
 
-          <h3 className="text-[#8B3EFE] text-sm font-medium">
-            Builder Engagement
-          </h3>
+          <h3
+  id="builder-engagement"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  Builder Engagement
+</h3>
         </div>
 
         {/* Image */}
@@ -61,7 +79,7 @@ const UserGuide = ({ onNext, onPrev }: any) => {
         {/* Previous */}
         <div 
         onClick={onPrev}
-        className="w-[14rem] cursor-pointer group border border-white/30 rounded-lg p-3 bg-transparent">
+        className="w-[10rem] cursor-pointer group border border-white/30 rounded-lg p-2 bg-transparent">
           <div className="flex justify-start">
             <h4 className="text-[#8B3EFE] text-xs font-medium tracking-wider">
               PREVIOUS
@@ -82,7 +100,7 @@ const UserGuide = ({ onNext, onPrev }: any) => {
         {/* Next */}
         <div 
         onClick={onNext}
-        className="w-[14rem] cursor-pointer group border border-white/30 rounded-lg p-3 bg-transparent">
+        className="w-[10rem] cursor-pointer group border border-white/30 rounded-lg p-2 bg-transparent">
           <div className="flex justify-end">
             <h4 className="text-[#8B3EFE] text-xs font-medium tracking-wider">
               NEXT

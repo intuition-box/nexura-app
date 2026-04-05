@@ -1,8 +1,20 @@
-const WhatIsNexura = ({ onNext }: any) => {
+import { useEffect } from "react";
+
+const WhatIsNexura = ({ onNext, setSections }: any) => {
+
+useEffect(() => {
+  setSections([
+    { id: "introduction", title: "Introduction", level: 2 },
+    { id: "why-nexura", title: "Why Nexura", level: 2 },
+    { id: "the-vision", title: "The Vision", level: 2 },
+    { id: "vision-users", title: "For Users", level: 3 },
+    { id: "vision-builders", title: "For Builders", level: 3 },
+  ]);
+}, []);
+
   return (
-    <div>
-      {/* Main Description */}
-      <p className="text-gray-400 text-sm max-w-[59rem]">
+  <div id="introduction">
+  <p className="text-gray-400 text-sm max-w-[59rem]">
         Nexura is an engagement engine for the Intuition ecosystem that organizes participation across decentralized projects. It creates a structured environment where users discover projects, complete quests and campaigns, and build contribution history, while builders coordinate engagement and identify contributors. By connecting activities, identity, and reputation in one participation framework, Nexura makes ecosystem engagement structured, trackable, and measurable.
       </p>
 
@@ -11,9 +23,11 @@ const WhatIsNexura = ({ onNext }: any) => {
         <div className="flex items-center gap-3">
           <div className="w-[4px] h-[24px] bg-[#8B3EFE] "></div>
 
-          <h3 className="text-[#8B3EFE] text-sm font-medium">
-            For Users
-          </h3>
+          <h3
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  For Users
+</h3>
 
           <div className="flex-1 h-[1px] bg-[#FFFFFF33] max-w-[53rem]"></div>
         </div>
@@ -35,9 +49,11 @@ const WhatIsNexura = ({ onNext }: any) => {
         <div className="flex items-center gap-3">
           <div className="w-[4px] h-[24px] bg-[#8B3EFE]"></div>
 
-          <h3 className="text-[#8B3EFE] text-sm font-medium">
-            For Builders
-          </h3>
+          <h3
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  For Builders
+</h3>
 
           <div className="flex-1 h-[1px] bg-[#FFFFFF33] max-w-[52rem]"></div>
         </div>
@@ -77,9 +93,12 @@ const WhatIsNexura = ({ onNext }: any) => {
       <div className="mt-6 h-[1px] bg-[#FFFFFF33] max-w-[59rem]"></div>
       {/* Why Nexura */}
       <div className="mt-8 max-w-[59rem]">
-        <h3 className="text-[#8B3EFE] text-xl font-medium">
-          Why Nexura
-        </h3>
+        <h3
+  id="why-nexura"
+  className="text-[#8B3EFE] text-xl font-medium"
+>
+  Why Nexura
+</h3>
 
         <p className="text-gray-400 text-sm mt-3">
           Decentralized ecosystems suffer from three structural limitations. Nexura is built to convert each limitation into an opportunity for active participation.
@@ -96,18 +115,24 @@ const WhatIsNexura = ({ onNext }: any) => {
 
       {/* The Vision */}
       <div className="mt-8 max-w-[59rem]">
-        <h3 className="text-[#8B3EFE] text-sm font-medium">
-          The Vision
-        </h3>
+        <h3
+  id="the-vision"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  The Vision
+</h3>
 
         {/* Users */}
         <div className="mt-6">
           <div className="flex items-center gap-3">
             <div className="w-[4px] h-[24px] bg-[#8B3EFE]"></div>
 
-            <h4 className="text-[#8B3EFE] text-sm font-medium">
-              For Users
-            </h4>
+            <h4
+  id="vision-users"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  For Users
+</h4>
 
             <div className="flex-1 h-[1px] bg-[#FFFFFF33]"></div>
           </div>
@@ -133,9 +158,12 @@ const WhatIsNexura = ({ onNext }: any) => {
           <div className="flex items-center gap-3">
             <div className="w-[4px] h-[24px] bg-[#8B3EFE]"></div>
 
-            <h4 className="text-[#8B3EFE] text-sm font-medium">
-              For Builders
-            </h4>
+            <h4
+  id="vision-builders"
+  className="text-[#8B3EFE] text-sm font-medium"
+>
+  For Builders
+</h4>
 
             <div className="flex-1 h-[1px] bg-[#FFFFFF33]"></div>
           </div>
@@ -158,7 +186,7 @@ const WhatIsNexura = ({ onNext }: any) => {
 <div className="mt-10 flex justify-end">
   <div
   onClick={onNext}
-    className="w-[14rem] cursor-pointer group border border-white/30 rounded-lg bg-transparent p-3"
+    className="w-[10rem] cursor-pointer group border border-white/30 rounded-lg bg-transparent p-2"
   >
     {/* Label */}
     <div className="flex justify-end">

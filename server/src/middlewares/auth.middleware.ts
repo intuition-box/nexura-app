@@ -3,10 +3,12 @@ import { admin } from "@/models/admin.model";
 import { bannedUser } from "@/models/bannedUser.model";
 import { hubAdmin } from "@/models/hub.model";
 import { user } from "@/models/user.model";
+import { resolveAdminCampaignHub } from "@/utils/adminCampaignHub";
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR, UNAUTHORIZED } from "@/utils/status.utils";
 import { JWT } from "@/utils/utils";
 import { REDIS } from "@/utils/redis.utils";
 import multer from "multer";
+import { updateAdminLastActivity } from "@/utils/adminActivityCron";
 
 type decodedDataType = {
 	id: string;
@@ -220,9 +222,23 @@ export const authenticateAdmin = async (req: GlobalRequest, res: GlobalResponse,
       return;
     }
 
+    const normalizedAdmin = isAdmin.toObject();
+    const adminName =
+      normalizedAdmin.username?.trim() ||
+      normalizedAdmin.email.split("@")[0] ||
+      "Administrator";
+
     req.id = id;
     req.token = token;
     req.role = isAdmin.role;
+    req.adminName = adminName;
+    req.admin = {
+      ...normalizedAdmin,
+      name: adminName,
+    };
+
+    // Update admin last activity and online status
+    updateAdminLastActivity(id);
 
     next();
   } catch (error: any) {
@@ -233,5 +249,45 @@ export const authenticateAdmin = async (req: GlobalRequest, res: GlobalResponse,
     }
 
     res.status(INTERNAL_SERVER_ERROR).json({ error: "Invalid authentication token, kindly re-login." });
+  }
+}
+
+export const requireAdminSuperadmin = async (req: GlobalRequest, res: GlobalResponse, next: GlobalNextFunction) => {
+  if (req.role !== "superadmin") {
+    res.status(UNAUTHORIZED).json({ error: "only superadmin can manage admin campaigns" });
+    return;
+  }
+
+  next();
+};
+
+export const attachAdminCampaignHub = async (req: GlobalRequest, res: GlobalResponse, next: GlobalNextFunction) => {
+  try {
+    const nexuraHub = await resolveAdminCampaignHub(req.id);
+    const currentAdmin = typeof req.admin === "object" && req.admin ? req.admin : {};
+    const adminName =
+      typeof currentAdmin.name === "string" && currentAdmin.name.trim()
+        ? currentAdmin.name.trim()
+        : typeof currentAdmin.username === "string" && currentAdmin.username.trim()
+          ? currentAdmin.username.trim()
+          : typeof currentAdmin.email === "string" && currentAdmin.email.includes("@")
+            ? currentAdmin.email.split("@")[0]
+            : "Administrator";
+
+    req.adminName = adminName;
+    req.admin = {
+      ...currentAdmin,
+      name: adminName,
+      role: req.role,
+      hub: nexuraHub._id,
+      pendingTxHash: nexuraHub.pendingTxHash ?? null,
+    };
+
+    next();
+  } catch (error: any) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({
+      error: error?.message || "Unable to prepare the Nexura campaigns hub.",
+    });
   }
 };
