@@ -49,6 +49,10 @@ body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Robo
 
 /* keep index.css as the single global stylesheet */
 
+/* Utility: hide scrollbar but keep scrolling */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* --- leaderboard styles (moved from leaderboard-global.css) --- */
 
 /* Reset and base */

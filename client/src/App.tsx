@@ -228,7 +228,7 @@ function App() {
                     {!isHome && !isStudio && !isDocs && !isProjectCreate && <NexuraSidebar />}
 
                     {/* Main content */}
-<div className="flex-1 flex flex-col relative z-10">
+<div className="flex-1 flex flex-col relative z-10 min-w-0 overflow-x-hidden">
   
   {!isHome && !isStudio && !isProjectCreate && (
     <header className="flex items-center p-4 app-header">
