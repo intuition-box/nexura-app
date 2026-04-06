@@ -31,6 +31,7 @@ export default function Leaderboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeRange, setActiveRange] = useState("All Time");
   const ranges = ["Last 7 Days", "Last 30 Days", "Last 3 Months", "All Time"];
+  const [showRangeDropdown, setShowRangeDropdown] = useState(false);
   
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -48,9 +49,6 @@ export default function Leaderboard() {
 
   const currentUserId = user?._id;
   const currentUser = list.find((e) => e._id === currentUserId);
-
-
-
 
   /////////////////// mock dataaaaaaaaaaaaaa
   {/* Temporary mock data fallback for design/testing */}
@@ -117,33 +115,53 @@ const podiumList =
   </div>
 
   {/* Mobile-only Range Dropdown */}
-  <div className="sm:hidden w-[100px]">
-    <select
-      value={activeRange}
-      onChange={(e) => setActiveRange(e.target.value)}
-      className="w-full rounded-3xl border border-[#8B3EFE] bg-transparent px-3 py-2 text-[10px] font-medium text-white outline-none cursor-pointer"
-      style={{
-        WebkitAppearance: "none",
-        MozAppearance: "none",
-        appearance: "none",
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 7.5L10 12l4.5-4.5'/%3E%3C/svg%3E")`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "right 0.6rem center",
-        backgroundSize: "0.9rem",
-        paddingRight: "2rem",
-      }}
+  <div className="sm:hidden relative w-[120px]">
+  {/* Trigger */}
+  <button
+    onClick={() => setShowRangeDropdown(!showRangeDropdown)}
+    className="w-full flex items-center justify-between rounded-2xl border border-[#8B3EFE] bg-[#14091F] px-3 py-2 text-[11px] font-medium text-white shadow-[0_0_10px_rgba(139,62,254,0.15)]"
+  >
+    <span className="truncate">{activeRange}</span>
+
+    <svg
+      className={`w-4 h-4 transition-transform duration-200 ${
+        showRangeDropdown ? "rotate-180" : ""
+      }`}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
     >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M19 9l-7 7-7-7"
+      />
+    </svg>
+  </button>
+
+  {/* Dropdown */}
+  {showRangeDropdown && (
+    <div className="absolute left-0 top-[110%] z-50 w-full overflow-hidden rounded-2xl border border-[#8B3EFE]/40 bg-[#1A102B]/95 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
       {ranges.map((label) => (
-        <option
+        <button
           key={label}
-          value={label}
-          className="bg-[#1a102b] text-white"
+          onClick={() => {
+            setActiveRange(label);
+            setShowRangeDropdown(false);
+          }}
+          className={`w-full px-3 py-2 text-left text-[11px] transition-colors ${
+            activeRange === label
+              ? "bg-[#8B3EFE] text-white"
+              : "text-[#D8C8F8] hover:bg-[#2A173D]"
+          }`}
         >
           {label}
-        </option>
+        </button>
       ))}
-    </select>
-  </div>
+    </div>
+  )}
+</div>
 </div>
 
               <p className="mt-1 text-xs sm:text-base text-white/60 max-w-full sm:max-w-md">
@@ -653,7 +671,7 @@ const xp = entry?.xp ?? 0;
   </div>
     {/* Middle: XP */}
     <div className="flex items-center gap-1 mt-1 mb-1 pt-2">
-      <span className="font-bold text-white text-[10px] pl-4">{xp}</span>
+      <span className="font-bold text-white text-[10px] pl-2">{xp}</span>
       <img src={xpIcon} alt="XP" className="w-3 h-3" />
     </div>
 </div>
