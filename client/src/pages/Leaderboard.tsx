@@ -323,7 +323,7 @@ const podiumList =
         </header>
         
         {/* ------------------- PODIUM ------------------- */}
-{podiumList.length >= 3 && (
+{list.length >= 3 && (
   <div className="relative mt-10">
     {/* Background gradient */}
     <div className="absolute inset-x-0 top-0 h-64" />
