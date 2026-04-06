@@ -103,7 +103,7 @@ const podiumList =
       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00E1A2] opacity-75"></span>
       <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00E1A2]"></span>
     </span>
-    <span>500 USERS</span>
+    <span>TOP 500</span>
   </div>
   </div>
 
@@ -317,7 +317,7 @@ const podiumList =
       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00E1A2] opacity-75"></span>
       <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00E1A2]"></span>
     </span>
-    <span>500 USERS</span>
+    <span>TOP 500</span>
   </div>
   </div>
         </header>
@@ -492,7 +492,7 @@ const podiumList =
         <img src="/question.png" alt="Campaigns" className="w-3 h-3" />
         CAMPAIGNS
       </div>
-      <div>This is the total number of campaigns completed by a user.</div>
+      <div>This is the total number of campaigns a user has completed.</div>
     </div>
   </div>
 
@@ -506,7 +506,7 @@ const podiumList =
         <img src="/question.png" alt="Lessons" className="w-3 h-3" />
         LESSONS
       </div>
-      <div>This is the total number of lessons completed by a user.</div>
+      <div>This is the total number of lessons a user has completed.</div>
     </div>
   </div>
 
