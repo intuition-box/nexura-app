@@ -34,6 +34,7 @@ import PortalClaims from "./pages/PortalClaims";
 import AnimatedBackground from "./components/AnimatedBackground";
 import Home from "./pages/Home.tsx";
 import Analytics from "./pages/Analytics.tsx";
+import Analyticss from "./pages/Analyticss.tsx";
 import NexuraStudio from "./pages/NexuraStudio.tsx"
 import CreateHub from "./pages/studio/CreateHub.tsx"
 import SignInToHub from "./pages/studio/SignInToHub.tsx"
@@ -57,7 +58,7 @@ import ResetHubPassword from "./pages/studio/ResetHubPassword.tsx";
 
 function Router() {
    const [isAuthenticated, setIsAuthenticated] = useState(false)
-   
+
     const handleLogout = () => {
     // Clear admin session
     localStorage.removeItem('nexura-admin:token');
@@ -91,7 +92,7 @@ function Router() {
       <Route path="/x/callback" component={XCallback} />
       <Route path="/campaigns/tasks" component={CampaignEnvironment} />
       <Route path="/quests/tasks-card" component={QuestEnvironment} />
-      <Route path="/analytics" component={Analytics} />
+      <Route path="/analytics" component={Analyticss} />
       <Route path="/portal-claims" component={PortalClaims} />
       <Route path="/portal-claims/:id" component={ClaimDetails} />
       <Route path="/studio" component={NexuraStudio} />

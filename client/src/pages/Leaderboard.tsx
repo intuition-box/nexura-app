@@ -50,7 +50,7 @@ export default function Leaderboard() {
   }, []);
 
   const currentUserId = user?._id;
-  const currentUser = list.find((e) => e._id === currentUserId);
+  const currentUser = user;
 
   /////////////////// mock dataaaaaaaaaaaaaa
   {/* Temporary mock data fallback for design/testing */}
