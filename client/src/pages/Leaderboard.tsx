@@ -275,7 +275,7 @@ const podiumList =
         </header>
         
         {/* ------------------- PODIUM ------------------- */}
-{list.length >= 3 && (
+{podiumList.length >= 3 && (
   <div className="relative mt-10">
     {/* Background gradient */}
     <div className="absolute inset-x-0 top-0 h-64" />
@@ -336,7 +336,7 @@ const podiumList =
   alt={`Podium ${idx + 1}`}
   width={idx === 1 ? 100 : podiumWidth}
   height={idx === 1 ? 120 : podiumHeight}
-  className={`${idx !== 1 ? "mt-1 translate-y-[5px] sm:translate-y-[11px]" : "mt-1"} sm:w-[120px] sm:h-[140px]"`}
+  className={`${idx !== 1 ? "mt-1 translate-y-[4px] sm:translate-y-[11px]" : "mt-1"} sm:w-[120px] sm:h-[140px]"`}
 />
           </div>
         );
@@ -374,7 +374,7 @@ const podiumList =
   <img
     src="/leaderboard-small-borderr.png"
     alt="Podium border small"
-    className="absolute top-0 left-1/2 -translate-x-1/2 w-[108%] max-w-none h-auto object-contain"
+    className="absolute top-0 left-1/2 -translate-x-1/2 w-[103%] max-w-none h-auto object-contain"
     style={{ transform: "translate(-50%, -53px)" }}
   />
 
@@ -470,7 +470,7 @@ const podiumList =
 
 {/* Leaderboard entries */}
 <div className="space-y-2 pt-0 sm:pt-[10px]">
-  {list.map((entry, idx) => {
+  {podiumList.map((entry, idx) => {
     const name = entry?.display_name || entry?.username || "Anonymous";
     const isCurrentUser = currentUserId && entry._id === currentUserId;
     const rank = idx + 1;
@@ -491,7 +491,7 @@ const xp = entry?.xp ?? 0;
     return (
 <Card
   key={entry._id}
-  className="relative rounded-2xl hover:brightness-110 overflow-hidden w-full"
+  className="relative w-[calc(100%+10px)] -ml-[5px] sm:w-full sm:ml-0 rounded-2xl hover:brightness-110 overflow-hidden"
   style={{
     borderWidth: "2px",
     borderStyle: "solid",
@@ -590,29 +590,37 @@ const xp = entry?.xp ?? 0;
       {name}
     </span>
 
-    {/* Badges */}
-    <div className="flex items-center gap-[2px] overflow-x-auto whitespace-nowrap pr-1 scrollbar-hide">
-      <div className="shrink-0 flex items-center gap-[1px] rounded bg-[#00E1A233] px-[3px] py-[1px]">
-        <span className="text-[8px] font-bold text-white">{events}</span>
-        <span className="text-[6px] font-medium text-[#00E1A2E5] leading-none">EVENTS</span>
-      </div>
-
-      <div className="shrink-0 flex items-center gap-[1px] rounded bg-[#8B3EFE33] px-[3px] py-[1px]">
-        <span className="text-[8px] font-bold text-white">{quests}</span>
-        <span className="text-[6px] font-medium text-[#8B3EFEE5] leading-none">QUESTS</span>
-      </div>
-
-      <div className="shrink-0 flex items-center gap-[1px] rounded bg-[#B65FC833] px-[3px] py-[1px]">
-        <span className="text-[8px] font-bold text-white">{campaigns}</span>
-        <span className="text-[6px] font-medium text-[#B65FC8E5] leading-none">CAMPAIGNS</span>
-      </div>
-
-      <div className="shrink-0 flex items-center gap-[1px] rounded bg-[#E0BBE433] px-[2px] py-[1px]">
-        <span className="text-[8px] font-bold text-white">{lessons}</span>
-        <span className="text-[6px] font-medium text-[#C084FC] leading-none tracking-[-0.02em]">LESSONS</span>
-      </div>
+{/* Badges with values outside */}
+<div className="flex items-center gap-[4px] overflow-x-auto whitespace-nowrap pr-1 scrollbar-hide">
+  <div className="flex items-center gap-[1px]">
+    <span className="text-[8px] font-bold text-white">{events}</span>
+    <div className="shrink-0 flex items-center rounded-2xl bg-[#00E1A233] px-[4px] py-[4px]">
+      <span className="text-[6px] font-medium text-[#00E1A2E5] leading-none">EVENTS</span>
     </div>
   </div>
+
+  <div className="flex items-center gap-[1px]">
+    <span className="text-[8px] font-bold text-white">{quests}</span>
+    <div className="shrink-0 flex items-center rounded-2xl bg-[#8B3EFE33] px-[4px] py-[4px]">
+      <span className="text-[6px] font-medium text-[#8B3EFEE5] leading-none">QUESTS</span>
+    </div>
+  </div>
+
+  <div className="flex items-center gap-[1px]">
+    <span className="text-[8px] font-bold text-white">{campaigns}</span>
+    <div className="shrink-0 flex items-center rounded-2xl bg-[#B65FC833] px-[4px] py-[4px]">
+      <span className="text-[6px] font-medium text-[#B65FC8E5] leading-none">CAMPAIGNS</span>
+    </div>
+  </div>
+
+  <div className="flex items-center gap-[1px]">
+    <span className="text-[8px] font-bold text-white">{lessons}</span>
+    <div className="shrink-0 flex items-center rounded-2xl bg-[#E0BBE433] px-[4px] py-[4px]">
+      <span className="text-[6px] font-medium text-[#C084FC] leading-none tracking-[-0.02em]">LESSONS</span>
+    </div>
+  </div>
+</div>
+</div>
 
   {/* XP */}
   <div className="shrink-0 flex items-center gap-1 self-center pl-1">
