@@ -381,7 +381,7 @@ const podiumList =
   {/* Table headers inside the border container */}
   <div
     className="absolute top-0 left-0 z-10 grid w-full min-w-0 grid-cols-[42px_minmax(0,1fr)_48px] items-center px-2 text-[10px] font-bold text-[#FFFFFF99]"
-    style={{ transform: "translateY(-26px)" }}
+    style={{ transform: "translateY(-32px)" }}
   >
     <div className="text-left">RANK</div>
 
