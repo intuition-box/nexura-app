@@ -30,8 +30,8 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeRange, setActiveRange] = useState("All Time");
-  const ranges = ["Last 7 Days", "Last 30 Days", "Last 3 Months", "All Time"];
-  const [showRangeDropdown, setShowRangeDropdown] = useState(false);
+  // const ranges = ["Last 7 Days", "Last 30 Days", "Last 3 Months", "All Time"];
+  // const [showRangeDropdown, setShowRangeDropdown] = useState(false);
   
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -113,77 +113,11 @@ const podiumList =
       Leaderboard
     </h1>
   </div>
-
-  {/* Mobile-only Range Dropdown */}
-  <div className="sm:hidden relative w-[120px]">
-  {/* Trigger */}
-  <button
-    onClick={() => setShowRangeDropdown(!showRangeDropdown)}
-    className="w-full flex items-center justify-between rounded-2xl border border-[#8B3EFE] bg-[#14091F] px-3 py-2 text-[11px] font-medium text-white shadow-[0_0_10px_rgba(139,62,254,0.15)]"
-  >
-    <span className="truncate">{activeRange}</span>
-
-    <svg
-      className={`w-4 h-4 transition-transform duration-200 ${
-        showRangeDropdown ? "rotate-180" : ""
-      }`}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M19 9l-7 7-7-7"
-      />
-    </svg>
-  </button>
-
-  {/* Dropdown */}
-  {showRangeDropdown && (
-    <div className="absolute left-0 top-[110%] z-50 w-full overflow-hidden rounded-2xl border border-[#8B3EFE]/40 bg-[#1A102B]/95 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
-      {ranges.map((label) => (
-        <button
-          key={label}
-          onClick={() => {
-            setActiveRange(label);
-            setShowRangeDropdown(false);
-          }}
-          className={`w-full px-3 py-2 text-left text-[11px] transition-colors ${
-            activeRange === label
-              ? "bg-[#8B3EFE] text-white"
-              : "text-[#D8C8F8] hover:bg-[#2A173D]"
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  )}
-</div>
 </div>
 
               <p className="mt-1 text-xs sm:text-base text-white/60 max-w-full sm:max-w-md">
                 Real time ranking based on user engagement
               </p>
-
-              <div className="hidden sm:flex flex-nowrap gap-2 w-full overflow-x-auto max-w-full mt-4">
-  {ranges.map((label) => (
-    <button
-      key={label}
-      onClick={() => setActiveRange(label)}
-      className={`shrink-0 rounded-full border px-2 py-1.5 text-xs font-medium text-white transition-all duration-200 sm:max-w-none truncate
-        ${
-          activeRange === label
-            ? "bg-[#8B3EFE] border-[#8B3EFE]"
-            : "bg-transparent border-[#8B3EFE] hover:bg-[#8B3EFE]"
-        }`}
-    >
-      {label}
-    </button>
-  ))}
-</div>
             </div>
           </div>
 
@@ -347,7 +281,7 @@ const podiumList =
     <div className="absolute inset-x-0 top-0 h-64" />
     <div className="flex justify-center items-end gap-2 sm:gap-5 relative">
       {[1, 0, 2].map((userIndex, idx) => {
-        const user = podiumList[userIndex];
+        const user = list[userIndex];
         const name = user?.display_name || user?.username || "Anonymous";
         const xp = user?.xp;
         const podiumImages = [leader2, leader, leader3]; 
@@ -435,27 +369,27 @@ const podiumList =
 </div>
 
 {/* Mobile border + headers inside */}
-<div className="block sm:hidden relative w-full flex justify-center">
+<div className="block sm:hidden relative w-full flex justify-center min-w-0 px-2">
   {/* Border image */}
   <img
     src="/leaderboard-small-borderr.png"
     alt="Podium border small"
-    className="absolute top-0 w-[110%] max-w-none h-auto object-contain"
-    style={{ transform: "translateY(-53px)" }}
+    className="absolute top-0 left-1/2 -translate-x-1/2 w-[108%] max-w-none h-auto object-contain"
+    style={{ transform: "translate(-50%, -53px)" }}
   />
 
   {/* Table headers inside the border container */}
   <div
-    className="grid grid-cols-[50px_3fr_2fr] gap-3 font-bold text-[#FFFFFF99] text-xs absolute top-0 left-0 w-full z-10"
-    style={{
-      transform: "translateY(-28px)",
-    }}
+    className="absolute top-0 left-0 z-10 grid w-full min-w-0 grid-cols-[42px_minmax(0,1fr)_48px] items-center px-2 text-[10px] font-bold text-[#FFFFFF99]"
+    style={{ transform: "translateY(-32px)" }}
   >
-    <div className="">RANK</div>
-    <div className="-ml-5">USER</div>
-    <div className="flex items-center justify-end gap-1 -mr-1">
+    <div className="text-left">RANK</div>
+
+    <div className="truncate pl-1 text-left">USER</div>
+
+    <div className="flex items-center justify-end gap-[2px] text-right">
       <span>XP</span>
-      <img src="/nexura-xp.png" alt="XP" className="w-3 h-3" />
+      <img src="/nexura-xp.png" alt="XP" className="w-3 h-3 shrink-0" />
     </div>
   </div>
 </div>
@@ -627,53 +561,64 @@ const xp = entry?.xp ?? 0;
   </div>
 
   {/* -------------------- Mobile Layout -------------------- */}
-<div className="flex sm:hidden items-start gap-2 p-1">
-  {/* Left: Rank + Avatar side by side */}
-  <div className="flex flex-col items-center gap-1">
-    <div className="flex items-center gap-1">
-      <div className={`w-6 h-6 mt-2 flex items-center justify-center rounded-full font-bold ${rankBg}`}>
-        #{rank}
+<div className="sm:hidden flex items-center gap-1.5 p-2 min-w-0">
+  {/* Rank */}
+  <div
+    className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold ${rankBg}`}
+  >
+    #{rank}
+  </div>
+
+  {/* Avatar */}
+  <Avatar className="shrink-0 w-6 h-6 rounded-full overflow-hidden">
+    <AvatarImage
+      src={
+        entry?.profilePic ||
+        `https://api.dicebear.com/7.x/identicon/png?seed=${encodeURIComponent(name)}`
+      }
+      className="w-full h-full object-cover rounded-full"
+    />
+    <AvatarFallback className="bg-white/10 text-white font-bold text-xs">
+      {name.charAt(0)}
+    </AvatarFallback>
+  </Avatar>
+
+  {/* Name + badges */}
+  <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 overflow-hidden">
+    {/* Name */}
+    <span className="truncate text-xs font-semibold leading-none">
+      {name}
+    </span>
+
+    {/* Badges */}
+    <div className="flex items-center gap-[2px] overflow-x-auto whitespace-nowrap pr-1 scrollbar-hide">
+      <div className="shrink-0 flex items-center gap-[1px] rounded bg-[#00E1A233] px-[3px] py-[1px]">
+        <span className="text-[8px] font-bold text-white">{events}</span>
+        <span className="text-[6px] font-medium text-[#00E1A2E5] leading-none">EVENTS</span>
       </div>
-      <Avatar className="w-6 h-6 mt-2 rounded-full overflow-hidden">
-        <AvatarImage
-          src={
-            entry?.profilePic ||
-            `https://api.dicebear.com/7.x/identicon/png?seed=${encodeURIComponent(name)}`
-          }
-          className="w-full h-full object-cover rounded-full"
-        />
-        <AvatarFallback className="bg-white/10 text-white font-bold">
-          {name.charAt(0)}
-        </AvatarFallback>
-      </Avatar>
+
+      <div className="shrink-0 flex items-center gap-[1px] rounded bg-[#8B3EFE33] px-[3px] py-[1px]">
+        <span className="text-[8px] font-bold text-white">{quests}</span>
+        <span className="text-[6px] font-medium text-[#8B3EFEE5] leading-none">QUESTS</span>
+      </div>
+
+      <div className="shrink-0 flex items-center gap-[1px] rounded bg-[#B65FC833] px-[3px] py-[1px]">
+        <span className="text-[8px] font-bold text-white">{campaigns}</span>
+        <span className="text-[6px] font-medium text-[#B65FC8E5] leading-none">CAMPAIGNS</span>
+      </div>
+
+      <div className="shrink-0 flex items-center gap-[1px] rounded bg-[#E0BBE433] px-[2px] py-[1px]">
+        <span className="text-[8px] font-bold text-white">{lessons}</span>
+        <span className="text-[6px] font-medium text-[#C084FC] leading-none tracking-[-0.02em]">LESSONS</span>
+      </div>
     </div>
   </div>
 
-  {/* Right: Username + badges */}
-  <div className="flex flex-col items-start">
-    {/* Top: username */}
-    <span className="font-semibold text-xs truncate max-w-[120px]">{name}</span>
-
-    {/* Bottom: badges horizontal */}
-    <div className="flex flex-wrap items-center gap-1 mt-1">
-      <span className="font-bold text-[10px]">{events}</span>
-      <span className="text-[#00E1A2E5] bg-[#00E1A233] px-[2px] rounded text-[5px]">EVENTS</span>
-
-      <span className="font-bold text-[10px]">{quests}</span>
-      <span className="text-[#8B3EFEE5] bg-[#8B3EFE33] px-1 rounded text-[5px]">QUESTS</span>
-
-      <span className="font-bold text-[10px]">{campaigns}</span>
-      <span className="text-[#B65FC8E5] bg-[#B65FC833] px-1 rounded text-[5px]">CAMPAIGNS</span>
-
-      <span className="font-bold text-[10px]">{lessons}</span>
-      <span className="text-[#5A189A] bg-[#E0BBE4] px-1 rounded text-[5px]">LESSONS</span>
-    </div>
+  {/* XP */}
+  <div className="shrink-0 flex items-center gap-1 self-center pl-1">
+    <span className="text-[11px] font-bold text-white">{xp}</span>
+    <img src={xpIcon} alt="XP" className="w-3.5 h-3.5" />
   </div>
-    {/* Middle: XP */}
-    <div className="flex items-center gap-1 mt-1 mb-1 pt-2">
-      <span className="font-bold text-white text-[10px] pl-2">{xp}</span>
-      <img src={xpIcon} alt="XP" className="w-3 h-3" />
-    </div>
 </div>
 </Card>
     );
