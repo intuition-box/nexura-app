@@ -694,7 +694,7 @@ const cards = [
   </div>
 </div>
  </div>
-       </div>
+      </div>
     </div>
   );
 }

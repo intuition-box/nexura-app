@@ -19,7 +19,7 @@ type Entry = {
   xp: number;
   level: number;
   lessonsCompleted: number;
-  eventsWon: number;
+  events: number;
   questsCompleted?: number;
   campaignsCompleted?: number;
 };
@@ -95,25 +95,25 @@ const podiumList =
                 </span>
               </div>
 
-              {/* Mobile only */}
-              <div className="flex sm:hidden items-center gap-1 text-xs text-[#FFFFFFB2]">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00E1A2] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00E1A2]"></span>
-                </span>
-                <span>TOP 500</span>
-              </div>
-            </div>
+                {/* Mobile only */}
+  <div className="flex sm:hidden items-center gap-1 text-xs text-[#FFFFFFB2]">
+    <span className="relative flex h-2 w-2">
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00E1A2] opacity-75"></span>
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00E1A2]"></span>
+    </span>
+    <span>TOP 500</span>
+  </div>
+  </div>
 
-            <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-              {/* Leaderboard Title */}
-              <div className="flex items-center gap-2">
-                <img src={gold} alt="Leaderboard" className="w-8 h-8 flex-shrink-0" />
-                <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
-                  Leaderboard
-                </h1>
-              </div>
-            </div>
+<div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+  {/* Leaderboard Title */}
+  <div className="flex items-center gap-2">
+    <img src={gold} alt="Leaderboard" className="w-8 h-8 flex-shrink-0" />
+    <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
+      Leaderboard
+    </h1>
+  </div>
+</div>
 
               <p className="mt-1 text-xs sm:text-base text-white/60 max-w-full sm:max-w-md">
                 Real time ranking based on user engagement
@@ -136,7 +136,7 @@ const podiumList =
       color: "#B65FC8",
       isRank: true,
     },
-    { label: "EVENTS", value: currentUser?.eventsWon || 0, color: "#00E1A2" },
+    { label: "EVENTS", value: currentUser?.events || 0, color: "#00E1A2" },
     { label: "QUESTS", value: currentUser?.questsCompleted || 0, color: "#8B3EFE" },
     { label: "CAMPAIGNS", value: currentUser?.campaignsCompleted || 0, color: "#B65FC8" },
     { label: "LESSONS", value: currentUser?.lessonsCompleted || 0, color: "#5A189A", bg: "#E0BBE4" },
@@ -209,7 +209,7 @@ const podiumList =
     {/* EVENTS - hidden on mobile */}
     <div className="hidden sm:flex flex-col items-center text-center py-3 px-1">
       <span className="font-bold text-white text-lg">
-        {currentUser?.eventsWon || 0}
+        {currentUser?.events || 0}
       </span>
       <span className="text-[#00E1A2E5] bg-[#00E1A233] px-1 rounded-3xl text-[9px]">EVENTS</span>
     </div>
@@ -290,54 +290,54 @@ const podiumList =
 
         return (
           <div
-            key={user?._id}
-            className="flex flex-col items-center text-center relative"
-          >
-            {/* Avatar + Name + XP */}
-            <div className="flex flex-col items-center animate-bounce-slow relative">
-              <Avatar className="w-16 h-16 ring-2 ring-white/15 relative rounded-full overflow-visible">
-                <AvatarImage
-                  src={
-                    user?.profilePic ||
-                    `https://api.dicebear.com/7.x/identicon/png?seed=${encodeURIComponent(
-                      name
-                    )}`
-                  }
-                  className="w-full h-full object-cover rounded-full"
-                />
-                <AvatarFallback className="bg-white/10 text-white font-bold text-xl sm:text-2xl rounded-full">
-                  {name.charAt(0)}
-                </AvatarFallback>
+  key={user?._id}
+  className="flex flex-col items-center text-center relative"
+>
+  {/* Avatar + Name + XP */}
+  <div className="flex flex-col items-center animate-bounce-slow relative">
+    <Avatar className="w-16 h-16 ring-2 ring-white/15 relative rounded-full overflow-visible">
+      <AvatarImage
+        src={
+          user?.profilePic ||
+          `https://api.dicebear.com/7.x/identicon/png?seed=${encodeURIComponent(
+            name
+          )}`
+        }
+        className="w-full h-full object-cover rounded-full"
+      />
+      <AvatarFallback className="bg-white/10 text-white font-bold text-xl sm:text-2xl rounded-full">
+        {name.charAt(0)}
+      </AvatarFallback>
 
-                {/* Rank Badge */}
-                <div
-                  className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-black font-bold text-[10px] sm:text-xs z-999999 border-2 border-white`}
-                  style={{
-                    backgroundColor: idx === 0 ? "#cfcfcf" : idx === 1 ? "#f5c542" : "#cd7f32"
-                  }}
-                >
-                  {idx === 0 ? 2 : idx === 1 ? 1 : 3}
-                </div>
-              </Avatar>
+      {/* Rank Badge */}
+      <div
+        className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-black font-bold text-[10px] sm:text-xs z-999999 border-2 border-white`}
+        style={{
+          backgroundColor: idx === 0 ? "#cfcfcf" : idx === 1 ? "#f5c542" : "#cd7f32"
+        }}
+      >
+        {idx === 0 ? 2 : idx === 1 ? 1 : 3}
+      </div>
+    </Avatar>
 
-              {/* Name */}
-              <h3 className="text-xs sm:text-sm font-semibold mt-1">{name}</h3>
+    {/* Name */}
+    <h3 className="text-xs sm:text-sm font-semibold mt-1">{name}</h3>
 
-              {/* XP */}
-              <div className="mt-1 px-1 py-[0.5px] rounded-md bg-[#8B3EFE] flex items-center gap-1 text-xs sm:text-sm font-semibold text-white">
-                <span>{xp}</span>
-                <img src={xpIcon} className="w-4 sm:w-5 h-4 sm:h-5" />
-              </div>
-          </div>
+    {/* XP */}
+    <div className="mt-1 px-1 py-[0.5px] rounded-md bg-[#8B3EFE] flex items-center gap-1 text-xs sm:text-sm font-semibold text-white">
+      <span>{xp}</span>
+      <img src={xpIcon} className="w-4 sm:w-5 h-4 sm:h-5" />
+    </div>
+</div>
 
             {/* Podium Image */}
-            <img
-              src={podiumImages[idx]}
-              alt={`Podium ${idx + 1}`}
-              width={idx === 1 ? 100 : podiumWidth}
-              height={idx === 1 ? 120 : podiumHeight}
-              className={`${idx !== 1 ? "mt-1 translate-y-[4px] sm:translate-y-[11px]" : "mt-1"} sm:w-[120px] sm:h-[140px]"`}
-            />
+<img
+  src={podiumImages[idx]}
+  alt={`Podium ${idx + 1}`}
+  width={idx === 1 ? 100 : podiumWidth}
+  height={idx === 1 ? 120 : podiumHeight}
+  className={`${idx !== 1 ? "mt-1 translate-y-[4px] sm:translate-y-[11px]" : "mt-1"} sm:w-[120px] sm:h-[140px]"`}
+/>
           </div>
         );
       })}
@@ -474,11 +474,11 @@ const podiumList =
     const name = entry?.display_name || entry?.username || "Anonymous";
     const isCurrentUser = currentUserId && entry._id === currentUserId;
     const rank = idx + 1;
-    const events = entry?.eventsWon ?? 0;
-    const quests = entry?.questsCompleted ?? 0;
-    const campaigns = entry?.campaignsCompleted ?? 0;
-    const lessons = entry?.lessonsCompleted ?? 0;
-    const xp = entry?.xp ?? 0;
+    const events = entry?.events ?? 0;
+const quests = entry?.questsCompleted ?? 0;
+const campaigns = entry?.campaignsCompleted ?? 0;
+const lessons = entry?.lessonsCompleted ?? 0;
+const xp = entry?.xp ?? 0;
 
     let rankBg = "";
     if (rank === 1) rankBg = "bg-yellow-400 text-white border border-white";
