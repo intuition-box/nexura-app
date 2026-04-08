@@ -49,11 +49,26 @@ type LessonQuestion = {
   outroTrophy?: "bronze" | "silver" | "gold" | "";
 };
 
+type VideoLesson = {
+  _id: string;
+  url: string;
+  lesson: string;
+  order?: number;
+  createdAt?: string;
+  introHeader?: string;
+  introBody?: string;
+  introTrophy?: "bronze" | "silver" | "gold" | "";
+  outroHeader?: string;
+  outroBody?: string;
+  outroTrophy?: "bronze" | "silver" | "gold" | "";
+};
+
 type LessonStep =
   | { kind: "intro"; key: string; header: string; body: string; trophy: "bronze" | "silver" | "gold" | "" }
   | { kind: "outro"; key: string; header: string; body: string; trophy: "bronze" | "silver" | "gold" | "" }
   | { kind: "mini"; key: string; text: string }
   | { kind: "question"; key: string; question: LessonQuestion }
+  | { kind: "video"; key: string; url: string }
   | { kind: "claim"; key: string };
 
 const normalizeApiMessage = (error: unknown, fallback: string) => {
@@ -83,6 +98,7 @@ export default function LessonPage() {
   const [lesson, setLesson] = useState<LessonSummary | null>(null);
   const [miniLessons, setMiniLessons] = useState<MiniLesson[]>([]);
   const [questions, setQuestions] = useState<LessonQuestion[]>([]);
+  const [videoLessons, setVideoLessons] = useState<VideoLesson[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>(() => {
     try {
       if (!lessonId) return {};
@@ -121,10 +137,11 @@ export default function LessonPage() {
   const direction = useRef(1);
 
   const lessonSteps = useMemo<LessonStep[]>(() => {
-    type AnyItem = { kind: "mini"; entry: MiniLesson } | { kind: "question"; entry: LessonQuestion };
+    type AnyItem = { kind: "mini"; entry: MiniLesson } | { kind: "question"; entry: LessonQuestion } | { kind: "video"; entry: VideoLesson };
     const combined: AnyItem[] = [
       ...miniLessons.map((entry) => ({ kind: "mini" as const, entry })),
       ...questions.map((entry) => ({ kind: "question" as const, entry })),
+      ...videoLessons.map((entry) => ({ kind: "video" as const, entry })),
     ].sort((a, b) => {
       const orderDiff = (a.entry.order ?? 0) - (b.entry.order ?? 0);
       if (orderDiff !== 0) return orderDiff;
@@ -140,6 +157,8 @@ export default function LessonPage() {
         }
         if (item.kind === "mini") {
           steps.push({ kind: "mini" as const, key: `mini-${item.entry._id}`, text: item.entry.text });
+        } else if (item.kind === "video") {
+          steps.push({ kind: "video" as const, key: `video-${item.entry._id}`, url: item.entry.url });
         } else {
           steps.push({ kind: "question" as const, key: `question-${item.entry._id}`, question: item.entry });
         }
@@ -150,7 +169,7 @@ export default function LessonPage() {
       }),
       { kind: "claim" as const, key: "claim" },
     ];
-  }, [miniLessons, questions]);
+  }, [miniLessons, questions, videoLessons]);
 
   const activeStep = lessonSteps[currentStep];
   const currentQuestion = activeStep?.kind === "question" ? activeStep.question : null;
@@ -207,6 +226,7 @@ export default function LessonPage() {
         (lessonsResponse.lessons || []).find((entry: LessonSummary) => entry._id === lessonId) || null;
       const nextMiniLessons = detailsResponse.miniLessons || [];
       const nextQuestions = detailsResponse.questions || [];
+      const nextVideoLessons = detailsResponse.videoLessons || [];
       const nextSelectedAnswers = nextQuestions.reduce((acc: Record<string, string>, entry: LessonQuestion) => {
         if (entry.done && entry.answer) {
           acc[entry._id] = entry.answer;
@@ -217,6 +237,7 @@ export default function LessonPage() {
       setLesson(lessonMatch);
       setMiniLessons(nextMiniLessons);
       setQuestions(nextQuestions);
+      setVideoLessons(nextVideoLessons);
       // Merge server answers (done questions) into existing state without overwriting local selections
       if (!isRedoing.current && !isReview) {
         setSelectedAnswers((current) => ({ ...current, ...nextSelectedAnswers }));
@@ -618,11 +639,11 @@ export default function LessonPage() {
 
         {/* Step card */}
         <div
-          className="rounded-3xl h-[320px] sm:h-[300px] flex flex-col overflow-hidden relative"
-          style={{ background: "linear-gradient(145deg, #8B3EFE, #4A1B8A)" }}
+          className={`rounded-3xl flex flex-col overflow-hidden relative ${activeStep?.kind === "video" ? "min-h-0" : "h-[320px] sm:h-[300px]"}`}
+          style={{ background: activeStep?.kind === "video" ? "#000" : "linear-gradient(145deg, #8B3EFE, #4A1B8A)" }}
         >
           {/* Content row: prev | content | next */}
-          <div className="flex items-center justify-center gap-1 sm:gap-3 px-1 sm:px-2 pt-3 sm:pt-4 pb-1" style={{ height: "calc(100% - 70px)" }}>
+          <div className={`flex items-center justify-center gap-1 sm:gap-3 px-1 sm:px-2 pt-3 sm:pt-4 pb-1 ${activeStep?.kind === "video" ? "" : ""}`} style={activeStep?.kind === "video" ? {} : { height: "calc(100% - 70px)" }}>
 
             {/* Prev button */}
             <button
@@ -715,6 +736,32 @@ export default function LessonPage() {
                   <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap py-2 text-center">
                     {activeStep.text}
                   </p>
+
+                /* Video */
+                ) : activeStep?.kind === "video" ? (
+                  <div className="w-full">
+                    <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "16 / 9" }}>
+                      <iframe
+                        className="absolute inset-0 h-full w-full"
+                        src={(() => {
+                          const url = activeStep.url;
+                          let videoId = "";
+                          try {
+                            const parsed = new URL(url);
+                            if (parsed.hostname.includes("youtu.be")) {
+                              videoId = parsed.pathname.slice(1);
+                            } else {
+                              videoId = parsed.searchParams.get("v") || "";
+                            }
+                          } catch {}
+                          return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+                        })()}
+                        title="Video lesson"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
 
                 /* Question */
                 ) : activeStep?.kind === "question" ? (

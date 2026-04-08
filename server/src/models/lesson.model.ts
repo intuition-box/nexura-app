@@ -190,5 +190,49 @@ const questionCompleted = mongoose.model(
   questionCompletedSchema
 );
 
-export { question, lesson, lessonCompleted, questionCompleted, miniLesson };
+const videoLessonSchema = new mongoose.Schema({
+  lesson: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "lessons",
+    required: true
+  },
+  url: {
+    type: String,
+    required: true
+  },
+  order: {
+    type: Number,
+    default: 0
+  },
+  introHeader: {
+    type: String,
+    default: "",
+  },
+  introBody: {
+    type: String,
+    default: "",
+  },
+  introTrophy: {
+    type: String,
+    enum: ["bronze", "silver", "gold", ""],
+    default: "",
+  },
+  outroHeader: {
+    type: String,
+    default: "",
+  },
+  outroBody: {
+    type: String,
+    default: "",
+  },
+  outroTrophy: {
+    type: String,
+    enum: ["bronze", "silver", "gold", ""],
+    default: "",
+  }
+}, { timestamps: true });
+
+const videoLesson = mongoose.model("video-lessons", videoLessonSchema);
+
+export { question, lesson, lessonCompleted, questionCompleted, miniLesson, videoLesson };
 

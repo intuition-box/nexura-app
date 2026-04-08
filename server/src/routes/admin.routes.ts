@@ -28,6 +28,9 @@ import {
   deleteQuestion,
   createQuestion,
   createMiniLesson,
+  createVideoLesson,
+  updateVideoLesson,
+  deleteVideoLesson,
   getAllLessons,
   getLessonDetailsForAdmin,
   updateLesson,
@@ -77,6 +80,9 @@ router
   .post("/create-question", createQuestion)
   .patch("/update-question", updateQuestion)
   .delete("/delete-question", deleteQuestion)
+  .post("/create-video-lesson", createVideoLesson)
+  .patch("/update-video-lesson", updateVideoLesson)
+  .delete("/delete-video-lesson", deleteVideoLesson)
   .patch("/reorder-lesson-content", reorderLessonContent)
   .patch("/publish-lesson", publishLesson)
   .patch("/unpublish-lesson", unpublishLesson)

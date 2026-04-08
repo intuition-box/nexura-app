@@ -1,5 +1,5 @@
 import logger from "@/config/logger";
-import { lesson, lessonCompleted, miniLesson, question, questionCompleted } from "@/models/lesson.model";
+import { lesson, lessonCompleted, miniLesson, question, questionCompleted, videoLesson } from "@/models/lesson.model";
 import { user } from "@/models/user.model";
 import { BAD_REQUEST, OK, NOT_FOUND, INTERNAL_SERVER_ERROR, CREATED, FORBIDDEN } from "@/utils/status.utils";
 import { uploadImg } from "@/utils/img.utils";
@@ -26,14 +26,16 @@ const getUploadedLessonImage = async (
 };
 
 const getNextLessonContentOrder = async (lessonId: string) => {
-  const [maxMiniLesson, maxQuestion] = await Promise.all([
+  const [maxMiniLesson, maxQuestion, maxVideo] = await Promise.all([
     miniLesson.findOne({ lesson: lessonId }).sort({ order: -1 }).select("order").lean(),
     question.findOne({ lesson: lessonId }).sort({ order: -1 }).select("order").lean(),
+    videoLesson.findOne({ lesson: lessonId }).sort({ order: -1 }).select("order").lean(),
   ]);
 
   const maxOrder = Math.max(
     Number(maxMiniLesson?.order ?? -1),
     Number(maxQuestion?.order ?? -1),
+    Number(maxVideo?.order ?? -1),
   );
 
   return maxOrder + 1;
@@ -53,7 +55,7 @@ export const createLesson = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
-    await lesson.create(req.body);
+    await lesson.create({ ...req.body, status: "draft" });
 
     res.status(CREATED).json({ message: "lesson created" });
   } catch (error) {
@@ -262,6 +264,79 @@ export const updateMiniLesson = async (req: GlobalRequest, res: GlobalResponse) 
   }
 };
 
+export const createVideoLesson = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { url, lesson: lessonId } = req.body;
+    if (!url || !lessonId) {
+      res.status(BAD_REQUEST).json({ error: "Send the required values. Required values are: lesson id as 'lesson' and url" });
+      return;
+    }
+
+    const nextOrder = await getNextLessonContentOrder(lessonId);
+
+    await videoLesson.create({ ...req.body, order: nextOrder });
+
+    res.status(CREATED).json({ message: "video lesson created" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error creating video lesson" });
+  }
+};
+
+export const updateVideoLesson = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { videoLessonId, url, introHeader, introBody, introTrophy, outroHeader, outroBody, outroTrophy } = req.body as {
+      videoLessonId?: string;
+      url?: string;
+      introHeader?: string;
+      introBody?: string;
+      introTrophy?: string;
+      outroHeader?: string;
+      outroBody?: string;
+      outroTrophy?: string;
+    };
+    if (!videoLessonId || !url?.trim()) {
+      res.status(BAD_REQUEST).json({ error: "videoLessonId and url are required" });
+      return;
+    }
+
+    const videoLessonExists = await videoLesson.findById(videoLessonId);
+    if (!videoLessonExists) {
+      res.status(NOT_FOUND).json({ error: "video lesson does not exist" });
+      return;
+    }
+
+    videoLessonExists.url = url.trim();
+    if (typeof introHeader === "string") videoLessonExists.introHeader = introHeader;
+    if (typeof introBody === "string") videoLessonExists.introBody = introBody;
+    if (typeof introTrophy === "string") videoLessonExists.introTrophy = introTrophy;
+    if (typeof outroHeader === "string") videoLessonExists.outroHeader = outroHeader;
+    if (typeof outroBody === "string") videoLessonExists.outroBody = outroBody;
+    if (typeof outroTrophy === "string") videoLessonExists.outroTrophy = outroTrophy;
+    await videoLessonExists.save();
+
+    res.status(OK).json({ message: "video lesson updated" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error updating video lesson" });
+  }
+};
+
+export const deleteVideoLesson = async (req: GlobalRequest, res: GlobalResponse) => {
+  try {
+    const { id: videoLessonId } = req.query as { id: string };
+    if (!videoLessonId) {
+      res.status(BAD_REQUEST).json({ error: "video lesson id is required" });
+      return;
+    }
+    await videoLesson.deleteOne({ _id: videoLessonId });
+    res.status(OK).json({ message: "video lesson deleted" });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error deleting video lesson" });
+  }
+};
+
 export const rewardLessonXp = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
     const { id: lessonId } = req.query as { id: string };
@@ -427,10 +502,13 @@ export const getLessonDetailsForAdmin = async (req: GlobalRequest, res: GlobalRe
       return;
     }
 
-    const miniLessons = await miniLesson.find({ lesson: lessonId }).sort({ order: 1, createdAt: 1 }).lean();
-    const questions = await question.find({ lesson: lessonId }).sort({ order: 1, createdAt: 1 }).lean();
+    const [miniLessons, questions, videoLessons] = await Promise.all([
+      miniLesson.find({ lesson: lessonId }).sort({ order: 1, createdAt: 1 }).lean(),
+      question.find({ lesson: lessonId }).sort({ order: 1, createdAt: 1 }).lean(),
+      videoLesson.find({ lesson: lessonId }).sort({ order: 1, createdAt: 1 }).lean(),
+    ]);
 
-    res.status(OK).json({ message: "lesson details fetched", miniLessons, questions });
+    res.status(OK).json({ message: "lesson details fetched", miniLessons, questions, videoLessons });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error getting lesson details" });
@@ -452,9 +530,11 @@ export const getMiniLessonAndQuestions = async (req: GlobalRequest, res: GlobalR
       return;
     }
 
-    const miniLessons = await miniLesson.find({ lesson: lessonId }).sort({ order: 1, createdAt: 1 }).lean();
-
-    const questions = await question.find({ lesson: lessonId }).select("options question lesson solution order createdAt introHeader introBody introTrophy outroHeader outroBody outroTrophy").sort({ order: 1, createdAt: 1 }).lean();
+    const [miniLessons, questions, videoLessons] = await Promise.all([
+      miniLesson.find({ lesson: lessonId }).sort({ order: 1, createdAt: 1 }).lean(),
+      question.find({ lesson: lessonId }).select("options question lesson solution order createdAt introHeader introBody introTrophy outroHeader outroBody outroTrophy").sort({ order: 1, createdAt: 1 }).lean(),
+      videoLesson.find({ lesson: lessonId }).sort({ order: 1, createdAt: 1 }).lean(),
+    ]);
     const questionsCompleted = id
       ? await questionCompleted.find({ user: id, lesson: lessonId }).lean()
       : [];
@@ -475,7 +555,7 @@ export const getMiniLessonAndQuestions = async (req: GlobalRequest, res: GlobalR
       mergedLessonsQuestions.push(mergedSingleQuestion);
     }
 
-    res.status(OK).json({ message: "mini lessons and questions fetched", miniLessons, questions: mergedLessonsQuestions });
+    res.status(OK).json({ message: "mini lessons and questions fetched", miniLessons, questions: mergedLessonsQuestions, videoLessons });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error getting mini lesson and questions" });
@@ -584,6 +664,7 @@ export const deleteLesson = async (req: GlobalRequest, res: GlobalResponse) => {
       lesson.deleteOne({ _id: lessonId }),
       miniLesson.deleteMany({ lesson: lessonId }),
       question.deleteMany({ lesson: lessonId }),
+      videoLesson.deleteMany({ lesson: lessonId }),
       lessonCompleted.deleteMany({ lesson: lessonId }),
       questionCompleted.deleteMany({ lesson: lessonId }),
     ]);
@@ -632,7 +713,7 @@ export const reorderLessonContent = async (req: GlobalRequest, res: GlobalRespon
   try {
     const { lessonId, items } = req.body as {
       lessonId?: string;
-      items?: Array<{ id: string; kind: "mini" | "question"; order: number }>;
+      items?: Array<{ id: string; kind: "mini" | "question" | "video"; order: number }>;
     };
 
     if (!lessonId || !Array.isArray(items) || items.length === 0) {
@@ -650,6 +731,9 @@ export const reorderLessonContent = async (req: GlobalRequest, res: GlobalRespon
       items.map((item) => {
         if (item.kind === "mini") {
           return miniLesson.updateOne({ _id: item.id, lesson: lessonId }, { $set: { order: item.order } });
+        }
+        if (item.kind === "video") {
+          return videoLesson.updateOne({ _id: item.id, lesson: lessonId }, { $set: { order: item.order } });
         }
         return question.updateOne({ _id: item.id, lesson: lessonId }, { $set: { order: item.order } });
       })
