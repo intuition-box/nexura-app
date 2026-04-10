@@ -105,8 +105,7 @@ export default function Analytics() {
 
   const claimsCount = data?.claimsCreated ?? 0;
   const paymentsCount = data?.payments ?? 0;
-  const referralCount = data?.totalReferrals ?? 0;
-  const nexonsMintedCount = Math.max(0, onchainInteractions - claimsCount - paymentsCount - referralCount);
+  const nexonsMintedCount = Math.max(0, onchainInteractions - claimsCount - paymentsCount);
   const othersCount = 0;
   const totalTransactions = claimsCount + paymentsCount + nexonsMintedCount + othersCount;
 
