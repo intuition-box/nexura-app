@@ -67,6 +67,7 @@ export default function PortalClaims() {
   >("review");
   // Example state to store totals
   const [userShares, setUserShares] = useState<{ support: bigint; oppose: bigint }>({ support: 0n, oppose: 0n });
+  
 
     useEffect(() => {
     setShowPopup(true);
@@ -104,8 +105,18 @@ export default function PortalClaims() {
   }, [user?.address]);
 
   useEffect(() => {
+  if (!searchTerm) {
     setSortedClaims(sortClaims(visibleClaims, sortOption));
-  }, [visibleClaims, sortOption]);
+    return;
+  }
+
+  const filtered = visibleClaims.filter(claim =>
+    claimMatchesSearch(claim, searchTerm)
+  );
+
+  setSortedClaims(sortClaims(filtered, sortOption));
+
+}, [visibleClaims, searchTerm, sortOption]);
 
   // Returns true if claim matches search
   const claimMatchesSearch = (claim: Claim, term: string) => {
@@ -131,87 +142,64 @@ export default function PortalClaims() {
 
   const { toast } = useToast();
 
-  const LIMIT = 50;
+const LIMIT = 50;
+const isFetchingRef = useRef(false);
 
-  const loadMore = async () => {
-  if (loading || !hasMore) return;
+const loadMore = async () => {
+  if (isFetchingRef.current || !hasMore) return;
+
+  isFetchingRef.current = true;
   setLoading(true);
 
   try {
-    const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
+    const searchQuery = "";
 
     const { claims } = await apiRequestV2(
       "GET",
-      `/api/get-claims?filter=${sortOption}&offset=${offset}&limit=${LIMIT}${searchQuery}`
+      `/api/get-claims?filter=${sortOption}&offset=${offset}`
     );
 
-    if (claims.length === 0) {
+    if (!claims || claims.length === 0) {
       setHasMore(false);
       return;
     }
 
-    setVisibleClaims(prev => [...prev, ...claims]);
+setVisibleClaims(prev => [...prev, ...claims]);
 
+    // move offset forward correctly
     setOffset(prev => prev + claims.length);
 
+    // stop if less than LIMIT
     if (claims.length < LIMIT) {
       setHasMore(false);
     }
 
   } catch (err) {
-    console.error(err);
+    console.error("Failed to load claims:", err);
   } finally {
     setLoading(false);
+    isFetchingRef.current = false;
   }
 };
 
 
   // Call whenever user changes
-  useEffect(() => {
-    if (user) {
-      setOffset(0);
-      setUserPositions([]);
-      setHasMore(true);
-      loadMore();
-    } else {
-      setUserPositions([]);
-      setActivePosition(0n);
-    }
-  }, [user]);
+useEffect(() => {
+  if (!user) {
+    setUserPositions([]);
+    setActivePosition(0n);
+    return;
+  }
 
-  useEffect(() => {
-    const resetAndLoad = async () => {
-      setLoading(true);
-      setOffset(0);
-      setHasMore(true);
+  // reset state
+  setOffset(0);
+  setVisibleClaims([]);
+  setHasMore(true);
 
-      try {
-        const searchQuery = searchTerm
-          ? `&search=${encodeURIComponent(searchTerm)}`
-          : "";
+  // load first page
+  loadMore();
 
-        const { claims } = await apiRequestV2(
-          "GET",
-          `/api/get-claims?filter=${sortOption}&offset=0${searchQuery}`
-        );
-
-        const filteredClaims = visibleClaims.filter(claim =>
-  claimMatchesSearch(claim, searchTerm)
-);
-
-        setVisibleClaims(filteredClaims);
-        // setOffset(LIMIT);
-        setHasMore(filteredClaims.length >= LIMIT);
-      } catch (err) {
-        console.error(err);
-        setHasMore(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    resetAndLoad();
-  }, [sortOption, searchTerm]);
+}, [user, sortOption, searchTerm]);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
