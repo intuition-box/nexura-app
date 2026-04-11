@@ -161,17 +161,26 @@ export default function LessonPage() {
       if (orderDiff !== 0) return orderDiff;
       return (a.entry.createdAt ?? "").localeCompare(b.entry.createdAt ?? "");
     });
+    const sanitize = (value: unknown): string => {
+      if (typeof value !== "string") return "";
+      return value.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+    };
+    const hasTrophy = (value: unknown): boolean => {
+      return typeof value === "string" && ["bronze", "silver", "gold"].includes(value);
+    };
     return [
       ...combined.flatMap((item) => {
         const steps: LessonStep[] = [];
-        const introHeader = (item.entry.introHeader ?? "").trim();
-        const introBody = (item.entry.introBody ?? "").trim();
-        const outroHeader = (item.entry.outroHeader ?? "").trim();
-        const outroBody = (item.entry.outroBody ?? "").trim();
-        const hasIntro = Boolean(introHeader || introBody);
-        const hasOutro = Boolean(outroHeader || outroBody);
+        const introHeader = sanitize(item.entry.introHeader);
+        const introBody = sanitize(item.entry.introBody);
+        const outroHeader = sanitize(item.entry.outroHeader);
+        const outroBody = sanitize(item.entry.outroBody);
+        const introTrophyValue = hasTrophy(item.entry.introTrophy) ? (item.entry.introTrophy as "bronze" | "silver" | "gold") : "";
+        const outroTrophyValue = hasTrophy(item.entry.outroTrophy) ? (item.entry.outroTrophy as "bronze" | "silver" | "gold") : "";
+        const hasIntro = Boolean(introHeader || introBody || introTrophyValue);
+        const hasOutro = Boolean(outroHeader || outroBody || outroTrophyValue);
         if (hasIntro) {
-          steps.push({ kind: "intro" as const, key: `intro-${item.entry._id}`, header: introHeader, body: introBody, trophy: item.entry.introTrophy ?? "" });
+          steps.push({ kind: "intro" as const, key: `intro-${item.entry._id}`, header: introHeader, body: introBody, trophy: introTrophyValue });
         }
         if (item.kind === "mini") {
           steps.push({ kind: "mini" as const, key: `mini-${item.entry._id}`, text: item.entry.text });
@@ -181,7 +190,7 @@ export default function LessonPage() {
           steps.push({ kind: "question" as const, key: `question-${item.entry._id}`, question: item.entry });
         }
         if (hasOutro) {
-          steps.push({ kind: "outro" as const, key: `outro-${item.entry._id}`, header: outroHeader, body: outroBody, trophy: item.entry.outroTrophy ?? "" });
+          steps.push({ kind: "outro" as const, key: `outro-${item.entry._id}`, header: outroHeader, body: outroBody, trophy: outroTrophyValue });
         }
         return steps;
       }),
@@ -694,6 +703,7 @@ export default function LessonPage() {
               >
                 {/* Intro / Outro */}
                 {(activeStep?.kind === "intro" || activeStep?.kind === "outro") ? (
+                  (!activeStep.trophy && !activeStep.header?.trim() && !activeStep.body?.trim()) ? null : (
                   <div className="flex flex-col items-center w-full pt-4 sm:pt-6">
                     {activeStep.trophy && (
                       <motion.div
@@ -752,6 +762,7 @@ export default function LessonPage() {
                       )}
                     </div>
                   </div>
+                  )
 
                 /* Mini lesson */
                 ) : activeStep?.kind === "mini" ? (
