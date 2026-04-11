@@ -134,49 +134,36 @@ export default function PortalClaims() {
   const LIMIT = 50;
 
   const loadMore = async () => {
-    if (loading || !hasMore) return;
-    setLoading(true);
+  if (loading || !hasMore) return;
+  setLoading(true);
 
-    try {
-      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
-      const { claims } = await apiRequestV2(
-        "GET",
-        `/api/get-claims?filter=${sortOption}&offset=${offset}${searchQuery}`
-      );
+  try {
+    const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
 
-      if (!user) {
-        setUserPositions([]);
-        setActivePosition(0n);
-        setUserSharesByCurve({
-          support: { linear: 0n, exponential: 0n },
-          oppose: { linear: 0n, exponential: 0n },
-        });
-        console.log("No user signed in, resetting positions and sharesByCurve");
-        return;
-      }
+    const { claims } = await apiRequestV2(
+      "GET",
+      `/api/get-claims?filter=${sortOption}&offset=${offset}&limit=${LIMIT}${searchQuery}`
+    );
 
-      if (claims.length > 0) {
-        // const { positions, sharesByCurve } = fetchUserPositionsForClaim(claims[0], user);
-        setUserPositions(positions);
-        setUserSharesByCurve(userSharesByCurve);
-        console.log("Updated userPositions and userSharesByCurve state");
-      }
-      // Handle pagination
-      if (claims.length === 0 || claims.length < LIMIT) {
-        setHasMore(false);
-        console.log("No more claims to load, hasMore set to false");
-      } else {
-        setOffset(prev => prev + claims.length);
-        console.log(`Incrementing offset by ${claims.length}, new offset: ${offset + claims.length}`);
-      }
-
-    } catch (err) {
-      console.error("Failed to load positions:", err);
-    } finally {
-      setLoading(false);
-      // console.log("Loading finished, loading state set to false");
+    if (claims.length === 0) {
+      setHasMore(false);
+      return;
     }
-  };
+
+    setVisibleClaims(prev => [...prev, ...claims]);
+
+    setOffset(prev => prev + claims.length);
+
+    if (claims.length < LIMIT) {
+      setHasMore(false);
+    }
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   // Call whenever user changes
@@ -208,12 +195,12 @@ export default function PortalClaims() {
           `/api/get-claims?filter=${sortOption}&offset=0${searchQuery}`
         );
 
-        const filteredClaims = claims.filter((claim: Claim) =>
-          claimMatchesSearch(claim, searchTerm)
-        );
+        const filteredClaims = visibleClaims.filter(claim =>
+  claimMatchesSearch(claim, searchTerm)
+);
 
         setVisibleClaims(filteredClaims);
-        setOffset(LIMIT);
+        // setOffset(LIMIT);
         setHasMore(filteredClaims.length >= LIMIT);
       } catch (err) {
         console.error(err);
@@ -248,9 +235,9 @@ export default function PortalClaims() {
     };
   }, [loading, hasMore, sortOption]);
 
-  useEffect(() => {
-    loadMore();
-  }, [sortOption]);
+  // useEffect(() => {
+  //   loadMore();
+  // }, [sortOption]);
 
   const formatTrust = (shares: bigint, decimals = 18, precision = 4) => {
     const divisor = 10n ** BigInt(decimals);

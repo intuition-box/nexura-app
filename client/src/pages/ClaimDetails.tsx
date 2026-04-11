@@ -1131,7 +1131,7 @@ export default function ClaimDetails() {
             </div>
           )}
 
-          {!hasBalance && <div className="mt-2 text-xs text-red-400">You shall NOT pass! Get some TRUST.</div>}
+          {!hasBalance && <div className="mt-2 text-xs text-red-400">You have no possession of TRUST tokens.</div>}
 
           {hasOppositePosition && (
             <div className="mt-1 flex items-center gap-1 text-red-400 text-xs">
