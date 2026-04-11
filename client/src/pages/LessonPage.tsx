@@ -150,10 +150,14 @@ export default function LessonPage() {
     return [
       ...combined.flatMap((item) => {
         const steps: LessonStep[] = [];
-        const hasIntro = item.entry.introHeader || item.entry.introBody;
-        const hasOutro = item.entry.outroHeader || item.entry.outroBody;
+        const introHeader = (item.entry.introHeader ?? "").trim();
+        const introBody = (item.entry.introBody ?? "").trim();
+        const outroHeader = (item.entry.outroHeader ?? "").trim();
+        const outroBody = (item.entry.outroBody ?? "").trim();
+        const hasIntro = Boolean(introHeader || introBody);
+        const hasOutro = Boolean(outroHeader || outroBody);
         if (hasIntro) {
-          steps.push({ kind: "intro" as const, key: `intro-${item.entry._id}`, header: item.entry.introHeader ?? "", body: item.entry.introBody ?? "", trophy: item.entry.introTrophy ?? "" });
+          steps.push({ kind: "intro" as const, key: `intro-${item.entry._id}`, header: introHeader, body: introBody, trophy: item.entry.introTrophy ?? "" });
         }
         if (item.kind === "mini") {
           steps.push({ kind: "mini" as const, key: `mini-${item.entry._id}`, text: item.entry.text });
@@ -163,7 +167,7 @@ export default function LessonPage() {
           steps.push({ kind: "question" as const, key: `question-${item.entry._id}`, question: item.entry });
         }
         if (hasOutro) {
-          steps.push({ kind: "outro" as const, key: `outro-${item.entry._id}`, header: item.entry.outroHeader ?? "", body: item.entry.outroBody ?? "", trophy: item.entry.outroTrophy ?? "" });
+          steps.push({ kind: "outro" as const, key: `outro-${item.entry._id}`, header: outroHeader, body: outroBody, trophy: item.entry.outroTrophy ?? "" });
         }
         return steps;
       }),
