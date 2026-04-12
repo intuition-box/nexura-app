@@ -33,7 +33,7 @@ import { checksumAddress } from "viem";
 import { campaign, campaignCompleted } from "@/models/campaign.model";
 import { dailySignIn } from "@/models/dailySignIn.model";
 import { startOfDayUTC, updateLevel, getAmountPaid } from "@/utils/utils";
-import { lessonCompleted } from "@/models/lesson.model";
+import { lesson, lessonCompleted } from "@/models/lesson.model";
 
 const client = new GraphQLClient(GRAPHQL_API_URL);
 
@@ -847,6 +847,8 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
 
     const totalLessonJoined = await lessonCompleted.countDocuments();
 
+    const lessonsCreated = await lesson.countDocuments();
+
     const totalLessonCompleted = await lessonCompleted.countDocuments({ done: true });
 
     const totalJoined =
@@ -860,9 +862,23 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
     const joinRatio = (totalCompleted / totalJoined) * 100;
 
     const totalUsers = usersFound.length;
-    const totalXpInCirculation = usersFound.reduce((sum, current) => {
-      return sum + Number(current.xp ?? 0);
-    }, 0);
+
+    const claimsCreated = 0;
+
+    const payments = (await campaign.countDocuments({
+      project_name: { $ne: "Nexura" },
+    }));
+
+    const aggregateResult = await user.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalXp: { $sum: "$xp" },
+        },
+      },
+    ]);
+
+    const totalXpInCirculation = aggregateResult[0]?.totalXp ?? 0;
 
     const now = new Date();
 
@@ -883,13 +899,7 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
 
     const totalTrustDistributed = (totalCampaignsCompleted * 16) + (referralRewardsClaimed * 16.2); // fix this later
 
-    const totalQuestClaims = totalQuestsCompleted * 3;
-
-    const totalCampaignClaims = totalCampaignsCompleted * 2;
-
-    const totalOnchainClaims = totalQuestClaims + totalCampaignClaims;
-
-    const totalOnchainInteractions = totalOnchainClaims + referralRewardsClaimed + nexonsMinted;
+    const totalOnchainInteractions = referralRewardsClaimed + nexonsMinted;
 
     const users7d = usersFound.filter((u) => {
 
@@ -934,15 +944,18 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
       return { day: dayName, date: dateLabel, count };
     });
 
-    // ── 24-hour buckets for the current day (index 0 = midnight, index 23 = current hour) ──
+    // ── Rolling 24-hour buckets (index 0 = 23 hours ago, index 23 = current hour) ──
+    const currentHourStart = new Date(now);
+    currentHourStart.setUTCMinutes(0, 0, 0);
     const todayMidnight = new Date(now);
     todayMidnight.setUTCHours(0, 0, 0, 0);
-    const usersByHour = Array.from({ length: 24 }, (_, h) => {
-      const hourStart = new Date(todayMidnight.getTime() + h * 60 * 60 * 1000);
+    const usersByHour = Array.from({ length: 24 }, (_, i) => {
+      const hourStart = new Date(currentHourStart.getTime() - (23 - i) * 60 * 60 * 1000);
       const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
       const count = usersFound.filter((u) => u.createdAt >= hourStart && u.createdAt < hourEnd).length;
-      const label = `${String(h).padStart(2, "0")}:00`;
-      return { hour: h, label, count };
+      const hourOfDay = hourStart.getUTCHours();
+      const label = `${String(hourOfDay).padStart(2, "0")}:00`;
+      return { hour: hourOfDay, label, count };
     });
 
     const tomorrowName = DAY_NAMES[new Date(now.getTime() + 24 * 60 * 60 * 1000).getUTCDay()];
@@ -974,7 +987,6 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
       message: "analytics data fetched",
       analytics: {
         totalOnchainInteractions,
-        totalOnchainClaims,
         totalCampaigns,
         user: {
           totalUsers,
@@ -991,6 +1003,9 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
           totalUsersYesterday,
         },
         totalReferrals,
+        lessonsCreated,
+        claimsCreated,
+        payments,
         totalQuests,
         totalQuestsCompleted,
         totalCampaignsCompleted,

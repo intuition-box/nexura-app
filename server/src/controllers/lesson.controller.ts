@@ -55,7 +55,9 @@ export const createLesson = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
-    await lesson.create({ ...req.body, status: "draft" });
+    const disclaimer = typeof req.body.disclaimer === "string" ? req.body.disclaimer.trim() : "";
+
+    await lesson.create({ ...req.body, disclaimer, status: "draft" });
 
     res.status(CREATED).json({ message: "lesson created" });
   } catch (error) {
@@ -66,11 +68,12 @@ export const createLesson = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const updateLesson = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { lessonId, title, description, reward } = req.body as {
+    const { lessonId, title, description, reward, disclaimer } = req.body as {
       lessonId?: string;
       title?: string;
       description?: string;
       reward?: number;
+      disclaimer?: string;
     };
 
     if (!lessonId) {
@@ -99,6 +102,10 @@ export const updateLesson = async (req: GlobalRequest, res: GlobalResponse) => {
         return;
       }
       lessonExists.reward = normalizedReward;
+    }
+
+    if (typeof disclaimer === "string") {
+      lessonExists.disclaimer = disclaimer.trim();
     }
 
     const coverImage = await getUploadedLessonImage(req, "coverImage", "lesson-covers");

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import Chart from "react-apexcharts";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { ResponsivePie } from "@nivo/pie";
@@ -7,7 +7,6 @@ import { apiRequest } from "../lib/config";
 
 interface AnalyticsData {
   totalOnchainInteractions: number;
-  totalOnchainClaims: number;
   totalCampaigns: number;
   user: {
     totalUsers: number;
@@ -24,6 +23,9 @@ interface AnalyticsData {
     totalUsersYesterday: number;
   };
   totalReferrals: number;
+  lessonsCreated: number;
+  claimsCreated: number;
+  payments: number;
   totalQuests: number;
   totalQuestsCompleted: number;
   totalCampaignsCompleted: number;
@@ -92,7 +94,7 @@ export default function Analytics() {
     "All Time": 0,
   };
 
-  const totalTransactions = data?.totalOnchainInteractions ?? 0;
+  const onchainInteractions = data?.totalOnchainInteractions ?? 0;
   const totalJoined = data
     ? (data.totalQuestsCompleted + (data.totalCampaignsCompleted ?? 0) + (data.joinRatio ? Math.round((data.totalQuestsCompleted + data.totalCampaignsCompleted) / (data.joinRatio / 100)) : 0))
     : 0;
@@ -101,61 +103,68 @@ export default function Analytics() {
     ? data.totalQuestsCompleted + data.totalCampaignsCompleted
     : 0;
 
-  const claimsCount = data?.totalOnchainClaims ?? 0;
-  const nexonsMintedCount = Math.max(0, totalTransactions - claimsCount - (data?.totalReferrals ?? 0));
-  const referralCount = data?.totalReferrals ?? 0;
-  const othersCount = Math.max(0, totalTransactions - claimsCount - nexonsMintedCount - referralCount);
+  const claimsCount = data?.claimsCreated ?? 0;
+  const paymentsCount = data?.payments ?? 0;
+  const nexonsMintedCount = Math.max(0, onchainInteractions - claimsCount - paymentsCount);
+  const othersCount = 0;
+  const totalTransactions = claimsCount + paymentsCount + nexonsMintedCount + othersCount;
 
   const transactionsData = [
     { id: "Claims", value: claimsCount, color: "#00E1A2" },
+    { id: "Payments", value: paymentsCount, color: "#8A3FFD" },
     { id: "Nexons", value: nexonsMintedCount, color: "#B65FC8" },
-    { id: "Referrals", value: referralCount, color: "#8A3FFD" },
     { id: "Others", value: othersCount, color: "#FFFFFF" },
-  ].filter((d) => d.value > 0);
+  ];
 
-  // Build chart data from API buckets
-  const chartDataForRange = (): number[] => {
-    if (!data) return [];
-    if (activeRange === "Last 24 Hrs") {
-      return data.usersByHour.map((h) => h.count);
-    }
-    if (activeRange === "Last 7 days") {
-      // Last 7 entries of usersByDay
-      return data.usersByDay.slice(-7).map((d) => d.count);
-    }
-    if (activeRange === "Last 30 days") {
-      return data.usersByDay.map((d) => d.count);
-    }
-    // All Time — cumulative from usersByDay
-    let cum = data.user.totalUsers - data.usersByDay.reduce((s, d) => s + d.count, 0);
-    return data.usersByDay.map((d) => {
-      cum += d.count;
-      return cum;
-    });
-  };
+  const sortedDays = [...(data?.usersByDay ?? [])].sort(
+  (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+);
+
+const chartDataForRange = (): number[] => {
+  if (!data) return [];
+
+  const days = sortedDays;
+
+  if (activeRange === "Last 7 days") {
+    return days.slice(-7).map(d => d.count);
+  }
+
+  if (activeRange === "Last 30 days") {
+    return days.slice(-30).map(d => d.count);
+  }
+
+  if (activeRange === "Last 24 Hrs") {
+    return [...data.usersByHour]
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map(h => h.count);
+  }
+
+  return days.map(d => d.count);
+};
 
   const chartCategoriesForRange = (): string[] => {
-    if (!data) return [];
-    if (activeRange === "Last 24 Hrs") {
-      return data.usersByHour.map((h) => h.label);
-    }
-    if (activeRange === "Last 7 days") {
-      return data.usersByDay.slice(-7).map((d) => d.day);
-    }
-    if (activeRange === "Last 30 days") {
-      return data.usersByDay.map((d) => d.date);
-    }
-    return data.usersByDay.map((d) => d.date);
-  };
+  if (!data) return [];
+
+  const days = sortedDays;
+
+  if (activeRange === "Last 7 days") {
+    return days.slice(-7).map(d => d.day);
+  }
+
+  if (activeRange === "Last 30 days") {
+    return days.slice(-30).map(d => d.date);
+  }
+
+  if (activeRange === "Last 24 Hrs") {
+    return [...data.usersByHour]
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map(h => h.label);
+  }
+
+  return days.map(d => d.date);
+};
 
   const cards = [
-    {
-      title: "New Users",
-      value: totalUsersForRange[activeRange],
-      rate: pctChange(totalUsersForRange[activeRange], prevNewUsersForRange[activeRange]),
-      description: activeRange === "All Time" ? "total signups" : "vs previous period",
-      icon: "new-users.png",
-    },
     {
       title: "Total Users",
       value: data?.user.totalUsers ?? 0,
@@ -169,6 +178,13 @@ export default function Analytics() {
       rate: pctChange(activeUsersForRange[activeRange], prevActiveForRange[activeRange]),
       description: activeRange === "All Time" ? "all active users" : "vs previous period",
       icon: "approved.png",
+    },
+    {
+      title: "New Users",
+      value: totalUsersForRange[activeRange],
+      rate: pctChange(totalUsersForRange[activeRange], prevNewUsersForRange[activeRange]),
+      description: activeRange === "All Time" ? "total signups" : "vs previous period",
+      icon: "new-users.png",
     },
     {
       title: "Quests Created",
@@ -189,7 +205,7 @@ export default function Analytics() {
   const series = [{ name: "New Users", data: chartDataForRange() }];
 
   const options = {
-    chart: { id: "new-user-chart", background: "transparent", toolbar: { show: false }, zoom: { enabled: false } },
+    chart: { id: `new-user-chart-${activeRange}`, background: "transparent", toolbar: { show: false }, zoom: { enabled: false } },
     xaxis: {
       categories: chartCategoriesForRange(),
       labels: { style: { colors: "#ffffffaa" } },
@@ -367,6 +383,7 @@ export default function Analytics() {
 
   <div className="w-full h-full pt-14 sm:pt-16">
     <Chart
+      key={activeRange}
       options={{
         ...options,
         chart: { ...options.chart, toolbar: { show: false } },
@@ -591,7 +608,7 @@ export default function Analytics() {
       <img src="/intuition-icon.png" alt="Intuition Logo" className="w-6 h-6 object-contain" />
     </div>
     <div className="mt-4">
-      <span className="text-xl font-bold text-white">{formatNumber(data?.totalOnchainClaims ?? 0)}</span>
+      <span className="text-xl font-bold text-white">{formatNumber(data?.claimsCreated ?? 0)}</span>
     </div>
   </div>
 
@@ -602,7 +619,7 @@ export default function Analytics() {
       <img src="/intuition-icon.png" alt="Intuition Logo" className="w-6 h-6 object-contain" />
     </div>
     <div className="flex items-center gap-3 mt-4">
-      <span className="text-xl font-bold text-white">{formatNumber(data?.totalQuests ?? 0)}</span>
+      <span className="text-xl font-bold text-white">{formatNumber(data?.lessonsCreated ?? 0)}</span>
     </div>
   </div>
 </div>

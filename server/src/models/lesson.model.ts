@@ -29,6 +29,10 @@ const lessonSchema = new mongoose.Schema({
     type: String,
     enum: ["draft", "published"],
     default: "draft",
+  },
+  disclaimer: {
+    type: String,
+    default: "",
   }
 }, { timestamps: true });
 
