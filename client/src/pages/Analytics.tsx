@@ -164,31 +164,52 @@ const chartDataForRange = (): number[] => {
   return days.map(d => d.date);
 };
 
+const formatNumber = (num: number) => {
+  if (num >= 1000000)
+    return `${(num / 1000000).toFixed(num % 1000000 === 0 ? 0 : 1)}M`;
+
+  if (num >= 1000)
+    return `${(num / 1000).toFixed(num % 1000 === 0 ? 0 : 1)}k`;
+
+  return num.toString();
+};
+
   const cards = [
-    {
-      title: "Total Users",
-      value: data?.user.totalUsers ?? 0,
-      rate: pctChange(data?.user.totalUsers ?? 0, data?.user.totalUsersYesterday ?? 0),
-      description: "day-over-day growth",
-      icon: "referrals.png",
-      fullNumber: true,
-    },
-    {
-      title: "Active Users",
-      value: activeUsersForRange[activeRange],
-      rate: pctChange(activeUsersForRange[activeRange], prevActiveForRange[activeRange]),
-      description: activeRange === "All Time" ? "all active users" : "vs previous period",
-      icon: "approved.png",
-      fullNumber: false,
-    },
-    {
-      title: "New Users",
-      value: totalUsersForRange[activeRange],
-      rate: pctChange(totalUsersForRange[activeRange], prevNewUsersForRange[activeRange]),
-      description: activeRange === "All Time" ? "total signups" : "vs previous period",
-      icon: "new-users.png",
-      fullNumber: false,
-    },
+  {
+    title: "Total Users",
+    value: data?.user.totalUsers ?? 0,
+    rate: pctChange(
+      data?.user.totalUsers ?? 0,
+      data?.user.totalUsersYesterday ?? 0
+    ),
+    description: "day-over-day growth",
+    icon: "referrals.png",
+    fullNumber: true,
+  },
+  {
+    title: "Active Users",
+    value: formatNumber(activeUsersForRange[activeRange] ?? 0),
+    rate: pctChange(
+      activeUsersForRange[activeRange] ?? 0,
+      prevActiveForRange[activeRange] ?? 0
+    ),
+    description:
+      activeRange === "All Time" ? "all active users" : "vs previous period",
+    icon: "approved.png",
+    fullNumber: false,
+  },
+  {
+    title: "New Users",
+    value: formatNumber(totalUsersForRange[activeRange] ?? 0),
+    rate: pctChange(
+      totalUsersForRange[activeRange] ?? 0,
+      prevNewUsersForRange[activeRange] ?? 0
+    ),
+    description:
+      activeRange === "All Time" ? "total signups" : "vs previous period",
+    icon: "new-users.png",
+    fullNumber: false,
+  },
     {
       title: "Quests Created",
       value: data?.totalQuests ?? 0,
@@ -229,11 +250,6 @@ const chartDataForRange = (): number[] => {
     dataLabels: { enabled: false },
   };
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(num % 1000000 === 0 ? 0 : 1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(num % 1000 === 0 ? 0 : 1)}k`;
-    return num.toString();
-  };
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden overflow-y-auto p-3 sm:p-6 relative pb-28 sm:pb-6 font-geist">
@@ -342,7 +358,7 @@ const chartDataForRange = (): number[] => {
       </div>
 
       <div className="relative z-10 text-2xl font-bold text-white mb-2">
-        {card.fullNumber ? card.value.toLocaleString() : formatNumber(card.value)}
+        {card.fullNumber ? card.value.toLocaleString() : card.value}
       </div>
 
       {card.rate !== null && card.rate !== undefined ? (
