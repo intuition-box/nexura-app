@@ -1120,27 +1120,45 @@ export const claimReferreralReward = async (req: GlobalRequest, res: GlobalRespo
   try {
     const userId = req.id!;
 
+    const { tier }: { tier: number } = req.body;
+    if (!tier) {
+      res.status(BAD_REQUEST).json({ error: "tier is required" });
+      return;
+    }
+
     const referrer = await user.findById(userId);
     if (!referrer) {
       res.status(BAD_REQUEST).json({ error: "id associated with user is invalid" });
       return;
     }
 
+    const activeUsersByTier = tier === 1 ? 10 : tier === 2 ? 20 : 30;
+
+    const xpByTier = tier === 1 ? 1500 : tier === 2 ? 2000 : 2500;
+
     if (referrer.refRewardClaimed) {
       res.status(BAD_REQUEST).json({ error: "referrer reward claimed" });
       return;
     }
 
-    const usersReferred = await referredUsers.find({ user: userId });
+    if (referrer.tier === tier) {
+      res.status(BAD_REQUEST).json({ error: "user is already in the referral tier" });
+      return;
+    }
 
-    const activeUsers = usersReferred.filter((u) => u.status === "Active");
-    if (activeUsers.length < 10) {
+    const usersReferred = await referredUsers.countDocuments({ user: userId, status: "Active" });
+
+    if (usersReferred < activeUsersByTier) {
       res.status(FORBIDDEN).json({ error: "active users threshold hasn't been met!" });
       return;
     }
 
-    referrer.trustEarned += 16.2;
-    referrer.refRewardClaimed = true;
+    referrer.xp += xpByTier;
+    referrer.tier++;
+
+    if (tier === 3) {
+      referrer.refRewardClaimed = true;
+    }
 
     await referrer.save();
 

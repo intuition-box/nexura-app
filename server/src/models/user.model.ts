@@ -6,6 +6,10 @@ const userSchema = new Schema({
 		required: true,
 		unique: true
 	},
+	tier: {
+		type: Number,
+		default: 0,
+	},
 	address: {
 		type: String,
 		required: true,
