@@ -29,7 +29,7 @@ router
   .get("/studio-payment-config", getStudioPaymentConfig)
   .post("/allow-mint", authenticateUser, allowNexonsMint)
   .get("/get-claims", rateLimiter, authenticateUser2, getClaims)
-  .get("/search-for-claim", authenticateUser2, searchTriple)
+  .post("/search-for-claim", authenticateUser2, searchTriple)
   .get("/get-triple", rateLimiter, authenticateUser2, getTriple)
   .get("/get-analytics", getAnalytics)
   .post("/check-x", authenticateUser, checkXTask)
