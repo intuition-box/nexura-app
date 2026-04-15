@@ -313,7 +313,7 @@ export default function ReferralsPage() {
                 <span className="font-bold text-[#8a3ffc]">{TOTAL_XP.toLocaleString()} XP Earned</span>
               ) : (
                 <>
-                  {milestone.label} — Next Reward:{" "}
+                  Next Reward:{" "}
                   <span className="font-bold text-[#8a3ffc]">
                     +{milestone.reward.toLocaleString()} XP
                   </span>
@@ -338,7 +338,7 @@ export default function ReferralsPage() {
             <p className="text-[13px] sm:text-[14px] font-normal text-[#a3adc2] leading-[18px]">
               {allTiersClaimed
                 ? "You've completed all referral milestones. Thank you!"
-                : `Refer ${milestone.target - activeUsers > 0 ? milestone.target - activeUsers : 0} more active friends to unlock ${milestone.label}`}
+                : `Refer ${milestone.target - activeUsers > 0 ? milestone.target - activeUsers : 0} more active friends to unlock next reward`}
             </p>
             <div className="flex justify-center pt-1">
               <button
@@ -350,7 +350,7 @@ export default function ReferralsPage() {
                     : "bg-transparent text-white/30 border-[#b07aff]/30 cursor-not-allowed"
                 }`}
               >
-                {allTiersClaimed ? "All Claimed" : canClaimCurrent ? `Claim ${milestone.label}` : "Claim Reward"}
+                {allTiersClaimed ? "All Claimed" : canClaimCurrent ? "Claim Reward" : "Claim Reward"}
               </button>
             </div>
           </div>
