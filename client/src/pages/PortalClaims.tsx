@@ -149,17 +149,22 @@ export default function PortalClaims() {
 
 const LIMIT = 50;
 const isFetchingRef = useRef(false);
+const offsetRef = useRef(0);
+
+const isSearching = searchTerm.trim().length > 0;
+const requestLockRef = useRef(false);
 
 const loadMore = async () => {
-  if (isFetchingRef.current || !hasMore) return;
-isFetchingRef.current = true;
+  if (requestLockRef.current) return;
+  if (!hasMore) return;
+
+  requestLockRef.current = true;
   setLoading(true);
 
   try {
-
     const { claims } = await apiRequestV2(
       "GET",
-      `/api/get-claims?filter=${sortOption}&offset=${offset}`
+      `/api/get-claims?filter=${sortOption}&offset=${offsetRef.current}`
     );
 
     if (!claims || claims.length === 0) {
@@ -167,79 +172,80 @@ isFetchingRef.current = true;
       return;
     }
 
-const isValidClaim = (claim: Claim) => {
-  return (
-    claim?.term?.triple?.subject?.label &&
-    claim?.term?.triple?.predicate?.label &&
-    claim?.term?.triple?.object?.label
-  );
-};
+    const isValidClaim = (claim: Claim) =>
+      claim?.term?.triple?.subject?.label &&
+      claim?.term?.triple?.predicate?.label &&
+      claim?.term?.triple?.object?.label;
 
-setVisibleClaims(prev => [
-  ...prev,
-  ...claims.filter(isValidClaim),
-]);
+    setVisibleClaims(prev => [
+      ...prev,
+      ...claims.filter(isValidClaim),
+    ]);
 
-    // move offset forward correctly
-    setOffset(prev => prev + claims.length);
+    offsetRef.current += claims.length;
 
-    // stop if less than LIMIT
     if (claims.length < LIMIT) {
       setHasMore(false);
     }
 
   } catch (err) {
-    console.error("Failed to load claims:", err);
+    console.error(err);
   } finally {
+    requestLockRef.current = false;
     setLoading(false);
-    isFetchingRef.current = false;
   }
 };
 
 
-  // Call whenever user changes
+// Call whenever user changes
 useEffect(() => {
-  if (!user) {
-    setUserPositions([]);
-    setActivePosition(0n);
-    return;
-  }
+  if (!user) return;
 
-  // reset state
+  if (isSearching) return;
+
+  resetLockRef.current = true; 
+
+  offsetRef.current = 0;
   setOffset(0);
   setVisibleClaims([]);
   setHasMore(true);
 
-  // load first page
-  loadMore();
+  // release lock after render settles
+  setTimeout(() => {
+    resetLockRef.current = false;
+  }, 0);
 
-}, [user, sortOption, searchTerm]);
+}, [user, sortOption]);
 
-  const observerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!hasMore || loading) return;
+const observerRef = useRef<HTMLDivElement | null>(null);
 
-    const observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) {
-        loadMore();
-      }
-    });
+useEffect(() => {
+  if (!hasMore) return;
 
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
+  const el = observerRef.current;
+  if (!el) return;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      loadMore();
     }
+  });
 
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [loading, hasMore, sortOption]);
+  observer.observe(el);
 
-  // useEffect(() => {
-  //   loadMore();
-  // }, [sortOption]);
+  return () => observer.disconnect();
+}, [hasMore]);
+
+useEffect(() => {
+  if (!searchTerm.trim()) return;
+
+  offsetRef.current = 0;
+  setVisibleClaims([]);
+  setHasMore(true);
+
+  loadMore(); 
+}, [searchTerm]);
 
   const formatTrust = (shares: bigint, decimals = 18, precision = 4) => {
     const divisor = 10n ** BigInt(decimals);
