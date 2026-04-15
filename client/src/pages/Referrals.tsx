@@ -169,7 +169,7 @@ export default function ReferralsPage() {
           <p className="text-xs sm:text-sm text-white/50 leading-relaxed">
             Share your referral link by copying it or posting on social media
           </p>
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 sm:max-w-xl">
             <div className="flex items-center justify-between glass rounded-xl sm:rounded-2xl h-[44px] sm:h-[57px] flex-1 min-w-0 px-3 sm:px-[27px]">
               <span className="text-[11px] sm:text-[14px] font-semibold text-white/60 truncate min-w-0">
                 {referralLink}
