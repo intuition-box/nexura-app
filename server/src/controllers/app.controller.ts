@@ -1153,7 +1153,14 @@ export const claimReferreralReward = async (req: GlobalRequest, res: GlobalRespo
       return;
     }
 
-    referrer.xp += xpByTier;
+    if (referrer.tier === 0 && tier === 2) {
+      referrer.xp += 3500;
+    } else if (referrer.tier === 0 && tier === 3) {
+      referrer.xp += 6000;
+    } else {
+      referrer.xp += xpByTier;
+    }
+
     referrer.tier = tier;
 
     if (tier === 3) {
