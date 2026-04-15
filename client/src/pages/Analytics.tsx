@@ -539,7 +539,13 @@ const formatNumber = (num: number) => {
    {/* Middle Card — On-Chain Activity */}
 <div
   className="col-span-12 sm:col-span-5 row-span-2 p-3 sm:p-2 rounded-3xl flex flex-col border"
-  style={{ backgroundColor: "#170F1F", borderColor: "#D4BBFF66" }}
+ style={{
+  background: "rgba(88, 45, 140, 0.20)",
+  border: "1px solid rgba(180, 140, 255, 0.25)",
+  backdropFilter: "blur(14px)",
+  WebkitBackdropFilter: "blur(14px)",
+  boxShadow: "inset 0 0 40px rgba(168, 85, 247, 0.08)",
+}}
 >
   <span className="text-xs font-semibold uppercase text-white/90 text-center">On-Chain Activity</span>
   <p className="text-center text-[11px] sm:text-[12px] text-white/70 mt-2">
@@ -598,25 +604,52 @@ const formatNumber = (num: number) => {
 
  {/* Top Right Card — Total Trust Distributed */}
 <div
-  className="col-span-12 sm:col-span-3 rounded-3xl p-4 flex flex-col justify-between border relative backdrop-blur-[15px] sm:backdrop-blur-[20px]"
+  className="col-span-12 sm:col-span-3 rounded-3xl p-4 flex flex-col justify-between border relative overflow-hidden"
   style={{
-    backgroundColor: "rgba(23, 15, 31, 0.7)",
-    borderColor: "#D4BBFF66",
-    paddingTop: "1rem",
-    paddingBottom: "1rem",
-    paddingRight: "1.5rem",
+    background: "rgba(88, 45, 140, 0.18)", // purple glass base
+    border: "1px solid rgba(180, 140, 255, 0.25)",
+    backdropFilter: "blur(14px)",
+    WebkitBackdropFilter: "blur(14px)",
   }}
 >
-  <img src="/intuition-icon.png" alt="Intuition Logo" className="hidden sm:block absolute top-4 right-4 w-7 h-7 object-contain z-10" />
-  <img src="/intuition-icon.png" alt="Intuition Logo" className="block sm:hidden absolute right-2 top-1/2 transform -translate-y-1/2 w-24 h-24 opacity-20 pointer-events-none" />
+  {/* Purple glow layer */}
+  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/15 via-violet-500/5 to-transparent pointer-events-none" />
 
+  {/* Inner glass glow */}
+  <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(168,85,247,0.08)] pointer-events-none" />
+
+  {/* Desktop logo */}
+  <img
+    src="/intuition-icon.png"
+    alt="Intuition Logo"
+    className="hidden sm:block absolute top-4 right-4 w-7 h-7 object-contain z-10 opacity-80"
+  />
+
+  {/* Mobile logo */}
+  <img
+    src="/intuition-icon.png"
+    alt="Intuition Logo"
+    className="block sm:hidden absolute right-2 top-1/2 transform -translate-y-1/2 w-24 h-24 opacity-10 pointer-events-none"
+  />
+
+  {/* Title */}
   <div className="relative z-10">
-    <span className="text-xs font-semibold uppercase text-white">TOTAL TRUST DISTRIBUTED</span>
+    <span className="text-xs font-semibold uppercase text-white/80 tracking-wider">
+      TOTAL TRUST DISTRIBUTED
+    </span>
   </div>
 
+  {/* Value */}
   <div className="flex items-center gap-3 relative z-10 mt-4">
-    <span className="text-2xl font-bold text-white">{formatNumber(data?.totalTrustDistributed ?? 0)}</span>
-    <img src="/trust-icon.png" alt="Trust Icon" className="w-12 h-8 object-contain" />
+    <span className="text-2xl font-bold text-white tracking-tight">
+      {formatNumber(data?.totalTrustDistributed ?? 0)}
+    </span>
+
+    <img
+      src="/trust-icon.png"
+      alt="Trust Icon"
+      className="w-12 h-8 object-contain opacity-90"
+    />
   </div>
 </div>
 
