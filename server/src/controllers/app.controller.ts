@@ -911,9 +911,9 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
       return u.refRewardClaimed === true;
     }).length;
 
-    const nexonsMinted = usersFound.filter((u: { badges: number[] }) => {
-      return u.badges.length > 0;
-    }).length;
+    const nexonsMinted = usersFound.reduce((sum, u: { badges?: number[] }) => {
+      return sum + (u.badges?.length ?? 0);
+    }, 0);
 
     const totalTrustDistributed = (totalCampaignsCompleted * 16) + (referralRewardsClaimed * 16.2); // fix this later
 
