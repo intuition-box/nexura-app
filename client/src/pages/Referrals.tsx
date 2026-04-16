@@ -370,6 +370,7 @@ export default function ReferralsPage() {
               <span className="font-bold text-white/85">
                 complete their first quest or campaign
               </span>
+              .
             </p>
           </div>
         </div>
