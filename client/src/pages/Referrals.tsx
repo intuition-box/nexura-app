@@ -63,7 +63,9 @@ export default function ReferralsPage() {
   };
 
   const handleShareX = () => {
-    const text = encodeURIComponent(`Join me on Nexura! ${referralLink}`);
+    const text = encodeURIComponent(
+      `Entering a new ecosystem comes with little clarity on where to begin or how to participate meaningfully.\n\n@NexuraXYZ changes that. It helps users discover, understand, and contribute meaningfully on @0xIntuition while learning about Web3.\n\nJoin here 👇\n${referralLink}`
+    );
     window.open(`https://x.com/intent/tweet?text=${text}`, "_blank");
   };
 
