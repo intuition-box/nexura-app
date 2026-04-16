@@ -7,7 +7,7 @@ import { useAuth } from "../lib/auth";
 import { useToast } from "../hooks/use-toast";
 import { url } from "../lib/constants";
 import { claimReferralReward } from "../lib/performOnchainAction";
-import AnimatedBackground from "../components/AnimatedBackground";
+import AnalyticsBackground from "../components/AnalyticsBackground";
 
 type Referral = {
   username: string;
@@ -84,7 +84,7 @@ export default function ReferralsPage() {
 
   return (
     <div className="min-h-screen w-full bg-black text-white p-3 sm:p-6 relative overflow-hidden">
-      <AnimatedBackground />
+      <AnalyticsBackground />
 
       <div className="w-full max-w-5xl mx-auto space-y-5 sm:space-y-8 relative z-10">
 
