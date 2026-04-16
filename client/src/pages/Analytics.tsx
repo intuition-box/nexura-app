@@ -324,7 +324,7 @@ const formatNumber = (num: number) => {
 
  <div className="mt-12 flex flex-col sm:flex-row gap-2 sm:gap-4 w-full">
   {cards.map((card, idx) => (
-    <div
+<div
   key={idx}
   className="
     relative overflow-hidden
@@ -334,45 +334,26 @@ const formatNumber = (num: number) => {
     p-4
     flex flex-col justify-between
     mt-2 sm:mt-4
+    text-white
   "
   style={{
     background: "rgba(18, 8, 35, 0.55)",
-    border: "1px solid rgba(255, 255, 255, 0.14)",
-    backdropFilter: "blur(16px)",
-    WebkitBackdropFilter: "blur(16px)",
-    boxShadow: "inset 0 1px 2px rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255, 255, 255, 0.12)",
+
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
+
+    boxShadow: "inset 0 0 18px rgba(131, 58, 253, 0.10)",
   }}
 >
-  {/* Top Right Light */}
-  <div
-    className="absolute w-44 h-44 rounded-full"
+    <div
+    className="absolute w-52 h-52 rounded-full"
     style={{
       background: "#833AFD",
-      top: "-60px",
-      right: "-60px",
-      filter: "blur(100px)",
-      opacity: 0.45,
-    }}
-  />
-
-  {/* Bottom Left Light */}
-  <div
-    className="absolute w-44 h-44 rounded-full"
-    style={{
-      background: "#833AFD",
-      bottom: "-60px",
-      left: "-60px",
-      filter: "blur(100px)",
-      opacity: 0.45,
-    }}
-  />
-
-  {/* Dark Center Focus */}
-  <div
-    className="absolute inset-0 pointer-events-none"
-    style={{
-      background:
-        "radial-gradient(circle at center, rgba(5, 2, 15, 0.6) 0%, rgba(5, 2, 15, 0.35) 50%, transparent 85%)",
+      top: "-70px",
+      right: "-70px",
+      filter: "blur(70px)",
+      opacity: 0.4,
     }}
   />
       <div className="absolute -right-10 top-1/2 h-28 w-28 -translate-y-1/2 rounded-full bg-[#8B3EFE]/20 blur-3xl sm:hidden" />
@@ -558,74 +539,33 @@ const formatNumber = (num: number) => {
       ? `${Math.round(((usersJoined - tasksCompleted) / usersJoined) * 100)}% of users drop before completion`
       : "0% of users drop before completion"}
   </div>
-
-  <div
-    className="hidden sm:flex mt-2 p-2 rounded-3xl border flex-col gap-2"
-    style={{ borderColor: "#D4BBFF4D", backgroundColor: "#632DBB" }}
-  >
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-full bg-white" />
-      <span className="text-white text-[10px]">JOINED: Total users who joined a quest, campaign & lesson</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-full bg-[#00E1A2]" />
-      <span className="text-white text-[10px]">COMPLETED: Total users who completed a quest, campaign & lesson</span>
-    </div>
-  </div>
 </div>
 
    {/* Middle Card — On-Chain Activity */}
 <div
-  className="col-span-12 sm:col-span-5 row-span-2 p-3 sm:p-2 rounded-3xl flex flex-col border relative overflow-hidden"
+  className="col-span-12 sm:col-span-5 row-span-2 p-3 sm:p-2 rounded-3xl flex flex-col border relative overflow-hidden text-white"
   style={{
-    background: "rgba(18, 8, 35, 0.62)", // darker glass base
-    border: "1px solid rgba(255, 255, 255, 0.14)",
-    backdropFilter: "blur(18px)",
-    WebkitBackdropFilter: "blur(18px)",
-    boxShadow: "inset 0 1px 2px rgba(255,255,255,0.18), inset 0 0 40px rgba(168, 85, 247, 0.08)",
+    background: "#170F1F",
+    border: "1px solid rgba(131, 58, 253, 0.25)",
+
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+
+    boxShadow: "inset 0 0 30px rgba(131, 58, 253, 0.15)",
   }}
 >
-  {/* Top Right Light */}
-  <div
-    className="absolute w-56 h-56 rounded-full"
-    style={{
-      background: "#833AFD",
-      top: "-80px",
-      right: "-80px",
-      filter: "blur(110px)",
-      opacity: 0.55,
-    }}
-  />
 
-  {/* Bottom Left Light */}
-  <div
-    className="absolute w-56 h-56 rounded-full"
-    style={{
-      background: "#833AFD",
-      bottom: "-80px",
-      left: "-80px",
-      filter: "blur(110px)",
-      opacity: 0.55,
-    }}
-  />
-
-  {/* Dark Middle Focus */}
-  <div
-    className="absolute inset-0 pointer-events-none"
-    style={{
-      background:
-        "radial-gradient(circle at center, rgba(5, 2, 15, 0.7) 0%, rgba(5, 2, 15, 0.45) 40%, rgba(5, 2, 15, 0.2) 70%, transparent 90%)",
-    }}
-  />
-
-  {/* Soft Shine Layer */}
-  <div
-    className="absolute inset-0 pointer-events-none rounded-3xl"
-    style={{
-      background:
-        "linear-gradient(120deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015) 40%, transparent 70%)",
-    }}
-  />
+  {/* Main purple presence (only 1 light source now) */}
+<div
+  className="absolute w-[280px] h-[280px] rounded-full"
+  style={{
+    background: "#833AFD",
+    top: "-100px",
+    right: "-100px",
+    filter: "blur(75px)",
+    opacity: 0.5,
+  }}
+/>
 
   {/* Content */}
   <span className="text-xs font-semibold uppercase text-white/90 text-center">On-Chain Activity</span>
@@ -685,54 +625,25 @@ const formatNumber = (num: number) => {
 
  {/* Top Right Card — Total Trust Distributed */}
 <div
-  className="col-span-12 sm:col-span-3 rounded-3xl p-4 flex flex-col justify-between border relative overflow-hidden"
+  className="col-span-12 sm:col-span-3 rounded-3xl p-4 flex flex-col justify-between border relative overflow-hidden text-white"
   style={{
-    background: "rgba(18, 8, 35, 0.6)", // darker base
-    border: "1px solid rgba(255, 255, 255, 0.14)",
-    backdropFilter: "blur(18px)",
-    WebkitBackdropFilter: "blur(18px)",
-    boxShadow: "inset 0 1px 2px rgba(255,255,255,0.18)",
+    background: "#170F1F",
+    border: "1px solid rgba(131, 58, 253, 0.25)",
+
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+
+    boxShadow: "inset 0 0 25px rgba(131, 58, 253, 0.12)",
   }}
 >
-  {/* Top Right Light */}
   <div
-    className="absolute w-44 h-44 rounded-full"
+    className="absolute w-52 h-52 rounded-full"
     style={{
       background: "#833AFD",
-      top: "-50px",
-      right: "-50px",
-      filter: "blur(100px)",
-      opacity: 0.55,
-    }}
-  />
-
-  {/* Bottom Left Light */}
-  <div
-    className="absolute w-44 h-44 rounded-full"
-    style={{
-      background: "#833AFD",
-      bottom: "-50px",
-      left: "-50px",
-      filter: "blur(100px)",
-      opacity: 0.55,
-    }}
-  />
-
-  {/* Dark Middle (stronger, centered) */}
-  <div
-    className="absolute inset-0 pointer-events-none"
-    style={{
-      background:
-        "radial-gradient(circle at center, rgba(5, 2, 15, 0.65) 0%, rgba(5, 2, 15, 0.4) 40%, rgba(5, 2, 15, 0.15) 70%, transparent 90%)",
-    }}
-  />
-
-  {/* Subtle glass shine */}
-  <div
-    className="absolute inset-0 pointer-events-none rounded-3xl"
-    style={{
-      background:
-        "linear-gradient(120deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015) 40%, transparent 70%)",
+      top: "-60px",
+      right: "-60px",
+      filter: "blur(65px)",
+      opacity: 0.5,
     }}
   />
 
@@ -781,47 +692,26 @@ const formatNumber = (num: number) => {
 <div className="col-span-12 sm:col-span-3 grid grid-cols-2 gap-4">
   {/* Claims Created */}
 <div
-  className="bg-[#120823] rounded-3xl p-4 flex flex-col justify-between border col-span-1 relative overflow-hidden"
+  className="bg-[#120823] rounded-3xl p-4 flex flex-col justify-between border col-span-1 relative overflow-hidden text-white"
   style={{
-    borderColor: "rgba(255, 255, 255, 0.14)",
-    backdropFilter: "blur(18px)",
-    WebkitBackdropFilter: "blur(18px)",
-    boxShadow: "inset 0 1px 2px rgba(255,255,255,0.15)",
+    borderColor: "rgba(255, 255, 255, 0.12)",
+
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
+
+    boxShadow: "inset 0 0 20px rgba(131, 58, 253, 0.12)",
   }}
 >
-  {/* Top Right Light */}
-  <div
-    className="absolute w-44 h-44 rounded-full"
+    <div
+    className="absolute w-52 h-52 rounded-full"
     style={{
       background: "#833AFD",
-      top: "-50px",
-      right: "-50px",
-      filter: "blur(100px)",
-      opacity: 0.5,
+      top: "-60px",
+      right: "-60px",
+      filter: "blur(70px)",
+      opacity: 0.45,
     }}
   />
-
-  {/* Bottom Left Light */}
-  <div
-    className="absolute w-44 h-44 rounded-full"
-    style={{
-      background: "#833AFD",
-      bottom: "-50px",
-      left: "-50px",
-      filter: "blur(100px)",
-      opacity: 0.5,
-    }}
-  />
-
-  {/* Dark Center Focus */}
-  <div
-    className="absolute inset-0 pointer-events-none"
-    style={{
-      background:
-        "radial-gradient(circle at center, rgba(5, 2, 15, 0.65) 0%, rgba(5, 2, 15, 0.4) 45%, rgba(5, 2, 15, 0.15) 75%, transparent 90%)",
-    }}
-  />
-
   {/* Content */}
     <div className="flex items-center justify-between">
       <span className="text-xs font-semibold uppercase text-white">TOTAL CLAIMS CREATED</span>
@@ -833,45 +723,27 @@ const formatNumber = (num: number) => {
   </div>
 
   {/* Lessons Created */}
-<div
-  className="bg-[#120823] rounded-3xl p-4 flex flex-col justify-between border col-span-1 relative overflow-hidden"
+
+  <div
+  className="bg-[#120823] rounded-3xl p-4 flex flex-col justify-between border col-span-1 relative overflow-hidden text-white"
   style={{
-    borderColor: "rgba(255, 255, 255, 0.14)",
-    backdropFilter: "blur(18px)",
-    WebkitBackdropFilter: "blur(18px)",
-    boxShadow: "inset 0 1px 2px rgba(255,255,255,0.15)",
+    borderColor: "rgba(255, 255, 255, 0.12)",
+
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
+
+    boxShadow: "inset 0 0 20px rgba(131, 58, 253, 0.12)",
   }}
 >
-  {/* Top Right Light */}
+
   <div
-    className="absolute w-44 h-44 rounded-full"
+    className="absolute w-52 h-52 rounded-full"
     style={{
       background: "#833AFD",
-      top: "-50px",
-      right: "-50px",
-      filter: "blur(100px)",
-      opacity: 0.5,
-    }}
-  />
-
-  {/* Bottom Left Light */}
-  <div
-    className="absolute w-44 h-44 rounded-full"
-    style={{
-      background: "#833AFD",
-      bottom: "-50px",
-      left: "-50px",
-      filter: "blur(100px)",
-      opacity: 0.5,
-    }}
-  />
-
-  {/* Dark Center Focus */}
-  <div
-    className="absolute inset-0 pointer-events-none"
-    style={{
-      background:
-        "radial-gradient(circle at center, rgba(5, 2, 15, 0.65) 0%, rgba(5, 2, 15, 0.4) 45%, rgba(5, 2, 15, 0.15) 75%, transparent 90%)",
+      top: "-60px",
+      right: "-60px",
+      filter: "blur(70px)",
+      opacity: 0.45,
     }}
   />
 
