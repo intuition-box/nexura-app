@@ -369,8 +369,7 @@ export default function ReferralsPage() {
               Referrals only count as &ldquo;Active&rdquo; after they{" "}
               <span className="font-bold text-white/85">
                 complete their first quest or campaign
-              </span>{" "}
-              on the platform
+              </span>
             </p>
           </div>
         </div>
