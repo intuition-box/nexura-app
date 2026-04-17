@@ -110,7 +110,7 @@ useEffect(() => {
   let cancelled = false;
 
   const run = async () => {
-    if (searchTerm.trim().length < 2) {
+    if (searchTerm.trim().length < 1) {
       setSearchResults([]);
       return;
     }
