@@ -929,7 +929,7 @@ export const validatePortalTask = async (req: GlobalRequest, res: GlobalResponse
 
 export const updateClaims = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { transactionHash } = req.query as { transactionHash: string };
+    const { transactionHash }: { transactionHash: string } = req.body;
     const { id } = req;
 
     if (!transactionHash) {
