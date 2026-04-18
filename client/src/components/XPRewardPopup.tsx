@@ -40,7 +40,7 @@ const TARGET_PAGE = "/portal-claims";
         </h2>
    <p className="mb-3 text-center text-white text-[16px] sm:text-[18px] leading-snug">
   Whenever you support or oppose a <strong>Portal Claim using Nexura</strong> with <strong>200 TRUST</strong> or more, you earn <strong>500 XP</strong>.
-  You can earn up to <strong>500 XP per day</strong>, <strong>3500 XP per week</strong>, and <strong>15000 XP per month</strong>.
+  You can earn up to <strong>500 XP per day</strong>, <strong>3,500 XP per week</strong>, and <strong>15,000 XP per month</strong>.
 </p>
 
 <p className="text-center text-gray-400 text-[11px]">
