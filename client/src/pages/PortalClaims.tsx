@@ -374,11 +374,11 @@ useEffect(() => {
             return
           };
         }
-
-        await apiRequestV2("POST", "/api/user/update-claims", { transactionHash });
       } else {
         transactionHash = await sellShares(transactionAmount, addressTermId, isToggled ? 2n : 1n);
       }
+
+      await apiRequestV2("POST", "/api/user/update-claims", { transactionHash, action: action === "deposit" ? "buy" : "sell" });
 
       setTransactionLink(`${explorer}/tx/${transactionHash}`);
 

@@ -412,11 +412,11 @@ export default function ClaimDetails() {
       // -------------------- Execute transaction --------------------
       if (isBuy) {
         transactionHash = await buyShares({ buyAmount, termId: termId as Address, curveId, isApproved: user.isApproved});
-
-        await apiRequestV2("POST", "/api/user/update-claims", { transactionHash });
       } else {
         await sellShares(sellAmount, termId as Address, curveId);
       }
+
+      await apiRequestV2("POST", "/api/user/update-claims", { transactionHash, action: isBuy ? "buy" : "sell" });
 
       // -------------------- Refresh user data --------------------
       await refreshUserData();
