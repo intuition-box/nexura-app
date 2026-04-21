@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { X, Loader2, Check, AlertCircle } from "lucide-react";
+import { X, Loader2, Check } from "lucide-react";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { createProofOfAction } from "../services/web3";
 import { useToast } from "../hooks/use-toast";
+import { toUserFriendlyErrorMessage } from "../lib/errorMessages";
 import subjectAvatarImg from "../assets/proof-modal/subject-avatar.png";
 import predicateCheckImg from "../assets/proof-modal/predicate-check.png";
 import learnIconImg from "../assets/proof-modal/learn-icon.png";
@@ -55,13 +56,11 @@ export default function ProofOfActionModal({
   const { toast } = useToast();
   const [staking, setStaking] = useState(false);
   const [staked, setStaked] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
       setStaking(false);
       setStaked(false);
-      setError(null);
     }
   }, [open]);
 
@@ -73,12 +72,15 @@ export default function ProofOfActionModal({
   const handleStake = async () => {
     if (staking || staked) return;
     if (!objectName) {
-      setError("Missing action context. Please try again.");
+      toast({
+        title: "Stake failed",
+        description: "Missing action context. Please try again.",
+        variant: "destructive",
+      });
       return;
     }
 
     setStaking(true);
-    setError(null);
 
     try {
       const txHash = await createProofOfAction({
@@ -94,16 +96,9 @@ export default function ProofOfActionModal({
       });
       setTimeout(() => onOpenChange(false), 900);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === "string"
-            ? err
-            : "Unable to stake Proof of Action.";
-      setError(message);
       toast({
         title: "Stake failed",
-        description: message,
+        description: toUserFriendlyErrorMessage(err, "Unable to stake Proof of Action."),
         variant: "destructive",
       });
     } finally {
@@ -201,15 +196,6 @@ export default function ProofOfActionModal({
                     value={objectLabel}
                   />
                 </div>
-
-                {error && (
-                  <div className="flex items-start gap-2 rounded-[14px] border border-red-500/40 bg-red-500/10 px-3 py-2 animate-in fade-in zoom-in-95 duration-300">
-                    <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-[12px] text-red-300 leading-snug break-words">
-                      {error}
-                    </p>
-                  </div>
-                )}
               </div>
 
               <div
