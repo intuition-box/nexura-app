@@ -1,4 +1,4 @@
-import { redeem, getMultiVaultAddressFromChainId, getAtomDetails, createTripleStatement, calculateAtomId, calculateTripleId, getTripleDetails, deposit, createAtomFromString } from "@0xintuition/sdk";
+import { redeem, getMultiVaultAddressFromChainId, getAtomDetails, createTripleStatement, calculateAtomId, calculateTripleId, getTripleDetails, createAtomFromString } from "@0xintuition/sdk";
 import { Address, parseEther, toHex } from "viem";
 import { getWalletClient, getPublicClient } from "../lib/viem";
 import { apiRequestV2 } from "../lib/queryClient";
@@ -113,14 +113,16 @@ export const createProofOfAction = async ({
   const existingTriple = await getTripleDetails(tripleId);
 
   if (existingTriple) {
-    const account = walletClient.account!.address;
-    const { transactionHash } = await deposit(
-      { walletClient, publicClient, address },
-      {
-        args: [account, tripleId, 0n, 0n],
-        value: stakeAmount,
-      }
-    );
+    const account = walletClient.account!.address as Address;
+    const { request } = await publicClient.simulateContract({
+      address: PROXY_FEE_CONTRACT,
+      abi: PROXY_CONTRACT_ABI,
+      functionName: "deposit",
+      account,
+      args: [account, tripleId, 0n, 0n],
+      value: stakeAmount,
+    });
+    const transactionHash = await walletClient.writeContract(request);
     return transactionHash;
   }
 
