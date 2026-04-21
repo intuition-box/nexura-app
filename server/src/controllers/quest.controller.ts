@@ -635,32 +635,25 @@ export const claimEcosystemQuest = async (
 			return;
 		}
 
-		const ecosystemQuestToClaim = await ecosystemQuestCompleted.findOne({
+		let ecosystemQuestToClaim = await ecosystemQuestCompleted.findOne({
 			user: userId,
 			ecosystemQuest: id,
 		});
-		if (!ecosystemQuestToClaim) {
-			res
-				.status(FORBIDDEN)
-				.json({ error: "visit ecosystem dapp to proceed" });
-			return;
-		}
 
-		if (ecosystemQuestToClaim.done) {
+		if (ecosystemQuestToClaim?.done) {
 			res
 				.status(FORBIDDEN)
 				.json({ error: "ecosystem quest has been completed" });
 			return;
 		}
 
-		const now = new Date();
-
-		if (now < ecosystemQuestToClaim.timer) {
-			res.status(FORBIDDEN).json({
-				error:
-					"this operation cannot be performed by the user until the required time is met",
+		if (!ecosystemQuestToClaim) {
+			ecosystemQuestToClaim = await ecosystemQuestCompleted.create({
+				done: false,
+				timer: new Date(),
+				ecosystemQuest: id,
+				user: userId,
 			});
-			return;
 		}
 
 		ecosystemQuestUser.xp += ecosystemQuestFound.reward;
