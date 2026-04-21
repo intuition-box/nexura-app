@@ -4,6 +4,9 @@ import { Dialog, DialogContent } from "./ui/dialog";
 import { createProofOfAction } from "../services/web3";
 import { useToast } from "../hooks/use-toast";
 import { toUserFriendlyErrorMessage } from "../lib/errorMessages";
+import { getPublicClient } from "../lib/viem";
+import { formatEther } from "viem";
+import { getLevelProgress } from "../lib/levels";
 import subjectAvatarImg from "../assets/proof-modal/subject-avatar.png";
 import predicateCheckImg from "../assets/proof-modal/predicate-check.png";
 import learnIconImg from "../assets/proof-modal/learn-icon.png";
@@ -24,6 +27,7 @@ interface ProofOfActionModalProps {
   onSuccess: (txHash: string) => Promise<void> | void;
   sourceLabel?: string;
   alreadyClaimed?: boolean;
+  userXp?: number;
 }
 
 const SUBJECT = "I";
@@ -48,21 +52,24 @@ export default function ProofOfActionModal({
   object,
   xpReward,
   stakeTrust = "0.10",
-  stakeUsd = "$214.20",
+  stakeUsd,
   onSuccess,
   sourceLabel,
   alreadyClaimed = false,
+  userXp = 0,
 }: ProofOfActionModalProps) {
   const { toast } = useToast();
   const [staking, setStaking] = useState(false);
   const [staked, setStaked] = useState(alreadyClaimed);
   const [txHash, setTxHash] = useState<string>("");
+  const [networkFee, setNetworkFee] = useState<string>("");
 
   useEffect(() => {
     if (!open) {
       setStaking(false);
       setStaked(alreadyClaimed);
       setTxHash("");
+      setNetworkFee("");
     }
   }, [open, alreadyClaimed]);
 
@@ -96,6 +103,14 @@ export default function ProofOfActionModal({
       });
       setTxHash(hash);
       setStaked(true);
+      try {
+        const publicClient = getPublicClient();
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: hash as `0x${string}` });
+        const feeWei = receipt.gasUsed * receipt.effectiveGasPrice;
+        setNetworkFee(formatEther(feeWei));
+      } catch {
+        // Best-effort: leave blank if receipt lookup fails.
+      }
       await onSuccess(hash);
       toast({
         title: "Proof of Action staked",
@@ -148,11 +163,13 @@ export default function ProofOfActionModal({
               xpReward={xpReward}
               txHash={txHash}
               onDismiss={() => handleOpenChange(false)}
+              networkFeeEth={networkFee}
+              userXp={userXp}
             />
           ) : (
-          <div className="px-[26px] pt-[16px] pb-[16px]">
+          <div className="px-[28px] pt-[24px] pb-[26px]">
             <h2
-              className="text-[#e0e2ea] font-bold text-[20px] sm:text-[22px] leading-[26px] tracking-[-0.8px] animate-in fade-in slide-in-from-left-4 duration-500"
+              className="text-[#e0e2ea] font-bold text-[22px] sm:text-[24px] leading-[28px] tracking-[-0.8px] animate-in fade-in slide-in-from-left-4 duration-500"
               style={{ animationDelay: "80ms", animationFillMode: "both" }}
             >
               Proof of Action
@@ -165,8 +182,8 @@ export default function ProofOfActionModal({
               Create a structured claim using semantic triples to prove task completion. The system validates your claim after staking. Only valid claims unlock XP rewards.
             </p>
 
-            <div className="mt-3 flex flex-col lg:flex-row gap-3 lg:gap-[36px] lg:items-stretch">
-              <div className="flex-1 min-w-0 space-y-2">
+            <div className="mt-4 flex flex-col lg:flex-row gap-4 lg:gap-[40px] lg:items-stretch">
+              <div className="flex-1 min-w-0 space-y-3">
                 <div
                   className="animate-in fade-in slide-in-from-left-4 duration-500"
                   style={{ animationDelay: "220ms", animationFillMode: "both" }}
@@ -215,13 +232,13 @@ export default function ProofOfActionModal({
                 className="w-full lg:w-[309px] shrink-0 animate-in fade-in slide-in-from-right-4 duration-500"
                 style={{ animationDelay: "260ms", animationFillMode: "both" }}
               >
-                <div className="bg-[#1C0E3480] border border-white/10 rounded-2xl p-3 space-y-2 h-full flex flex-col">
+                <div className="bg-[#1C0E3480] border border-white/10 rounded-2xl p-4 space-y-3 h-full flex flex-col">
                   <div>
-                    <h3 className="text-[#e0e2ea] font-semibold text-[14px] leading-[18px]">
+                    <h3 className="text-[#e0e2ea] font-semibold text-[15px] leading-[20px]">
                       Stake on this Claim
                     </h3>
-                    <p className="text-[#cdc2d8] text-[10px] leading-[14px] mt-0.5">
-                      Support this claim by with measurable $TRUST value.
+                    <p className="text-[#cdc2d8] text-[11px] leading-[15px] mt-1">
+                      Support this claim with measurable $TRUST value.
                     </p>
                   </div>
 
@@ -260,9 +277,11 @@ export default function ProofOfActionModal({
                         <div className="text-[#d4bbff] text-[13px] font-bold leading-[18px]">
                           {stakeTrust} $TRUST
                         </div>
-                        <div className="text-[#968da1] text-[9px] leading-[12px]">
-                          &asymp; {stakeUsd} USD
-                        </div>
+                        {stakeUsd ? (
+                          <div className="text-[#968da1] text-[9px] leading-[12px]">
+                            &asymp; {stakeUsd} USD
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -317,6 +336,8 @@ interface SuccessViewProps {
   xpReward?: number | string;
   txHash: string;
   onDismiss: () => void;
+  networkFeeEth?: string;
+  userXp?: number;
 }
 
 function formatClaimId(hash: string): string {
@@ -325,9 +346,21 @@ function formatClaimId(hash: string): string {
   return `NEX-${cleaned.slice(0, 4)}-${cleaned.slice(-2)}`;
 }
 
-function SuccessView({ xpReward, txHash, onDismiss }: SuccessViewProps) {
-  const xpAmount = typeof xpReward !== "undefined" ? String(xpReward) : "500";
+function formatNetworkFee(feeEth: string): string {
+  if (!feeEth) return "—";
+  const n = Number(feeEth);
+  if (!Number.isFinite(n) || n === 0) return "—";
+  if (n < 0.00001) return `${n.toExponential(2)} TRUST`;
+  return `${n.toFixed(6)} TRUST`;
+}
+
+function SuccessView({ xpReward, txHash, onDismiss, networkFeeEth, userXp = 0 }: SuccessViewProps) {
+  const xpAmount = typeof xpReward !== "undefined" ? String(xpReward) : "0";
   const claimId = formatClaimId(txHash);
+  const rewardXp = Number(xpReward) || 0;
+  const totalXpAfter = userXp + rewardXp;
+  const levelProgress = getLevelProgress(totalXpAfter);
+  const nextLevelName = levelProgress.next?.name ?? levelProgress.current.name;
 
   return (
     <div className="px-[28px] sm:px-[34px] pt-[28px] pb-[24px]">
@@ -417,7 +450,7 @@ function SuccessView({ xpReward, txHash, onDismiss }: SuccessViewProps) {
               </div>
               <div className="flex items-center justify-between pb-2 border-b border-white/5">
                 <span className="text-[#94a3b8] text-[10px] tracking-[1px] uppercase">Network Fee</span>
-                <span className="text-[#cdc2d8] text-[12px]">0.00042 NEX</span>
+                <span className="text-[#cdc2d8] text-[12px]">{formatNetworkFee(networkFeeEth || "")}</span>
               </div>
             </div>
           </div>
@@ -430,20 +463,22 @@ function SuccessView({ xpReward, txHash, onDismiss }: SuccessViewProps) {
             <div className="flex items-end justify-between mb-4">
               <div>
                 <span className="text-[#94a3b8] text-[10px] tracking-[1px] uppercase block mb-1">
-                  Next Level
+                  {levelProgress.next ? "Next Level" : "Current Level"}
                 </span>
-                <span className="text-white font-bold text-[16px]">Elite Architect</span>
+                <span className="text-white font-bold text-[16px]">{nextLevelName}</span>
               </div>
-              <span className="text-[#94e2ff] text-[14px] font-bold">85%</span>
+              <span className="text-[#94e2ff] text-[14px] font-bold">{levelProgress.progressPct}%</span>
             </div>
             <div className="bg-[#262a30] h-2 rounded-[12px] overflow-hidden">
               <div
                 className="bg-[#94e2ff] h-full rounded-[12px] shadow-[0_0_12px_rgba(148,226,255,0.6)] transition-[width] duration-1000 ease-out"
-                style={{ width: "85%" }}
+                style={{ width: `${levelProgress.progressPct}%` }}
               />
             </div>
             <p className="mt-4 text-[#64748b] text-[11px] italic leading-[18px]">
-              &ldquo;Only 1,200 XP remaining until the Architect&rsquo;s Vault unlocks.&rdquo;
+              {levelProgress.next
+                ? `${levelProgress.xpRemaining.toLocaleString()} XP remaining until ${levelProgress.next.name} unlocks.`
+                : `You've reached the top tier — ${levelProgress.current.name}.`}
             </p>
           </div>
         </div>

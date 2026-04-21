@@ -749,6 +749,7 @@ export default function CampaignEnvironment() {
         sourceLabel="Campaign"
         onSuccess={finalizeCampaignReward}
         alreadyClaimed={Boolean(campaignCompleted)}
+        userXp={Number(user?.xp) || 0}
       />
     </div>
   )

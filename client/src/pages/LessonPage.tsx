@@ -132,6 +132,7 @@ export default function LessonPage() {
   const [actionMessage, setActionMessage] = useState("");
   const [showXPModal, setShowXPModal] = useState(false);
   const [showProofModal, setShowProofModal] = useState(false);
+  const [pendingLessonCompleted, setPendingLessonCompleted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [didInitStep, setDidInitStep] = useState(false);
@@ -509,13 +510,13 @@ export default function LessonPage() {
           localStorage.setItem(storageKey, JSON.stringify(dataAfter));
         }
       } catch {}
-      setShowXPModal(true);
+      setPendingLessonCompleted(true);
     } catch (error) {
       const message = normalizeApiMessage(error, "Unable to claim XP");
       setActionMessage(message);
       if (message.toLowerCase().includes("already")) {
         await loadLesson();
-        setShowXPModal(true);
+        setPendingLessonCompleted(true);
       }
     } finally {
       setClaiming(false);
@@ -1019,19 +1020,26 @@ export default function LessonPage() {
 
       <ProofOfActionModal
         open={showProofModal}
-        onOpenChange={setShowProofModal}
+        onOpenChange={(next) => {
+          setShowProofModal(next);
+          if (!next && pendingLessonCompleted) {
+            setPendingLessonCompleted(false);
+            setShowXPModal(true);
+          }
+        }}
         object={lesson?.title || "this lesson"}
         xpReward={lesson?.reward}
         sourceLabel="Lesson"
         onSuccess={finalizeLessonXpClaim}
         alreadyClaimed={Boolean(lesson?.done)}
+        userXp={Number(user?.xp) || 0}
       />
 
       {/* Lesson Complete modal — matches Figma design */}
       {showXPModal ? (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4">
           <div
-            className="w-full sm:max-w-[340px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden relative text-center"
+            className="w-full sm:max-w-[400px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden relative text-center"
             style={{
               background: "radial-gradient(ellipse at center, rgba(139,62,254,1) 0%, rgba(111,50,203,0.94) 50%, rgba(83,37,152,0.88) 100%)",
               paddingBottom: "max(2rem, env(safe-area-inset-bottom, 0px))",
@@ -1040,6 +1048,18 @@ export default function LessonPage() {
             {/* Decorative glows */}
             <div className="absolute -top-24 -right-24 w-64 h-64 rounded-xl bg-[#D4BBFF]/10 blur-[40px]" />
             <div className="absolute -bottom-36 -left-24 w-64 h-64 rounded-xl bg-[#94E2FF]/5 blur-[40px]" />
+
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setShowXPModal(false)}
+              aria-label="Close"
+              className="absolute top-[14px] right-[14px] z-20 h-7 w-7 rounded-full bg-black/30 border border-white/30 flex items-center justify-center transition hover:bg-black/50 active:scale-[0.95]"
+            >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 stroke-white" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
 
             {/* Drag handle (mobile) */}
             <div className="mx-auto w-10 h-1 rounded-full bg-white/20 mt-3 mb-4 sm:hidden" />

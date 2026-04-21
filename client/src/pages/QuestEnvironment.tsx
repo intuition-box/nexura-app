@@ -483,6 +483,7 @@ export default function QuestEnvironment() {
         sourceLabel="Quest"
         onSuccess={finalizeQuestReward}
         alreadyClaimed={completed}
+        userXp={Number(user?.xp) || 0}
       />
     </div>
   );
