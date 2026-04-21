@@ -123,8 +123,12 @@ export default function ProofOfActionModal({
         className="p-0 border-0 bg-transparent shadow-none w-[calc(100vw-32px)] max-w-[897px] sm:w-[897px]"
       >
         <div
-          className="relative bg-[#110a2b] border border-[#8b3efe] rounded-[7px] overflow-hidden"
-          style={{ minHeight: "487px" }}
+          className="relative overflow-hidden rounded-2xl sm:rounded-3xl"
+          style={{
+            background: "linear-gradient(135deg, #2A085E 0%, #3D0F8A 100%)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            minHeight: "487px",
+          }}
         >
           <button
             onClick={() => handleOpenChange(false)}
@@ -185,7 +189,7 @@ export default function ProofOfActionModal({
               </div>
 
               <div className="w-full lg:w-[309px] shrink-0">
-                <div className="bg-[#110a2b] border border-[#393b60] rounded-[16px] p-5 space-y-4">
+                <div className="bg-[#1C0E3480] border border-white/10 rounded-2xl p-5 space-y-4">
                   <div>
                     <h3 className="text-[#e0e2ea] font-semibold text-[16px] leading-[28px]">
                       Stake on this Claim
@@ -206,7 +210,7 @@ export default function ProofOfActionModal({
                         0 TRUST
                       </span>
                     </div>
-                    <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-[8px] h-[40px] px-[18px] flex items-center justify-between">
+                    <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-xl h-[40px] px-[18px] flex items-center justify-between">
                       <span className="text-[rgba(255,255,255,0.42)] text-[12px] font-semibold">
                         {stakeTrust}
                       </span>
@@ -216,7 +220,7 @@ export default function ProofOfActionModal({
                     </div>
                   </div>
 
-                  <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-[8px] p-4 space-y-2">
+                  <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-xl p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[rgba(255,255,255,0.42)] text-[12px] font-semibold leading-[20px]">
                         Triple Cost
