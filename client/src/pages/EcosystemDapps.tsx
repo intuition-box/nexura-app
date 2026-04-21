@@ -326,7 +326,7 @@ export default function EcosystemDapps() {
                       disabled={dapp.done || !visitedDapps.includes(dapp._id) || claimedDapps.includes(dapp._id)}
                       onClick={(e) => { e.stopPropagation(); handleClaim(dapp); }}
                     >
-                      {(dapp.done || claimedDapps.includes(dapp._id)) ? "Claimed" : `Claim ${dapp.reward}`}
+                      {(dapp.done || claimedDapps.includes(dapp._id)) ? "Claimed" : `Claim ${dapp.reward} XP`}
                     </Button>
                   </div>
                 </CardContent>
