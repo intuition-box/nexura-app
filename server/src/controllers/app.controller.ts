@@ -1037,7 +1037,7 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
       },
     ]);
 
-    const soldClaims = soldClaimsAggregate[0]?.totalClaims ?? 0;
+    const soldClaims = soldClaimsAggregate[0]?.totalClaimsSold ?? 0;
 
     const rewardContractDeployed = await campaign.countDocuments({ contractAddress: { $exists: true } });
 
