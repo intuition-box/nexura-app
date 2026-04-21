@@ -26,8 +26,6 @@ interface ProofOfActionModalProps {
 }
 
 const SUBJECT = "I";
-const TRIPLE_COST = "0.003 $TRUST";
-const INITIAL_DEPOSIT_TOTAL = "0.1 $TRUST";
 
 function resolveObjectIcon(sourceLabel?: string): string {
   const key = (sourceLabel || "").toLowerCase();
@@ -146,23 +144,23 @@ export default function ProofOfActionModal({
               onDismiss={() => handleOpenChange(false)}
             />
           ) : (
-          <div className="px-[34px] pt-[20px] pb-[20px]">
+          <div className="px-[26px] pt-[16px] pb-[16px]">
             <h2
-              className="text-[#e0e2ea] font-bold text-[22px] sm:text-[26px] leading-[32px] tracking-[-1px] animate-in fade-in slide-in-from-left-4 duration-500"
+              className="text-[#e0e2ea] font-bold text-[20px] sm:text-[22px] leading-[26px] tracking-[-0.8px] animate-in fade-in slide-in-from-left-4 duration-500"
               style={{ animationDelay: "80ms", animationFillMode: "both" }}
             >
               Proof of Action
             </h2>
 
             <p
-              className="text-[#cdc2d8] text-[13px] sm:text-[14px] font-medium leading-[20px] mt-1 max-w-[501px] animate-in fade-in slide-in-from-left-4 duration-500"
+              className="text-[#cdc2d8] text-[12px] sm:text-[13px] font-medium leading-[18px] mt-0.5 max-w-[501px] animate-in fade-in slide-in-from-left-4 duration-500"
               style={{ animationDelay: "140ms", animationFillMode: "both" }}
             >
               Create a structured claim using semantic triples to prove task completion. The system validates your claim after staking. Only valid claims unlock XP rewards.
             </p>
 
-            <div className="mt-4 flex flex-col lg:flex-row gap-4 lg:gap-[48px] lg:items-stretch">
-              <div className="flex-1 min-w-0 space-y-3">
+            <div className="mt-3 flex flex-col lg:flex-row gap-3 lg:gap-[36px] lg:items-stretch">
+              <div className="flex-1 min-w-0 space-y-2">
                 <div
                   className="animate-in fade-in slide-in-from-left-4 duration-500"
                   style={{ animationDelay: "220ms", animationFillMode: "both" }}
@@ -211,9 +209,9 @@ export default function ProofOfActionModal({
                 className="w-full lg:w-[309px] shrink-0 animate-in fade-in slide-in-from-right-4 duration-500"
                 style={{ animationDelay: "260ms", animationFillMode: "both" }}
               >
-                <div className="bg-[#1C0E3480] border border-white/10 rounded-2xl p-4 space-y-3 h-full flex flex-col">
+                <div className="bg-[#1C0E3480] border border-white/10 rounded-2xl p-3 space-y-2 h-full flex flex-col">
                   <div>
-                    <h3 className="text-[#e0e2ea] font-semibold text-[15px] leading-[22px]">
+                    <h3 className="text-[#e0e2ea] font-semibold text-[14px] leading-[18px]">
                       Stake on this Claim
                     </h3>
                     <p className="text-[#cdc2d8] text-[10px] leading-[14px] mt-0.5">
@@ -223,52 +221,40 @@ export default function ProofOfActionModal({
 
                   <div className="h-px bg-[#393b60]" />
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[rgba(255,255,255,0.6)] text-[10px] font-bold tracking-[1px] uppercase">
                         Initial Deposit
                       </span>
-                      <span className="text-[rgba(255,255,255,0.6)] text-[12px] font-semibold">
-                        0 TRUST
+                      <span className="text-[rgba(255,255,255,0.6)] text-[11px] font-semibold">
+                        min
                       </span>
                     </div>
-                    <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-xl h-[36px] px-[14px] flex items-center justify-between">
-                      <span className="text-[rgba(255,255,255,0.42)] text-[12px] font-semibold">
+                    <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-xl h-[32px] px-[12px] flex items-center justify-between">
+                      <span className="text-[rgba(255,255,255,0.7)] text-[12px] font-semibold">
                         {stakeTrust}
                       </span>
-                      <span className="text-[rgba(255,255,255,0.42)] text-[12px] font-semibold">
-                        min
+                      <span className="text-[rgba(255,255,255,0.42)] text-[11px] font-semibold">
+                        $TRUST
                       </span>
                     </div>
                   </div>
 
-                  <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-xl p-3 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[rgba(255,255,255,0.42)] text-[12px] font-semibold leading-[20px]">
-                        Triple Cost
-                      </span>
-                      <span className="text-[rgba(255,255,255,0.42)] text-[12px] font-semibold leading-[20px]">
-                        {TRIPLE_COST}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[rgba(255,255,255,0.42)] text-[12px] font-semibold leading-[20px]">
-                        Initial Deposit
-                      </span>
-                      <span className="text-[rgba(255,255,255,0.42)] text-[12px] font-semibold leading-[20px]">
-                        {INITIAL_DEPOSIT_TOTAL}
-                      </span>
-                    </div>
-                    <div className="h-px bg-[#393b60] my-0.5" />
+                  <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-xl p-3">
                     <div className="flex items-start justify-between">
-                      <span className="text-[#e0e2ea] text-[13px] font-bold leading-[20px]">
-                        Total
-                      </span>
+                      <div>
+                        <span className="text-[#e0e2ea] text-[13px] font-bold leading-[18px]">
+                          Total
+                        </span>
+                        <p className="text-[rgba(255,255,255,0.42)] text-[10px] leading-[14px] mt-0.5">
+                          + network gas
+                        </p>
+                      </div>
                       <div className="text-right">
-                        <div className="text-[#d4bbff] text-[13px] font-bold leading-[20px]">
+                        <div className="text-[#d4bbff] text-[13px] font-bold leading-[18px]">
                           {stakeTrust} $TRUST
                         </div>
-                        <div className="text-[#968da1] text-[8px] leading-[12px]">
+                        <div className="text-[#968da1] text-[9px] leading-[12px]">
                           &asymp; {stakeUsd} USD
                         </div>
                       </div>
