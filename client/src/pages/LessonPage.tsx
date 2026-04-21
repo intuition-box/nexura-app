@@ -1030,7 +1030,7 @@ export default function LessonPage() {
       {showXPModal ? (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4">
           <div
-            className="w-full sm:max-w-[340px] rounded-t-[14px] sm:rounded-[14px] overflow-hidden relative text-center"
+            className="w-full sm:max-w-[340px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden relative text-center"
             style={{
               background: "radial-gradient(ellipse at center, rgba(139,62,254,1) 0%, rgba(111,50,203,0.94) 50%, rgba(83,37,152,0.88) 100%)",
               paddingBottom: "max(2rem, env(safe-area-inset-bottom, 0px))",
@@ -1061,7 +1061,7 @@ export default function LessonPage() {
 
               {/* Description */}
               <p className="mt-1 text-[11px] sm:text-[12px] text-[#c3c6d3] leading-relaxed max-w-[260px] sm:max-w-[300px]" style={{ fontFamily: "'Inter', sans-serif" }}>
-                You've successfully mastered the basics of Web3 and Blockchain
+                You've successfully completed {lesson?.title ?? "this lesson"}
               </p>
 
               {/* XP amount */}
