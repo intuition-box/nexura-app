@@ -27,7 +27,7 @@ interface ProofOfActionModalProps {
 
 const SUBJECT = "I";
 const TRIPLE_COST = "0.003 $TRUST";
-const INITIAL_DEPOSIT_TOTAL = "0.097 $TRUST";
+const INITIAL_DEPOSIT_TOTAL = "0.1 $TRUST";
 
 function resolveObjectIcon(sourceLabel?: string): string {
   const key = (sourceLabel || "").toLowerCase();
