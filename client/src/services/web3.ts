@@ -74,10 +74,12 @@ export const createProofOfAction = async ({
   subjectString = "I",
   predicateString = "Completed",
   objectString,
+  stakeTrust,
 }: {
   subjectString?: string;
   predicateString?: string;
   objectString: string;
+  stakeTrust?: string;
 }) => {
   const walletClient = await getWalletClient();
   const publicClient = getPublicClient();
@@ -105,7 +107,10 @@ export const createProofOfAction = async ({
   const predicate = await resolveAtom(predicateString);
   const object = await resolveAtom(objectString);
 
-  const stakeAmount = parseEther('0.1');
+  const MIN_STAKE = 0.1;
+  const requested = stakeTrust !== undefined ? Number(stakeTrust) : MIN_STAKE;
+  const effective = Number.isFinite(requested) && requested >= MIN_STAKE ? requested : MIN_STAKE;
+  const stakeAmount = parseEther(effective.toString() as `${number}`);
 
   // If the triple (subject, predicate, object) already exists, stake into it
   // via deposit. Otherwise create the triple with the initial deposit.

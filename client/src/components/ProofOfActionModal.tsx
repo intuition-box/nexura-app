@@ -63,6 +63,7 @@ export default function ProofOfActionModal({
   const [staked, setStaked] = useState(alreadyClaimed);
   const [txHash, setTxHash] = useState<string>("");
   const [networkFee, setNetworkFee] = useState<string>("");
+  const [stakeInput, setStakeInput] = useState<string>(stakeTrust);
 
   useEffect(() => {
     if (!open) {
@@ -70,17 +71,22 @@ export default function ProofOfActionModal({
       setStaked(alreadyClaimed);
       setTxHash("");
       setNetworkFee("");
+      setStakeInput(stakeTrust);
     }
-  }, [open, alreadyClaimed]);
+  }, [open, alreadyClaimed, stakeTrust]);
 
   useEffect(() => {
     if (alreadyClaimed) setStaked(true);
   }, [alreadyClaimed]);
 
   const objectName = object?.trim();
-  const objectLabel = objectName ? `${objectName} on nexura` : "this action on nexura";
+  const objectLabel = objectName ? `${objectName} on Nexura` : "this action on Nexura";
   const predicateLabel = resolvePredicate(sourceLabel);
   const objectIcon = resolveObjectIcon(sourceLabel);
+
+  const MIN_STAKE = 0.1;
+  const parsedStake = Number(stakeInput);
+  const stakeValid = Number.isFinite(parsedStake) && parsedStake >= MIN_STAKE;
 
   const handleStake = async () => {
     if (staking || staked || alreadyClaimed) return;
@@ -88,6 +94,14 @@ export default function ProofOfActionModal({
       toast({
         title: "Stake failed",
         description: "Missing action context. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!stakeValid) {
+      toast({
+        title: "Invalid deposit",
+        description: `Minimum deposit is ${MIN_STAKE} $TRUST.`,
         variant: "destructive",
       });
       return;
@@ -100,6 +114,7 @@ export default function ProofOfActionModal({
         subjectString: SUBJECT,
         predicateString: predicateLabel,
         objectString: objectLabel,
+        stakeTrust: parsedStake.toString(),
       });
       setTxHash(hash);
       setStaked(true);
@@ -250,17 +265,30 @@ export default function ProofOfActionModal({
                         Initial Deposit
                       </span>
                       <span className="text-[rgba(255,255,255,0.6)] text-[11px] font-semibold">
-                        min
+                        min {MIN_STAKE}
                       </span>
                     </div>
-                    <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-xl h-[32px] px-[12px] flex items-center justify-between">
-                      <span className="text-[rgba(255,255,255,0.7)] text-[12px] font-semibold">
-                        {stakeTrust}
-                      </span>
-                      <span className="text-[rgba(255,255,255,0.42)] text-[11px] font-semibold">
+                    <div className={`bg-[rgba(6,2,16,0.6)] border rounded-xl h-[32px] px-[12px] flex items-center justify-between transition-colors ${stakeValid ? "border-[rgba(131,58,253,0.5)]" : "border-[rgba(239,68,68,0.6)]"}`}>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min={MIN_STAKE}
+                        step="0.01"
+                        value={stakeInput}
+                        onChange={(e) => setStakeInput(e.target.value)}
+                        disabled={staking || staked}
+                        aria-label="Deposit amount in TRUST"
+                        className="flex-1 bg-transparent outline-none text-[rgba(255,255,255,0.85)] text-[12px] font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-60"
+                      />
+                      <span className="text-[rgba(255,255,255,0.42)] text-[11px] font-semibold ml-2">
                         $TRUST
                       </span>
                     </div>
+                    {!stakeValid && (
+                      <p className="text-[10px] text-[#ff6b6b] font-medium">
+                        Minimum {MIN_STAKE} $TRUST
+                      </p>
+                    )}
                   </div>
 
                   <div className="bg-[rgba(6,2,16,0.6)] border border-[rgba(131,58,253,0.5)] rounded-xl p-3">
@@ -275,7 +303,7 @@ export default function ProofOfActionModal({
                       </div>
                       <div className="text-right">
                         <div className="text-[#d4bbff] text-[13px] font-bold leading-[18px]">
-                          {stakeTrust} $TRUST
+                          {stakeValid ? parsedStake : stakeInput || 0} $TRUST
                         </div>
                         {stakeUsd ? (
                           <div className="text-[#968da1] text-[9px] leading-[12px]">
@@ -294,7 +322,7 @@ export default function ProofOfActionModal({
 
                   <button
                     onClick={handleStake}
-                    disabled={staking || staked}
+                    disabled={staking || staked || !stakeValid}
                     data-testid="proof-modal-deposit"
                     className={`w-full h-[38px] rounded-[100px] font-semibold text-[13px] flex items-center justify-center gap-2 mt-auto relative overflow-hidden transition-all duration-300 ease-out ${
                       staked
