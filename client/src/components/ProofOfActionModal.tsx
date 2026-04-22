@@ -59,6 +59,8 @@ export default function ProofOfActionModal({
   const { isConnected, connectWallet, address } = useWallet();
   const [staking, setStaking] = useState(false);
   const [staked, setStaked] = useState(alreadyClaimed);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(alreadyClaimed);
   const [txHash, setTxHash] = useState<string>("");
   const [stakeInput, setStakeInput] = useState<string>(stakeTrust);
   const [walletBalance, setWalletBalance] = useState<bigint>(0n);
@@ -67,6 +69,8 @@ export default function ProofOfActionModal({
     if (!open) {
       setStaking(false);
       setStaked(alreadyClaimed);
+      setClaiming(false);
+      setClaimed(alreadyClaimed);
       setTxHash("");
       setStakeInput(stakeTrust);
     }
@@ -90,7 +94,10 @@ export default function ProofOfActionModal({
   }, [open, address, txHash]);
 
   useEffect(() => {
-    if (alreadyClaimed) setStaked(true);
+    if (alreadyClaimed) {
+      setStaked(true);
+      setClaimed(true);
+    }
   }, [alreadyClaimed]);
 
   const objectName = object?.trim();
@@ -146,10 +153,9 @@ export default function ProofOfActionModal({
       });
       setTxHash(hash);
       setStaked(true);
-      await onSuccess(hash);
       toast({
         title: "Proof of Action staked",
-        description: "Your XP has been claimed.",
+        description: "Tap Claim XP Rewards to collect your XP.",
       });
     } catch (err: unknown) {
       toast({
@@ -162,8 +168,33 @@ export default function ProofOfActionModal({
     }
   };
 
+  const handleClaim = async () => {
+    if (claiming || claimed) {
+      handleOpenChange(false);
+      return;
+    }
+    setClaiming(true);
+    try {
+      await onSuccess(txHash);
+      setClaimed(true);
+      toast({
+        title: "XP Claimed",
+        description: "Your XP has been added to your balance.",
+      });
+      handleOpenChange(false);
+    } catch (err: unknown) {
+      toast({
+        title: "Claim failed",
+        description: toUserFriendlyErrorMessage(err, "Unable to claim XP."),
+        variant: "destructive",
+      });
+    } finally {
+      setClaiming(false);
+    }
+  };
+
   const handleOpenChange = (next: boolean) => {
-    if (!next && staking) return;
+    if (!next && (staking || claiming)) return;
     onOpenChange(next);
   };
 
@@ -171,9 +202,9 @@ export default function ProofOfActionModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         hideClose
-        onInteractOutside={(e) => { if (staking || staked) e.preventDefault(); }}
-        onEscapeKeyDown={(e) => { if (staking || staked) e.preventDefault(); }}
-        onPointerDownOutside={(e) => { if (staking || staked) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (staking || claiming || (staked && !claimed)) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (staking || claiming || (staked && !claimed)) e.preventDefault(); }}
+        onPointerDownOutside={(e) => { if (staking || claiming || (staked && !claimed)) e.preventDefault(); }}
         className={`p-0 border-0 bg-transparent shadow-none w-[calc(100vw-32px)] ${staked ? "max-w-[448px] sm:w-[448px]" : "max-w-[897px] sm:w-[897px]"} !duration-500 data-[state=open]:!zoom-in-90 data-[state=open]:!slide-in-from-bottom-8 data-[state=closed]:!zoom-out-95 data-[state=closed]:!slide-out-to-bottom-4`}
       >
         <div
@@ -199,7 +230,9 @@ export default function ProofOfActionModal({
           {staked ? (
             <SuccessView
               xpReward={xpReward}
-              onDismiss={() => handleOpenChange(false)}
+              onClaim={handleClaim}
+              claiming={claiming}
+              claimed={claimed}
             />
           ) : (
           <div className="px-[28px] pt-[24px] pb-[26px]">
@@ -383,10 +416,12 @@ export default function ProofOfActionModal({
 
 interface SuccessViewProps {
   xpReward?: number | string;
-  onDismiss: () => void;
+  onClaim: () => void;
+  claiming: boolean;
+  claimed: boolean;
 }
 
-function SuccessView({ xpReward, onDismiss }: SuccessViewProps) {
+function SuccessView({ xpReward, onClaim, claiming, claimed }: SuccessViewProps) {
   const xpAmount = typeof xpReward !== "undefined" ? String(xpReward) : "0";
 
   return (
@@ -440,13 +475,28 @@ function SuccessView({ xpReward, onDismiss }: SuccessViewProps) {
           </div>
 
           <button
-            onClick={onDismiss}
+            onClick={onClaim}
+            disabled={claiming}
             data-testid="proof-success-claim-cta"
-            className="mt-4 px-5 py-[9px] rounded-[100px] font-bold text-[10px] sm:text-[11px] text-[#270058] bg-gradient-to-r from-[#8a3ffc] to-[#00ccf9] flex items-center gap-1.5 hover:scale-[1.03] hover:shadow-[0_0_12px_rgba(138,63,252,0.55)] active:scale-[0.98] transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500"
+            className="mt-4 px-5 py-[9px] rounded-[100px] font-bold text-[10px] sm:text-[11px] text-[#270058] bg-gradient-to-r from-[#8a3ffc] to-[#00ccf9] flex items-center gap-1.5 hover:scale-[1.03] hover:shadow-[0_0_12px_rgba(138,63,252,0.55)] active:scale-[0.98] transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
             style={{ animationDelay: "540ms", animationFillMode: "both" }}
           >
-            Claim XP Rewards
-            <ArrowRight className="w-3 h-3" strokeWidth={3} />
+            {claiming ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" strokeWidth={3} />
+                Claiming...
+              </>
+            ) : claimed ? (
+              <>
+                Close
+                <ArrowRight className="w-3 h-3" strokeWidth={3} />
+              </>
+            ) : (
+              <>
+                Claim XP Rewards
+                <ArrowRight className="w-3 h-3" strokeWidth={3} />
+              </>
+            )}
           </button>
         </div>
       </div>
