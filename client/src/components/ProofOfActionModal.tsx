@@ -428,9 +428,6 @@ function SuccessView({ xpReward, onDismiss }: SuccessViewProps) {
             className="mt-4 flex flex-col items-center gap-0.5 animate-in fade-in zoom-in-95 duration-500"
             style={{ animationDelay: "420ms", animationFillMode: "both" }}
           >
-            <span className="text-[#64748b] text-[8px] font-bold tracking-[0.8px] uppercase">
-              Unclaimed Balance
-            </span>
             <div className="flex items-end gap-1">
               <span
                 className="text-[#d4bbff] text-[28px] sm:text-[32px] font-bold leading-none"
