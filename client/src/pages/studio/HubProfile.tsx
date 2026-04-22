@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
-import { ArrowLeft, Camera, Loader2, Save, Globe, Twitter, FileText, Upload, X } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, Save, Globe, Twitter, FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "../../hooks/use-toast";
 import {
@@ -41,7 +41,6 @@ export default function HubProfile() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
   const [documentUrl, setDocumentUrl] = useState("");
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [disconnectingDiscord, setDisconnectingDiscord] = useState(false);
@@ -82,21 +81,6 @@ export default function HubProfile() {
     reader.readAsDataURL(file);
   };
 
-  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target?.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Document must be under 5MB.", variant: "destructive" });
-      return;
-    }
-    setDocumentFile(file);
-  };
-
-  const clearDocument = () => {
-    setDocumentFile(null);
-    setDocumentUrl("");
-  };
-
   const descTooShort = description.length > 0 && description.length < 150;
 
   const handleSave = async () => {
@@ -117,17 +101,11 @@ export default function HubProfile() {
       fd.append("website", website.trim());
       fd.append("xAccount", xAccount.trim());
       fd.append("discordServer", discordServer.trim());
-      if (!documentFile) {
-        fd.append("document", documentUrl.trim());
-      }
+      fd.append("document", documentUrl.trim());
 
       if (imagePreview) {
         const blob = base64ToBlob(imagePreview);
         fd.append("logo", blob, "logo.png");
-      }
-
-      if (documentFile) {
-        fd.append("document", documentFile, documentFile.name);
       }
 
       await projectApiRequest({ method: "PATCH", endpoint: "/hub/update-hub", formData: fd });
@@ -373,50 +351,16 @@ export default function HubProfile() {
             )}
           </div>
 
-          {/* Project Document */}
+          {/* Project Document Link */}
           <div className="space-y-2">
-            <label className="text-sm text-white/60 font-medium block">Project Document (Optional)</label>
+            <label className="text-sm text-white/60 font-medium block">Project Document Link (Optional)</label>
             {isSuperAdmin ? (
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 px-3 py-2 rounded-md bg-white/[0.06] border border-white/15 text-white/80 text-sm hover:bg-white/[0.1] cursor-pointer transition-colors">
-                  <Upload className="w-4 h-4" />
-                  <span>{documentFile ? "Replace" : documentUrl ? "Replace" : "Upload"}</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md"
-                    onChange={handleDocumentChange}
-                    className="hidden"
-                  />
-                </label>
-                {(documentFile || documentUrl) && (
-                  <>
-                    {documentFile ? (
-                      <span className="text-sm text-white/70 flex items-center gap-1 truncate max-w-[200px]">
-                        <FileText className="w-4 h-4 flex-shrink-0" />
-                        {documentFile.name}
-                      </span>
-                    ) : (
-                      <a
-                        href={documentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm text-purple-300 underline flex items-center gap-1 truncate max-w-[200px]"
-                      >
-                        <FileText className="w-4 h-4 flex-shrink-0" />
-                        View current
-                      </a>
-                    )}
-                    <button
-                      type="button"
-                      onClick={clearDocument}
-                      className="text-white/50 hover:text-white"
-                      aria-label="Remove document"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-              </div>
+              <Input
+                value={documentUrl}
+                onChange={(e) => setDocumentUrl(e.target.value)}
+                placeholder="https://docs.your-project.com/whitepaper"
+                className="bg-white/[0.06] border-white/15 text-white placeholder:text-white/30 focus:border-purple-500/60 transition-colors"
+              />
             ) : documentUrl ? (
               <a href={documentUrl} target="_blank" rel="noreferrer" className="text-purple-300 underline flex items-center gap-1">
                 <FileText className="w-4 h-4" /> View document
