@@ -532,7 +532,7 @@ export default function CampaignEnvironment() {
         <div className="space-y-4 sm:space-y-6">
           {quests.length > 0 ? (
             quests.map((quest) => {
-              const requiresProof = ["comment", "follow", "comment-x", "follow-x", "repost-x", "feedback"].includes(quest.tag);
+              const requiresProof = ["comment", "follow", "comment-x", "follow-x", "repost-x", "feedback", "create-post"].includes(quest.tag);
               const isFeedback = quest.tag === "feedback";
               const visited = visitedQuests.includes(quest._id);
               const claimed = quest.done || claimedQuests.includes(quest._id);
