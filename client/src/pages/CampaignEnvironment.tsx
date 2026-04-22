@@ -178,6 +178,9 @@ export default function CampaignEnvironment() {
   // Open quest links
   const markQuestAsVisited = (quest: Quest) => {
     let url = quest.link?.trim() || "#";
+    if (quest.tag === "create-post") {
+      url = "https://x.com/compose/post";
+    }
     if (url !== "#" && !/^https?:\/\//i.test(url)) url = `https://${url}`;
     window.open(url, "_blank");
 
@@ -652,7 +655,7 @@ export default function CampaignEnvironment() {
                       ) : (
                         <input
                           type="url"
-                          placeholder="Paste your comment link or twitter username here"
+                          placeholder={quest.tag === "create-post" ? "Paste the link to your post here" : "Paste your comment link or twitter username here"}
                           value={proofLinks[quest._id] || ""}
                           onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
                           className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500"

@@ -137,7 +137,7 @@ export default function ProofOfActionModal({
       await connectWallet();
       toast({
         title: "Connect your wallet",
-        description: "Approve the connection, then tap Deposit again to stake.",
+        description: "Approve the connection, then tap Create Claim again to stake.",
       });
       return;
     }
@@ -400,7 +400,7 @@ export default function ProofOfActionModal({
                         Staking…
                       </span>
                     ) : (
-                      <span className="relative z-10">Deposit</span>
+                      <span className="relative z-10">Create Claim</span>
                     )}
                   </button>
                 </div>

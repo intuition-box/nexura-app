@@ -38,6 +38,16 @@ const DISCORD_CAMPAIGN_TAGS = new Set([
 	"send-message-discord",
 ]);
 
+const PROOF_REQUIRED_CAMPAIGN_TAGS = new Set([
+	"comment",
+	"comment-x",
+	"follow",
+	"follow-x",
+	"repost-x",
+	"feedback",
+	"create-post",
+]);
+
 // todo: add ecosystem completed to eco quests
 export const fetchEcosystemDapps = async (
 	req: GlobalRequest,
@@ -384,6 +394,7 @@ export const performCampaignQuest = async (
 
 		const normalizedTag = String(campaignQuestk.tag ?? "").trim().toLowerCase();
 		const isDiscordQuest = DISCORD_CAMPAIGN_TAGS.has(normalizedTag);
+		const requiresProof = PROOF_REQUIRED_CAMPAIGN_TAGS.has(normalizedTag);
 		const normalizedCampaignId = String(campaignId ?? campaignQuestk.campaign ?? "").trim();
 
 		let campaignDone = await campaignQuestCompleted.findOne({
@@ -434,6 +445,11 @@ export const performCampaignQuest = async (
 		if (!campaignDone) {
 			if (isDiscordQuest) {
 				res.status(FORBIDDEN).json({ error: "discord tasks must be verified before they can be completed" });
+				return;
+			}
+
+			if (requiresProof) {
+				res.status(FORBIDDEN).json({ error: "this task requires a submission for review before it can be completed" });
 				return;
 			}
 
