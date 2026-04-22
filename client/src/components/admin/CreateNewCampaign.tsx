@@ -1945,7 +1945,7 @@ const isActive =
               setNewTask({
                 ...newTask,
                 type,
-                platform: isDiscord ? "Discord" : isTwitter ? "Twitter" : (isPortal || isOther || isFeedback || isCreatePost) ? "" : newTask.platform,
+                platform: isDiscord ? "Discord" : isTwitter ? "Twitter" : isCreatePost ? "Twitter" : (isPortal || isOther || isFeedback) ? "" : newTask.platform,
                 evidence: isDiscord || isPortal ? "" : isTwitter || isCreatePost ? "submit_link" : isFeedback ? "" : newTask.evidence,
                 validation: isDiscord ? "Discord Auth" : isPortal ? "Auto Verified" : isFeedback || isCreatePost ? "Manual Validation" : (newTask.validation === "Discord Auth" || newTask.validation === "Auto Verified" ? "Manual Validation" : newTask.validation),
                 verificationMode: isFeedback ? "feedback" : isCreatePost ? "submit_link" : "",
@@ -1970,7 +1970,7 @@ const isActive =
         </div>
 
         {/* Platform */}
-        {newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback" && newTask.type !== "Create a Post" && !isDiscordFixedTaskType(newTask.type) && (
+        {newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback" && !isDiscordFixedTaskType(newTask.type) && (
         <div>
           <label className="text-sm text-white/70 mb-2 block">Platform</label>
           <div className="flex gap-3">
