@@ -680,7 +680,7 @@ const buildCampaignFormData = (isDraft: boolean): FormData => {
     tasks.map(t => {
       const taskTag = typeToTag(t.type);
       const taskGuildId = t.guildId || hubGuildId || "";
-      const defaultLink = taskTag === "create-post" ? "https://x.com/compose/post" : "https://nexura.io";
+      const defaultLink = taskTag === "create-post" ? "https://x.com/compose/post" : "#";
       const payload: Record<string, unknown> = {
         _id: t._id,
         quest: t.description || t.type,
