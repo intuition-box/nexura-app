@@ -30,6 +30,9 @@ const applyHubDefaults = async (hubId: string, ownerId: string) => {
     {
       $set: {
         systemKey: ADMIN_CAMPAIGN_SYSTEM_KEY,
+        name: ADMIN_CAMPAIGN_HUB_NAME,
+        description: ADMIN_CAMPAIGN_HUB_DESCRIPTION,
+        logo: ADMIN_CAMPAIGN_HUB_LOGO,
         superAdmin: ownerId,
       },
     },

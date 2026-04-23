@@ -54,11 +54,6 @@ const hubSchema = new Schema({
     required: false,
     default: ""
   },
-  document: {
-    type: String,
-    required: false,
-    default: ""
-  },
   campaignsCreated: {
     type: Number,
     default: 0

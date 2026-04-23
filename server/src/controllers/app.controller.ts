@@ -929,19 +929,15 @@ export const validatePortalTask = async (req: GlobalRequest, res: GlobalResponse
 
 export const updateClaims = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { action, transactionHash }: { action: "buy" | "sell", transactionHash: string } = req.body;
+    const { transactionHash }: { transactionHash: string } = req.body;
+    const { id } = req;
 
-    if (!transactionHash && !action) {
-      res.status(BAD_REQUEST).json({ error: "transaction hash and action are required" });
+    if (!transactionHash) {
+      res.status(BAD_REQUEST).json({ error: "transaction hash is required" });
       return;
     }
 
-    if (action !== "buy" && action !== "sell") {
-      res.status(BAD_REQUEST).json({ error: "invalid action. action can only be buy or sell" });
-      return;
-    }
-
-    const userToUpdate = await user.findById(req.id);
+    const userToUpdate = await user.findById(id);
     if (!userToUpdate) {
       res.status(NOT_FOUND).json({ error: "user not found" });
       return;
@@ -956,13 +952,7 @@ export const updateClaims = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
-    if (action === "buy") {
-      userToUpdate.noOfClaims += 1;
-    } else {
-      userToUpdate.claimsSold += 1;
-    }
-
-    await userToUpdate.save();
+    await user.updateOne({ _id: id }, { $inc: { noOfClaims: 1 } });
 
     res.status(OK).json({ message: "user claims updated successfully" });
   } catch (error) {
@@ -1027,21 +1017,6 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
     const totalQuests = await quest.countDocuments({ category: "weekly" });
 
     const totalQuestsJoined = await questCompleted.countDocuments();
-
-    const soldClaimsAggregate = await user.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalClaimsSold: { $sum: "$claimsSold" },
-        },
-      },
-    ]);
-
-    const soldClaims = soldClaimsAggregate[0]?.totalClaimsSold ?? 0;
-
-    const rewardContractDeployed = await campaign.countDocuments({ contractAddress: { $exists: true } });
-
-    const others = rewardContractDeployed + soldClaims;
 
     const totalQuestsCompleted = await questCompleted.countDocuments({
       done: true,
@@ -1292,7 +1267,6 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
           prevActiveMonthly,
           totalUsersYesterday,
         },
-        others,
         totalReferrals,
         lessonsCreated,
         claimsCreated,

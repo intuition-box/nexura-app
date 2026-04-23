@@ -155,21 +155,15 @@ export default function CampaignCard({
         </div> */}
 
         {/* Reward Pool */}
-        {reward && (Number(reward.xp) > 0 || trustReward > 0) && (
+        {reward && (
           <div className="border-t border-card-border pt-4">
             <div className="text-sm text-muted-foreground mb-1">Rewards</div>
             <div className="flex items-center space-x-2">
-              {Number(reward.xp) > 0 && (
-                <span className="text-blue-500 font-bold">{reward.xp} XP</span>
-              )}
-              {Number(reward.xp) > 0 && trustReward > 0 && (
-                <span className="text-muted-foreground">+</span>
-              )}
-              {trustReward > 0 && (
-                <div className="flex items-center space-x-1">
-                  <span className="font-bold text-card-foreground">{trustReward} TRUST</span>
-                </div>
-              )}
+              <span className="text-blue-500 font-bold">{reward.xp} XP</span>
+              <span className="text-muted-foreground">+</span>
+              <div className="flex items-center space-x-1">
+                <span className="font-bold text-card-foreground">{trustReward} TRUST</span>
+              </div>
             </div>
           </div>
         )}

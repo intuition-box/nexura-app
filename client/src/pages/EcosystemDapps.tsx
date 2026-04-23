@@ -9,7 +9,6 @@ import { useToast } from "../hooks/use-toast";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { motion } from "framer-motion";
 import { apiRequestV2, getStoredAccessToken } from "../lib/queryClient";
-import ProofOfActionModal from "../components/ProofOfActionModal";
 
 interface Dapp {
   _id: string;
@@ -70,7 +69,6 @@ export default function EcosystemDapps() {
   const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [dapps, setDapps] = useState<Dapp[]>([]);
-  const [proofModalDapp, setProofModalDapp] = useState<Dapp | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -159,29 +157,23 @@ export default function EcosystemDapps() {
       return;
     }
 
-    setProofModalDapp(dapp);
-  };
-
-  const finalizeDappClaim = async (txHash: string) => {
-    const dapp = proofModalDapp;
-    if (!dapp) return;
-
     try {
-      await apiRequestV2("POST", "/api/user/update-claims-created", { txHash });
-
       const resp = await apiRequestV2("POST", `/api/quest/claim-ecosystem-quest?id=${dapp._id}`);
 
       if (resp.error) {
         toast({ title: 'Error', description: resp.error });
-        throw new Error(resp.error);
+
+        return;
       }
 
       markClaimed(dapp._id);
+      // try { emitSessionChange(); } catch(e){}
       toast({ title: 'XP awarded', description: `+${dapp.reward} XP` });
+
+      // window.location.reload();
     } catch (error: any) {
       console.error('claim error:', error.message);
       toast({ title: 'Claim failed', description: error.message, variant: 'destructive' });
-      throw error;
     }
   };
 
@@ -326,7 +318,7 @@ export default function EcosystemDapps() {
                       disabled={dapp.done || !visitedDapps.includes(dapp._id) || claimedDapps.includes(dapp._id)}
                       onClick={(e) => { e.stopPropagation(); handleClaim(dapp); }}
                     >
-                      {(dapp.done || claimedDapps.includes(dapp._id)) ? "Claimed" : `Claim ${dapp.reward} XP`}
+                      {(dapp.done || claimedDapps.includes(dapp._id)) ? "Claimed" : `Claim ${dapp.reward}`}
                     </Button>
                   </div>
                 </CardContent>
@@ -346,16 +338,6 @@ export default function EcosystemDapps() {
         )}
 
       </div>
-
-      <ProofOfActionModal
-        open={!!proofModalDapp}
-        onOpenChange={(o) => { if (!o) setProofModalDapp(null); }}
-        object={proofModalDapp?.name || "this dApp"}
-        xpReward={proofModalDapp ? getXpFromReward(proofModalDapp.reward) : undefined}
-        sourceLabel="Ecosystem"
-        onSuccess={finalizeDappClaim}
-        alreadyClaimed={Boolean(proofModalDapp?.done)}
-      />
     </div>
   );
 }

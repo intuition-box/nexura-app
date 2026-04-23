@@ -14,11 +14,7 @@ const userSchema = new Schema({
 		type: String,
 		required: true,
 		unique: true
-	},
-	claimsSold: {
-		type: Number,
-		default: 0
-	},
+  },
 	noOfClaimsCreated: {
 		type: Number,
 		default: 0

@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
-import { ArrowLeft, Camera, Loader2, Save, Globe, Twitter, FileText } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, Save, Globe, Twitter } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "../../hooks/use-toast";
 import {
@@ -40,7 +40,6 @@ export default function HubProfile() {
   const [logoUrl, setLogoUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
-  const [documentUrl, setDocumentUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [disconnectingDiscord, setDisconnectingDiscord] = useState(false);
@@ -61,7 +60,6 @@ export default function HubProfile() {
           setDiscordServer(hub.discordServer ?? "");
           setDiscordConnected(Boolean(hub.discordConnected));
           setLogoUrl(hub.logo ?? "");
-          setDocumentUrl(hub.document ?? "");
         }
       })
       .catch(() => {
@@ -100,8 +98,6 @@ export default function HubProfile() {
       fd.append("description", description ?? "");
       fd.append("website", website.trim());
       fd.append("xAccount", xAccount.trim());
-      fd.append("discordServer", discordServer.trim());
-      fd.append("document", documentUrl.trim());
 
       if (imagePreview) {
         const blob = base64ToBlob(imagePreview);
@@ -333,48 +329,13 @@ export default function HubProfile() {
             )}
           </div>
 
-          {/* Discord Server Link */}
+          {/* Connected Discord Server */}
           <div className="space-y-2">
-            <label className="text-sm text-white/60 font-medium block">Discord Server (Optional)</label>
-            {isSuperAdmin ? (
-              <div className="relative">
-                <img src="/discord-logo-icon.png" alt="" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 opacity-60" />
-                <Input
-                  value={discordServer}
-                  onChange={(e) => setDiscordServer(e.target.value)}
-                  placeholder="https://discord.gg/your-invite"
-                  className="bg-white/[0.06] border-white/15 text-white placeholder:text-white/30 focus:border-purple-500/60 transition-colors pl-10"
-                />
-              </div>
-            ) : (
-              <p className="text-white/80 break-all">{discordServer || "Not set"}</p>
-            )}
-          </div>
-
-          {/* Project Document Link */}
-          <div className="space-y-2">
-            <label className="text-sm text-white/60 font-medium block">Project Document Link (Optional)</label>
-            {isSuperAdmin ? (
-              <Input
-                value={documentUrl}
-                onChange={(e) => setDocumentUrl(e.target.value)}
-                placeholder="https://docs.your-project.com/whitepaper"
-                className="bg-white/[0.06] border-white/15 text-white placeholder:text-white/30 focus:border-purple-500/60 transition-colors"
-              />
-            ) : documentUrl ? (
-              <a href={documentUrl} target="_blank" rel="noreferrer" className="text-purple-300 underline flex items-center gap-1">
-                <FileText className="w-4 h-4" /> View document
-              </a>
-            ) : (
-              <p className="text-white/80">Not set</p>
-            )}
-          </div>
-
-          {/* Connected Discord (OAuth) */}
-          <div className="space-y-2">
-            <label className="text-sm text-white/60 font-medium block">Discord Verification Status</label>
-            <div className="bg-white/[0.06] border border-white/15 text-white/70 rounded-md px-3 py-2 text-sm">
-              {discordConnected ? "Connected for task validation" : "Not connected"}
+            <label className="text-sm text-white/60 font-medium block">Connected Discord Server</label>
+            <div className="bg-white/[0.06] border border-white/15 text-white rounded-md px-3 py-2 text-sm">
+              {discordConnected
+                ? (discordServer || "Connected")
+                : "Not connected"}
             </div>
           </div>
 
