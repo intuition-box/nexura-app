@@ -95,7 +95,12 @@ export function useWallet() {
       _pendingPurpose = opts?.purpose;
 
       if (!isConnected) {
-        _pendingAuth = true;
+        // If session token already exists, just re-link the wallet provider —
+        // don't force another login signature + reload.
+        const hasExistingToken =
+          !!localStorage.getItem("nexura:token") ||
+          !!localStorage.getItem("nexura:proj-token");
+        _pendingAuth = !hasExistingToken;
         openConnectModal?.();
         return null;
       }

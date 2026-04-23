@@ -1,5 +1,6 @@
-import { redeem, getMultiVaultAddressFromChainId, getAtomDetails, createTripleStatement, calculateAtomId, createAtomFromString } from "@0xintuition/sdk";
-import { Address, parseEther} from "viem";
+import { redeem, getMultiVaultAddressFromChainId, getAtomDetails, createTripleStatement, calculateAtomId, calculateTripleId, getTripleDetails, createAtomFromString } from "@0xintuition/sdk";
+import { MultiVaultAbi } from "@0xintuition/protocol";
+import { Address, parseEther, toHex } from "viem";
 import { getWalletClient, getPublicClient } from "../lib/viem";
 import { apiRequestV2 } from "../lib/queryClient";
 import chain from "../lib/chain";
@@ -62,45 +63,72 @@ export const sellShares = async (sharesAmount: string, termId: Address, curveId:
   return transactionHash;
 };
 
-export const createProofOfAction = async ({ username, objectString }: { username: string, objectString: string }) => {
+export const createProofOfAction = async ({
+  subjectString = "I",
+  predicateString = "Completed",
+  objectString,
+  stakeTrust,
+}: {
+  subjectString?: string;
+  predicateString?: string;
+  objectString: string;
+  stakeTrust?: string;
+}) => {
   const walletClient = await getWalletClient();
   const publicClient = getPublicClient();
-  
+
   await walletClient.switchChain({ id: chain.id });
 
   const address = getMultiVaultAddressFromChainId(walletClient.chain?.id!);
 
-  let subject: Address;
-  let object: Address;
-
-  const predicate = "0x2d864f0214db084b5420de2a72acaddae82d56d9e6e9fed7ecbab3d9f6afc1fe";
-
-  const subjectAtomId = calculateAtomId(username as Address);
-  const subjectExists = await getAtomDetails(subjectAtomId);
-
-  if (!subjectExists) {
+  const resolveAtom = async (label: string): Promise<Address> => {
+    // createAtomFromString stores atomData as toHex(label); match that here
+    // so calculateAtomId produces the same id as what the contract indexes.
+    // This is network-agnostic — the network-specific MultiVault is picked up
+    // via `address` (from getMultiVaultAddressFromChainId) and the network-
+    // specific GraphQL endpoint is configured at app bootstrap.
+    const atomId = calculateAtomId(toHex(label));
+    const exists = await getAtomDetails(atomId);
+    if (exists) return atomId;
     const { state: { termId } } = await createAtomFromString(
       { walletClient, publicClient, address },
-      username
+      label
     );
+    return termId;
+  };
 
-    subject = termId;
-  } else {
-    subject = subjectAtomId;
-  }
+  const subject = await resolveAtom(subjectString);
+  const predicate = await resolveAtom(predicateString);
+  const object = await resolveAtom(objectString);
 
-  const objectAtomId = calculateAtomId(objectString as Address);
-  const objectExists = await getAtomDetails(objectAtomId);
+  const MIN_STAKE = 0.1;
+  const requested = stakeTrust !== undefined ? Number(stakeTrust) : MIN_STAKE;
+  const effective = Number.isFinite(requested) && requested >= MIN_STAKE ? requested : MIN_STAKE;
+  const stakeAmount = parseEther(effective.toString() as `${number}`);
 
-  if (!objectExists) {
-    const { state: { termId } } = await createAtomFromString(
-      { walletClient, publicClient, address },
-      objectString
-    );
+  // If the triple (subject, predicate, object) already exists, stake into it
+  // via deposit. Otherwise create the triple with the initial deposit.
+  const tripleId = calculateTripleId(subject, predicate, object);
+  const existingTriple = await getTripleDetails(tripleId);
 
-    object = termId;
-  } else {
-    object = objectAtomId;
+  if (existingTriple) {
+    // Stake on an existing triple by calling MultiVault.deposit directly.
+    // The SDK's single `deposit` wrapper drops msg.value, and PROXY_FEE_CONTRACT
+    // was previously used as a workaround but depends on a frontend env var
+    // that is not wired on every deployment. Calling MultiVault with its raw
+    // ABI and a plumbed `value` works in all environments. Default curveId is
+    // 1 (linear) — matches what createTriples uses at triple creation time.
+    const account = walletClient.account!.address as Address;
+    const { request } = await publicClient.simulateContract({
+      address,
+      abi: MultiVaultAbi,
+      functionName: "deposit",
+      account,
+      args: [account, tripleId, 1n, 0n],
+      value: stakeAmount,
+    });
+    const transactionHash = await walletClient.writeContract(request);
+    return transactionHash;
   }
 
   const { transactionHash } = await createTripleStatement(
@@ -110,9 +138,9 @@ export const createProofOfAction = async ({ username, objectString }: { username
         [subject],
         [predicate],
         [object],
-        [parseEther('0.1')],
+        [stakeAmount],
       ],
-      value: parseEther('0.1'),
+      value: stakeAmount,
     }
   );
 

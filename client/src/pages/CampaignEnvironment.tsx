@@ -18,6 +18,7 @@ import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../lib/auth";
 import { claimCampaignOnchainReward } from "../lib/performOnchainAction";
 import { createProofOfAction } from "../services/web3";
+import ProofOfActionModal from "../components/ProofOfActionModal";
 
 type Quest = {
   _id: string;
@@ -81,6 +82,7 @@ export default function CampaignEnvironment() {
   const [joiningCampaign, setJoiningCampaign] = useState(false);
   const [campaignReady, setCampaignReady] = useState(false);
   const [campaignRefreshToken, setCampaignRefreshToken] = useState(0);
+  const [showProofModal, setShowProofModal] = useState(false);
 
   const [description, setDescription] = useState("");
   const [title, setTitle] = useState("");
@@ -176,6 +178,9 @@ export default function CampaignEnvironment() {
   // Open quest links
   const markQuestAsVisited = (quest: Quest) => {
     let url = quest.link?.trim() || "#";
+    if (quest.tag === "create-post") {
+      url = "https://x.com/compose/post";
+    }
     if (url !== "#" && !/^https?:\/\//i.test(url)) url = `https://${url}`;
     window.open(url, "_blank");
 
@@ -350,13 +355,20 @@ export default function CampaignEnvironment() {
         throw new Error("Kindly complete quests to claim reward");
       }
 
+      setShowProofModal(true);
+    } catch (error: any) {
+      console.error(error);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const finalizeCampaignReward = async (txHash: string) => {
+    try {
       if (campaignAddress && trustClaimed < totalTrustAvailable) {
         await claimCampaignOnchainReward({ campaignAddress, userId });
       }
 
-      // const txHash = await createProofOfAction({ username: user?.usernaeme, objectString: title });
-
-      // await apiRequestV2("POST", "/api/user/update-claims-created", { txHash });
+      await apiRequestV2("POST", "/api/user/update-claims-created", { txHash });
 
       await apiRequestV2("POST", `/api/campaign/complete-campaign?id=${campaignId}`);
 
@@ -364,6 +376,7 @@ export default function CampaignEnvironment() {
     } catch (error: any) {
       console.error(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
+      throw error;
     }
   };
 
@@ -456,12 +469,14 @@ export default function CampaignEnvironment() {
               </div>
             </button>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-              <p className="text-[0.65rem] sm:text-sm opacity-70 uppercase">Total XP</p>
-              <div className="bg-purple-600/30 border border-purple-500/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full flex items-center gap-1 sm:gap-2">
-                <span className="font-bold text-xs sm:text-sm">{reward.xp} XP</span>
+            {Number(reward.xp) > 0 && (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <p className="text-[0.65rem] sm:text-sm opacity-70 uppercase">Total XP</p>
+                <div className="bg-purple-600/30 border border-purple-500/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full flex items-center gap-1 sm:gap-2">
+                  <span className="font-bold text-xs sm:text-sm">{reward.xp} XP</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="w-full bg-white/10 h-2 sm:h-3 rounded-full overflow-hidden mt-2 sm:mt-3">
@@ -497,10 +512,18 @@ export default function CampaignEnvironment() {
                     {title || subTitle || description || "Complete quests in this campaign and earn rewards."}
                   </p>
                 </div>
-                <div className="mt-3 space-y-1">
-                  <p className="text-xs opacity-50 uppercase">Rewards</p>
-                  <p className="text-sm">{hasTrustReward ? `${reward.xp} XP + ${trustReward} $TRUST` : `${reward.xp} XP`}</p>
-                </div>
+                {(Number(reward.xp) > 0 || hasTrustReward) && (
+                  <div className="mt-3 space-y-1">
+                    <p className="text-xs opacity-50 uppercase">Rewards</p>
+                    <p className="text-sm">
+                      {hasTrustReward && Number(reward.xp) > 0
+                        ? `${reward.xp} XP + ${trustReward} $TRUST`
+                        : hasTrustReward
+                        ? `${trustReward} $TRUST`
+                        : `${reward.xp} XP`}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <Button
@@ -522,7 +545,7 @@ export default function CampaignEnvironment() {
         <div className="space-y-4 sm:space-y-6">
           {quests.length > 0 ? (
             quests.map((quest) => {
-              const requiresProof = ["comment", "follow", "comment-x", "follow-x", "repost-x", "feedback"].includes(quest.tag);
+              const requiresProof = ["comment", "follow", "comment-x", "follow-x", "repost-x", "feedback", "create-post"].includes(quest.tag);
               const isFeedback = quest.tag === "feedback";
               const visited = visitedQuests.includes(quest._id);
               const claimed = quest.done || claimedQuests.includes(quest._id);
@@ -607,24 +630,32 @@ export default function CampaignEnvironment() {
                       </p>
                       {isFeedback ? (
                         <>
-                          <textarea
-                            placeholder="Write your feedback here (minimum 200 characters)..."
-                            value={proofLinks[quest._id] || ""}
-                            onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
-                            rows={5}
-                            maxLength={2000}
-                            className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500 resize-none"
-                          />
-                          <div className="flex items-center justify-between">
-                            <p className={`text-xs ${(proofLinks[quest._id]?.length || 0) < 200 ? "text-red-400" : "text-green-400"}`}>
-                              {proofLinks[quest._id]?.length || 0}/200 characters minimum
-                            </p>
-                          </div>
+                          {(() => {
+                            const minChars = Number((quest as any).feedbackCharLimit) > 0 ? Number((quest as any).feedbackCharLimit) : 200;
+                            const currentLength = proofLinks[quest._id]?.length || 0;
+                            return (
+                              <>
+                                <textarea
+                                  placeholder={`Write your feedback here (minimum ${minChars} characters)...`}
+                                  value={proofLinks[quest._id] || ""}
+                                  onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
+                                  rows={5}
+                                  maxLength={Math.max(2000, minChars)}
+                                  className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500 resize-none"
+                                />
+                                <div className="flex items-center justify-between">
+                                  <p className={`text-xs ${currentLength < minChars ? "text-red-400" : "text-green-400"}`}>
+                                    {currentLength}/{minChars} characters minimum
+                                  </p>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </>
                       ) : (
                         <input
                           type="url"
-                          placeholder="Paste your comment link or twitter username here"
+                          placeholder={quest.tag === "create-post" ? "Paste the link to your post here" : "Paste your comment link or twitter username here"}
                           value={proofLinks[quest._id] || ""}
                           onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
                           className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
@@ -632,12 +663,13 @@ export default function CampaignEnvironment() {
                       )}
                       <button
                         onClick={() => {
-                          if (isFeedback && (proofLinks[quest._id]?.length || 0) < 200) {
+                          const minChars = Number((quest as any).feedbackCharLimit) > 0 ? Number((quest as any).feedbackCharLimit) : 200;
+                          if (isFeedback && (proofLinks[quest._id]?.length || 0) < minChars) {
                             return;
                           }
                           retryQuests.includes(quest._id) ? retryQuest(quest) : submitCommentProof(quest);
                         }}
-                        disabled={isFeedback && (proofLinks[quest._id]?.length || 0) < 200}
+                        disabled={isFeedback && (proofLinks[quest._id]?.length || 0) < (Number((quest as any).feedbackCharLimit) > 0 ? Number((quest as any).feedbackCharLimit) : 200)}
                         className="w-full bg-gradient-to-r from-purple-700 via-purple-800 to-indigo-900 hover:from-purple-600 hover:via-purple-700 hover:to-indigo-800 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isFeedback ? "Submit Feedback" : "Submit for Review"}
@@ -731,6 +763,15 @@ export default function CampaignEnvironment() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ProofOfActionModal
+        open={showProofModal}
+        onOpenChange={setShowProofModal}
+        object={title || "this campaign"}
+        sourceLabel="Campaign"
+        onSuccess={finalizeCampaignReward}
+        alreadyClaimed={Boolean(campaignCompleted)}
+      />
     </div>
   )
 };

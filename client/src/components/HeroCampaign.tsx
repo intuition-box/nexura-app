@@ -177,15 +177,14 @@ export default function HeroCampaign({ campaigns }: HeroCampaignProps) {
           </div>
 
           {/* Reward Pool */}
-          {currentCampaign.reward && (
+          {currentCampaign.reward && (Number(currentCampaign.reward.xp) > 0 || trustReward > 0) && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-white/60 text-sm">Total Rewards Pool</span>
               <div className="flex flex-wrap items-center gap-2">
-                {/* <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">T</span>
-                </div> */}
                 <span className="text-white font-bold text-sm sm:text-base break-words">
-                  {currentCampaign.reward.xp} XP + {trustReward} TRUST
+                  {Number(currentCampaign.reward.xp) > 0 && `${currentCampaign.reward.xp} XP`}
+                  {Number(currentCampaign.reward.xp) > 0 && trustReward > 0 && " + "}
+                  {trustReward > 0 && `${trustReward} TRUST`}
                 </span>
               </div>
             </div>

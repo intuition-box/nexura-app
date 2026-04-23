@@ -10,6 +10,7 @@ import { miniQuestCompleted, campaignQuestCompleted } from '@/models/questsCompl
 import { campaign } from '@/models/campaign.model';
 import { campaignQuest } from '@/models/quests.model';
 import { uploadImg } from "@/utils/img.utils";
+import { uploadFile } from "@/utils/file.utils";
 import { normalizeCampaignDateInput, normalizeCampaignDatesForResponse, parseCampaignDate } from "@/utils/campaignDates";
 
 const DISCORD_CAMPAIGN_TAGS = new Set([
@@ -24,6 +25,8 @@ const DISCORD_CAMPAIGN_TAGS = new Set([
 
 const isDiscordCampaignTask = (task: Record<string, any>) =>
   DISCORD_CAMPAIGN_TAGS.has(String(task?.tag ?? "").trim()) || String(task?.category ?? "").trim() === "discord";
+
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const ONGOING_CAMPAIGN_STATUSES = ["Active", "Scheduled"] as const;
 
@@ -100,9 +103,11 @@ export const createHub = async (req: GlobalRequest, res: GlobalResponse) => {
       return;
     }
 
-    const name = req.body.name.toLowerCase().trim();
+    const name = String(req.body.name ?? "").trim();
 
-    const nameExists = await hub.exists({ name });
+    const nameExists = await hub.exists({
+      name: { $regex: `^${escapeRegex(name)}$`, $options: "i" },
+    });
     if (nameExists) {
       res.status(BAD_REQUEST).json({ error: "name is already in use" });
       return;
@@ -308,31 +313,48 @@ export const addHubAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const updateHub = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const logoBuffer = req.file?.buffer;
+    const files = req.files as { [field: string]: Express.Multer.File[] } | undefined;
+    const logoFile = files?.logo?.[0];
+    const documentFile = files?.document?.[0];
 
     const { name, logo } = req.body;
 
-    if (logoBuffer && logo) {
-      // remove previous logo
-      req.body.logo = await uploadImg({ file: logoBuffer, filename: req.file?.originalname, folder: "hub-logo" });
-    } else if (logoBuffer && !logo) {
-      req.body.logo = await uploadImg({ file: logoBuffer, filename: req.file?.originalname, folder: "hub-logo" });
+    if (logoFile?.buffer) {
+      req.body.logo = await uploadImg({
+        file: logoFile.buffer,
+        filename: logoFile.originalname,
+        folder: "hub-logo",
+      });
     }
 
-    const nameExists = await hub.exists({
-      name,
-      _id: { $ne: req.admin.hub }
-    });
+    if (documentFile?.buffer) {
+      req.body.document = await uploadFile({
+        file: documentFile.buffer,
+        filename: documentFile.originalname,
+        contentType: documentFile.mimetype,
+        folder: "hub-documents",
+      });
+    }
 
-    if (nameExists) {
-      res.status(400).json({ error: "hub name already exists" });
-      return;
+    const trimmedName = typeof name === "string" ? name.trim() : undefined;
+    if (trimmedName) {
+      const nameExists = await hub.exists({
+        name: { $regex: `^${escapeRegex(trimmedName)}$`, $options: "i" },
+        _id: { $ne: req.admin.hub },
+      });
+
+      if (nameExists) {
+        res.status(400).json({ error: "hub name already exists" });
+        return;
+      }
+      req.body.name = trimmedName;
     }
 
     const { xpAllocated: _xp, ...safeBody } = req.body;
     if (safeBody.website !== undefined) safeBody.website = String(safeBody.website ?? "").trim();
     if (safeBody.xAccount !== undefined) safeBody.xAccount = String(safeBody.xAccount ?? "").trim();
     if (safeBody.discordServer !== undefined) safeBody.discordServer = String(safeBody.discordServer ?? "").trim();
+    if (safeBody.document !== undefined) safeBody.document = String(safeBody.document ?? "").trim();
     const updatedHub = await hub.findByIdAndUpdate(req.admin.hub, safeBody, { new: true });
     res.status(OK).json(updatedHub);
   } catch (error) {

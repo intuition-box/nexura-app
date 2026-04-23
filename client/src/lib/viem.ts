@@ -1,57 +1,36 @@
-import { type WalletClient, type Address, type PublicClient, custom, createWalletClient, createPublicClient } from "viem";
+import { type WalletClient, type PublicClient } from "viem";
+import {
+  getWalletClient as coreGetWalletClient,
+  getPublicClient as coreGetPublicClient,
+} from "@wagmi/core";
+import { wagmiConfig } from "./wagmiConfig";
 import chain from "./chain";
 
-let walletClient: WalletClient | undefined = undefined;
-let publicClient: PublicClient | undefined = undefined;
-let walletClientAccount: Address | undefined = undefined;
+const NO_WALLET_MSG =
+  "No wallet provider available. Connect a wallet with RainbowKit first.";
 
-export const getPublicClient = () => {
-  if (typeof window === 'undefined') {
-    throw new Error("window is undefined");
-  };
-
-  const provider = (window as any).ethereum;
-
-  if (!provider) {
-    throw new Error("No wallet provider available. Connect a wallet with RainbowKit first.");
+export const getPublicClient = (): PublicClient => {
+  const client = coreGetPublicClient(wagmiConfig, { chainId: chain.id });
+  if (!client) {
+    throw new Error(NO_WALLET_MSG);
   }
-
-  if (!publicClient) {
-    publicClient = createPublicClient({
-      chain,
-      transport: custom(provider)
-    });
-    
-    return publicClient;
-  }
-
-  return publicClient;
+  return client as unknown as PublicClient;
 };
 
-export const getWalletClient = async () => {
-  if (typeof window === 'undefined') {
-    throw new Error("window is undefined");
-  };
-
-  if (!window.ethereum) {
-    throw new Error("No wallet provider available. Connect a wallet with RainbowKit first.");
+export const getWalletClient = async (): Promise<WalletClient> => {
+  try {
+    const client = await coreGetWalletClient(wagmiConfig, { chainId: chain.id });
+    if (!client) {
+      throw new Error(NO_WALLET_MSG);
+    }
+    return client as unknown as WalletClient;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (
+      /connector|not connected|no wallet/i.test(msg)
+    ) {
+      throw new Error(NO_WALLET_MSG);
+    }
+    throw err;
   }
-
-  const [account] = await window.ethereum!.request({ method: 'eth_requestAccounts' });
-  if (!account) {
-    throw new Error("No connected wallet account found. Connect a wallet with RainbowKit first.");
-  }
-
-  if (!walletClient || walletClientAccount?.toLowerCase() !== String(account).toLowerCase()) {
-    walletClient = createWalletClient({
-      chain,
-      account,
-      transport: custom(window.ethereum!)
-    });
-    walletClientAccount = account;
-
-    return walletClient;
-  }
-
-  return walletClient;
-}
+};
