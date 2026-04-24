@@ -33,7 +33,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PortalClaims from "./pages/PortalClaims";
 import AnimatedBackground from "./components/AnimatedBackground";
 import Home from "./pages/Home.tsx";
-import Analytics from "./pages/Analytics.tsx";
+// import Analytics from "./pages/Analytics.tsx"; // main analytics page — temporarily replaced by dummy
 import Analyticss from "./pages/Analyticss.tsx";
 import NexuraStudio from "./pages/NexuraStudio.tsx";
 import CreateHub from "./pages/studio/CreateHub.tsx";

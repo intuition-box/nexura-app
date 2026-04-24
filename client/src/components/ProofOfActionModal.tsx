@@ -303,7 +303,7 @@ export default function ProofOfActionModal({
                 <div className="bg-[#1C0E3480] border border-white/10 rounded-2xl p-4 space-y-3 h-full flex flex-col">
                   <div>
                     <h3 className="text-[#e0e2ea] font-semibold text-[15px] leading-[20px]">
-                      Stake on this Claim
+                      Create claim
                     </h3>
                     <p className="text-[#cdc2d8] text-[11px] leading-[15px] mt-1">
                       Support this claim with measurable $TRUST value.
