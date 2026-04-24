@@ -128,6 +128,83 @@ export const rewardXp = async (req: GlobalRequest, res: GlobalResponse) => {
 	}
 };
 
+const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+const MAX_BATCH_WALLETS = 500;
+
+export const rewardXpBatch = async (req: GlobalRequest, res: GlobalResponse) => {
+	try {
+		const { addresses, xp }: { addresses: unknown; xp: unknown } = req.body;
+
+		if (!Array.isArray(addresses) || addresses.length === 0) {
+			res.status(BAD_REQUEST).json({ error: "addresses must be a non-empty array" });
+			return;
+		}
+
+		if (addresses.length > MAX_BATCH_WALLETS) {
+			res.status(BAD_REQUEST).json({ error: `max ${MAX_BATCH_WALLETS} wallets per batch` });
+			return;
+		}
+
+		const xpAmount = typeof xp === "number" ? xp : typeof xp === "string" ? parseInt(xp, 10) : NaN;
+		if (!Number.isFinite(xpAmount) || xpAmount <= 0) {
+			res.status(BAD_REQUEST).json({ error: "xp must be a positive number" });
+			return;
+		}
+
+		const invalid: string[] = [];
+		const seen = new Set<string>();
+		const normalized: string[] = [];
+		for (const raw of addresses) {
+			if (typeof raw !== "string") continue;
+			const trimmed = raw.trim();
+			if (!trimmed) continue;
+			if (!EVM_ADDRESS_RE.test(trimmed)) {
+				invalid.push(trimmed);
+				continue;
+			}
+			const lower = trimmed.toLowerCase();
+			if (seen.has(lower)) continue;
+			seen.add(lower);
+			normalized.push(lower);
+		}
+
+		if (normalized.length === 0) {
+			res.status(OK).json({
+				message: "no valid addresses",
+				rewarded: 0,
+				notFound: 0,
+				invalid,
+				xp: xpAmount,
+			});
+			return;
+		}
+
+		const existing = await user.find({ address: { $in: normalized } }, { address: 1 }).lean();
+		const existingSet = new Set(existing.map((u) => (u.address || "").toLowerCase()));
+		const matched = normalized.filter((addr) => existingSet.has(addr));
+		const notFound = normalized.filter((addr) => !existingSet.has(addr));
+
+		if (matched.length > 0) {
+			await user.updateMany(
+				{ address: { $in: matched } },
+				{ $inc: { xp: xpAmount, eventsWon: 1 } },
+			);
+		}
+
+		res.status(OK).json({
+			message: "batch xp rewarded",
+			rewarded: matched.length,
+			notFound: notFound.length,
+			notFoundAddresses: notFound,
+			invalid,
+			xp: xpAmount,
+		});
+	} catch (error) {
+		logger.error(error);
+		res.status(INTERNAL_SERVER_ERROR).json({ error: "Internal Server Error" });
+	}
+};
+
 export const banUser = async (req: GlobalRequest, res: GlobalResponse) => {
 	try {
 		const { userId }: { userId: string } = req.body;
@@ -550,7 +627,7 @@ export const getAdminLeaderboard = async (req: GlobalRequest, res: GlobalRespons
 		const items = await user
 			.find()
 			.sort({ xp: -1, trustClaimed: -1, _id: 1 })
-			.select("_id address username profilePic eventsWon lessonsCompleted xp level questsCompleted campaignsCompleted")
+			.select("_id address username profilePic eventsWon lessonsCompleted xp level questsCompleted campaignsCompleted noOfMints")
 			.lean();
 
 		const leaderboardItems = items.map((entry, index) => ({

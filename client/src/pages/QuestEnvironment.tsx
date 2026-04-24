@@ -8,6 +8,7 @@ import { getStoredAccessToken, apiRequestV2, apiRequest } from "../lib/queryClie
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../lib/auth";
 import { createProofOfAction } from "../services/web3";
+import ProofOfActionModal from "../components/ProofOfActionModal";
 
 type Quest = {
   text: string;
@@ -48,6 +49,7 @@ export default function QuestEnvironment() {
   const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
   const [retryQuests, setRetryQuests] = useState<string[]>([]);
   const [pendingQuests, setPendingQuests] = useState<string[]>([]);
+  const [showProofModal, setShowProofModal] = useState<boolean>(false);
   const [failedQuests, setFailedQuests] = useState<string[]>([]);
   const completedQuestsCount = miniQuests.filter(
     (q) => q.done || claimedQuests.includes(q._id)
@@ -104,20 +106,22 @@ export default function QuestEnvironment() {
   const miniQuestsCompleted = miniQuests.filter((m) => m.done === true).length === miniQuests.length;
 
   const claimQuestReward = async () => {
-    try {
-      // const txHash = await createProofOfAction({ username: user?.usernaeme, objectString: title });
+    setShowProofModal(true);
+  };
 
-      // await apiRequestV2("POST", "/api/user/update-claims-created", { txHash });
+  const finalizeQuestReward = async (txHash: string) => {
+    try {
+      await apiRequestV2("POST", "/api/user/update-claims-created", { txHash });
 
       await apiRequestV2("POST", `/api/quest/claim-quest?id=${questId}`);
 
       setCompleted(true);
-      // window.location.reload();
     } catch (error: any) {
       console.error(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
+      throw error;
     }
-  }
+  };
 
   const getId = (url: string) => {
     return url.split("/").pop(); // return the last item in the array
@@ -470,6 +474,16 @@ export default function QuestEnvironment() {
         <h2 className="text-lg font-semibold opacity-90">Get {totalXP} XP</h2>
         {miniQuests.map((quest, i) => renderQuestRow(quest, i))}
       </div>
+
+      <ProofOfActionModal
+        open={showProofModal}
+        onOpenChange={setShowProofModal}
+        object={title || "this quest"}
+        xpReward={totalXP}
+        sourceLabel="Quest"
+        onSuccess={finalizeQuestReward}
+        alreadyClaimed={completed}
+      />
     </div>
   );
 };

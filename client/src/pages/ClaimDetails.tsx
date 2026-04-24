@@ -298,6 +298,8 @@ export default function ClaimDetails() {
         pos?.direction === mainTab
     );
 
+    console.log({ hj: up?.shares });
+
     return up ? Number(formatEther(BigInt(parseInt(up.shares) > 0 ? up.shares : 0))) : 0;
   }, [userPositions, user, growthType, mainTab]);
 
@@ -311,7 +313,7 @@ export default function ClaimDetails() {
     return userPositions.some(
       (pos) =>
         pos.direction === oppositeDirection &&
-        Number(formatEther(BigInt(pos.shares ?? 0))) > 0
+        Number(formatEther(BigInt(pos.shares ?? "0"))) > 0
     );
   }, [userPositions, mainTab, user]);
 
@@ -412,11 +414,12 @@ export default function ClaimDetails() {
       // -------------------- Execute transaction --------------------
       if (isBuy) {
         transactionHash = await buyShares({ buyAmount, termId: termId as Address, curveId, isApproved: user.isApproved});
-
-        await apiRequestV2("POST", "/api/user/update-claims", { transactionHash });
       } else {
-        await sellShares(sellAmount, termId as Address, curveId);
+        console.log({ sellAmount });
+        transactionHash = await sellShares(sellAmount, termId as Address, curveId);
       }
+
+      await apiRequestV2("POST", "/api/user/update-claims", { transactionHash, action: isBuy ? "buy" : "sell" });
 
       // -------------------- Refresh user data --------------------
       await refreshUserData();

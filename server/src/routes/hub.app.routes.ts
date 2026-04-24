@@ -38,7 +38,7 @@ router
   .patch("/update-ids", updateIds)
   .delete("/remove-admin", removeHubAdmin)
   .post("/create-hub", upload.single("logo"), createHub)
-  .patch("/update-hub", upload.single("logo"), updateHub)
+  .patch("/update-hub", upload.fields([{ name: "logo", maxCount: 1 }, { name: "document", maxCount: 1 }]), updateHub)
   .patch("/disconnect-discord", disconnectHubDiscord)
   .patch("/save-payment-hash", savePaymentHash)
   .post("/add-admin", addHubAdmin)

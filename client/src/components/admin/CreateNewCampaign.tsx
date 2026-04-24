@@ -321,6 +321,7 @@ useEffect(() => {
           if (tag === "send-message-discord" || tag === "message-discord" || tag === "message") return DISCORD_MESSAGE_TASK_TYPE;
           if (tag === "portal") return "Check Out the Portal Claims";
           if (tag === "feedback") return "Give Feedback";
+          if (tag === "create-post") return "Create a Post";
           return "others";
         };
         const catToPlatform = (cat: string) => {
@@ -525,6 +526,7 @@ const typeToTag = (type: string) => {
   if (type === DISCORD_MESSAGE_TASK_TYPE) return "send-message-discord";
   if (type === "Check Out the Portal Claims") return "portal";
   if (type === "Give Feedback") return "feedback";
+  if (type === "Create a Post") return "create-post";
   return "other";
 };
 const platformToCategory = (platform: string) => {
@@ -678,10 +680,11 @@ const buildCampaignFormData = (isDraft: boolean): FormData => {
     tasks.map(t => {
       const taskTag = typeToTag(t.type);
       const taskGuildId = t.guildId || hubGuildId || "";
+      const defaultLink = taskTag === "create-post" ? "https://x.com/compose/post" : "#";
       const payload: Record<string, unknown> = {
         _id: t._id,
         quest: t.description || t.type,
-        link: t.handleOrUrl || "https://nexura.io",
+        link: t.handleOrUrl || defaultLink,
         tag: taskTag,
         category: platformToCategory(t.platform),
         verificationMode: t.verificationMode || "",
@@ -775,12 +778,13 @@ const handleSaveTask = () => {
     showViewOnlyToast();
     return;
   }
-  const requiresPlatform = newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback";
+  const requiresPlatform = newTask.type !== "Check Out the Portal Claims" && newTask.type !== "others" && newTask.type !== "Give Feedback" && newTask.type !== "Create a Post";
   const requiresDiscordConnection = newTask.platform === "Discord" || isDiscordFixedTaskType(newTask.type);
   const requiresRole = isDiscordRoleTaskType(newTask.type);
   const requiresChannel = isDiscordMessageTaskType(newTask.type);
+  const requiresHandleOrUrl = newTask.type !== "Create a Post";
 
-  if (!newTask.type || (requiresPlatform && !newTask.platform) || !newTask.handleOrUrl || !newTask.description) {
+  if (!newTask.type || (requiresPlatform && !newTask.platform) || (requiresHandleOrUrl && !newTask.handleOrUrl) || !newTask.description) {
     return setError("All fields are required.");
   }
   if (requiresDiscordConnection && !hubDiscordConnected) {
@@ -1940,22 +1944,25 @@ const isActive =
               const isPortal = type === "Check Out the Portal Claims";
               const isOther = type === "others";
               const isFeedback = type === "Give Feedback";
+              const isCreatePost = type === "Create a Post";
               setNewTask({
                 ...newTask,
                 type,
-                platform: isDiscord ? "Discord" : isTwitter ? "Twitter" : (isPortal || isOther || isFeedback) ? "" : newTask.platform,
-                evidence: isDiscord || isPortal ? "" : isTwitter ? "submit_link" : isFeedback ? "" : newTask.evidence,
-                validation: isDiscord ? "Discord Auth" : isPortal ? "Auto Verified" : isFeedback ? "Manual Validation" : (newTask.validation === "Discord Auth" || newTask.validation === "Auto Verified" ? "Manual Validation" : newTask.validation),
-                verificationMode: isFeedback ? "feedback" : "",
+                platform: isDiscord ? "Discord" : isTwitter ? "Twitter" : isCreatePost ? "Twitter" : (isPortal || isOther || isFeedback) ? "" : newTask.platform,
+                evidence: isDiscord || isPortal ? "" : isTwitter || isCreatePost ? "submit_link" : isFeedback ? "" : newTask.evidence,
+                validation: isDiscord ? "Discord Auth" : isPortal ? "Auto Verified" : isFeedback || isCreatePost ? "Manual Validation" : (newTask.validation === "Discord Auth" || newTask.validation === "Auto Verified" ? "Manual Validation" : newTask.validation),
+                verificationMode: isFeedback ? "feedback" : isCreatePost ? "submit_link" : "",
                 roleId: isDiscordRole ? newTask.roleId : "",
                 channelId: isDiscordMessage ? newTask.channelId : "",
                 guildId: isDiscord ? (newTask.guildId || hubGuildId || "") : "",
+                handleOrUrl: isCreatePost ? "" : newTask.handleOrUrl,
               });
             }}
           >
             <option value="">Select task</option>
             <option value="Comment on our X post">Comment on X</option>
             <option value="Follow us on X">Follow on X</option>
+            <option value="Create a Post">Create a Post</option>
             <option value="Join Us On Discord">Join Discord</option>
             <option value={DISCORD_ROLE_TASK_TYPE}>Acquire a Role (Discord)</option>
             <option value={DISCORD_MESSAGE_TASK_TYPE}>Send Message in Channel (Discord)</option>
@@ -2007,6 +2014,7 @@ const isActive =
       <div className="bg-white/5 p-5 rounded-xl mb-6 border border-white/10">
 
         {/* Handle or URL */}
+        {newTask.type !== "Create a Post" && (
         <div className="mb-4">
           <label className="text-sm text-white/70 mb-2 block">
             {newTask.type === "Give Feedback"
@@ -2041,6 +2049,7 @@ const isActive =
             className="w-full p-2 rounded-lg bg-white/5 text-white border border-white/10 focus:outline-none focus:border-purple-500"
           />
         </div>
+        )}
 
         {/* Task Description */}
         <div className="mb-4">
