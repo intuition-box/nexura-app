@@ -104,7 +104,17 @@ export const createProofOfAction = async ({
   const MIN_STAKE = 0.1;
   const requested = stakeTrust !== undefined ? Number(stakeTrust) : MIN_STAKE;
   const effective = Number.isFinite(requested) && requested >= MIN_STAKE ? requested : MIN_STAKE;
-  const stakeAmount = parseEther(effective.toString() as `${number}`);
+  const userStake = parseEther(effective.toString() as `${number}`);
+
+  // Mainnet's createTriples requires assets[i] >= getTripleCost() (0.100000000002 TRUST,
+  // 2 wei above 0.1). Pull the on-chain floor and clamp up so UI-selected stakes at
+  // the 0.1 TRUST boundary don't revert with MultiVault_InsufficientBalance.
+  const tripleCost = await publicClient.readContract({
+    address,
+    abi: MultiVaultAbi,
+    functionName: "getTripleCost",
+  }) as bigint;
+  const stakeAmount = userStake >= tripleCost ? userStake : tripleCost;
 
   // If the triple (subject, predicate, object) already exists, stake into it
   // via deposit. Otherwise create the triple with the initial deposit.

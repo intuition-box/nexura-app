@@ -43,9 +43,9 @@ export const home = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const getStudioPaymentConfig = async (_req: GlobalRequest, res: GlobalResponse) => {
   res.status(OK).json({
-    network: "testnet",
+    network,
     contractAddress: STUDIO_FEE_CONTRACT,
-    chainId: "0x350b",
+    chainId: network === "mainnet" ? "0x483" : "0x350b",
     amount: "2",
     authorizedAddress: serverWalletAddress,
   });
