@@ -1323,10 +1323,11 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
     const userId = req.id;
 
     const today = startOfDayUTC();
-
     const yesterday = new Date(today);
-
     yesterday.setUTCDate(today.getUTCDate() - 1);
+
+    const onlyDate = today.toISOString().split("T")[0] as string;
+    const yesterdayDate = yesterday.toISOString().split("T")[0] as string;
 
     const userExists = await user.findById(userId);
     if (!userExists) {
@@ -1334,45 +1335,33 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
       return;
     }
 
-    const onlyDate = today.toISOString().split("T")[0];
-    const yesterdayDate = yesterday.toISOString().split("T")[0];
+    // Source of truth for streak: user.lastSignInDate.
+    // The previous version read from dailySignIn.findOne(), but legacy data has
+    // duplicate dailySignIn rows for some users (the unique index was added
+    // after some rows already existed). findOne returned an arbitrary/old row
+    // and the date never matched yesterday — streak reset every day even when
+    // the user signed in daily.
+    const lastSignIn = userExists.lastSignInDate;
 
-    const dailySignInExists = await dailySignIn.findOne({ user: req.id });
-    if (!dailySignInExists) {
-      await dailySignIn.create({ user: req.id, date: onlyDate });
-
-      userExists.lastSignInDate = onlyDate;
-      userExists.xp += 20;
-      userExists.streak += 1;
-
-      // Update longest streak if current streak is higher
-      if (userExists.streak > (userExists.longestStreak || 0)) {
-        userExists.longestStreak = userExists.streak;
-      }
-
-      await userExists.save();
-
-      res.status(OK).json({ message: "performed daily sign in" });
-      return;
-    }
-
-    if (onlyDate === dailySignInExists.date) {
+    if (lastSignIn === onlyDate) {
       res.status(BAD_REQUEST).json({ error: "Already signed in today" });
       return;
     }
 
-    // 🔥 Streak logic
-    if (dailySignInExists.date === yesterdayDate) {
-      userExists.xp += 20;
-      userExists.streak += 1;
+    const previousStreak = typeof userExists.streak === "number" ? userExists.streak : 0;
 
-      // Update longest streak if current streak is higher
-      if (userExists.streak > (userExists.longestStreak || 0)) {
-        userExists.longestStreak = userExists.streak;
-      }
+    if (lastSignIn === yesterdayDate) {
+      userExists.streak = previousStreak + 1;
     } else {
+      // First sign-in ever, OR a gap of 2+ days — reset to 1.
       userExists.streak = 1;
-      userExists.xp += 20;
+    }
+
+    userExists.xp += 20;
+    userExists.lastSignInDate = onlyDate;
+
+    if (userExists.streak > (userExists.longestStreak || 0)) {
+      userExists.longestStreak = userExists.streak;
     }
 
     const level = await updateLevel(
@@ -1380,15 +1369,22 @@ export const performDailySignIn = async (req: GlobalRequest, res: GlobalResponse
       userExists.badges,
       userExists._id.toString(),
     );
-
     userExists.level = level;
 
-    dailySignInExists.date = onlyDate as string;
-
-    userExists.lastSignInDate = onlyDate;
-
     await userExists.save();
-    await dailySignInExists.save();
+
+    // Best-effort secondary record kept for any external readers (analytics,
+    // admin dashboards). Not authoritative — failures here don't affect the
+    // user's response or streak.
+    try {
+      await dailySignIn.findOneAndUpdate(
+        { user: req.id },
+        { $set: { date: onlyDate, user: req.id } },
+        { upsert: true, new: true },
+      );
+    } catch (syncErr) {
+      logger.warn(`dailySignIn sync failed for user ${userId} (non-fatal): ${syncErr}`);
+    }
 
     res.json({ message: "Daily sign-in successful", done: true });
   } catch (error) {
