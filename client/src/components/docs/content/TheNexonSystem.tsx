@@ -2,14 +2,9 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
   return (
     <div id="nexon-system" className="max-w-[59rem]">
 
-      {/* Heading */}
-      <h3 className="text-[#8B3EFE] text-xl font-medium mb-4">
-        The Nexon System
-      </h3>
-
       {/* What is a Nexon */}
       <div>
-        <h4 className="text-[#8B3EFE] font-medium mt-6">
+        <h4 id="what-is-a-nexon" className="text-[#8B3EFE] font-medium mt-6">
           What Is A Nexon?
         </h4>
 
@@ -23,7 +18,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
       </div>
 
       {/* Path */}
-      <div className="mt-8">
+      <div id="the-path-of-the-nexon" className="mt-8">
         <h4 className="text-[#8B3EFE] font-medium">
           The Path of the Nexon
         </h4>
@@ -74,7 +69,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
       </div>
 
       {/* Progression Model */}
-      <div className="mt-10">
+      <div id="nexon-progression-model" className="mt-10">
         <h4 className="text-[#8B3EFE] font-medium">
           Nexon Progression Model
         </h4>
@@ -87,7 +82,7 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
       {/* Image */}
       <div className="mt-8 flex justify-center">
         <img
-          src="/nexons-table.png"
+          src="/nexonsss-table.png"
           alt="Nexon Progression"
           className="w-full max-w-[52rem]"
         />

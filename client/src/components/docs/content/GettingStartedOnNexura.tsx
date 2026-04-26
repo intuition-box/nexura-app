@@ -86,7 +86,7 @@ const GettingStarted = ({ onNext, onPrev }: any) => {
       </div>
 
       {/* Rewards Section */}
-<div className="mt-8">
+<div id="rewards" className="mt-8">
 
   <h3 className="text-[#8B3EFE] font-medium">
     Rewards
@@ -97,7 +97,7 @@ const GettingStarted = ({ onNext, onPrev }: any) => {
   </p>
 
   {/* XP Definition */}
-  <div className="mt-6">
+  <div id="what-is-xp" className="mt-6">
     <h4 className="text-white font-medium">
       What is XP (Experience Points)
     </h4>

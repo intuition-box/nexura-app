@@ -177,7 +177,7 @@ const FAQ = ({ onNext, onPrev }: any) => {
   ];
 
   return (
-    <div className="flex flex-col items-start gap-3 w-full">
+    <div id="frequently-asked-questions" className="flex flex-col items-start gap-3 w-full">
       {faqs.map((faq, index) => (
         <FAQItem key={index} {...faq} />
       ))}

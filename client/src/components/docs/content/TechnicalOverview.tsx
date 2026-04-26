@@ -1,6 +1,6 @@
 const TechnicalOverview = ({onNext, onPrev}: any) => {
   return (
-    <div id="technical-overview" className="max-w-[59rem]">
+    <div id="nexura-technical-overview" className="max-w-[59rem]">
 
       {/* Intro Paragraph */}
       <p className="text-gray-400 text-sm mt-4">
@@ -38,7 +38,7 @@ const TechnicalOverview = ({onNext, onPrev}: any) => {
       </ul>
 
       {/* Section Title */}
-      <h4 className="text-[#8B3EFE] text-lg font-medium mt-10">
+      <h4 id="stack-at-a-glance" className="text-[#8B3EFE] text-lg font-medium mt-10">
         Stack at a Glance
       </h4>
 

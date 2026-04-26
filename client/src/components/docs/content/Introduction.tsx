@@ -1,4 +1,7 @@
-const Introduction = ({ onNext }: any) => {
+import { useEffect } from "react";
+
+const Introduction = ({ onNext, setSections }: any) => {
+
   return (
     <div id="introduction">
 
@@ -38,7 +41,7 @@ const Introduction = ({ onNext }: any) => {
        <div className="mt-10">
 
       {/* Heading */}
-      <h3
+      <h3 id="what-is-nexura"
         className="text-3xl font-medium"
         style={{
           background: "linear-gradient(90deg, #FFFFFF, #C287FC)",
@@ -55,7 +58,7 @@ const Introduction = ({ onNext }: any) => {
       </p>
 
       {/* The Vision */}
-      <div className="mt-10">
+      <div id="the-vision" className="mt-10">
         <div className="flex items-center gap-3">
           {/* <div className="w-[4px] h-[24px] bg-[#8B3EFE]" /> */}
           <h3 className="text-xl font-medium">The Vision</h3>
@@ -140,7 +143,7 @@ const Introduction = ({ onNext }: any) => {
       </div>
 
       {/* Built On */}
-      <div className="mt-10">
+      <div id="built-on" className="mt-10">
         <div className="flex items-center gap-3">
           {/* <div className="w-[4px] h-[24px] bg-[#8B3EFE]" /> */}
           <h3 className="text-xl font-medium">What Nexura is Built On</h3>
@@ -153,7 +156,7 @@ const Introduction = ({ onNext }: any) => {
       </div>
 
       {/* Who it serves */}
-      <div className="mt-10">
+      <div id="who-serves" className="mt-10">
         <div className="flex items-center gap-3">
           {/* <div className="w-[4px] h-[24px] bg-[#8B3EFE]" /> */}
           <h3 className="text-xl font-medium">Who Nexura Serves</h3>

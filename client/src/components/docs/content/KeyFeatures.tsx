@@ -4,7 +4,6 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 
   return (
     <div id="key-features">
-
       {/* Intro */}
       <p className="text-gray-400 text-sm max-w-[59rem]">
         Nexura is built around a set of interconnected features that work together to create a complete engagement experience for users and builders in the Intuition ecosystem. Each feature serves a specific purpose, but none of them exist in isolation. The way you learn connects to the way you explore. The way you explore connects to the quests you take on. The quests, lessons, and campaigns you complete feed into your reputation, your leaderboard position, and your rewards. Everything is designed to flow together.
@@ -42,7 +41,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Learn */}
-<div className="mt-8 flex gap-8 items-center max-w-[59rem]">
+<div id="learn" className="mt-8 flex gap-8 items-center max-w-[59rem]">
 
   {/* Text */}
   <div className="flex-1">
@@ -99,7 +98,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Explore */}
-<div className="mt-8 flex gap-8 items-center max-w-[59rem]">
+<div id="explore" className="mt-8 flex gap-8 items-center max-w-[59rem]">
 
   {/* Text */}
   <div className="flex-1">
@@ -154,7 +153,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Referrals */}
-<div className="mt-8 max-w-[59rem]">
+<div id="referrals" className="mt-8 max-w-[59rem]">
 
   {/* Title */}
   <div className="flex items-center gap-3">
@@ -218,7 +217,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Quests */}
-<div className="mt-8 max-w-[59rem]">
+<div id="quests" className="mt-8 max-w-[59rem]">
 
   {/* Title */}
   <div className="flex items-center gap-3">
@@ -283,7 +282,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Campaigns */}
-<div className="mt-8 max-w-[59rem]">
+<div id="campaigns" className="mt-8 max-w-[59rem]">
 
   {/* Title */}
   <div className="flex items-center gap-3">
@@ -379,7 +378,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Ecosystem Dapps */}
-<div className="mt-8 max-w-[59rem]">
+<div id="ecosystem-dapps" className="mt-8 max-w-[59rem]">
 
   {/* Title */}
   <div className="flex items-center gap-3">
@@ -431,7 +430,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Leaderboard */}
-<div className="mt-8 max-w-[59rem]">
+<div id="leaderboard" className="mt-8 max-w-[59rem]">
 
   {/* Title */}
   <div className="flex items-center gap-3">
@@ -498,7 +497,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Portal Claims */}
-<div className="mt-8 max-w-[59rem]">
+<div id="portal-claims" className="mt-8 max-w-[59rem]">
 
   {/* Title */}
   <div className="flex items-center gap-3">
@@ -527,7 +526,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Analytics */}
-<div className="mt-8 max-w-[59rem]">
+<div id="analytics" className="mt-8 max-w-[59rem]">
 
   {/* Title */}
   <div className="flex items-center gap-3">

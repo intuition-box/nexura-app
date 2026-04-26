@@ -8,7 +8,7 @@ const ArchitecturalLayer = ({onNext, onPrev}: any) => {
       </p>
 
       {/* Best Practices for Users Header */}
-      <div className="flex items-center gap-3 mt-10">
+      <div id="best-practices-for-users" className="flex items-center gap-3 mt-10">
         <div className="w-[4px] h-[24px] bg-[#8B3EFE]" />
         <h3 className="text-[#8B3EFE] text-sm font-medium">
           Best Practices for Users
@@ -42,7 +42,7 @@ const ArchitecturalLayer = ({onNext, onPrev}: any) => {
       </ul>
 
       {/* Best Practices for Builders Header */}
-      <div className="flex items-center gap-3 mt-10">
+      <div id="best-practices-for-builders" className="flex items-center gap-3 mt-10">
         <div className="w-[4px] h-[24px] bg-[#8B3EFE]" />
         <h3 className="text-[#8B3EFE] text-sm font-medium">
           Best Practices for Builders
