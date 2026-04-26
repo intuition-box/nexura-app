@@ -128,9 +128,10 @@ const FAQ = ({ onNext, onPrev }: any) => {
         "You can resubmit, but make sure you complete the required task and submit the required evidence.",
     },
     {
-      question: "Campaign cost?",
-      answer: "1,000 TRUST per campaign.",
-    },
+  question: "Campaign cost?",
+  answer:
+    "For users, completing campaigns on Nexura is free to participate in. However, users are required to have at least 0.1 TRUST in their balance, as they must create a Proof of Action after completing a campaign before they can claim their XP. For builders who want to launch campaigns, there is a fee of 1,000 TRUST per campaign. This helps prevent abuse of the XP system by discouraging unauthorized campaign creation, as campaign creation is strictly reserved for builders. These fees also support the continued operation of the platform."
+},
     {
       question: "Do I need to offer rewards?",
       answer:
@@ -177,7 +178,7 @@ const FAQ = ({ onNext, onPrev }: any) => {
   ];
 
   return (
-    <div id="frequently-asked-questions" className="flex flex-col items-start gap-3 w-full">
+    <div id="frequently-asked-questions docs-top" className="flex flex-col items-start gap-3 w-full">
       {faqs.map((faq, index) => (
         <FAQItem key={index} {...faq} />
       ))}

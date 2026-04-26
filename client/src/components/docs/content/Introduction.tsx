@@ -3,7 +3,7 @@ import { useEffect } from "react";
 const Introduction = ({ onNext, setSections }: any) => {
 
   return (
-    <div id="introduction">
+    <div id="introduction docs-top">
 
       {/* Intro Paragraph */}
       <p className="text-gray-400 text-sm max-w-[59rem]">

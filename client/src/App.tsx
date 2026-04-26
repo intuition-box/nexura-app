@@ -79,6 +79,7 @@ function Router() {
       <Route path="/discover" component={Discover} />
       <Route path="/levels" component={Levels} />
       <Route path="/docs" component={Docs} />
+      <Route path="/docs/:slug?" component={Docs} />
       {/* NEXURA pages */}
       <Route path="/learn" component={Learn} />
       <Route path="/learn/:id" component={LessonPage } />
@@ -235,15 +236,15 @@ function App() {
     <header className="flex items-center p-4 app-header">
       
       {/* LEFT: Logo (only for docs) */}
-      {isDocs && (
-        <div className="flex items-center">
-          <img
-            src="/nexura-logo.png"
-            alt="Nexura"
-            className="h-8 w-auto"
-          />
-        </div>
-      )}
+{isDocs && (
+  <div className="hidden lg:flex items-center">
+    <img
+      src="/nexura-logo.png"
+      alt="Nexura"
+      className="h-8 w-auto"
+    />
+  </div>
+)}
 
       <SidebarTrigger
           data-testid="button-sidebar-toggle"

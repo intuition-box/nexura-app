@@ -1,6 +1,6 @@
 const GettingStarted = ({ onNext, onPrev }: any) => {
   return (
-    <div id="getting-started" className="max-w-[59rem]">
+    <div id="getting-started docs-top" className="max-w-[59rem]">
 
       {/* Intro */}
       <p className="text-gray-400 text-sm mt-4">

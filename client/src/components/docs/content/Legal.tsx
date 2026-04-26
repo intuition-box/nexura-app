@@ -1,6 +1,6 @@
 const Legal = ({ onNext, onPrev }: any) => {
   return (
-    <div id="legal" className="max-w-[59rem]">
+    <div id="legal docs-top" className="max-w-[59rem]">
 
       {/* Heading */}
       <h2 id="terms-of-use" className="text-white text-xl font-semibold">

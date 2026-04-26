@@ -3,7 +3,7 @@ import { useEffect } from "react";
 const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 
   return (
-    <div id="key-features">
+    <div id="key-features docs-top">
       {/* Intro */}
       <p className="text-gray-400 text-sm max-w-[59rem]">
         Nexura is built around a set of interconnected features that work together to create a complete engagement experience for users and builders in the Intuition ecosystem. Each feature serves a specific purpose, but none of them exist in isolation. The way you learn connects to the way you explore. The way you explore connects to the quests you take on. The quests, lessons, and campaigns you complete feed into your reputation, your leaderboard position, and your rewards. Everything is designed to flow together.
@@ -41,7 +41,10 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Learn */}
-<div id="learn" className="mt-8 flex gap-8 items-center max-w-[59rem]">
+<div
+  id="learn"
+  className="mt-8 flex flex-col lg:flex-row gap-8 items-start lg:items-center max-w-[59rem]"
+>
 
   {/* Text */}
   <div className="flex-1">
@@ -85,20 +88,24 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
   </div>
 
   {/* Image */}
-  <div className="flex-1 flex justify-center items-center">
+  <div className="flex-1 flex justify-center items-center w-full lg:w-auto">
     <img
       src="/learn-icon.png"
       alt="Learn"
       className="w-full max-w-[20rem]"
     />
   </div>
+
 </div>
 
 {/* Divider */}
 <div className="mt-8 h-[1px] bg-[#FFFFFF33] max-w-[59rem]" />
 
 {/* Explore */}
-<div id="explore" className="mt-8 flex gap-8 items-center max-w-[59rem]">
+<div
+  id="explore"
+  className="mt-8 flex flex-col lg:flex-row gap-8 items-start lg:items-center max-w-[59rem]"
+>
 
   {/* Text */}
   <div className="flex-1">
@@ -139,7 +146,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
   </div>
 
   {/* Image */}
-  <div className="flex-1 flex justify-center items-center">
+  <div className="flex-1 flex justify-center items-center w-full lg:w-auto">
     <img
       src="/exploree.png"
       alt="Explore"
@@ -243,7 +250,7 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
   </p>
 
   {/* Steps + Image */}
-  <div className="mt-6 flex gap-8 items-start">
+  <div className="mt-6 flex flex-col lg:flex-row gap-8 items-start">
 
     {/* Steps */}
     <div className="flex-[1.5] text-gray-400 text-sm">
@@ -265,17 +272,15 @@ const KeyFeatures = ({ onNext, onPrev, setSections }: any) => {
       </ul>
     </div>
 
-    {/* Image (ONLY beside steps) */}
-    <div className="flex-1 flex justify-center mt-4">
+    {/* Image */}
+    <div className="flex-1 flex justify-center mt-4 lg:mt-0 w-full lg:w-auto">
       <img
         src="/quest-image.png"
         alt="Quests"
         className="w-full max-w-[18rem]"
       />
     </div>
-
   </div>
-
 </div>
 
 {/* Divider */}

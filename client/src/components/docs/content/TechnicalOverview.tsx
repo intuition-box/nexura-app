@@ -1,6 +1,6 @@
 const TechnicalOverview = ({onNext, onPrev}: any) => {
   return (
-    <div id="nexura-technical-overview" className="max-w-[59rem]">
+    <div id="nexura-technical-overview docs-top" className="max-w-[59rem]">
 
       {/* Intro Paragraph */}
       <p className="text-gray-400 text-sm mt-4">

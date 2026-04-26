@@ -1,6 +1,6 @@
 const ArchitecturalLayer = ({onNext, onPrev}: any) => {
   return (
-    <div id="architectural-layer" className="max-w-[59rem]">
+    <div id="architectural-layer docs-top" className="max-w-[59rem]">
 
       {/* Intro */}
       <p className="text-gray-400 text-sm">

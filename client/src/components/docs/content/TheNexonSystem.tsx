@@ -1,6 +1,6 @@
 const NexonSystem = ({ onNext, onPrev }: any) => {
   return (
-    <div id="nexon-system" className="max-w-[59rem]">
+    <div id="nexon-system docs-top" className="max-w-[59rem]">
 
       {/* What is a Nexon */}
       <div>
@@ -75,7 +75,8 @@ const NexonSystem = ({ onNext, onPrev }: any) => {
         </h4>
 
         <p className="text-gray-400 text-sm mt-3">
-          A Nexon is an NFT on Nexura that represents a user’s level and progress within the platform.
+          A Nexon can also be minted as proof of a user's progress on Nexura. It is a non-tradable NFT that represents a user's reputation and level within the platform.
+          Nexura features 10 Nexons, each corresponding to a different level of progression. Below is the list of all Nexons, along with the XP required to unlock each Nexon or level. 
         </p>
       </div>
 
