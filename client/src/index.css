@@ -3733,18 +3733,3 @@ body {
   50% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
-.docs-dropdown {
-  transform-origin: top;
-  transform: scaleY(0);
-  opacity: 0;
-  transition: transform 0.25s ease, opacity 0.2s ease;
-  height: auto;
-  pointer-events: none;
-}
-
-.docs-dropdown.open {
-  transform: scaleY(1);
-  opacity: 1;
-  pointer-events: auto;
-}

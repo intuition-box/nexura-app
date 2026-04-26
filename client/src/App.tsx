@@ -55,6 +55,7 @@ import ConnectDiscord from "./pages/studio/ConnectDiscord.tsx";
 import Docs from "./pages/Docs.tsx"
 import LessonPage from "./pages/LessonPage";
 import ResetHubPassword from "./pages/studio/ResetHubPassword.tsx";
+import AnalyticsBackground from "./components/AnalyticsBackground.tsx"
 
 function Router() {
    const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -223,8 +224,8 @@ function App() {
                 return (
                   <div className="flex h-screen w-full text-white selection:bg-blue-500/30 relative">
 
-                    {/* {BACKGROUND FOR ALL PAGES} */}
-                    <AnimatedBackground />
+                    {/* BACKGROUND FOR ALL PAGES */}
+{isDocs ? <AnalyticsBackground /> : <AnimatedBackground />}
 
                     {/* Sidebar */}
                     {!isHome && !isStudio && !isDocs && !isProjectCreate && <NexuraSidebar />}

@@ -97,27 +97,37 @@ const DocsSidebar = ({ active, setActive }: any) => {
   };
 
   const SidebarContent = () => (
-    <aside className="relative w-64 h-screen text-white p-4 overflow-y-auto sticky top-0 bg-[#050507]">
+    <aside className="relative w-64 h-screen text-white p-4 overflow-y-auto sticky top-0 overflow-hidden">
 
-      {/* SEARCH */}
-      <div className="mb-6">
-        <div
-          className="flex items-center justify-between px-3 py-2 rounded-md"
-          style={{
-            backgroundColor: "#14141F",
-            border: "1px solid #8C78D21F",
-          }}
-        >
-          <div className="flex items-center gap-2 w-full">
-            <img src="/search.png" className="w-4 h-4 opacity-70" />
-            <input
-              placeholder="Search docs"
-              className="bg-transparent outline-none text-sm text-gray-300 w-full"
-            />
-          </div>
-          <img src="/scan.png" className="w-4 h-4 opacity-70" />
+  {/* Background layer */}
+  <div className="absolute inset-0 z-0">
+    <AnimatedBackground />
+  </div>
+
+  {/* Dark overlay for readability */}
+  <div className="absolute inset-0 bg-black/20 z-10" />
+
+  {/* Sidebar content */}
+  <div className="relative z-20">
+    {/* SEARCH */}
+    <div className="mb-6">
+      <div
+        className="flex items-center justify-between px-3 py-2 rounded-md"
+        style={{
+          backgroundColor: "#14141F",
+          border: "1px solid #8C78D21F",
+        }}
+      >
+        <div className="flex items-center gap-2 w-full">
+          <img src="/search.png" className="w-4 h-4 opacity-70" />
+          <input
+            placeholder="Search docs"
+            className="bg-transparent outline-none text-sm text-gray-300 w-full"
+          />
         </div>
+        <img src="/scan.png" className="w-4 h-4 opacity-70" />
       </div>
+    </div>
 
       {/* SECTIONS */}
       <div className="mb-6">
@@ -156,6 +166,7 @@ const DocsSidebar = ({ active, setActive }: any) => {
 
       <div onClick={() => setActive("legal")} className="cursor-pointer">
         <Header title="LEGAL" hasDropdown={false} />
+      </div>
       </div>
     </aside>
   );

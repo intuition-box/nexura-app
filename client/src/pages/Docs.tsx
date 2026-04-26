@@ -13,6 +13,7 @@ import TechnicalOverview from "../components/docs/content/TechnicalOverview";
 import ArchitecturalLayer from "../components/docs/content/ArchitecturalLayer";
 import FAQs from "../components/docs/content/FAQs";
 import Legal from "../components/docs/content/Legal";
+import AnalyticsBackground from "../components/AnalyticsBackground"
 
 const docsContentMap: any = {
   introduction: Introduction,
@@ -89,8 +90,8 @@ const docsSectionsMap: any = {
 
 const Docs = () => {
   const [location, setLocation] = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // slug extraction
   const slug = location.split("/docs/")[1] || "introduction";
 
   const current = docsMap[slug];
@@ -129,6 +130,8 @@ const Docs = () => {
       <DocsSidebar
         active={slug}
         setActive={(id: string) => setLocation(`/docs/${id}`)}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       />
 
       <div className="flex-1 flex justify-center">
@@ -154,6 +157,7 @@ const Docs = () => {
           <ActiveContent
             onNext={handleNext}
             onPrev={handlePrev}
+            searchQuery={searchQuery}
           />
         </div>
 

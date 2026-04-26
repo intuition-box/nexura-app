@@ -13,51 +13,59 @@ const OnThisPage = ({ sections = [] }: any) => {
     });
   };
 
-useEffect(() => {
-  if (!sections.length) return;
+  useEffect(() => {
+    if (!sections.length) return;
 
-  let ticking = false;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let visibleSection = "";
+        let maxRatio = 0;
 
-  const handleScrollSpy = () => {
-    if (ticking) return;
-    ticking = true;
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
+            maxRatio = entry.intersectionRatio;
+            visibleSection = entry.target.id;
+          }
+        });
 
-    requestAnimationFrame(() => {
-      const triggerPoint = window.innerHeight * 0.3; // active zone
-
-      let newActive = "";
-
-      for (const section of sections) {
-        const el = document.getElementById(section.id);
-        if (!el) continue;
-
-        const rect = el.getBoundingClientRect();
-
-        // section is in active zone
-        if (rect.top <= triggerPoint && rect.bottom > triggerPoint) {
-          newActive = section.id;
-          break;
+        if (visibleSection) {
+          setActiveId(visibleSection);
         }
+      },
+      {
+        root: null,
+        rootMargin: "-30% 0px -50% 0px",
+        threshold: [0.1, 0.25, 0.5, 0.75, 1],
       }
+    );
 
-      if (newActive) {
-        setActiveId(newActive);
+    const elements: HTMLElement[] = [];
+
+    sections.forEach((section: any) => {
+      const el = document.getElementById(section.id);
+      if (el) {
+        observer.observe(el);
+        elements.push(el);
       }
-
-      ticking = false;
     });
-  };
 
-  window.addEventListener("scroll", handleScrollSpy, { passive: true });
-  handleScrollSpy();
+    // 🔥 NEW: force initial highlight on first render
+    const first = sections.find((s: any) => s.level === 1);
+    if (first?.id) {
+      const el = document.getElementById(first.id);
+      if (el) {
+        setActiveId(first.id);
+      }
+    }
 
-  return () => window.removeEventListener("scroll", handleScrollSpy);
-}, [sections]);
+    return () => {
+      elements.forEach((el) => observer.unobserve(el));
+    };
+  }, [sections]);
 
   if (!sections.length) return null;
 
-  // 🔥 GROUP SECTIONS (level 1 + level 3 children)
-  const grouped = [];
+  const grouped: any = [];
   let currentGroup: any = null;
 
   sections.forEach((section: any) => {
@@ -78,7 +86,7 @@ useEffect(() => {
       </h3>
 
       <ul className="relative space-y-3">
-        {/* main vertical line (level 1 spine) */}
+
         <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-white/10" />
 
         {grouped.map((group: any) => {
@@ -87,7 +95,6 @@ useEffect(() => {
           return (
             <div key={group.parent.id} className="relative">
 
-              {/* LEVEL 1 */}
               <li
                 onClick={() => handleScroll(group.parent.id)}
                 className={`relative pl-3 cursor-pointer text-sm transition-all
@@ -105,7 +112,6 @@ useEffect(() => {
                 {group.parent.title}
               </li>
 
-              {/* LEVEL 3 GROUP (ONLY IF EXISTS) */}
               {hasSub && (
                 <div className="relative ml-4 pl-3 mt-1 border-l border-white/10">
                   {group.children.map((child: any) => {
