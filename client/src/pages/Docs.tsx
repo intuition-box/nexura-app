@@ -54,6 +54,7 @@ const docsSectionsMap: any = {
     { id: "referrals", title: "Referrals", level: 3 },
     { id: "quests", title: "Quests", level: 3 },
     { id: "campaigns", title: "Campaigns", level: 3 },
+    { id: "ecosystem-dapps", title: "Ecosystem Dapps", level: 3 },
     { id: "leaderboard", title: "Leaderboard", level: 3 },
     { id: "portal-claims", title: "Portal Claims", level: 3 },
     { id: "analytics", title: "Analytics", level: 3 },

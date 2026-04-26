@@ -11,9 +11,9 @@ const DocsSidebar = ({ active, setActive }: any) => {
     return (
       <li
         key={id}
-        className={`cursor-pointer flex items-center gap-2 px-2 py-2 rounded-md transition-colors ${
+        className={`cursor-pointer flex items-center gap-2 px-2 py-2 rounded-md transition-colors text-[#8B3EFE]  ${
   isActive
-    ? "bg-[#0C0A18] text-white"
+    ? "bg-[[#8B3EFE] ] text-white"
     : "text-gray-300 hover:text-white hover:bg-white/5"
 }`}
         onClick={() => {
@@ -24,7 +24,7 @@ const DocsSidebar = ({ active, setActive }: any) => {
         <span
           className="w-2 h-2 rounded-full"
           style={{
-            backgroundColor: isActive ? "#7C5CE4" : "#8C78D21F",
+            backgroundColor: isActive ? "#8B3EFE" : "#8C78D21F",
           }}
         />
         <span className="text-gray-300">{text}</span>
@@ -45,7 +45,7 @@ const DocsSidebar = ({ active, setActive }: any) => {
 
     return (
       <div
-        className="flex items-center justify-between cursor-pointer"
+        className="flex items-center justify-between cursor-pointer text-[#8B3EFE] "
         onClick={() => {
           if (!hasDropdown) return;
           setOpenSection(isOpen ? null : id || null);
@@ -53,7 +53,7 @@ const DocsSidebar = ({ active, setActive }: any) => {
       >
         <h2
           style={{
-            color: "#5A5275",
+            color: "[#8B3EFE] ",
             fontWeight: 700,
             fontSize: "13.08px",
             lineHeight: "22.23px",
@@ -97,7 +97,7 @@ const DocsSidebar = ({ active, setActive }: any) => {
   };
 
   const SidebarContent = () => (
-    <aside className="relative w-64 h-screen text-white p-4 overflow-y-auto sticky top-0 overflow-hidden">
+    <aside className="relative w-64 h-screen text-[#00E1A2] p-4 overflow-y-auto sticky top-0 overflow-hidden">
 
   {/* Background layer */}
   <div className="absolute inset-0 z-0">
@@ -105,10 +105,10 @@ const DocsSidebar = ({ active, setActive }: any) => {
   </div>
 
   {/* Dark overlay for readability */}
-  <div className="absolute inset-0 bg-black/20 z-10" />
+  <div className="absolute inset-0 z-10" />
 
   {/* Sidebar content */}
-  <div className="relative z-20">
+  <div className="relative z-20 text-[#00E1A2]">
     {/* SEARCH */}
     <div className="mb-6">
       <div
@@ -130,7 +130,7 @@ const DocsSidebar = ({ active, setActive }: any) => {
     </div>
 
       {/* SECTIONS */}
-      <div className="mb-6">
+      <div className="mb-6 text-[#00E1A2]">
         <Header title="INTRODUCTION" id="intro" />
         <Dropdown id="intro">
           {renderItem("introduction", "Introduction")}
@@ -176,7 +176,7 @@ const DocsSidebar = ({ active, setActive }: any) => {
       {/* MOBILE BUTTON */}
       <button
   onClick={() => setMobileOpen((prev) => !prev)}
-  className="lg:hidden fixed top-6 left-4 z-50 px-3 py-2 bg-[#14141F] border border-[#8C78D21F] text-white rounded-md flex items-center justify-center"
+  className="lg:hidden fixed top-6 left-4 z-50 px-3 py-2 bg-[#14141F] border border-[#8C78D21F] rounded-md flex items-center justify-center text-[#00E1A2]"
 >
   {/* Hamburger icon */}
   <div className="relative w-5 h-4">
