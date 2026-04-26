@@ -100,13 +100,13 @@ const OnThisPage = ({ sections = [] }: any) => {
                 className={`relative pl-3 cursor-pointer text-sm transition-all
                   ${
                     activeId === group.parent.id
-                      ? "text-white font-medium"
+                      ? "text-[#00E1A2] font-medium"
                       : "text-gray-400 hover:text-white"
                   }
                 `}
               >
                 {activeId === group.parent.id && (
-                  <span className="absolute left-0 top-[6px] w-[6px] h-[6px] rounded-full bg-[#8B3EFE]" />
+                  <span className="absolute left-0 top-[6px] w-[6px] h-[6px] rounded-full bg-[#00E1A2]" />
                 )}
 
                 {group.parent.title}
@@ -124,13 +124,13 @@ const OnThisPage = ({ sections = [] }: any) => {
                         className={`relative cursor-pointer text-xs py-1 transition-all
                           ${
                             isActive
-                              ? "text-white font-medium"
+                              ? "text-[#00E1A2] font-medium"
                               : "text-gray-400 hover:text-white"
                           }
                         `}
                       >
                         {isActive && (
-                          <span className="absolute left-[-12px] top-[6px] w-[5px] h-[5px] rounded-full bg-[#8B3EFE]" />
+                          <span className="absolute left-[-12px] top-[6px] w-[5px] h-[5px] rounded-full bg-[#00E1A2]" />
                         )}
 
                         {child.title}
