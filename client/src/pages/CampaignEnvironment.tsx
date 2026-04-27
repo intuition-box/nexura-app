@@ -38,36 +38,23 @@ type Quest = {
   hub?: string;
   done: boolean;
   feedbackCharLimit?: number;
-  feedbackMaxChars?: number;
 };
 
-// Per-quest character bounds for feedback submissions. The minimum gates
-// the submit button; the maximum is the hard cap on what the textarea
-// accepts. Both are admin-configurable from the dashboard. Fallbacks
-// kick in only for legacy quests created before per-quest limits existed.
+// Minimum characters required for a feedback submission. Sourced from the
+// admin-set `feedbackCharLimit` on the quest (admin-bounded to [10, 500]
+// in the dashboard). Falls back to 10 only for legacy quests created
+// before per-quest limits existed.
 const FEEDBACK_MIN_FALLBACK = 10;
-const FEEDBACK_MAX_FALLBACK = 500;
 
-function readPositiveInt(value: unknown, fallback: number): number {
-  const n = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
-}
+// Hard upper bound on what the textarea will accept regardless of admin
+// settings — admin-set min is capped at 500, so 5000 leaves comfortable
+// room above any sensible minimum.
+const FEEDBACK_MAX_CHARS = 5000;
 
 function resolveFeedbackMinChars(quest: Quest): number {
-  return readPositiveInt(
-    (quest as { feedbackCharLimit?: unknown }).feedbackCharLimit,
-    FEEDBACK_MIN_FALLBACK,
-  );
-}
-
-function resolveFeedbackMaxChars(quest: Quest): number {
-  const min = resolveFeedbackMinChars(quest);
-  const max = readPositiveInt(
-    (quest as { feedbackMaxChars?: unknown }).feedbackMaxChars,
-    FEEDBACK_MAX_FALLBACK,
-  );
-  // Guard against admins setting max <= min — keep the textarea usable.
-  return Math.max(max, min);
+  const raw = (quest as { feedbackCharLimit?: unknown }).feedbackCharLimit;
+  const n = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : FEEDBACK_MIN_FALLBACK;
 }
 
 type HubInfo = {
@@ -663,21 +650,20 @@ export default function CampaignEnvironment() {
                         <>
                           {(() => {
                             const minChars = resolveFeedbackMinChars(quest);
-                            const maxChars = resolveFeedbackMaxChars(quest);
                             const currentLength = proofLinks[quest._id]?.length || 0;
                             return (
                               <>
                                 <textarea
-                                  placeholder={`Write your feedback here (${minChars}–${maxChars} characters)...`}
+                                  placeholder={`Write your feedback here (minimum ${minChars} characters)...`}
                                   value={proofLinks[quest._id] || ""}
                                   onChange={(e) => setProofLinks({ ...proofLinks, [quest._id]: e.target.value })}
                                   rows={5}
-                                  maxLength={maxChars}
+                                  maxLength={FEEDBACK_MAX_CHARS}
                                   className="w-full bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500 resize-none"
                                 />
                                 <div className="flex items-center justify-between">
                                   <p className={`text-xs ${currentLength < minChars ? "text-red-400" : "text-green-400"}`}>
-                                    {currentLength}/{maxChars} characters ({minChars} min)
+                                    {currentLength}/{minChars} characters minimum
                                   </p>
                                 </div>
                               </>

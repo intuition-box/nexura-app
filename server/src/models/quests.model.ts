@@ -85,10 +85,6 @@ const campaignQuestSchema = new Schema({
 		type: Number,
 		required: false,
 	},
-	feedbackMaxChars: {
-		type: Number,
-		required: false,
-	},
 	campaign: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "campaign",
