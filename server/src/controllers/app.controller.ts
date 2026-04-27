@@ -1107,9 +1107,7 @@ export const getAnalytics = async (req: GlobalRequest, res: GlobalResponse) => {
       },
     ]);
 
-    const paymentsFromCounter = paymentsAggregate[0]?.totalPayments ?? 0;
-    const totalHubsHistorical = await hub.countDocuments();
-    const payments = Math.max(paymentsFromCounter, totalHubsHistorical);
+    const payments = paymentsAggregate[0]?.totalPayments ?? 0;
 
     const aggregateResult = await user.aggregate([
       {
