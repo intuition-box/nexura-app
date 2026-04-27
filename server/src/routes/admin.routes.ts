@@ -92,7 +92,7 @@ router
   .patch("/unpublish-lesson", unpublishLesson)
   .patch("/update-question-intro", updateQuestionIntro)
   .get("/get-banned-users", getBannedUsers)
-  .get("/get-quests", getTasks)
+  .get("/get-quests", attachAdminCampaignHub, getTasks)
   .get("/get-admins", getAdmins)
   .delete("/delete-invite", deleteAdminInvite)
   .get("/user-summary", getUserSummary)

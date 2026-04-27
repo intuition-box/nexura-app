@@ -504,14 +504,26 @@ export const createAdmin = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const getTasks = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
+    // Submissions persist `hub` as a string (the hub's ObjectId stringified)
+    // — see quest.controller.ts:793. Match the admin's resolved hub instead
+    // of the historical "nexura-hub" placeholder so multi-hub campaigns'
+    // submissions actually surface in the dashboard.
+    const adminHub = req.admin?.hub ? String(req.admin.hub) : null;
+    if (!adminHub) {
+      res.status(BAD_REQUEST).json({ error: "admin has no associated hub" });
+      return;
+    }
 
-		const pendingTasks = await submission.find({ hub: "nexura-hub" }).lean().sort({ createdAt: 1 });
+    const pendingTasks = await submission
+      .find({ hub: adminHub })
+      .lean()
+      .sort({ createdAt: 1 });
 
-		res.status(OK).json({ message: "submitted tasks fetched", pendingTasks });
-	} catch (error) {
-		logger.error(error);
-		res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
-	}
+    res.status(OK).json({ message: "submitted tasks fetched", pendingTasks });
+  } catch (error) {
+    logger.error(error);
+    res.status(INTERNAL_SERVER_ERROR).json({ error: "error fetching tasks" });
+  }
 };
 
 export const getBannedUsers = async (req: GlobalRequest, res: GlobalResponse) => {
