@@ -56,10 +56,23 @@ export const createLesson = async (req: GlobalRequest, res: GlobalResponse) => {
     }
 
     const disclaimer = typeof req.body.disclaimer === "string" ? req.body.disclaimer.trim() : "";
+    const completionTitle = typeof req.body.completionTitle === "string" ? req.body.completionTitle.trim() : "";
+    const completionMessage = typeof req.body.completionMessage === "string" ? req.body.completionMessage.trim() : "";
+    const allowedTrophies = new Set(["bronze", "silver", "gold", ""]);
+    const completionTrophy = allowedTrophies.has(String(req.body.completionTrophy ?? ""))
+      ? String(req.body.completionTrophy ?? "")
+      : "";
 
-    await lesson.create({ ...req.body, disclaimer, status: "draft" });
+    const created = await lesson.create({
+      ...req.body,
+      disclaimer,
+      completionTitle,
+      completionMessage,
+      completionTrophy,
+      status: "draft",
+    });
 
-    res.status(CREATED).json({ message: "lesson created" });
+    res.status(CREATED).json({ message: "lesson created", lesson: created });
   } catch (error) {
     logger.error(error);
     res.status(INTERNAL_SERVER_ERROR).json({ error: "error creating lesson" });
@@ -68,12 +81,24 @@ export const createLesson = async (req: GlobalRequest, res: GlobalResponse) => {
 
 export const updateLesson = async (req: GlobalRequest, res: GlobalResponse) => {
   try {
-    const { lessonId, title, description, reward, disclaimer } = req.body as {
+    const {
+      lessonId,
+      title,
+      description,
+      reward,
+      disclaimer,
+      completionTrophy,
+      completionTitle,
+      completionMessage,
+    } = req.body as {
       lessonId?: string;
       title?: string;
       description?: string;
       reward?: number;
       disclaimer?: string;
+      completionTrophy?: "bronze" | "silver" | "gold" | "";
+      completionTitle?: string;
+      completionMessage?: string;
     };
 
     if (!lessonId) {
@@ -106,6 +131,21 @@ export const updateLesson = async (req: GlobalRequest, res: GlobalResponse) => {
 
     if (typeof disclaimer === "string") {
       lessonExists.disclaimer = disclaimer.trim();
+    }
+
+    if (typeof completionTitle === "string") {
+      (lessonExists as any).completionTitle = completionTitle.trim();
+    }
+
+    if (typeof completionMessage === "string") {
+      (lessonExists as any).completionMessage = completionMessage.trim();
+    }
+
+    if (typeof completionTrophy === "string") {
+      const allowed = new Set(["bronze", "silver", "gold", ""]);
+      if (allowed.has(completionTrophy)) {
+        (lessonExists as any).completionTrophy = completionTrophy;
+      }
     }
 
     const coverImage = await getUploadedLessonImage(req, "coverImage", "lesson-covers");

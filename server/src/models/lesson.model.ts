@@ -33,6 +33,19 @@ const lessonSchema = new mongoose.Schema({
   disclaimer: {
     type: String,
     default: "",
+  },
+  completionTrophy: {
+    type: String,
+    enum: ["bronze", "silver", "gold", ""],
+    default: "",
+  },
+  completionTitle: {
+    type: String,
+    default: "",
+  },
+  completionMessage: {
+    type: String,
+    default: "",
   }
 }, { timestamps: true });
 
