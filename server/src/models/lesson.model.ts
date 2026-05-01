@@ -33,6 +33,19 @@ const lessonSchema = new mongoose.Schema({
   disclaimer: {
     type: String,
     default: "",
+  },
+  completionTrophy: {
+    type: String,
+    enum: ["bronze", "silver", "gold", ""],
+    default: "",
+  },
+  completionTitle: {
+    type: String,
+    default: "",
+  },
+  completionMessage: {
+    type: String,
+    default: "",
   }
 }, { timestamps: true });
 
@@ -74,7 +87,7 @@ const miniLessonSchema = new mongoose.Schema({
   },
   text: {
     type: String,
-    required: true
+    default: ""
   },
   order: {
     type: Number,
@@ -114,19 +127,19 @@ const miniLesson = mongoose.model("mini-lessons", miniLessonSchema);
 const questionSchema = new mongoose.Schema({
   question: {
     type: String,
-    required: true
+    default: ""
   },
   order: {
     type: Number,
     default: 0
   },
-  options: [{
-    type: String,
-    required: true
-  }],
+  options: {
+    type: [String],
+    default: []
+  },
   solution: {
     type: String,
-    required: true
+    default: ""
   },
   lesson: {
     type: mongoose.Schema.Types.ObjectId,
@@ -202,7 +215,7 @@ const videoLessonSchema = new mongoose.Schema({
   },
   url: {
     type: String,
-    required: true
+    default: ""
   },
   order: {
     type: Number,
