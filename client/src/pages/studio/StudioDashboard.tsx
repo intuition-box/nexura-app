@@ -245,7 +245,6 @@ const fetchBannedUsers = async () => {
   </div>
 </header>
 
-
           <main className="flex-1 overflow-y-auto pt-4 pb-8 px-4 md:pt-8 md:pb-8 md:px-8 relative bg-black/20">
             <div className="max-w-7xl mx-auto">
               {activeTab !== "adminManagement" && activeTab !== "campaignsTab" && (
