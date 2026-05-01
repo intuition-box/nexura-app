@@ -45,28 +45,51 @@ export default function SharedAccessCredentials() {
   }, [walletAddress]);
 
   async function handleSignUp() {
-  try {
-    setCreating(true);
+    try {
+      if (!isLongEnough || !hasUppercase || !hasNumber || !hasSpecialChar) {
+        toast({ title: "Weak password", description: "Password does not meet all requirements.", variant: "destructive" });
+        return;
+      }
 
-    // fake delay (optional, makes it feel real)
-    await new Promise((res) => setTimeout(res, 500));
+      if (password !== confirmPassword) {
+        toast({ title: "Password mismatch", description: "Passwords do not match.", variant: "destructive" });
+        return;
+      }
+      if (!email) {
+        toast({ title: "Missing email", description: "Please enter an email address.", variant: "destructive" });
+        return;
+      }
+      if (!address) {
+        toast({ title: "Missing address", description: "Please enter your project wallet address.", variant: "destructive" });
+        return;
+      }
+      if (!name) {
+        toast({ title: "Missing name", description: "Please enter a name.", variant: "destructive" });
+        return;
+      }
 
-    const fakeToken = "dev-mock-token";
+      setCreating(true);
 
-    localStorage.setItem("nexura-project:token", fakeToken);
+      // Save credentials — API call happens on TheHub after hub details are filled in
+      const { accessToken } = await apiRequestV2("POST", "/api/hub/sign-up", { email, address, name, password });
 
-    setCreating(false);
+      localStorage.setItem("nexura-project:token", accessToken);
 
-    setLocation("/projects/create/the-hub");
-  } catch (error) {
-    setCreating(false);
-    toast({
-      title: "Error",
-      description: "Mock signup failed.",
-      variant: "destructive",
-    });
+      setCreating(false);
+
+      setLocation("/projects/create/the-hub");
+    } catch (error: any) {
+      console.error(error);
+      setCreating(false);
+      const msg: string = error?.message || "Failed to sign up.";
+      if (msg.toLowerCase().includes("already exists")) {
+        toast({ title: "Account already exists", description: "Redirecting you to sign in…", variant: "destructive" });
+        setTimeout(() => setLocation("/projects/create/signin-to-hub"), 1500);
+      } else {
+        toast({ title: "Error", description: msg, variant: "destructive" });
+      }
+    }
   }
-}
 
   return (
     <div className="min-h-screen bg-black text-white overflow-auto p-4 sm:p-6 relative">
